@@ -7,7 +7,7 @@ import { keymap } from "@codemirror/view";
 import { indentWithTab } from "@codemirror/commands";
 import { searchKeymap } from "@codemirror/search";
 import { oneDark } from "@codemirror/theme-one-dark";
-import { Zap, FolderOpen, Sparkles, ChevronRight } from "lucide-react";
+import { Cpu, Terminal, Sparkles, ChevronRight } from "lucide-react";
 
 interface EditorAreaProps {
   activeTab?: EditorTab;
@@ -91,27 +91,27 @@ export const EditorArea: React.FC<EditorAreaProps> = ({
         EditorView.theme({
           "&": {
             height: "100%",
-            fontSize: "13.5px",
+            fontSize: "13px",
             fontFamily: "var(--font-mono)",
             backgroundColor: "transparent",
           },
           ".cm-content": {
-            caretColor: "var(--accent-color)",
-            padding: "8px 0",
+            caretColor: "#00f0ff",
+            padding: "10px 0",
           },
           ".cm-gutters": {
             backgroundColor: "transparent",
-            borderRight: "none",
+            borderRight: "1px solid rgba(255, 255, 255, 0.05)",
             color: "var(--text-muted)",
-            paddingRight: "8px",
+            paddingRight: "10px",
           },
           ".cm-activeLine": {
-            backgroundColor: "rgba(56, 189, 248, 0.16) !important",
-            borderLeft: "3px solid #38bdf8",
+            backgroundColor: "rgba(0, 240, 255, 0.07) !important",
+            borderLeft: "2.5px solid #00f0ff",
           },
           ".cm-activeLineGutter": {
-            backgroundColor: "rgba(56, 189, 248, 0.2) !important",
-            color: "#38bdf8 !important",
+            backgroundColor: "transparent !important",
+            color: "#00f0ff !important",
             fontWeight: "700",
           },
         }),
@@ -147,25 +147,24 @@ export const EditorArea: React.FC<EditorAreaProps> = ({
   // Welcome state if no tab is open
   if (!activeTab) {
     return (
-      <div className="app-editor-area welcome-center">
-        <div style={{ maxWidth: 420 }}>
-          <div className="welcome-glow-icon">
-            <Zap size={28} color="#ffffff" />
+      <div className="app-editor-area cyber-welcome">
+        <div className="cyber-welcome-box">
+          <div className="cyber-hex-orb">
+            <Cpu size={32} color="#00f0ff" />
           </div>
-          <h2 style={{ fontSize: 20, fontWeight: 700, color: "var(--text-main)", marginBottom: 8 }}>
-            Nozel Code
-          </h2>
-          <p style={{ fontSize: 13, color: "var(--text-secondary)", marginBottom: 24, lineHeight: 1.5 }}>
-            Editor kode desktop ultra-ringan macOS Apple Silicon dengan pendamping Claude Pro CLI.
+          <h2 className="cyber-welcome-title">NOZEL // STUDIO 2030</h2>
+          <p className="cyber-welcome-desc">
+            Ultra-lightweight quantum code matrix for macOS Apple Silicon.
+            Zero bloat, 38 MB memory footprint, native Claude Pro Neural Companion.
           </p>
-          <div style={{ display: "flex", gap: 10, justifyContent: "center" }}>
-            <button className="btn-primary" onClick={onOpenFolder}>
-              <FolderOpen size={14} />
-              Buka Folder
+          <div className="cyber-welcome-actions">
+            <button className="cyber-btn-primary" onClick={onOpenFolder}>
+              <Terminal size={13} />
+              <span>[ MOUNT PROJECT ]</span>
             </button>
-            <button className="btn-secondary" onClick={onToggleClaude}>
-              <Sparkles size={14} color="var(--accent-color)" />
-              Claude Code Hub
+            <button className="cyber-btn-secondary" onClick={onToggleClaude}>
+              <Sparkles size={13} color="#00f0ff" />
+              <span>[ NEURAL CLAUDE HUB ]</span>
             </button>
           </div>
         </div>
@@ -173,54 +172,55 @@ export const EditorArea: React.FC<EditorAreaProps> = ({
     );
   }
 
-  // Parse path breadcrumbs like mockup: Nozel Code > src > app > index.tsx
+  // Parse path breadcrumbs in cyber format
   const pathParts = activeTab.path.split("/").filter(Boolean);
   const displayParts = pathParts.length > 3 ? pathParts.slice(-3) : pathParts;
 
   // Generate minimap line representations
-  const codeLines = activeTab.content.split("\n").slice(0, 45);
+  const codeLines = activeTab.content.split("\n").slice(0, 50);
 
   return (
     <div className="app-editor-area">
-      {/* 1. Breadcrumbs Bar (Exact from Mockup) */}
-      <div className="editor-breadcrumbs-bar">
-        <span className="breadcrumb-root">Nozel Code</span>
-        <ChevronRight size={12} className="breadcrumb-arrow" />
+      {/* 1. Cyber HUD Breadcrumbs Bar */}
+      <div className="cyber-breadcrumbs-bar">
+        <span className="cyber-crumb-root">// NOZEL</span>
+        <ChevronRight size={11} className="cyber-crumb-sep" />
         {displayParts.slice(0, -1).map((part, idx) => (
           <React.Fragment key={idx}>
-            <span className="breadcrumb-dir">{part}</span>
-            <ChevronRight size={12} className="breadcrumb-arrow" />
+            <span className="cyber-crumb-dir">{part.toUpperCase()}</span>
+            <ChevronRight size={11} className="cyber-crumb-sep" />
           </React.Fragment>
         ))}
-        <span className="breadcrumb-active-file">
-          <span style={{ color: "#38bdf8", marginRight: 4 }}>⚛</span>
+        <span className="cyber-crumb-active">
+          <span className="crumb-pulse-dot" />
           {activeTab.name}
         </span>
       </div>
 
-      {/* 2. Main Editor Split with Minimap on Right */}
-      <div className="editor-split-layout">
-        <div className="editor-code-container" ref={editorContainerRef} />
+      {/* 2. Main Editor Split with Holographic Minimap on Right */}
+      <div className="cyber-editor-layout">
+        <div className="cyber-code-container" ref={editorContainerRef} />
 
-        {/* Code Minimap (Exact from Mockup on the right) */}
-        <aside className="editor-minimap-strip" aria-hidden="true">
-          <div className="minimap-viewport-slider" />
-          <div className="minimap-code-lines">
+        {/* Futuristic Code Minimap HUD */}
+        <aside className="cyber-minimap-hud" aria-hidden="true">
+          <div className="cyber-minimap-header">HUD_MAP</div>
+          <div className="cyber-minimap-slider" />
+          <div className="cyber-minimap-lines">
             {codeLines.map((line, idx) => {
               const len = Math.min(Math.max(line.trim().length * 2.2, 8), 90);
               const isComment = line.trim().startsWith("//");
               const isImport = line.trim().startsWith("import") || line.trim().startsWith("export");
               const isSpecial = line.trim().startsWith("return") || line.trim().startsWith("const");
 
-              let color = "rgba(255, 255, 255, 0.22)";
-              if (isComment) color = "rgba(100, 116, 139, 0.5)";
-              else if (isImport) color = "rgba(244, 63, 94, 0.6)";
-              else if (isSpecial) color = "rgba(56, 189, 248, 0.6)";
+              let color = "rgba(255, 255, 255, 0.25)";
+              if (isComment) color = "rgba(100, 116, 139, 0.4)";
+              else if (isImport) color = "rgba(244, 63, 94, 0.7)";
+              else if (isSpecial) color = "rgba(0, 240, 255, 0.7)";
 
               return (
                 <div
                   key={idx}
-                  className="minimap-line"
+                  className="cyber-minimap-bar"
                   style={{
                     width: `${len}%`,
                     backgroundColor: color,

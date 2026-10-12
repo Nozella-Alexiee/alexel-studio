@@ -7,6 +7,8 @@ import {
   ChevronRight,
   ChevronDown,
   Trash2,
+  FileCode,
+  Terminal,
 } from "lucide-react";
 
 interface FileTreeProps {
@@ -36,50 +38,45 @@ export const FileTree: React.FC<FileTreeProps> = ({
   mascotMessage,
   onClearMascotMessage,
 }) => {
-  // Render badge/icon exactly matching the Glass Mockup
+  // Render high-tech cyber badges
   const renderEntryIcon = (entry: FileEntry) => {
     if (entry.is_dir) {
-      const lower = entry.name.toLowerCase();
-      let folderColor = "#3b82f6"; // default sleek blue folder
-      if (lower.includes("src")) folderColor = "#22c55e"; // green for src/ as in mockup
-      else if (lower.includes("core")) folderColor = "#64748b"; // muted slate for core/
-
       return entry.isOpen ? (
-        <FolderOpen size={14} color={folderColor} />
+        <FolderOpen size={13} color="#00f0ff" />
       ) : (
-        <Folder size={14} color={folderColor} />
+        <Folder size={13} color="#38bdf8" />
       );
     }
 
     const ext = entry.extension?.toLowerCase();
     switch (ext) {
       case "tsx":
-        return <span className="mockup-file-badge ts-badge">TS</span>;
+        return <span className="cyber-file-badge tsx">TSX</span>;
       case "ts":
-        return <span className="mockup-file-badge ts-badge">TS</span>;
+        return <span className="cyber-file-badge ts">TS</span>;
       case "js":
       case "jsx":
-        return <span className="mockup-file-badge js-badge">JS</span>;
+        return <span className="cyber-file-badge js">JS</span>;
       case "rs":
-        return <span className="mockup-file-badge rs-badge">RS</span>;
+        return <span className="cyber-file-badge rs">RS</span>;
       case "md":
-        return <span className="mockup-file-badge md-badge">MD</span>;
+        return <span className="cyber-file-badge md">DOC</span>;
       case "json":
-        return <span className="mockup-file-badge json-badge">JS</span>;
+        return <span className="cyber-file-badge json">JSON</span>;
       default:
-        return <span className="mockup-file-badge txt-badge">TXT</span>;
+        return <FileCode size={12} color="#94a3b8" />;
     }
   };
 
   const renderNodes = (nodes: FileEntry[], depth = 0): React.ReactNode => {
     return nodes.map((node) => {
       const isSelected = activeFilePath === node.path;
-      const paddingLeft = `${depth * 14 + 10}px`;
+      const paddingLeft = `${depth * 12 + 10}px`;
 
       return (
         <React.Fragment key={node.path}>
           <div
-            className={`tree-node ${isSelected ? "active-glass-file" : ""}`}
+            className={`cyber-tree-node ${isSelected ? "cyber-active-node" : ""}`}
             style={{ paddingLeft }}
             onClick={(e) => {
               e.stopPropagation();
@@ -91,32 +88,32 @@ export const FileTree: React.FC<FileTreeProps> = ({
             }}
           >
             {node.is_dir ? (
-              <span className="tree-node-icon">
-                {node.isOpen ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
+              <span className="cyber-arrow-icon">
+                {node.isOpen ? <ChevronDown size={11} /> : <ChevronRight size={11} />}
               </span>
             ) : (
-              <span style={{ width: 12, flexShrink: 0 }} />
+              <span style={{ width: 11, flexShrink: 0 }} />
             )}
 
-            <span className="tree-node-icon">{renderEntryIcon(node)}</span>
-            <span className="tree-node-name" title={node.name}>
+            <span className="cyber-badge-wrapper">{renderEntryIcon(node)}</span>
+            <span className="cyber-node-name" title={node.name}>
               {node.name}
             </span>
 
             <button
-              className="btn-icon tree-del-btn"
-              title={`Hapus ${node.name}`}
+              className="btn-icon cyber-del-btn"
+              title={`Purge ${node.name}`}
               onClick={(e) => {
                 e.stopPropagation();
                 onDeleteEntry(node);
               }}
             >
-              <Trash2 size={11} color="var(--text-muted)" />
+              <Trash2 size={10} color="#f43f5e" />
             </button>
           </div>
 
           {node.is_dir && node.isOpen && node.children && (
-            <div>{renderNodes(node.children, depth + 1)}</div>
+            <div className="cyber-branch-group">{renderNodes(node.children, depth + 1)}</div>
           )}
         </React.Fragment>
       );
@@ -124,14 +121,17 @@ export const FileTree: React.FC<FileTreeProps> = ({
   };
 
   return (
-    <aside className="app-sidebar-floating-card">
-      {/* 1. Header with 'Nozel Code' stacked typography and 3D Tuxy peeking mascot (Exact from Glass Mockup) */}
-      <div className="card-top-header-glass">
-        <div className="card-brand-titles">
-          <span className="brand-line-1">Nozel</span>
-          <span className="brand-line-2">Code</span>
+    <aside className="app-sidebar-cyber-card">
+      {/* 1. Futuristic Header with Mecha-Tux Cyber Mascot */}
+      <div className="cyber-card-header">
+        <div className="cyber-brand-text">
+          <div className="cyber-main-title">NOZEL // CODE</div>
+          <div className="cyber-sub-status">
+            <span className="status-blink" />
+            <span>M1 SILICON CORE</span>
+          </div>
         </div>
-        <div className="sidebar-mascot-peek">
+        <div className="cyber-mascot-unit">
           <PenguinMascot
             customMessage={mascotMessage}
             onClearMessage={onClearMascotMessage}
@@ -139,32 +139,31 @@ export const FileTree: React.FC<FileTreeProps> = ({
         </div>
       </div>
 
-      {/* 2. EXPLORER Section Header (from Glass Mockup) */}
-      <div className="sidebar-section-header">
-        <ChevronDown size={11} />
-        <span>EXPLORER</span>
+      {/* 2. Cyber HUD Directory Label */}
+      <div className="cyber-section-bar">
+        <span className="cyber-section-label">// WORKSPACE_INDEX</span>
+        <span className="cyber-section-line" />
       </div>
 
-      {/* 3. Explorer Tree Area */}
-      <div className="sidebar-tree-container">
+      {/* 3. Futuristic Directory Tree */}
+      <div className="cyber-tree-scroll">
         {!projectPath ? (
-          <div className="sidebar-empty">
-            <p style={{ fontSize: 11, color: "var(--text-secondary)", marginBottom: 8 }}>
-              Belum ada folder proyek dibuka
-            </p>
-            <button className="btn-primary" onClick={onOpenFolder} style={{ fontSize: 11, padding: "5px 12px" }}>
-              Buka Folder
+          <div className="cyber-empty-state">
+            <Terminal size={22} color="#00f0ff" style={{ opacity: 0.8, marginBottom: 8 }} />
+            <p className="empty-sub">NO WORKSPACE ATTACHED</p>
+            <button className="cyber-btn-mount" onClick={onOpenFolder}>
+              [ MOUNT DIRECTORY ]
             </button>
           </div>
         ) : entries.length === 0 ? (
-          <div className="sidebar-empty">
-            <p style={{ fontSize: 11 }}>Folder kosong</p>
-            <button className="btn-secondary" onClick={() => onNewFile(projectPath)}>
-              Buat File
+          <div className="cyber-empty-state">
+            <p className="empty-sub">EMPTY ROOT DIRECTORY</p>
+            <button className="cyber-btn-mount" onClick={() => onNewFile(projectPath)}>
+              [ INITIALIZE FILE ]
             </button>
           </div>
         ) : (
-          <div className="sidebar-tree">{renderNodes(entries)}</div>
+          <div className="cyber-tree-body">{renderNodes(entries)}</div>
         )}
       </div>
     </aside>

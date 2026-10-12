@@ -23,30 +23,30 @@ export const TabBar: React.FC<TabBarProps> = ({
     const ext = tab.name.split(".").pop()?.toLowerCase();
     switch (ext) {
       case "tsx":
-        return <span className="tab-glass-badge react-badge">⚛</span>;
+        return <span className="cyber-tab-badge tsx">TSX</span>;
       case "ts":
-        return <span className="tab-glass-badge ts-badge">TS</span>;
+        return <span className="cyber-tab-badge ts">TS</span>;
       case "rs":
-        return <span className="tab-glass-badge rs-badge">🦀</span>;
+        return <span className="cyber-tab-badge rs">RS</span>;
       case "md":
-        return <span className="tab-glass-badge md-badge">ℹ</span>;
+        return <span className="cyber-tab-badge md">DOC</span>;
       case "json":
-        return <span className="tab-glass-badge json-badge">&#123;.&#125;</span>;
+        return <span className="cyber-tab-badge json">JSON</span>;
       default:
-        return <span className="tab-glass-badge txt-badge">📄</span>;
+        return <span className="cyber-tab-badge">SRC</span>;
     }
   };
 
   return (
-    <div className="floating-pill-tabbar">
-      <div className="pill-tabs-list">
+    <div className="cyber-tabbar">
+      <div className="cyber-tabs-track">
         {tabs.map((tab) => {
           const isActive = tab.id === activeTabId;
 
           return (
             <div
               key={tab.id}
-              className={`pill-tab-item ${isActive ? "active-glass" : ""}`}
+              className={`cyber-tab-item ${isActive ? "active-laser" : ""}`}
               onClick={() => onSelectTab(tab.id)}
               onMouseDown={(e) => {
                 if (e.button === 1) {
@@ -57,32 +57,34 @@ export const TabBar: React.FC<TabBarProps> = ({
               title={tab.path}
             >
               {getTabBadge(tab)}
-              <span className="pill-tab-name">{tab.name}</span>
+              <span className="cyber-tab-title">{tab.name}</span>
 
-              {/* Glowing cyan dot for active tab or modified indicator */}
-              {(isActive || tab.isDirty) && (
-                <span className="pill-tab-dot-cyan" title="Active File" />
-              )}
+              {/* Glowing Laser Dot for active or modified file */}
+              {tab.isDirty ? (
+                <span className="cyber-tab-dot dirty" title="Unsaved Memory Buffer" />
+              ) : isActive ? (
+                <span className="cyber-tab-dot active" />
+              ) : null}
 
               <button
-                className="pill-tab-close"
+                className="cyber-tab-close"
                 onClick={(e) => onCloseTab(tab.id, e)}
-                title="Tutup Tab"
+                title="Detach Buffer"
               >
-                <X size={11} />
+                <X size={10} />
               </button>
             </div>
           );
         })}
       </div>
 
-      {/* Action Controls on the Right (Split, More) from Glass Mockup */}
-      <div className="tabbar-right-controls">
-        <button className="tab-control-btn" title="Split Editor Right">
-          <Columns2 size={13} />
+      {/* Cyber Viewport Controls */}
+      <div className="cyber-tabbar-tools">
+        <button className="cyber-tool-btn" title="Split Viewport Horizontal">
+          <Columns2 size={12} />
         </button>
-        <button className="tab-control-btn" title="More Actions">
-          <MoreHorizontal size={14} />
+        <button className="cyber-tool-btn" title="Buffer Operations">
+          <MoreHorizontal size={12} />
         </button>
       </div>
     </div>

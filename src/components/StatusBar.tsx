@@ -1,6 +1,6 @@
 import React from "react";
 import { ClaudeCliInfo, EditorTab, SystemFootprint } from "../types";
-import { Sparkles, GitBranch, XCircle, AlertTriangle } from "lucide-react";
+import { Sparkles, GitBranch, Cpu, Activity } from "lucide-react";
 
 interface StatusBarProps {
   activeTab?: EditorTab;
@@ -16,61 +16,56 @@ export const StatusBar: React.FC<StatusBarProps> = ({
   onToggleClaude,
 }) => {
   return (
-    <footer className="app-statusbar">
-      {/* Left Git branch pill & diagnostics (Exact from Glass Mockup) */}
-      <div className="statusbar-section">
-        <div className="statusbar-git-purple-pill" title="Git Branch: main">
-          <GitBranch size={11} color="#ffffff" />
+    <footer className="app-statusbar-cyber">
+      {/* Left Sci-Fi Telemetry & Git Branch */}
+      <div className="statusbar-left">
+        <div className="cyber-pill-branch" title="Git Matrix Branch: main">
+          <GitBranch size={10} color="#00f0ff" />
+          <span>BRANCH: main</span>
         </div>
-        <div className="statusbar-item" style={{ gap: 5 }}>
-          <span style={{ display: "flex", alignItems: "center", gap: 3 }}>
-            <XCircle size={10} color="#94a3b8" /> 0
-          </span>
-          <span style={{ display: "flex", alignItems: "center", gap: 3 }}>
-            <AlertTriangle size={10} color="#94a3b8" /> 0
-          </span>
+        <div className="cyber-status-item">
+          <span className="telemetry-tag">ERR: 0</span>
+          <span className="telemetry-tag">WARN: 0</span>
         </div>
       </div>
 
-      {/* Right Metrics and Badges (Exact from Glass Mockup) */}
-      <div className="statusbar-section">
-        <div className="statusbar-item">
-          <span>Ln {activeTab?.line || 24}, Col {activeTab?.col || 18}</span>
+      {/* Right Sci-Fi Metrics & Memory Telemetry */}
+      <div className="statusbar-right">
+        <div className="cyber-status-item cursor-pos">
+          <span>LN {activeTab?.line || 24} : COL {activeTab?.col || 18}</span>
         </div>
-        <div className="statusbar-item">
-          <span>Spaces: 4</span>
+        <div className="cyber-status-item">
+          <span>SPACES: 4</span>
         </div>
-        <div className="statusbar-item">
-          <span>UTF-8</span>
+        <div className="cyber-status-item">
+          <span>UTF-8 // LF</span>
         </div>
-        <div className="statusbar-item">
-          <span>LF</span>
-        </div>
-        <div className="statusbar-item">
-          <span>{activeTab?.language === "typescript" ? "TypeScript React" : activeTab?.language || "TypeScript React"}</span>
+        <div className="cyber-status-item">
+          <span>{activeTab?.language?.toUpperCase() || "TSX"}</span>
         </div>
 
-        {/* Cyan RAM Footprint Badge (Exact from Glass Mockup: RAM: 38 MB) */}
+        {/* Futuristic RAM Telemetry Chip */}
         <div
-          className="statusbar-ram-glass"
-          title={`Nozel Code RAM: ${footprint?.app_memory_mb || 38.4} MB vs VS Code ~650 MB (${footprint?.savings_percentage || 94}% lebih hemat)`}
+          className="cyber-pill-memory"
+          title={`Nozel Code RAM: ${footprint?.app_memory_mb || 38.4} MB vs VS Code ~650 MB (Zero Bloat)`}
         >
-          <span>RAM: {footprint ? `${Math.round(footprint.app_memory_mb)} MB` : "38 MB"}</span>
+          <Cpu size={11} color="#00f0ff" />
+          <span>MEM: {footprint ? `${Math.round(footprint.app_memory_mb)} MB` : "38 MB"}</span>
         </div>
 
-        {/* Amber Glowing Claude Pro Pill Badge (Exact from Glass Mockup: Claude Pro ✨) */}
+        {/* Holographic Claude Pro Neural Agent Pill */}
         <button
-          className="statusbar-claude-pill"
+          className="cyber-pill-claude"
           onClick={onToggleClaude}
-          title={claudeInfo?.installed ? `Claude Code CLI (${claudeInfo.version || "Installed"})` : "Claude Code CLI Pro Companion"}
+          title={claudeInfo?.installed ? `Claude Pro CLI (${claudeInfo.version || "Active"})` : "Claude Neural Companion"}
         >
-          <span>Claude Pro</span>
-          <Sparkles size={11} className="claude-star-icon" />
+          <Sparkles size={11} className="quantum-sparkle" />
+          <span>NEURAL CLAUDE PRO</span>
         </button>
 
-        <div className="statusbar-item" style={{ gap: 6, fontSize: 11, color: "var(--text-secondary)" }}>
-          <span>Errors: 0</span>
-          <span>Warnings: 1</span>
+        <div className="cyber-status-item live-pulse" title="System Latency: 0.2ms">
+          <Activity size={10} color="#10b981" />
+          <span>0.2ms</span>
         </div>
       </div>
     </footer>

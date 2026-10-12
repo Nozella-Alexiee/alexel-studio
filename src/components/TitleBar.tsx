@@ -1,6 +1,6 @@
 import React from "react";
 import { ThemeMode, SystemFootprint } from "../types";
-import { PanelLeft, PanelBottom, PanelRight, Columns2 } from "lucide-react";
+import { PanelLeft, PanelBottom, PanelRight, Columns2, Activity } from "lucide-react";
 
 interface TitleBarProps {
   projectName?: string;
@@ -19,42 +19,47 @@ export const TitleBar: React.FC<TitleBarProps> = ({
   onToggleClaudePanel,
 }) => {
   const displayTitle = activeFileName
-    ? `Nozel Code - app/${activeFileName}`
+    ? `NOZEL // app/${activeFileName}`
     : projectName
-    ? `Nozel Code - ${projectName}`
-    : "Nozel Code";
+    ? `NOZEL // ${projectName}`
+    : "NOZEL // STUDIO";
 
   return (
-    <header className="app-titlebar-mockup">
-      {/* 1. macOS Traffic Lights (Red, Yellow, Green) on top left */}
+    <header className="app-titlebar-cyber">
+      {/* 1. macOS Cyber Traffic Lights on top left */}
       <div className="titlebar-traffic-lights" aria-hidden="true">
         <span className="traffic-dot dot-close" />
         <span className="traffic-dot dot-minimize" />
         <span className="traffic-dot dot-maximize" />
       </div>
 
-      {/* 2. Centered Title (Exact from Glass Mockup: Nozel Code - app/index.tsx) */}
+      {/* 2. Cyber HUD Monospace Title Bar */}
       <div className="titlebar-center-title">
-        <span>{displayTitle}</span>
+        <span className="cyber-brand-tag">[NZL_OS]</span>
+        <span className="cyber-file-title">{displayTitle}</span>
+        <span className="cyber-status-pulse" title="System Link: Active">
+          <Activity size={10} className="pulse-icon" />
+          SYNC
+        </span>
       </div>
 
-      {/* 3. macOS Window Layout Icons on top right (Exact from Glass Mockup) */}
+      {/* 3. Futuristic HUD Window Layout Icons */}
       <div className="titlebar-window-controls" aria-hidden="true">
-        <button className="win-layout-icon" title="Toggle Primary Sidebar">
-          <PanelLeft size={13} />
+        <button className="win-layout-icon" title="Toggle File HUD">
+          <PanelLeft size={12} />
         </button>
-        <button className="win-layout-icon" title="Toggle Bottom Panel">
-          <PanelBottom size={13} />
+        <button className="win-layout-icon" title="Toggle Terminal Output">
+          <PanelBottom size={12} />
         </button>
-        <button className="win-layout-icon" title="Split Editor Right">
-          <Columns2 size={13} />
+        <button className="win-layout-icon" title="Split Cyber Viewport">
+          <Columns2 size={12} />
         </button>
         <button
-          className="win-layout-icon"
-          title="Toggle Claude AI Companion"
+          className="win-layout-icon highlight-ai"
+          title="Toggle Neural Claude Agent"
           onClick={onToggleClaudePanel}
         >
-          <PanelRight size={13} />
+          <PanelRight size={12} />
         </button>
       </div>
     </header>

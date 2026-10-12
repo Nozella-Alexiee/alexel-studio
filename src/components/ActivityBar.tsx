@@ -3,10 +3,12 @@ import {
   Folder,
   Search,
   Sparkles,
+  GitBranch,
   Settings,
   Sun,
   Moon,
-  User,
+  ShieldCheck,
+  Hexagon,
 } from "lucide-react";
 import { ThemeMode } from "../types";
 
@@ -32,67 +34,81 @@ export const ActivityBar: React.FC<ActivityBarProps> = ({
   return (
     <nav className="app-activitybar" aria-label="Activity Bar">
       <div className="activitybar-top">
-        {/* 1. Neon Cyan 'N' Brand Logo at the top (from Glass Mockup) */}
-        <div className="activitybar-brand-logo" title="Nozel Code">
-          <span>N</span>
+        {/* 1. Quantum Hexagon 'N' Cyber Brand Logo */}
+        <div className="cyber-brand-logo" title="NOZEL // QUANTUM CORE">
+          <div className="hex-outer">
+            <Hexagon size={28} className="hex-svg" />
+            <span className="hex-n">N</span>
+          </div>
         </div>
 
-        {/* 2. Folder Explorer (active with left cyan strip) */}
+        {/* 2. File HUD Explorer (Active Laser Strip) */}
         <button
-          className={`activity-btn ${activeTab === "explorer" ? "active" : ""}`}
+          className={`cyber-activity-btn ${activeTab === "explorer" ? "active" : ""}`}
           onClick={() => onSelectTab("explorer")}
-          title="Explorer (Cmd+Shift+E)"
+          title="File Matrix (Cmd+Shift+E)"
         >
-          <Folder size={20} strokeWidth={1.8} />
-          {activeTab === "explorer" && <div className="activity-active-strip" />}
+          <Folder size={17} strokeWidth={2} />
+          {activeTab === "explorer" && <div className="cyber-laser-strip" />}
         </button>
 
-        {/* 3. Search */}
+        {/* 3. Neural Search */}
         <button
-          className={`activity-btn ${activeTab === "search" ? "active" : ""}`}
+          className={`cyber-activity-btn ${activeTab === "search" ? "active" : ""}`}
           onClick={() => onSelectTab("search")}
-          title="Search (Cmd+Shift+F)"
+          title="Neural Code Search (Cmd+Shift+F)"
         >
-          <Search size={19} strokeWidth={1.8} />
-          {activeTab === "search" && <div className="activity-active-strip" />}
+          <Search size={17} strokeWidth={2} />
+          {activeTab === "search" && <div className="cyber-laser-strip" />}
         </button>
 
-        {/* 4. Elegant Glowing Claude Tab Button (Exact from Glass Mockup) */}
+        {/* 4. Git Quantum Diff */}
         <button
-          className={`claude-pill-btn ${isClaudeOpen ? "open" : ""}`}
-          onClick={onToggleClaude}
-          title="Claude Code CLI Companion"
+          className={`cyber-activity-btn ${activeTab === "git" ? "active" : ""}`}
+          onClick={() => onSelectTab("git")}
+          title="Quantum Source Control"
         >
-          <Sparkles size={16} className="claude-star-icon" />
-          <span className="claude-pill-label">Claude</span>
+          <GitBranch size={17} strokeWidth={2} />
+          {activeTab === "git" && <div className="cyber-laser-strip" />}
+        </button>
+
+        {/* 5. Holographic Neural Claude AI Pill Button */}
+        <button
+          className={`cyber-claude-pill ${isClaudeOpen ? "active-open" : ""}`}
+          onClick={onToggleClaude}
+          title="Claude Neural Companion Hub (Claude Pro CLI)"
+        >
+          <div className="claude-pill-glow" />
+          <Sparkles size={14} className="claude-quantum-icon" />
+          <span className="claude-pill-text">AI</span>
         </button>
       </div>
 
       <div className="activitybar-bottom">
-        {/* Theme Switcher */}
+        {/* Theme Matrix Switcher */}
         <button
-          className="activity-btn"
+          className="cyber-activity-btn"
           onClick={onToggleTheme}
-          title={`Switch to ${theme === "dark" ? "Light" : "Dark"} Mode`}
+          title={`Switch Environment (${theme === "dark" ? "Neo-Tokyo Lab Light" : "Cosmic Dark"})`}
         >
-          {theme === "dark" ? <Sun size={17} strokeWidth={1.8} /> : <Moon size={17} strokeWidth={1.8} />}
+          {theme === "dark" ? <Sun size={16} /> : <Moon size={16} />}
         </button>
 
-        {/* User Account / Profile Avatar (from Glass Mockup) */}
+        {/* User Identity Hologram */}
         <button
-          className="activity-btn"
-          title="User Account"
+          className="cyber-activity-btn"
+          title="User Auth: Root / M1 Developer"
         >
-          <User size={18} strokeWidth={1.8} />
+          <ShieldCheck size={16} color="#00f0ff" />
         </button>
 
-        {/* Settings Gear (from Glass Mockup) */}
+        {/* Settings Engine */}
         <button
-          className={`activity-btn ${activeTab === "settings" ? "active" : ""}`}
+          className={`cyber-activity-btn ${activeTab === "settings" ? "active" : ""}`}
           onClick={() => onSelectTab("settings")}
-          title="Settings"
+          title="System Configuration"
         >
-          <Settings size={18} strokeWidth={1.8} />
+          <Settings size={16} />
         </button>
       </div>
     </nav>

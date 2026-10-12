@@ -5,183 +5,218 @@ interface PenguinMascotProps {
   onClearMessage?: () => void;
 }
 
-const CODER_QUOTES = [
-  "Nozel Code: 38 MB RAM! 🐧⚡",
-  "Claude Pro CLI terhubung! 🚀",
-  "Semangat ngoding hari ini! 💻✨",
-  "Cmd+S buat simpan file ya!",
-  "Zero memory bloat, super kencang!",
+const CYBER_TELEMETRY = [
+  "SYSTEM NOMINAL // 38 MB RAM ⚡",
+  "NEURAL CLAUDE PRO // SYNCED 🚀",
+  "M1 SILICON // ZERO BLOAT 💻",
+  "CORE COMPILED // 0 LATENCY 🛡️",
+  "QUANTUM BUFFER // READY ✨",
 ];
 
 export const PenguinMascot: React.FC<PenguinMascotProps> = ({
   customMessage,
   onClearMessage,
 }) => {
-  const [quoteIndex, setQuoteIndex] = useState(0);
-  const [showBubble, setShowBubble] = useState(false);
-  const [isWaving, setIsWaving] = useState(false);
+  const [telemetryIndex, setTelemetryIndex] = useState(0);
+  const [showHud, setShowHud] = useState(false);
+  const [isCharging, setIsCharging] = useState(false);
 
   useEffect(() => {
     if (customMessage) {
-      setShowBubble(true);
-      setIsWaving(true);
+      setShowHud(true);
+      setIsCharging(true);
       const timer = setTimeout(() => {
-        setIsWaving(false);
+        setIsCharging(false);
         if (onClearMessage) onClearMessage();
-        setShowBubble(false);
+        setShowHud(false);
       }, 3500);
       return () => clearTimeout(timer);
     }
   }, [customMessage, onClearMessage]);
 
   const handleMascotClick = () => {
-    setIsWaving(true);
-    setQuoteIndex((prev) => (prev + 1) % CODER_QUOTES.length);
-    setShowBubble(true);
-    setTimeout(() => setIsWaving(false), 1200);
-    setTimeout(() => setShowBubble(false), 4000);
+    setIsCharging(true);
+    setTelemetryIndex((prev) => (prev + 1) % CYBER_TELEMETRY.length);
+    setShowHud(true);
+    setTimeout(() => setIsCharging(false), 1200);
+    setTimeout(() => setShowHud(false), 4000);
   };
 
-  const currentDisplay = customMessage || CODER_QUOTES[quoteIndex];
+  const currentDisplay = customMessage || CYBER_TELEMETRY[telemetryIndex];
 
   return (
     <div
-      className="tuxy-mascot-container"
+      className="cyber-tux-container"
       onClick={handleMascotClick}
-      title="Tuxy the Coder Penguin (Klik untuk sapaan!)"
+      title="Mecha-Tux 3.0 // Cyber Coder AI Unit (Click to Ping)"
     >
-      {/* Speech Bubble Tooltip */}
-      {showBubble && (
-        <div className="tuxy-speech-bubble" onClick={(e) => e.stopPropagation()}>
-          <div className="speech-text">{currentDisplay}</div>
-          <div className="speech-arrow" />
+      {/* Holographic Cyber HUD Bubble */}
+      {showHud && (
+        <div className="cyber-hud-bubble" onClick={(e) => e.stopPropagation()}>
+          <div className="hud-header">
+            <span className="hud-dot" />
+            <span className="hud-title">MECHA_TUX // TELEMETRY</span>
+          </div>
+          <div className="hud-text">{currentDisplay}</div>
+          <div className="hud-corner-accent" />
         </div>
       )}
 
-      {/* 3D Glossy Coder Penguin */}
-      <div className={`tuxy-mascot-avatar ${isWaving ? "waving" : ""}`}>
+      {/* Futuristic Mecha-Tux 3D Vector */}
+      <div className={`cyber-tux-avatar ${isCharging ? "charging" : ""}`}>
         <svg
           viewBox="0 0 160 160"
-          className="tuxy-svg"
+          className="cyber-tux-svg"
           xmlns="http://www.w3.org/2000/svg"
         >
           <defs>
-            {/* 3D Body Radial Gradient */}
-            <radialGradient id="body3D" cx="40%" cy="35%" r="65%">
-              <stop offset="0%" stopColor="#3d4454" />
-              <stop offset="45%" stopColor="#1e222d" />
-              <stop offset="85%" stopColor="#0d0e14" />
-              <stop offset="100%" stopColor="#050608" />
+            {/* Carbon Fiber / Metallic Obsidian Body Gradient */}
+            <radialGradient id="carbonBody" cx="40%" cy="30%" r="70%">
+              <stop offset="0%" stopColor="#2a3042" />
+              <stop offset="35%" stopColor="#141724" />
+              <stop offset="75%" stopColor="#080a12" />
+              <stop offset="100%" stopColor="#020307" />
             </radialGradient>
 
-            {/* Glossy Belly Gradient */}
-            <radialGradient id="belly3D" cx="50%" cy="30%" r="65%">
-              <stop offset="0%" stopColor="#ffffff" />
-              <stop offset="65%" stopColor="#f1f5f9" />
-              <stop offset="100%" stopColor="#cbd5e1" />
-            </radialGradient>
-
-            {/* Glowing Metallic Blue Headphones */}
-            <linearGradient id="phoneGlow" x1="0%" y1="0%" x2="100%" y2="100%">
-              <stop offset="0%" stopColor="#38bdf8" />
-              <stop offset="50%" stopColor="#2563eb" />
-              <stop offset="100%" stopColor="#0284c7" />
+            {/* Titanium Chest Plate Gradient */}
+            <linearGradient id="titaniumPlate" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stopColor="#e2e8f0" />
+              <stop offset="45%" stopColor="#94a3b8" />
+              <stop offset="85%" stopColor="#334155" />
+              <stop offset="100%" stopColor="#0f172a" />
             </linearGradient>
 
-            {/* Beak & Feet Orange 3D */}
-            <linearGradient id="beakGrad" x1="0%" y1="0%" x2="0%" y2="100%">
-              <stop offset="0%" stopColor="#fbbf24" />
-              <stop offset="70%" stopColor="#f59e0b" />
-              <stop offset="100%" stopColor="#d97706" />
+            {/* Electric Cyber Cyan Glow */}
+            <linearGradient id="cyberLaser" x1="0%" y1="0%" x2="100%" y2="0%">
+              <stop offset="0%" stopColor="#00f0ff" />
+              <stop offset="50%" stopColor="#38bdf8" />
+              <stop offset="100%" stopColor="#818cf8" />
             </linearGradient>
 
-            {/* Soft Shadow */}
-            <filter id="mascotGlow" x="-20%" y="-20%" width="140%" height="140%">
-              <feDropShadow dx="0" dy="6" stdDeviation="8" floodColor="#000000" floodOpacity="0.5" />
+            {/* Golden Plasma Beak */}
+            <linearGradient id="plasmaGold" x1="0%" y1="0%" x2="0%" y2="100%">
+              <stop offset="0%" stopColor="#fef08a" />
+              <stop offset="50%" stopColor="#f59e0b" />
+              <stop offset="100%" stopColor="#b45309" />
+            </linearGradient>
+
+            {/* Neon Glow Filter */}
+            <filter id="neonGlow" x="-30%" y="-30%" width="160%" height="160%">
+              <feGaussianBlur stdDeviation="3.5" result="coloredBlur" />
+              <feMerge>
+                <feMergeNode in="coloredBlur" />
+                <feMergeNode in="SourceGraphic" />
+              </feMerge>
+            </filter>
+
+            {/* Subtle Drop Shadow */}
+            <filter id="chassisShadow" x="-20%" y="-20%" width="140%" height="140%">
+              <feDropShadow dx="0" dy="6" stdDeviation="6" floodColor="#000000" floodOpacity="0.8" />
             </filter>
           </defs>
 
-          {/* Under-body Shadow */}
-          <ellipse cx="80" cy="148" rx="48" ry="8" fill="rgba(0,0,0,0.4)" />
+          {/* Holographic Platform Ring */}
+          <ellipse cx="80" cy="148" rx="46" ry="7" fill="rgba(0, 240, 255, 0.15)" filter="url(#neonGlow)" />
+          <ellipse cx="80" cy="148" rx="36" ry="5" fill="none" stroke="#00f0ff" strokeWidth="1" opacity="0.6" strokeDasharray="4 3" />
 
-          {/* Feet */}
-          <ellipse cx="58" cy="144" rx="16" ry="7" fill="url(#beakGrad)" />
-          <ellipse cx="102" cy="144" rx="16" ry="7" fill="url(#beakGrad)" />
+          {/* Cyber Thruster / Feet */}
+          <path d="M 52 140 L 46 148 L 68 148 L 64 140 Z" fill="url(#plasmaGold)" />
+          <path d="M 96 140 L 92 148 L 114 148 L 108 140 Z" fill="url(#plasmaGold)" />
 
-          {/* Main 3D Glossy Body */}
-          <ellipse cx="80" cy="88" rx="46" ry="54" fill="url(#body3D)" filter="url(#mascotGlow)" />
+          {/* Main Mecha Body Chassis */}
+          <ellipse cx="80" cy="86" rx="44" ry="52" fill="url(#carbonBody)" filter="url(#chassisShadow)" />
 
-          {/* Specular Highlight on Head */}
-          <ellipse cx="72" cy="52" rx="22" ry="12" fill="rgba(255,255,255,0.08)" />
+          {/* Cybernetic Panel Seam Lines */}
+          <path d="M 46 64 C 44 80, 48 108, 58 126" fill="none" stroke="rgba(0, 240, 255, 0.4)" strokeWidth="1" />
+          <path d="M 114 64 C 116 80, 112 108, 102 126" fill="none" stroke="rgba(0, 240, 255, 0.4)" strokeWidth="1" />
 
-          {/* 3D Belly */}
-          <ellipse cx="80" cy="98" rx="32" ry="38" fill="url(#belly3D)" />
-
-          {/* Left Wing (Resting) */}
+          {/* Armor Chest Plate (Titanium Hex Core) */}
           <path
-            d="M 36 84 C 22 96, 24 116, 38 118 C 44 110, 42 96, 36 84 Z"
-            fill="#1e222d"
+            d="M 62 76 L 98 76 L 104 108 L 80 128 L 56 108 Z"
+            fill="url(#titaniumPlate)"
+            opacity="0.95"
           />
 
-          {/* Right Wing (Waving Upwards like mockup) */}
-          <g className="tuxy-waving-arm">
+          {/* Quantum Arc Reactor Core (Glowing Cyan Hexagon) */}
+          <polygon
+            points="80,94 88,98 88,107 80,111 72,107 72,98"
+            fill="#00f0ff"
+            filter="url(#neonGlow)"
+          />
+          <circle cx="80" cy="102.5" r="2.5" fill="#ffffff" />
+
+          {/* Left Wing (Resting Chassis) */}
+          <path
+            d="M 38 80 C 24 94, 26 112, 40 114 C 44 104, 42 90, 38 80 Z"
+            fill="#141724"
+            stroke="rgba(0, 240, 255, 0.3)"
+            strokeWidth="1"
+          />
+          {/* Neon circuit line on left wing */}
+          <path d="M 34 94 L 38 106" stroke="#00f0ff" strokeWidth="1.5" filter="url(#neonGlow)" />
+
+          {/* Right Cyber Wing (Waving Upward with Thruster Flare) */}
+          <g className="cyber-waving-wing">
             <path
-              d="M 124 84 C 142 70, 148 52, 136 46 C 126 44, 118 64, 124 84 Z"
-              fill="#1e222d"
+              d="M 122 80 C 140 66, 146 48, 134 42 C 124 40, 116 60, 122 80 Z"
+              fill="#141724"
+              stroke="rgba(0, 240, 255, 0.5)"
+              strokeWidth="1"
             />
-            {/* Wing highlight */}
-            <ellipse cx="134" cy="56" rx="4" ry="10" transform="rotate(25 134 56)" fill="rgba(255,255,255,0.12)" />
+            {/* Wing Laser Flare */}
+            <path d="M 126 50 L 138 46" stroke="#00f0ff" strokeWidth="2" filter="url(#neonGlow)" />
+            <circle cx="136" cy="45" r="3" fill="#00f0ff" filter="url(#neonGlow)" />
+            <circle cx="136" cy="45" r="1.5" fill="#ffffff" />
           </g>
 
-          {/* Cute Eyes (Big 3D eyes) */}
-          <ellipse cx="65" cy="62" rx="10" ry="12" fill="#0f172a" />
-          <ellipse cx="95" cy="62" rx="10" ry="12" fill="#0f172a" />
+          {/* Head Chassis */}
+          <ellipse cx="80" cy="56" rx="34" ry="26" fill="url(#carbonBody)" />
 
-          {/* Eye Sparkles */}
-          <circle cx="68" cy="58" r="3.8" fill="#ffffff" />
-          <circle cx="62" cy="66" r="1.6" fill="#ffffff" />
-          <circle cx="98" cy="58" r="3.8" fill="#ffffff" />
-          <circle cx="92" cy="66" r="1.6" fill="#ffffff" />
-
-          {/* 3D Blue Glasses Frame (Matching Mockup) */}
-          <rect x="50" y="49" width="30" height="25" rx="7" fill="none" stroke="#38bdf8" strokeWidth="3.5" />
-          <rect x="80" y="49" width="30" height="25" rx="7" fill="none" stroke="#38bdf8" strokeWidth="3.5" />
-          <line x1="78" y1="61" x2="82" y2="61" stroke="#38bdf8" strokeWidth="3.5" />
-          {/* Glasses Glass Reflection */}
-          <line x1="55" y1="53" x2="65" y2="53" stroke="rgba(255,255,255,0.4)" strokeWidth="1.5" strokeLinecap="round" />
-          <line x1="85" y1="53" x2="95" y2="53" stroke="rgba(255,255,255,0.4)" strokeWidth="1.5" strokeLinecap="round" />
-
-          {/* 3D Beak */}
-          <polygon points="72,71 88,71 80,84" fill="url(#beakGrad)" />
-          <ellipse cx="80" cy="71" rx="8" ry="2" fill="#fbbf24" />
-
-          {/* Cute Rosy Cheeks */}
-          <ellipse cx="50" cy="74" rx="5.5" ry="3.5" fill="rgba(244, 63, 94, 0.45)" />
-          <ellipse cx="110" cy="74" rx="5.5" ry="3.5" fill="rgba(244, 63, 94, 0.45)" />
-
-          {/* Metallic Blue Headphones (Matching Mockup) */}
-          {/* Headband */}
+          {/* Holographic Cyber Visor (Curved Neon HUD Visor) */}
           <path
-            d="M 38 60 A 44 44 0 0 1 122 60"
-            fill="none"
-            stroke="url(#phoneGlow)"
-            strokeWidth="6"
-            strokeLinecap="round"
+            d="M 52 50 C 60 46, 100 46, 108 50 C 112 56, 106 66, 80 67 C 54 66, 48 56, 52 50 Z"
+            fill="rgba(0, 240, 255, 0.25)"
+            stroke="#00f0ff"
+            strokeWidth="2"
+            filter="url(#neonGlow)"
           />
-          {/* Headband cushion */}
+
+          {/* Digital HUD Eye Display on Visor */}
+          <rect x="62" y="52" width="10" height="7" rx="2" fill="#00f0ff" filter="url(#neonGlow)" />
+          <rect x="88" y="52" width="10" height="7" rx="2" fill="#00f0ff" filter="url(#neonGlow)" />
+          <circle cx="67" cy="55.5" r="1.5" fill="#ffffff" />
+          <circle cx="93" cy="55.5" r="1.5" fill="#ffffff" />
+
+          {/* Visor Scanline Reflection */}
+          <path d="M 56 52 L 104 52" stroke="rgba(255,255,255,0.7)" strokeWidth="1" strokeLinecap="round" />
+
+          {/* Golden Plasma Beak */}
+          <polygon points="74,65 86,65 80,75" fill="url(#plasmaGold)" />
+          <polygon points="76,65 84,65 80,71" fill="#fef08a" />
+
+          {/* High-Tech Cyber Headset & Antenna */}
           <path
-            d="M 52 40 A 40 40 0 0 1 108 40"
+            d="M 44 54 A 38 38 0 0 1 116 54"
             fill="none"
-            stroke="#1e293b"
-            strokeWidth="3.5"
-            strokeLinecap="round"
+            stroke="#334155"
+            strokeWidth="4"
           />
-          {/* Left Earcup */}
-          <rect x="29" y="53" width="10" height="20" rx="5" fill="url(#phoneGlow)" filter="url(#mascotGlow)" />
-          <ellipse cx="34" cy="63" rx="3" ry="7" fill="#60a5fa" />
-          {/* Right Earcup */}
-          <rect x="121" y="53" width="10" height="20" rx="5" fill="url(#phoneGlow)" filter="url(#mascotGlow)" />
-          <ellipse cx="126" cy="63" rx="3" ry="7" fill="#60a5fa" />
+          {/* Glowing Top Headband Wire */}
+          <path
+            d="M 56 36 A 32 32 0 0 1 104 36"
+            fill="none"
+            stroke="#00f0ff"
+            strokeWidth="1.5"
+            filter="url(#neonGlow)"
+          />
+          {/* Left Cyber Earpiece */}
+          <rect x="38" y="48" width="8" height="16" rx="4" fill="#0f172a" stroke="#00f0ff" strokeWidth="1.5" />
+          <circle cx="42" cy="56" r="2" fill="#00f0ff" />
+          {/* Right Cyber Earpiece + Holographic Antenna */}
+          <rect x="114" y="48" width="8" height="16" rx="4" fill="#0f172a" stroke="#00f0ff" strokeWidth="1.5" />
+          <line x1="118" y1="48" x2="126" y2="30" stroke="#00f0ff" strokeWidth="2" filter="url(#neonGlow)" />
+          <circle cx="126" cy="30" r="2.5" fill="#00f0ff" filter="url(#neonGlow)" />
+          <circle cx="126" cy="30" r="1" fill="#ffffff" />
         </svg>
       </div>
     </div>
