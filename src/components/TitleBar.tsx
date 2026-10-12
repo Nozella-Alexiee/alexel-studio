@@ -1,12 +1,6 @@
 import React from "react";
 import { ThemeMode, SystemFootprint } from "../types";
-import {
-  Sun,
-  Moon,
-  FolderOpen,
-  Sparkles,
-  Zap,
-} from "lucide-react";
+import { PanelLeft, PanelBottom, PanelRight, Columns2 } from "lucide-react";
 
 interface TitleBarProps {
   projectName?: string;
@@ -22,75 +16,45 @@ interface TitleBarProps {
 export const TitleBar: React.FC<TitleBarProps> = ({
   projectName,
   activeFileName,
-  theme,
-  onToggleTheme,
-  onOpenFolder,
-  isClaudePanelOpen,
   onToggleClaudePanel,
-  footprint,
 }) => {
+  const displayTitle = activeFileName
+    ? `Nozel Code - app/${activeFileName}`
+    : projectName
+    ? `Nozel Code - ${projectName}`
+    : "Nozel Code";
+
   return (
-    <header className="app-titlebar">
-      <div className="titlebar-center">
-        <div className="titlebar-brand">
-          <Zap size={14} className="text-blue-400" color="#3b82f6" />
-          <span>Nozel Code</span>
-        </div>
-
-        {projectName && (
-          <>
-            <span style={{ color: "var(--text-muted)" }}>/</span>
-            <span style={{ color: "var(--text-secondary)" }}>{projectName}</span>
-          </>
-        )}
-
-        {activeFileName && (
-          <>
-            <span style={{ color: "var(--text-muted)" }}>—</span>
-            <span style={{ color: "var(--text-main)", fontWeight: 500 }}>
-              {activeFileName}
-            </span>
-          </>
-        )}
-
-        {footprint && (
-          <span
-            className="titlebar-badge"
-            title={`RAM: ${footprint.app_memory_mb} MB vs VS Code typical ~${footprint.vscode_baseline_mb} MB. Estimated ${footprint.savings_percentage}% memory reduction.`}
-          >
-            {footprint.app_memory_mb} MB RAM ({footprint.savings_percentage}% &lt; VS Code)
-          </span>
-        )}
+    <header className="app-titlebar-mockup">
+      {/* 1. macOS Traffic Lights (Red, Yellow, Green) on top left */}
+      <div className="titlebar-traffic-lights" aria-hidden="true">
+        <span className="traffic-dot dot-close" />
+        <span className="traffic-dot dot-minimize" />
+        <span className="traffic-dot dot-maximize" />
       </div>
 
-      <div className="titlebar-actions">
-        <button
-          className="btn-secondary"
-          onClick={onOpenFolder}
-          title="Open Project Folder (Cmd+O)"
-          style={{ padding: "4px 8px", fontSize: "11.5px" }}
-        >
-          <FolderOpen size={13} />
-          <span>Open Folder</span>
-        </button>
+      {/* 2. Centered Title (Exact from Glass Mockup: Nozel Code - app/index.tsx) */}
+      <div className="titlebar-center-title">
+        <span>{displayTitle}</span>
+      </div>
 
+      {/* 3. macOS Window Layout Icons on top right (Exact from Glass Mockup) */}
+      <div className="titlebar-window-controls" aria-hidden="true">
+        <button className="win-layout-icon" title="Toggle Primary Sidebar">
+          <PanelLeft size={13} />
+        </button>
+        <button className="win-layout-icon" title="Toggle Bottom Panel">
+          <PanelBottom size={13} />
+        </button>
+        <button className="win-layout-icon" title="Split Editor Right">
+          <Columns2 size={13} />
+        </button>
         <button
-          className={`btn-icon ${isClaudePanelOpen ? "active" : ""}`}
+          className="win-layout-icon"
+          title="Toggle Claude AI Companion"
           onClick={onToggleClaudePanel}
-          title="Claude Code Pro Companion Bridge"
-          style={{
-            color: isClaudePanelOpen ? "var(--accent-color)" : "var(--text-secondary)",
-          }}
         >
-          <Sparkles size={15} />
-        </button>
-
-        <button
-          className="btn-icon"
-          onClick={onToggleTheme}
-          title={`Switch to ${theme === "dark" ? "Light" : "Dark"} Mode`}
-        >
-          {theme === "dark" ? <Sun size={15} /> : <Moon size={15} />}
+          <PanelRight size={13} />
         </button>
       </div>
     </header>

@@ -113,34 +113,90 @@ export const App: React.FC = () => {
 
     const demoPath = "/Users/demo/nozel-project";
     setProjectPath(demoPath);
-    listDirectory(demoPath).then(async (entries) => {
-      const updated = await Promise.all(
-        entries.map(async (e) => {
-          if (e.name === "src") {
-            const children = await listDirectory(e.path);
-            return { ...e, isOpen: true, children };
+    listDirectory(demoPath).then(async (rootEntries) => {
+      const updatedTree = await Promise.all(
+        rootEntries.map(async (entry) => {
+          if (entry.name === "src") {
+            const srcChildren = await listDirectory(entry.path);
+            const nested = await Promise.all(
+              srcChildren.map(async (child) => {
+                if (child.name === "services") {
+                  const servicesFiles = await listDirectory(child.path);
+                  return { ...child, isOpen: true, children: servicesFiles };
+                }
+                return child;
+              })
+            );
+            return { ...entry, isOpen: true, children: nested };
           }
-          return e;
+          return entry;
         })
       );
-      setFileTree(updated);
+      setFileTree(updatedTree);
 
-      const filePath = "/Users/demo/nozel-project/src/index.ts";
-      const text = await readFileText(filePath);
+      const indexPath = "/Users/demo/nozel-project/src/services/index.tsx";
+      const apiPath = "/Users/demo/nozel-project/src/api.rs";
+      const readmePath = "/Users/demo/nozel-project/src/README.md";
+      const settingsPath = "/Users/demo/nozel-project/settings.json";
+
+      const [indexCode, apiCode, readmeCode, settingsCode] = await Promise.all([
+        readFileText(indexPath).catch(() => ""),
+        readFileText(apiPath).catch(() => ""),
+        readFileText(readmePath).catch(() => ""),
+        readFileText(settingsPath).catch(() => ""),
+      ]);
+
       const isUnsaved = view === "unsaved";
-      const tab: EditorTab = {
-        id: filePath,
-        path: filePath,
-        name: "index.ts",
-        content: isUnsaved ? text + "\n// Unsaved modifications..." : text,
-        initialContent: text,
+      const tab1: EditorTab = {
+        id: indexPath,
+        path: indexPath,
+        name: "index.tsx",
+        content: isUnsaved ? indexCode + "\n// Unsaved modification" : indexCode,
+        initialContent: indexCode,
         isDirty: isUnsaved,
-        language: "TypeScript",
-        line: 14,
-        col: 5,
+        language: "typescript",
+        line: 24,
+        col: 18,
       };
-      setTabs([tab]);
-      setActiveTabId(tab.id);
+
+      const tab2: EditorTab = {
+        id: apiPath,
+        path: apiPath,
+        name: "api.rs",
+        content: apiCode,
+        initialContent: apiCode,
+        isDirty: false,
+        language: "rust",
+        line: 1,
+        col: 1,
+      };
+
+      const tab3: EditorTab = {
+        id: readmePath,
+        path: readmePath,
+        name: "README.md",
+        content: readmeCode,
+        initialContent: readmeCode,
+        isDirty: false,
+        language: "markdown",
+        line: 1,
+        col: 1,
+      };
+
+      const tab4: EditorTab = {
+        id: settingsPath,
+        path: settingsPath,
+        name: "settings.json",
+        content: settingsCode,
+        initialContent: settingsCode,
+        isDirty: false,
+        language: "json",
+        line: 1,
+        col: 1,
+      };
+
+      setTabs([tab1, tab2, tab3, tab4]);
+      setActiveTabId(tab1.id);
 
       if (view === "claude") {
         setIsClaudePanelOpen(true);
@@ -149,9 +205,9 @@ export const App: React.FC = () => {
       } else if (view === "unsaved") {
         setUnsavedState({
           isOpen: true,
-          tabId: tab.id,
-          fileName: tab.name,
-          filePath: tab.path,
+          tabId: tab1.id,
+          fileName: tab1.name,
+          filePath: tab1.path,
         });
       } else if (view === "newfile") {
         setModalPrompt({

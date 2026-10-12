@@ -2,80 +2,65 @@
   --font-sans: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   --font-mono: "SF Mono", Menlo, Monaco, Consolas, "Cascadia Code", monospace;
 
-  /* Modern Sequoia Dark Theme (Default) - Non-flat, layered depth */
-  --bg-window: #0b0c10;
-  --bg-activitybar: #07080c;
-  --bg-sidebar: #0f1118;
-  --bg-editor: #12141d;
-  --bg-tabs: #090a0f;
-  --bg-tab-active: #151824;
-  --bg-tab-hover: #10121a;
-  --bg-statusbar: #07080c;
-  --bg-header: #0d0f16;
-  --bg-surface: #181b26;
-  --bg-surface-hover: #222636;
-  --bg-modal: #161822;
+  /* macOS Sequoia Glass Dark Theme */
+  --bg-window: #090c12;
+  --bg-activitybar: #07090e;
+  --bg-sidebar: rgba(16, 21, 30, 0.82);
+  --bg-editor: #0c0f16;
+  --bg-tabs: #0d1017;
+  --bg-statusbar: #07090e;
+  --bg-surface: #141824;
+  --bg-surface-hover: #1e2436;
+  --bg-modal: #131722;
 
-  --border-subtle: rgba(255, 255, 255, 0.08);
-  --border-strong: rgba(255, 255, 255, 0.16);
-  --border-focus: #38bdf8;
+  --border-subtle: rgba(255, 255, 255, 0.06);
+  --border-strong: rgba(255, 255, 255, 0.14);
 
   --text-main: #f1f5f9;
   --text-secondary: #94a3b8;
   --text-muted: #64748b;
 
   --accent-color: #38bdf8;
-  --accent-hover: #0284c7;
-  --accent-violet: #818cf8;
-  --accent-gradient: linear-gradient(135deg, #38bdf8 0%, #818cf8 50%, #c084fc 100%);
-  --accent-glow: 0 0 16px rgba(56, 189, 248, 0.35);
+  --accent-cyan: #38bdf8;
+  --accent-amber: #f59e0b;
+  --accent-gradient: linear-gradient(135deg, #38bdf8 0%, #6366f1 100%);
 
-  --dirty-indicator: #fbbf24;
-  --success-color: #34d399;
-  --danger-color: #f87171;
+  --cyan-glow: 0 0 12px rgba(56, 189, 248, 0.35);
+  --amber-glow: 0 0 12px rgba(245, 158, 11, 0.3);
 
-  --panel-inset-glow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
-  --shadow-popup: 0 16px 40px rgba(0, 0, 0, 0.65), 0 0 0 1px rgba(255, 255, 255, 0.1);
-  --shadow-card: 0 8px 24px rgba(0, 0, 0, 0.45), 0 0 0 1px rgba(255, 255, 255, 0.06);
-  --shadow-subtle: 0 2px 10px rgba(0, 0, 0, 0.3);
+  --dirty-indicator: #38bdf8;
+  --shadow-popup: 0 20px 48px rgba(0, 0, 0, 0.7), 0 0 0 1px rgba(255, 255, 255, 0.1);
+  --shadow-card: 0 12px 36px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.08);
 }
 
 [data-theme="light"] {
-  --bg-window: #f1f3f7;
-  --bg-activitybar: #e2e5eb;
-  --bg-sidebar: #f5f7fa;
+  --bg-window: #f1f4f9;
+  --bg-activitybar: #e2e6f0;
+  --bg-sidebar: rgba(255, 255, 255, 0.88);
   --bg-editor: #ffffff;
-  --bg-tabs: #e6e9ef;
-  --bg-tab-active: #ffffff;
-  --bg-tab-hover: #edf0f5;
-  --bg-statusbar: #e2e5eb;
-  --bg-header: #f8f9fb;
+  --bg-tabs: #f4f6fa;
+  --bg-statusbar: #e2e6f0;
   --bg-surface: #ffffff;
-  --bg-surface-hover: #f1f3f7;
+  --bg-surface-hover: #f1f4f9;
   --bg-modal: #ffffff;
 
-  --border-subtle: rgba(0, 0, 0, 0.08);
-  --border-strong: rgba(0, 0, 0, 0.16);
-  --border-focus: #0284c7;
+  --border-subtle: rgba(0, 0, 0, 0.07);
+  --border-strong: rgba(0, 0, 0, 0.14);
 
   --text-main: #0f172a;
   --text-secondary: #475569;
   --text-muted: #94a3b8;
 
   --accent-color: #0284c7;
-  --accent-hover: #0369a1;
-  --accent-violet: #6366f1;
-  --accent-gradient: linear-gradient(135deg, #0284c7 0%, #6366f1 100%);
-  --accent-glow: 0 0 12px rgba(2, 132, 199, 0.25);
+  --accent-cyan: #0284c7;
+  --accent-amber: #d97706;
 
-  --dirty-indicator: #d97706;
-  --success-color: #059669;
-  --danger-color: #dc2626;
+  --cyan-glow: 0 0 10px rgba(2, 132, 199, 0.2);
+  --amber-glow: 0 0 10px rgba(217, 119, 6, 0.2);
 
-  --panel-inset-glow: inset 0 1px 0 rgba(255, 255, 255, 0.8);
-  --shadow-popup: 0 16px 40px rgba(0, 0, 0, 0.16), 0 0 0 1px rgba(0, 0, 0, 0.08);
-  --shadow-card: 0 8px 24px rgba(0, 0, 0, 0.08), 0 0 0 1px rgba(0, 0, 0, 0.05);
-  --shadow-subtle: 0 2px 8px rgba(0, 0, 0, 0.05);
+  --dirty-indicator: #0284c7;
+  --shadow-popup: 0 20px 48px rgba(0, 0, 0, 0.18), 0 0 0 1px rgba(0, 0, 0, 0.08);
+  --shadow-card: 0 12px 36px rgba(0, 0, 0, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.8);
 }
 
 * {
@@ -96,26 +81,20 @@ html, body, #root {
   -webkit-font-smoothing: antialiased;
 }
 
-/* Scrollbar customization */
+/* Custom Scrollbar */
 ::-webkit-scrollbar {
-  width: 7px;
-  height: 7px;
+  width: 6px;
+  height: 6px;
 }
-
 ::-webkit-scrollbar-track {
   background: transparent;
 }
-
 ::-webkit-scrollbar-thumb {
   background: var(--border-strong);
-  border-radius: 4px;
+  border-radius: 3px;
 }
 
-::-webkit-scrollbar-thumb:hover {
-  background: var(--text-muted);
-}
-
-/* Main Container */
+/* Main Window Container */
 .app-container {
   display: flex;
   flex-direction: column;
@@ -125,69 +104,81 @@ html, body, #root {
   overflow: hidden;
 }
 
-/* Title Bar / Header */
-.app-titlebar {
+/* 1. Titlebar (Exact from Glass Mockup) */
+.app-titlebar-mockup {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  height: 38px;
-  padding: 0 14px 0 78px; /* 78px space for macOS window traffic lights */
-  background: var(--bg-header);
+  height: 36px;
+  padding: 0 14px;
+  background: var(--bg-window);
   border-bottom: 1px solid var(--border-subtle);
-  box-shadow: var(--panel-inset-glow);
-  z-index: 40;
+  z-index: 50;
   -webkit-app-region: drag;
 }
 
-.titlebar-center {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  font-size: 12px;
-  -webkit-app-region: no-drag;
-}
-
-.titlebar-brand {
+.titlebar-traffic-lights {
   display: flex;
   align-items: center;
   gap: 7px;
-  font-weight: 700;
-  letter-spacing: -0.2px;
-  color: var(--text-main);
-}
-
-.titlebar-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  background: rgba(56, 189, 248, 0.12);
-  color: var(--accent-color);
-  border: 1px solid rgba(56, 189, 248, 0.28);
-  box-shadow: 0 0 10px rgba(56, 189, 248, 0.15);
-  padding: 2px 9px;
-  border-radius: 12px;
-  font-size: 11px;
-  font-weight: 600;
-}
-
-.titlebar-actions {
-  display: flex;
-  align-items: center;
-  gap: 8px;
   -webkit-app-region: no-drag;
 }
 
-/* App Main Body */
+.traffic-dot {
+  width: 11px;
+  height: 11px;
+  border-radius: 50%;
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.2);
+}
+.dot-close { background-color: #ff5f56; }
+.dot-minimize { background-color: #ffbd2e; }
+.dot-maximize { background-color: #27c93f; }
+
+.titlebar-center-title {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  letter-spacing: -0.2px;
+  -webkit-app-region: no-drag;
+}
+
+.titlebar-window-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--text-muted);
+  -webkit-app-region: no-drag;
+}
+
+.win-layout-icon {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 3px;
+  border-radius: 4px;
+  transition: all 0.15s ease;
+}
+.win-layout-icon:hover {
+  color: var(--text-main);
+  background: rgba(255, 255, 255, 0.08);
+}
+
+/* Main Split */
 .app-main {
   display: flex;
   flex: 1;
   overflow: hidden;
   position: relative;
+  background-color: var(--bg-window);
 }
 
-/* 1. Activity Bar (VS Code Style) */
+/* 2. Activity Bar (Exact from Glass Mockup) */
 .app-activitybar {
-  width: 50px;
+  width: 52px;
   height: 100%;
   background: var(--bg-activitybar);
   border-right: 1px solid var(--border-subtle);
@@ -195,9 +186,8 @@ html, body, #root {
   flex-direction: column;
   justify-content: space-between;
   align-items: center;
-  padding: 8px 0;
-  z-index: 30;
-  box-shadow: var(--panel-inset-glow);
+  padding: 10px 0 8px 0;
+  z-index: 40;
 }
 
 .activitybar-top,
@@ -205,86 +195,156 @@ html, body, #root {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 4px;
+  gap: 8px;
   width: 100%;
+}
+
+.activitybar-brand-logo {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background: linear-gradient(135deg, rgba(56, 189, 248, 0.22) 0%, rgba(14, 165, 233, 0.06) 100%);
+  border: 1px solid rgba(56, 189, 248, 0.45);
+  box-shadow: 0 0 12px rgba(56, 189, 248, 0.35);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  font-size: 17px;
+  color: #38bdf8;
+  margin-bottom: 4px;
+  cursor: pointer;
 }
 
 .activity-btn {
   position: relative;
-  width: 44px;
-  height: 44px;
+  width: 36px;
+  height: 36px;
   display: flex;
   align-items: center;
   justify-content: center;
   background: transparent;
   border: none;
-  border-radius: 8px;
+  border-radius: 7px;
   color: var(--text-muted);
   cursor: pointer;
-  transition: all 0.18s ease;
+  transition: all 0.15s ease;
 }
 
 .activity-btn:hover {
   color: var(--text-main);
-  background: rgba(255, 255, 255, 0.05);
+  background: rgba(255, 255, 255, 0.06);
 }
 
 .activity-btn.active {
-  color: var(--accent-color);
-  background: rgba(56, 189, 248, 0.08);
+  color: #f1f5f9;
 }
 
-.activity-active-indicator {
+.activity-active-strip {
   position: absolute;
-  left: 0;
-  top: 9px;
+  left: -8px;
+  top: 8px;
   width: 3px;
-  height: 26px;
-  background: var(--accent-color);
-  border-radius: 0 3px 3px 0;
-  box-shadow: 0 0 10px var(--accent-color);
+  height: 20px;
+  background: #38bdf8;
+  border-radius: 0 2px 2px 0;
+  box-shadow: 0 0 8px #38bdf8;
 }
 
-.claude-activity-btn.active .claude-indicator {
-  background: linear-gradient(180deg, #f59e0b, #ec4899);
-  box-shadow: 0 0 12px rgba(245, 158, 11, 0.6);
-}
-
-.claude-sparkle-icon {
+/* Claude Pill Button in Activity Bar */
+.claude-pill-btn {
+  width: 42px;
+  padding: 5px 2px;
+  border-radius: 8px;
+  background: rgba(245, 158, 11, 0.08);
+  border: 1px solid rgba(245, 158, 11, 0.35);
+  box-shadow: 0 0 10px rgba(245, 158, 11, 0.25);
   color: #fbbf24;
-  animation: pulse-glow 2.5s infinite ease-in-out;
-}
-
-@keyframes pulse-glow {
-  0%, 100% { opacity: 0.85; transform: scale(1); filter: drop-shadow(0 0 2px rgba(251, 191, 36, 0.4)); }
-  50% { opacity: 1; transform: scale(1.08); filter: drop-shadow(0 0 8px rgba(251, 191, 36, 0.8)); }
-}
-
-/* 2. Sidebar & File Tree */
-.app-sidebar {
-  width: 250px;
-  height: 100%;
-  background: var(--bg-sidebar);
-  border-right: 1px solid var(--border-subtle);
-  display: flex;
-  flex-direction: column;
-  box-shadow: var(--panel-inset-glow);
-  z-index: 20;
-}
-
-/* Tuxy Mascot Header Section */
-.sidebar-mascot-card {
-  margin: 10px 10px 6px 10px;
-  padding: 12px 10px 10px 10px;
-  background: linear-gradient(145deg, rgba(24, 27, 38, 0.8) 0%, rgba(15, 17, 24, 0.95) 100%);
-  border: 1px solid rgba(56, 189, 248, 0.2);
-  border-radius: 12px;
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.1);
   display: flex;
   flex-direction: column;
   align-items: center;
+  gap: 2px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.claude-pill-btn:hover,
+.claude-pill-btn.open {
+  transform: scale(1.04);
+  background: rgba(245, 158, 11, 0.16);
+  border-color: rgba(245, 158, 11, 0.55);
+  box-shadow: 0 0 16px rgba(245, 158, 11, 0.45);
+}
+
+.claude-star-icon {
+  color: #fbbf24;
+}
+
+.claude-pill-label {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: -0.2px;
+}
+
+/* 3. Floating Acrylic Sidebar Card (Exact from Glass Mockup) */
+.app-sidebar-floating-card {
+  width: 250px;
+  margin: 8px 6px 8px 8px;
+  background: var(--bg-sidebar);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 14px;
+  box-shadow: var(--shadow-card);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  z-index: 30;
+}
+
+.card-top-header-glass {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 14px 4px 16px;
   position: relative;
-  overflow: visible;
+}
+
+.card-brand-titles {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.1;
+}
+
+.brand-line-1,
+.brand-line-2 {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text-main);
+  letter-spacing: -0.3px;
+}
+
+.sidebar-mascot-peek {
+  position: relative;
+  margin-right: -4px;
+  margin-top: -6px;
+}
+
+.sidebar-mascot-peek .tuxy-mascot-avatar {
+  width: 72px;
+  height: 72px;
+}
+
+/* Explorer Section Header */
+.sidebar-section-header {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 8px 14px 4px 14px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  color: #64748b;
 }
 
 .tuxy-mascot-container {
@@ -292,51 +352,46 @@ html, body, #root {
   flex-direction: column;
   align-items: center;
   cursor: pointer;
-  width: 100%;
+  position: relative;
 }
 
 .tuxy-mascot-avatar {
-  width: 76px;
-  height: 76px;
-  filter: drop-shadow(0 8px 16px rgba(0, 0, 0, 0.5));
+  filter: drop-shadow(0 6px 14px rgba(0, 0, 0, 0.5));
   animation: tuxy-float 3.5s ease-in-out infinite;
   transition: transform 0.2s ease;
 }
 
 .tuxy-mascot-container:hover .tuxy-mascot-avatar {
-  transform: scale(1.06);
+  transform: scale(1.05);
 }
 
 @keyframes tuxy-float {
   0%, 100% { transform: translateY(0px) rotate(0deg); }
-  50% { transform: translateY(-4px) rotate(1.2deg); }
+  50% { transform: translateY(-3px) rotate(1deg); }
 }
 
-.tuxy-waving-wing {
-  transform-origin: 90px 68px;
+.tuxy-mascot-avatar.waving .tuxy-waving-arm {
+  animation: tuxy-arm-wave 0.7s ease-in-out infinite;
+  transform-origin: 124px 84px;
 }
 
-.tuxy-mascot-avatar.waving .tuxy-waving-wing {
-  animation: tuxy-wave 0.7s ease-in-out infinite;
-}
-
-@keyframes tuxy-wave {
+@keyframes tuxy-arm-wave {
   0%, 100% { transform: rotate(0deg); }
-  50% { transform: rotate(26deg); }
+  50% { transform: rotate(-18deg) translateY(-3px); }
 }
 
-/* Tuxy Speech Bubble */
+/* Speech Bubble */
 .tuxy-speech-bubble {
-  position: relative;
+  position: absolute;
+  top: -38px;
   background: rgba(22, 26, 38, 0.98);
-  border: 1px solid rgba(56, 189, 248, 0.35);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5), 0 0 12px rgba(56, 189, 248, 0.15);
+  border: 1px solid rgba(56, 189, 248, 0.4);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5), var(--cyan-glow);
   border-radius: 10px;
-  padding: 7px 11px;
-  margin-bottom: 8px;
-  max-width: 95%;
-  text-align: center;
-  animation: bubble-pop 0.25s ease-out;
+  padding: 5px 10px;
+  white-space: nowrap;
+  z-index: 60;
+  animation: bubble-pop 0.2s ease-out;
 }
 
 @keyframes bubble-pop {
@@ -346,86 +401,40 @@ html, body, #root {
 
 .speech-text {
   font-size: 11px;
-  font-weight: 500;
-  line-height: 1.4;
+  font-weight: 600;
   color: var(--text-main);
 }
 
 .speech-arrow {
   position: absolute;
-  bottom: -6px;
+  bottom: -5px;
   left: 50%;
   transform: translateX(-50%);
   width: 0;
   height: 0;
-  border-left: 6px solid transparent;
-  border-right: 6px solid transparent;
-  border-top: 6px solid rgba(22, 26, 38, 0.98);
+  border-left: 5px solid transparent;
+  border-right: 5px solid transparent;
+  border-top: 5px solid rgba(22, 26, 38, 0.98);
 }
 
-.tuxy-tag {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  margin-top: 4px;
-}
-
-.tuxy-name {
-  font-size: 12px;
-  font-weight: 700;
-  letter-spacing: -0.2px;
-  color: var(--text-main);
-}
-
-.tuxy-badge {
-  font-size: 9.5px;
-  font-weight: 600;
-  padding: 1px 6px;
-  background: var(--accent-gradient);
-  color: #ffffff;
-  border-radius: 8px;
-  box-shadow: 0 0 8px rgba(56, 189, 248, 0.35);
-}
-
-/* Sidebar Header */
-.sidebar-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 10px 14px 6px 14px;
-}
-
-.sidebar-title {
-  font-size: 11px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.6px;
-  color: var(--text-secondary);
-}
-
-.sidebar-actions {
-  display: flex;
-  align-items: center;
-  gap: 3px;
-}
-
-.sidebar-tree {
+/* Explorer Tree Inside Card */
+.sidebar-tree-container {
   flex: 1;
   overflow-y: auto;
-  padding: 4px 6px;
+  padding: 4px 6px 10px 6px;
 }
 
-/* Tree Nodes */
 .tree-node {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 5px;
   padding: 4px 8px;
   border-radius: 6px;
   cursor: pointer;
   color: var(--text-secondary);
   transition: all 0.15s ease;
-  margin-bottom: 1px;
+  margin-bottom: 2px;
+  font-size: 12px;
 }
 
 .tree-node:hover {
@@ -433,11 +442,12 @@ html, body, #root {
   color: var(--text-main);
 }
 
-.tree-node.active {
-  background: rgba(56, 189, 248, 0.12);
-  color: var(--accent-color);
+/* Selected File Pill in Glass Mockup */
+.tree-node.active-glass-file {
+  background: rgba(35, 52, 75, 0.85);
+  border-radius: 6px;
+  color: #ffffff;
   font-weight: 500;
-  box-shadow: inset 0 0 0 1px rgba(56, 189, 248, 0.25);
 }
 
 .tree-node-name {
@@ -445,108 +455,139 @@ html, body, #root {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  font-size: 12.5px;
 }
 
-.tree-node-icon {
+.tree-del-btn {
+  opacity: 0;
+  padding: 2px;
+}
+.tree-node:hover .tree-del-btn {
+  opacity: 0.6;
+}
+.tree-node:hover .tree-del-btn:hover {
+  opacity: 1;
+}
+
+/* Badges for Tree Nodes */
+.mockup-file-badge {
   display: inline-flex;
   align-items: center;
-  flex-shrink: 0;
+  justify-content: center;
+  font-size: 9px;
+  font-weight: 700;
+  padding: 1px 4px;
+  border-radius: 3px;
+  line-height: 1;
 }
+.react-badge { color: #38bdf8; font-size: 12px; }
+.ts-badge { color: #38bdf8; background: rgba(56, 189, 248, 0.15); }
+.js-badge { color: #eab308; background: rgba(234, 179, 8, 0.15); }
+.rs-badge { color: #f97316; background: rgba(249, 115, 22, 0.15); }
+.md-badge { color: #38bdf8; background: rgba(56, 189, 248, 0.15); }
+.json-badge { color: #eab308; background: rgba(234, 179, 8, 0.15); }
+.txt-badge { color: #94a3b8; background: rgba(148, 163, 184, 0.15); }
 
-/* 3. Tab Bar */
-.app-tabbar,
-.editor-tabs-bar {
-  display: flex;
-  align-items: flex-end;
-  height: 38px;
-  background: var(--bg-tabs);
-  border-bottom: 1px solid var(--border-subtle);
-  overflow-x: auto;
-  overflow-y: hidden;
-  padding: 0 8px;
-  gap: 4px;
-}
-
-.tab-item,
-.editor-tab {
+/* 4. Tab Bar (Exact from Glass Mockup) */
+.floating-pill-tabbar {
   display: flex;
   align-items: center;
-  gap: 8px;
-  height: 32px;
-  padding: 0 12px;
+  justify-content: space-between;
+  height: 38px;
+  padding: 4px 14px 4px 10px;
+  background: var(--bg-tabs);
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.pill-tabs-list {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  overflow-x: auto;
+}
+
+.pill-tab-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: 28px;
+  padding: 0 10px;
   background: transparent;
-  color: var(--text-muted);
-  border-radius: 8px 8px 0 0;
-  cursor: pointer;
-  font-size: 12px;
   border: 1px solid transparent;
-  border-bottom: none;
-  transition: all 0.18s ease;
-  position: relative;
-  max-width: 200px;
-}
-
-.tab-item:hover,
-.editor-tab:hover {
-  background: var(--bg-tab-hover);
-  color: var(--text-main);
-}
-
-.tab-item.active,
-.editor-tab.active {
-  background: var(--bg-tab-active);
-  color: var(--text-main);
-  font-weight: 500;
-  border-color: var(--border-subtle);
-  border-top: 2px solid var(--accent-color);
-  box-shadow: 0 -2px 12px rgba(56, 189, 248, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.08);
-}
-
-.tab-name {
+  border-radius: 6px;
+  color: var(--text-secondary);
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.15s ease;
   white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
 }
 
-.tab-dirty,
-.tab-dirty-indicator {
-  width: 7px;
-  height: 7px;
+.pill-tab-item:hover {
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--text-main);
+}
+
+/* Active Tab Pill in Glass Mockup */
+.pill-tab-item.active-glass {
+  background: rgba(56, 189, 248, 0.08);
+  border: 1px solid rgba(56, 189, 248, 0.28);
+  color: #38bdf8;
+  font-weight: 500;
+}
+
+.tab-glass-badge {
+  font-size: 11px;
+  display: inline-flex;
+  align-items: center;
+}
+
+.pill-tab-dot-cyan {
+  width: 6px;
+  height: 6px;
   border-radius: 50%;
-  background: var(--dirty-indicator);
-  box-shadow: 0 0 8px var(--dirty-indicator);
-  animation: pulse-dirty 1.8s infinite;
+  background: #38bdf8;
+  box-shadow: 0 0 6px #38bdf8;
 }
 
-@keyframes pulse-dirty {
-  0%, 100% { opacity: 1; transform: scale(1); }
-  50% { opacity: 0.6; transform: scale(0.85); }
-}
-
-.tab-close,
-.tab-close-btn {
+.pill-tab-close {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 16px;
-  height: 16px;
-  border-radius: 4px;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: transparent;
+  border: none;
+  color: inherit;
+  opacity: 0.5;
+  cursor: pointer;
+}
+.pill-tab-close:hover {
+  opacity: 1;
+  background: rgba(255, 255, 255, 0.15);
+}
+
+.tabbar-right-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--text-muted);
+}
+.tab-control-btn {
   background: transparent;
   border: none;
   color: var(--text-muted);
-  opacity: 0.6;
   cursor: pointer;
+  padding: 3px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
 }
-
-.tab-close:hover,
-.tab-close-btn:hover {
-  opacity: 1;
-  background: rgba(255, 255, 255, 0.1);
+.tab-control-btn:hover {
   color: var(--text-main);
+  background: rgba(255, 255, 255, 0.08);
 }
 
-/* 4. Editor Area */
+/* 5. Editor Area with Breadcrumbs & Minimap (Exact from Glass Mockup) */
 .app-editor-area {
   flex: 1;
   display: flex;
@@ -554,38 +595,37 @@ html, body, #root {
   background: var(--bg-editor);
   overflow: hidden;
   position: relative;
-  box-shadow: var(--panel-inset-glow);
 }
 
-.editor-breadcrumb {
+.editor-breadcrumbs-bar {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  height: 28px;
-  padding: 0 16px;
-  background: rgba(14, 16, 24, 0.7);
-  border-bottom: 1px solid var(--border-subtle);
+  gap: 5px;
+  padding: 6px 16px 4px 16px;
   font-size: 11.5px;
   color: var(--text-muted);
 }
-
-.breadcrumb-path {
+.breadcrumb-root,
+.breadcrumb-dir {
+  color: var(--text-secondary);
+}
+.breadcrumb-arrow {
+  opacity: 0.5;
+}
+.breadcrumb-active-file {
+  color: var(--text-main);
+  font-weight: 500;
   display: flex;
   align-items: center;
-  gap: 6px;
 }
 
-.breadcrumb-lang-pill {
-  font-size: 10.5px;
-  font-weight: 600;
-  padding: 1px 8px;
-  background: rgba(56, 189, 248, 0.1);
-  color: var(--accent-color);
-  border: 1px solid rgba(56, 189, 248, 0.2);
-  border-radius: 10px;
+.editor-split-layout {
+  flex: 1;
+  display: flex;
+  overflow: hidden;
+  position: relative;
 }
 
-.codemirror-wrapper,
 .editor-code-container {
   flex: 1;
   height: 100%;
@@ -593,38 +633,111 @@ html, body, #root {
   position: relative;
 }
 
-/* CodeMirror customization */
-.cm-editor {
-  height: 100% !important;
+/* Minimap Strip */
+.editor-minimap-strip {
+  width: 70px;
+  height: 100%;
+  background: rgba(9, 12, 18, 0.5);
+  border-left: 1px solid rgba(255, 255, 255, 0.04);
+  padding: 10px 6px;
+  position: relative;
+  user-select: none;
+}
+.minimap-viewport-slider {
+  position: absolute;
+  top: 20px;
+  left: 3px;
+  right: 3px;
+  height: 38px;
+  background: rgba(56, 189, 248, 0.12);
+  border: 1px solid rgba(56, 189, 248, 0.35);
+  border-radius: 3px;
+}
+.minimap-code-lines {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.minimap-line {
+  height: 2px;
+  border-radius: 1px;
 }
 
-.cm-scroller {
-  font-family: var(--font-mono) !important;
-  font-size: 13px !important;
-  line-height: 1.6 !important;
+/* 6. Status Bar (Exact from Glass Mockup) */
+.app-statusbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 26px;
+  padding: 0 14px;
+  background: var(--bg-statusbar);
+  border-top: 1px solid var(--border-subtle);
+  font-size: 11px;
+  color: var(--text-secondary);
+  z-index: 50;
 }
 
-.cm-activeLine {
-  background-color: rgba(56, 189, 248, 0.05) !important;
-  border-left: 2px solid var(--accent-color);
+.statusbar-section {
+  display: flex;
+  align-items: center;
+  gap: 12px;
 }
 
-.cm-activeLineGutter {
-  background-color: rgba(56, 189, 248, 0.1) !important;
-  color: var(--accent-color) !important;
-  font-weight: 700;
+.statusbar-item {
+  display: flex;
+  align-items: center;
+  gap: 5px;
 }
 
-/* 5. Claude Companion Drawer */
+.statusbar-git-purple-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2px 7px;
+  background: #6366f1;
+  border-radius: 4px;
+  color: #ffffff;
+}
+
+.statusbar-ram-glass {
+  color: #38bdf8;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+}
+
+.statusbar-claude-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 2px 9px;
+  border-radius: 12px;
+  background: rgba(245, 158, 11, 0.12);
+  border: 1px solid rgba(245, 158, 11, 0.35);
+  color: #fbbf24;
+  font-weight: 600;
+  font-size: 11px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.statusbar-claude-pill:hover {
+  background: rgba(245, 158, 11, 0.2);
+  box-shadow: 0 0 12px rgba(245, 158, 11, 0.3);
+}
+
+/* Claude Companion Drawer */
 .claude-drawer {
   width: 340px;
   height: 100%;
   background: var(--bg-sidebar);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
   border-left: 1px solid var(--border-subtle);
   display: flex;
   flex-direction: column;
-  z-index: 35;
-  box-shadow: -8px 0 24px rgba(0, 0, 0, 0.35), var(--panel-inset-glow);
+  z-index: 45;
+  box-shadow: -8px 0 32px rgba(0, 0, 0, 0.45);
   animation: slide-in 0.2s ease-out;
 }
 
@@ -650,62 +763,7 @@ html, body, #root {
   gap: 14px;
 }
 
-/* 6. Status Bar */
-.app-statusbar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  height: 26px;
-  padding: 0 14px;
-  background: var(--bg-statusbar);
-  border-top: 1px solid var(--border-subtle);
-  font-size: 11px;
-  color: var(--text-secondary);
-  z-index: 40;
-  box-shadow: var(--panel-inset-glow);
-}
-
-.statusbar-section {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.statusbar-item {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-}
-
-.statusbar-pill {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  padding: 1px 8px;
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 12px;
-}
-
-.statusbar-btn {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  background: transparent;
-  border: none;
-  color: var(--text-secondary);
-  cursor: pointer;
-  padding: 2px 7px;
-  border-radius: 4px;
-  transition: all 0.15s ease;
-}
-
-.statusbar-btn:hover {
-  background: rgba(255, 255, 255, 0.08);
-  color: var(--text-main);
-}
-
-/* Buttons & Inputs */
+/* Buttons & Common */
 .btn-primary {
   display: inline-flex;
   align-items: center;
@@ -716,7 +774,7 @@ html, body, #root {
   border: none;
   border-radius: 8px;
   padding: 7px 14px;
-  font-size: 12.5px;
+  font-size: 12px;
   font-weight: 600;
   cursor: pointer;
   box-shadow: 0 4px 14px rgba(56, 189, 248, 0.35);
@@ -757,7 +815,7 @@ html, body, #root {
   border: none;
   border-radius: 6px;
   color: var(--text-muted);
-  padding: 5px;
+  padding: 4px;
   cursor: pointer;
   transition: all 0.15s ease;
 }
@@ -824,7 +882,7 @@ html, body, #root {
 /* Toast Notifications */
 .toast-container {
   position: fixed;
-  bottom: 34px;
+  bottom: 36px;
   right: 18px;
   display: flex;
   flex-direction: column;
@@ -840,13 +898,7 @@ html, body, #root {
   background: var(--bg-modal);
   border: 1px solid var(--border-strong);
   border-radius: 10px;
-  box-shadow: var(--shadow-card);
+  box-shadow: 0 10px 30px rgba(0,0,0,0.5);
   font-size: 12px;
   color: var(--text-main);
-  animation: toast-slide 0.2s ease-out;
-}
-
-@keyframes toast-slide {
-  from { transform: translateY(10px); opacity: 0; }
-  to { transform: translateY(0); opacity: 1; }
 }

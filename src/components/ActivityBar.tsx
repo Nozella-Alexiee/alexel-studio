@@ -1,12 +1,12 @@
 import React from "react";
 import {
-  Files,
+  Folder,
   Search,
   Sparkles,
-  GitBranch,
   Settings,
   Sun,
   Moon,
+  User,
 } from "lucide-react";
 import { ThemeMode } from "../types";
 
@@ -32,44 +32,39 @@ export const ActivityBar: React.FC<ActivityBarProps> = ({
   return (
     <nav className="app-activitybar" aria-label="Activity Bar">
       <div className="activitybar-top">
-        {/* Explorer */}
+        {/* 1. Neon Cyan 'N' Brand Logo at the top (from Glass Mockup) */}
+        <div className="activitybar-brand-logo" title="Nozel Code">
+          <span>N</span>
+        </div>
+
+        {/* 2. Folder Explorer (active with left cyan strip) */}
         <button
           className={`activity-btn ${activeTab === "explorer" ? "active" : ""}`}
           onClick={() => onSelectTab("explorer")}
           title="Explorer (Cmd+Shift+E)"
         >
-          <Files size={19} />
-          {activeTab === "explorer" && <div className="activity-active-indicator" />}
+          <Folder size={20} strokeWidth={1.8} />
+          {activeTab === "explorer" && <div className="activity-active-strip" />}
         </button>
 
-        {/* Search */}
+        {/* 3. Search */}
         <button
           className={`activity-btn ${activeTab === "search" ? "active" : ""}`}
           onClick={() => onSelectTab("search")}
           title="Search (Cmd+Shift+F)"
         >
-          <Search size={19} />
-          {activeTab === "search" && <div className="activity-active-indicator" />}
+          <Search size={19} strokeWidth={1.8} />
+          {activeTab === "search" && <div className="activity-active-strip" />}
         </button>
 
-        {/* Git */}
+        {/* 4. Elegant Glowing Claude Tab Button (Exact from Glass Mockup) */}
         <button
-          className={`activity-btn ${activeTab === "git" ? "active" : ""}`}
-          onClick={() => onSelectTab("git")}
-          title="Source Control"
-        >
-          <GitBranch size={19} />
-          {activeTab === "git" && <div className="activity-active-indicator" />}
-        </button>
-
-        {/* Claude Code AI */}
-        <button
-          className={`activity-btn claude-activity-btn ${isClaudeOpen ? "active" : ""}`}
+          className={`claude-pill-btn ${isClaudeOpen ? "open" : ""}`}
           onClick={onToggleClaude}
-          title="Claude Code Pro Companion Hub"
+          title="Claude Code CLI Companion"
         >
-          <Sparkles size={19} className="claude-sparkle-icon" />
-          {isClaudeOpen && <div className="activity-active-indicator claude-indicator" />}
+          <Sparkles size={16} className="claude-star-icon" />
+          <span className="claude-pill-label">Claude</span>
         </button>
       </div>
 
@@ -80,17 +75,24 @@ export const ActivityBar: React.FC<ActivityBarProps> = ({
           onClick={onToggleTheme}
           title={`Switch to ${theme === "dark" ? "Light" : "Dark"} Mode`}
         >
-          {theme === "dark" ? <Sun size={18} /> : <Moon size={18} />}
+          {theme === "dark" ? <Sun size={17} strokeWidth={1.8} /> : <Moon size={17} strokeWidth={1.8} />}
         </button>
 
-        {/* Settings */}
+        {/* User Account / Profile Avatar (from Glass Mockup) */}
+        <button
+          className="activity-btn"
+          title="User Account"
+        >
+          <User size={18} strokeWidth={1.8} />
+        </button>
+
+        {/* Settings Gear (from Glass Mockup) */}
         <button
           className={`activity-btn ${activeTab === "settings" ? "active" : ""}`}
           onClick={() => onSelectTab("settings")}
           title="Settings"
         >
-          <Settings size={18} />
-          {activeTab === "settings" && <div className="activity-active-indicator" />}
+          <Settings size={18} strokeWidth={1.8} />
         </button>
       </div>
     </nav>

@@ -7,7 +7,7 @@ import { keymap } from "@codemirror/view";
 import { indentWithTab } from "@codemirror/commands";
 import { searchKeymap } from "@codemirror/search";
 import { oneDark } from "@codemirror/theme-one-dark";
-import { Zap, FolderOpen, Save, Sparkles } from "lucide-react";
+import { Zap, FolderOpen, Sparkles, ChevronRight } from "lucide-react";
 
 interface EditorAreaProps {
   activeTab?: EditorTab;
@@ -34,7 +34,6 @@ export const EditorArea: React.FC<EditorAreaProps> = ({
   const languageCompartmentRef = useRef(new Compartment());
   const themeCompartmentRef = useRef(new Compartment());
 
-  // Keep callback references fresh without recreating editor view
   const onContentChangeRef = useRef(onContentChange);
   onContentChangeRef.current = onContentChange;
   const onCursorChangeRef = useRef(onCursorChange);
@@ -42,7 +41,7 @@ export const EditorArea: React.FC<EditorAreaProps> = ({
   const onSaveRef = useRef(onSave);
   onSaveRef.current = onSave;
 
-  // Initialize or update CodeMirror view when active tab changes
+  // Initialize CodeMirror view
   useEffect(() => {
     if (!editorContainerRef.current || !activeTab) {
       if (editorViewRef.current) {
@@ -54,7 +53,6 @@ export const EditorArea: React.FC<EditorAreaProps> = ({
 
     const langInfo = detectLanguage(activeTab.name);
 
-    // Custom save keybinding
     const saveKeybinding = keymap.of([
       {
         key: "Mod-s",
@@ -67,7 +65,6 @@ export const EditorArea: React.FC<EditorAreaProps> = ({
       ...searchKeymap,
     ]);
 
-    // Theme extension
     const themeExt = theme === "dark" ? oneDark : [];
 
     const state = EditorState.create({
@@ -94,17 +91,28 @@ export const EditorArea: React.FC<EditorAreaProps> = ({
         EditorView.theme({
           "&": {
             height: "100%",
-            fontSize: "13px",
+            fontSize: "13.5px",
             fontFamily: "var(--font-mono)",
             backgroundColor: "transparent",
           },
           ".cm-content": {
             caretColor: "var(--accent-color)",
+            padding: "8px 0",
           },
           ".cm-gutters": {
-            backgroundColor: "var(--bg-editor)",
-            borderColor: "var(--border-subtle)",
+            backgroundColor: "transparent",
+            borderRight: "none",
             color: "var(--text-muted)",
+            paddingRight: "8px",
+          },
+          ".cm-activeLine": {
+            backgroundColor: "rgba(56, 189, 248, 0.16) !important",
+            borderLeft: "3px solid #38bdf8",
+          },
+          ".cm-activeLineGutter": {
+            backgroundColor: "rgba(56, 189, 248, 0.2) !important",
+            color: "#38bdf8 !important",
+            fontWeight: "700",
           },
         }),
       ],
@@ -127,7 +135,6 @@ export const EditorArea: React.FC<EditorAreaProps> = ({
     };
   }, [activeTab?.id]);
 
-  // Update theme dynamically
   useEffect(() => {
     if (!editorViewRef.current) return;
     editorViewRef.current.dispatch({
@@ -137,87 +144,24 @@ export const EditorArea: React.FC<EditorAreaProps> = ({
     });
   }, [theme]);
 
-  // If no tab is open, show modern welcome screen
+  // Welcome state if no tab is open
   if (!activeTab) {
     return (
-      <div
-        className="app-editor-area"
-        style={{
-          alignItems: "center",
-          justifyContent: "center",
-          textAlign: "center",
-          padding: "32px",
-          color: "var(--text-secondary)",
-        }}
-      >
+      <div className="app-editor-area welcome-center">
         <div style={{ maxWidth: 420 }}>
-          <div
-            style={{
-              width: 52,
-              height: 52,
-              borderRadius: 14,
-              background: "var(--accent-gradient)",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              margin: "0 auto 16px auto",
-              boxShadow: "0 8px 24px rgba(59, 130, 246, 0.3)",
-            }}
-          >
+          <div className="welcome-glow-icon">
             <Zap size={28} color="#ffffff" />
           </div>
-
-          <h2 style={{ fontSize: 20, fontWeight: 600, color: "var(--text-main)", marginBottom: 8 }}>
+          <h2 style={{ fontSize: 20, fontWeight: 700, color: "var(--text-main)", marginBottom: 8 }}>
             Nozel Code
           </h2>
           <p style={{ fontSize: 13, color: "var(--text-secondary)", marginBottom: 24, lineHeight: 1.5 }}>
-            Fast, native, ultra-light code editor built for macOS Apple Silicon.
-            Integrated with Claude Code CLI (Claude Pro/Max) with zero memory bloat.
+            Editor kode desktop ultra-ringan macOS Apple Silicon dengan pendamping Claude Pro CLI.
           </p>
-
-          <div
-            style={{
-              display: "flex",
-              flexDirection: "column",
-              gap: 10,
-              background: "var(--bg-surface)",
-              borderRadius: 8,
-              padding: 16,
-              border: "1px solid var(--border-subtle)",
-              textAlign: "left",
-              fontSize: 12,
-            }}
-          >
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-              <span>Open Project Folder</span>
-              <kbd style={{ background: "var(--bg-editor)", padding: "2px 6px", borderRadius: 4, border: "1px solid var(--border-subtle)", fontFamily: "var(--font-mono)" }}>
-                Cmd + O
-              </kbd>
-            </div>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-              <span>Save Active File</span>
-              <kbd style={{ background: "var(--bg-editor)", padding: "2px 6px", borderRadius: 4, border: "1px solid var(--border-subtle)", fontFamily: "var(--font-mono)" }}>
-                Cmd + S
-              </kbd>
-            </div>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-              <span>Search in Code</span>
-              <kbd style={{ background: "var(--bg-editor)", padding: "2px 6px", borderRadius: 4, border: "1px solid var(--border-subtle)", fontFamily: "var(--font-mono)" }}>
-                Cmd + F
-              </kbd>
-            </div>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-              <span>Claude Code CLI Companion</span>
-              <kbd style={{ background: "var(--bg-editor)", padding: "2px 6px", borderRadius: 4, border: "1px solid var(--border-subtle)", fontFamily: "var(--font-mono)" }}>
-                Top Right Sparkle
-              </kbd>
-            </div>
-          </div>
-
-          <div style={{ marginTop: 24, display: "flex", gap: 10, justifyContent: "center" }}>
+          <div style={{ display: "flex", gap: 10, justifyContent: "center" }}>
             <button className="btn-primary" onClick={onOpenFolder}>
               <FolderOpen size={14} />
-              Open Folder
+              Buka Folder
             </button>
             <button className="btn-secondary" onClick={onToggleClaude}>
               <Sparkles size={14} color="var(--accent-color)" />
@@ -229,39 +173,64 @@ export const EditorArea: React.FC<EditorAreaProps> = ({
     );
   }
 
-  const langInfo = detectLanguage(activeTab.name);
+  // Parse path breadcrumbs like mockup: Nozel Code > src > app > index.tsx
+  const pathParts = activeTab.path.split("/").filter(Boolean);
+  const displayParts = pathParts.length > 3 ? pathParts.slice(-3) : pathParts;
+
+  // Generate minimap line representations
+  const codeLines = activeTab.content.split("\n").slice(0, 45);
 
   return (
     <div className="app-editor-area">
-      <div className="editor-breadcrumb">
-        <div className="breadcrumb-path" title={activeTab.path}>
-          <span>{activeTab.path}</span>
-          {activeTab.isDirty && (
-            <span style={{ color: "var(--dirty-indicator)", fontWeight: 600 }}>
-              (Unsaved)
-            </span>
-          )}
-        </div>
-
-        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <span style={{ fontSize: 11, color: "var(--text-muted)" }}>
-            {langInfo.name}
-          </span>
-          {activeTab.isDirty && (
-            <button
-              className="btn-primary"
-              style={{ padding: "2px 8px", fontSize: 11 }}
-              onClick={onSave}
-              title="Save File (Cmd+S)"
-            >
-              <Save size={12} />
-              Save
-            </button>
-          )}
-        </div>
+      {/* 1. Breadcrumbs Bar (Exact from Mockup) */}
+      <div className="editor-breadcrumbs-bar">
+        <span className="breadcrumb-root">Nozel Code</span>
+        <ChevronRight size={12} className="breadcrumb-arrow" />
+        {displayParts.slice(0, -1).map((part, idx) => (
+          <React.Fragment key={idx}>
+            <span className="breadcrumb-dir">{part}</span>
+            <ChevronRight size={12} className="breadcrumb-arrow" />
+          </React.Fragment>
+        ))}
+        <span className="breadcrumb-active-file">
+          <span style={{ color: "#38bdf8", marginRight: 4 }}>⚛</span>
+          {activeTab.name}
+        </span>
       </div>
 
-      <div className="editor-code-container" ref={editorContainerRef} />
+      {/* 2. Main Editor Split with Minimap on Right */}
+      <div className="editor-split-layout">
+        <div className="editor-code-container" ref={editorContainerRef} />
+
+        {/* Code Minimap (Exact from Mockup on the right) */}
+        <aside className="editor-minimap-strip" aria-hidden="true">
+          <div className="minimap-viewport-slider" />
+          <div className="minimap-code-lines">
+            {codeLines.map((line, idx) => {
+              const len = Math.min(Math.max(line.trim().length * 2.2, 8), 90);
+              const isComment = line.trim().startsWith("//");
+              const isImport = line.trim().startsWith("import") || line.trim().startsWith("export");
+              const isSpecial = line.trim().startsWith("return") || line.trim().startsWith("const");
+
+              let color = "rgba(255, 255, 255, 0.22)";
+              if (isComment) color = "rgba(100, 116, 139, 0.5)";
+              else if (isImport) color = "rgba(244, 63, 94, 0.6)";
+              else if (isSpecial) color = "rgba(56, 189, 248, 0.6)";
+
+              return (
+                <div
+                  key={idx}
+                  className="minimap-line"
+                  style={{
+                    width: `${len}%`,
+                    backgroundColor: color,
+                  }}
+                />
+              );
+            })}
+          </div>
+        </aside>
+      </div>
     </div>
   );
 };
