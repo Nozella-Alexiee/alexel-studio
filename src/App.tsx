@@ -7,6 +7,9 @@ import {
   SystemFootprint,
   ThemeMode,
   UnsavedConfirmState,
+  GitStatus,
+  GitPushResult,
+  CodeProblem,
 } from "./types";
 import {
   openFolderDialog,
@@ -20,10 +23,14 @@ import {
   launchClaudeTerminal,
   runClaudeCliPrint,
   getSystemFootprint,
+  gitGetStatus,
+  gitAutoCommitAndPush,
 } from "./services/tauriService";
 import { TitleBar } from "./components/TitleBar";
 import { ActivityBar, ActivityTab } from "./components/ActivityBar";
 import { FileTree } from "./components/FileTree";
+import { GitBotPanel } from "./components/GitBotPanel";
+import { ProblemsPanel } from "./components/ProblemsPanel";
 import { TabBar } from "./components/TabBar";
 import { EditorArea } from "./components/EditorArea";
 import { StatusBar } from "./components/StatusBar";
@@ -46,6 +53,18 @@ export const App: React.FC = () => {
   const [claudeInfo, setClaudeInfo] = useState<ClaudeCliInfo | undefined>(undefined);
   const [footprint, setFootprint] = useState<SystemFootprint | undefined>(undefined);
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
+
+  // Git Bot states
+  const [gitStatus, setGitStatus] = useState<GitStatus | undefined>(undefined);
+  const [autoPushEnabled, setAutoPushEnabled] = useState<boolean>(() => {
+    return localStorage.getItem("nozel_auto_git") === "true";
+  });
+  const [isGitLoading, setIsGitLoading] = useState<boolean>(false);
+
+  // Diagnostics & Code Linter states
+  const [activeProblems, setActiveProblems] = useState<CodeProblem[]>([]);
+  const [isProblemsPanelOpen, setIsProblemsPanelOpen] = useState<boolean>(false);
+  const [jumpToLine, setJumpToLine] = useState<{ line: number; col: number; token: number } | undefined>(undefined);
 
   const [unsavedState, setUnsavedState] = useState<UnsavedConfirmState>({
     isOpen: false,
@@ -89,6 +108,17 @@ export const App: React.FC = () => {
     }
   }, []);
 
+  // Git status refresh
+  const refreshGitStatus = useCallback(async () => {
+    if (!projectPath) return;
+    try {
+      const status = await gitGetStatus(projectPath);
+      setGitStatus(status);
+    } catch (err) {
+      console.warn("Git status refresh error:", err);
+    }
+  }, [projectPath]);
+
   useEffect(() => {
     refreshClaudeCli();
     refreshFootprint();
@@ -100,12 +130,18 @@ export const App: React.FC = () => {
     return () => clearInterval(interval);
   }, [refreshClaudeCli, refreshFootprint]);
 
+  useEffect(() => {
+    if (projectPath) {
+      refreshGitStatus();
+    }
+  }, [projectPath, refreshGitStatus]);
+
   // Apply theme to document attribute
   useEffect(() => {
     document.documentElement.setAttribute("data-theme", theme);
   }, [theme]);
 
-  // Support preview states via URL parameters (e.g. ?view=editor, ?view=claude, ?view=light, ?view=unsaved, ?view=newfile)
+  // Support preview states via URL parameters (e.g. ?view=editor, ?view=claude, ?view=light, ?view=git, ?view=problems, ?view=unsaved)
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const view = params.get("view");
@@ -212,10 +248,30 @@ export const App: React.FC = () => {
       setTabs([tab1, tab2, tab3, tab4, tab5]);
       setActiveTabId(tab1.id);
 
+      // Populate mock Git status for demo
+      setGitStatus({
+        is_git_repo: true,
+        branch: "main",
+        has_changes: true,
+        modified_count: 2,
+        untracked_count: 1,
+        changed_files: ["src/services/index.tsx", "style.css", "analyze.py"],
+      });
+
       if (view === "claude") {
         setIsClaudePanelOpen(true);
       } else if (view === "light") {
         setTheme("light");
+      } else if (view === "git") {
+        setActivityTab("git");
+        setAutoPushEnabled(true);
+      } else if (view === "problems") {
+        setIsProblemsPanelOpen(true);
+        setActiveProblems([
+          { line: 12, col: 5, message: "Unmatched opening bracket '{'", severity: "error" },
+          { line: 24, col: 18, message: "Unterminated string literal", severity: "error" },
+          { line: 36, col: 2, message: "Expected closing tag </header>", severity: "warning" },
+        ]);
       } else if (view === "unsaved") {
         setUnsavedState({
           isOpen: true,
@@ -239,6 +295,7 @@ export const App: React.FC = () => {
     try {
       const entries = await listDirectory(dirPath);
       setFileTree(entries);
+      await refreshGitStatus();
     } catch (err) {
       addToast("error", `Failed to open directory: ${String(err)}`);
     }
@@ -358,7 +415,33 @@ export const App: React.FC = () => {
     );
   };
 
-  // Save tab content
+  // Manual or automatic commit and push handler
+  const handleCommitAndPush = async (customMessage?: string): Promise<GitPushResult | undefined> => {
+    if (!projectPath) {
+      addToast("info", "Buka folder proyek terlebih dahulu.");
+      return undefined;
+    }
+
+    setIsGitLoading(true);
+    try {
+      const res = await gitAutoCommitAndPush(projectPath, customMessage);
+      if (res.success) {
+        addToast("success", res.message);
+        setMascotMessage("Git Push berhasil ke GitHub! 🚀");
+      } else {
+        addToast(res.message.includes("nothing to commit") ? "info" : "error", res.message);
+      }
+      await refreshGitStatus();
+      return res;
+    } catch (err) {
+      addToast("error", `Git commit/push error: ${String(err)}`);
+      return undefined;
+    } finally {
+      setIsGitLoading(false);
+    }
+  };
+
+  // Save tab content (Triggers Auto Git Bot if enabled)
   const handleSaveTab = async (tabToSave?: EditorTab) => {
     const target = tabToSave || tabs.find((t) => t.id === activeTabId);
     if (!target) return;
@@ -373,7 +456,30 @@ export const App: React.FC = () => {
         )
       );
       addToast("success", `Saved ${target.name}`);
-      setMascotMessage("File tersimpan rapi! 🐧🎉");
+      setMascotMessage("File tersimpan rapi! 🐧✨");
+
+      // Auto Git Bot: Automatic commit & push on Cmd+S
+      if (autoPushEnabled && projectPath) {
+        setIsGitLoading(true);
+        gitAutoCommitAndPush(projectPath, `Auto-save: update ${target.name}`)
+          .then((res) => {
+            if (res.success) {
+              addToast("success", `Git Bot: Pushed ${target.name} ke GitHub 🚀`);
+              setMascotMessage("Git Bot: Auto push ke GitHub selesai! 🚀");
+            } else if (!res.message.includes("nothing to commit")) {
+              addToast("info", `Git Bot: ${res.message}`);
+            }
+            refreshGitStatus();
+          })
+          .catch((err) => {
+            console.warn("Auto git bot error:", err);
+          })
+          .finally(() => {
+            setIsGitLoading(false);
+          });
+      } else {
+        refreshGitStatus();
+      }
     } catch (err) {
       addToast("error", `Failed to save ${target.name}: ${String(err)}`);
     }
@@ -447,7 +553,6 @@ export const App: React.FC = () => {
         await createFile(fullPath);
         addToast("success", `Created file ${name}`);
         await handleRefreshTree();
-        // Open file directly in editor
         handleSelectFile({
           name,
           path: fullPath,
@@ -474,7 +579,6 @@ export const App: React.FC = () => {
     try {
       await deleteEntry(entry.path);
       addToast("info", `Deleted ${entry.name}`);
-      // Close tab if open
       if (tabs.some((t) => t.id === entry.path)) {
         closeTabDirectly(entry.path);
       }
@@ -505,14 +609,16 @@ export const App: React.FC = () => {
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [activeTabId, tabs]);
+  }, [activeTabId, tabs, autoPushEnabled, projectPath]);
 
   const activeTab = tabs.find((t) => t.id === activeTabId);
   const projectName = projectPath ? projectPath.split("/").pop() : undefined;
+  const errorCount = activeProblems.filter((p) => p.severity === "error").length;
+  const warningCount = activeProblems.filter((p) => p.severity === "warning").length;
 
   return (
     <div className="app-container">
-      {/* Title Bar */}
+      {/* Title Bar (macOS Native Studio) */}
       <TitleBar
         projectName={projectName}
         activeFileName={activeTab?.name}
@@ -528,14 +634,17 @@ export const App: React.FC = () => {
 
       {/* Main Area */}
       <div className="app-main">
-        {/* Activity Bar (VS Code Style) */}
+        {/* Activity Bar */}
         <ActivityBar
           activeTab={activityTab}
           onSelectTab={(tab) => {
-            setActivityTab(tab);
             if (tab === "claude") {
-              setIsClaudePanelOpen(true);
-              setMascotMessage("Claude Pro aktif mendampingi! ⚡");
+              setIsClaudePanelOpen((prev) => !prev);
+              setMascotMessage("Claude Pro siap membantumu! 🚀");
+            } else if (tab === "problems") {
+              setIsProblemsPanelOpen((prev) => !prev);
+            } else {
+              setActivityTab(tab);
             }
           }}
           isClaudeOpen={isClaudePanelOpen}
@@ -549,26 +658,43 @@ export const App: React.FC = () => {
           onToggleTheme={() =>
             setTheme((prev) => (prev === "dark" ? "light" : "dark"))
           }
+          errorCount={errorCount}
+          warningCount={warningCount}
         />
 
-        {/* Sidebar File Tree */}
-        <FileTree
-          entries={fileTree}
-          projectPath={projectPath}
-          activeFilePath={activeTab?.path}
-          onSelectFile={handleSelectFile}
-          onToggleDir={handleToggleDir}
-          onOpenFolder={handleOpenFolder}
-          onNewFile={handlePromptNewFile}
-          onNewFolder={handlePromptNewFolder}
-          onRefresh={handleRefreshTree}
-          onDeleteEntry={handleDeleteEntry}
-          mascotMessage={mascotMessage}
-          onClearMascotMessage={() => setMascotMessage(null)}
-        />
+        {/* Sidebar: Explorer or Git Bot Panel */}
+        {activityTab === "git" ? (
+          <GitBotPanel
+            gitStatus={gitStatus}
+            autoPushEnabled={autoPushEnabled}
+            onToggleAutoPush={(enabled) => {
+              setAutoPushEnabled(enabled);
+              localStorage.setItem("nozel_auto_git", String(enabled));
+              addToast("info", enabled ? "Auto Git Bot ON: Cmd+S otomatis Push ke GitHub" : "Auto Git Bot OFF");
+            }}
+            onRefresh={refreshGitStatus}
+            onCommitAndPush={handleCommitAndPush}
+            isLoading={isGitLoading}
+          />
+        ) : (
+          <FileTree
+            entries={fileTree}
+            projectPath={projectPath}
+            activeFilePath={activeTab?.path}
+            onSelectFile={handleSelectFile}
+            onToggleDir={handleToggleDir}
+            onOpenFolder={handleOpenFolder}
+            onNewFile={handlePromptNewFile}
+            onNewFolder={handlePromptNewFolder}
+            onRefresh={handleRefreshTree}
+            onDeleteEntry={handleDeleteEntry}
+            mascotMessage={mascotMessage}
+            onClearMascotMessage={() => setMascotMessage(null)}
+          />
+        )}
 
-        {/* Editor Area */}
-        <div style={{ flex: 1, display: "flex", flexDirection: "column", minWidth: 0 }}>
+        {/* Center: Tabs + Editor + Bottom Problems Panel */}
+        <div style={{ flex: 1, display: "flex", flexDirection: "column", minWidth: 0, overflow: "hidden" }}>
           <TabBar
             tabs={tabs}
             activeTabId={activeTabId}
@@ -584,7 +710,21 @@ export const App: React.FC = () => {
             onSave={() => handleSaveTab()}
             onOpenFolder={handleOpenFolder}
             onToggleClaude={() => setIsClaudePanelOpen(true)}
+            onDiagnosticsChange={(probs) => setActiveProblems(probs)}
+            jumpToLine={jumpToLine}
           />
+
+          {/* Clickable Problems & Syntax Linter Panel */}
+          {isProblemsPanelOpen && (
+            <ProblemsPanel
+              problems={activeProblems}
+              activeFileName={activeTab?.name}
+              onSelectProblem={(line, col) => {
+                setJumpToLine({ line, col, token: Date.now() });
+              }}
+              onClose={() => setIsProblemsPanelOpen(false)}
+            />
+          )}
         </div>
 
         {/* Claude Code Companion Drawer */}
@@ -610,6 +750,12 @@ export const App: React.FC = () => {
         footprint={footprint}
         claudeInfo={claudeInfo}
         onToggleClaude={() => setIsClaudePanelOpen((prev) => !prev)}
+        errorCount={errorCount}
+        warningCount={warningCount}
+        onToggleProblems={() => setIsProblemsPanelOpen((prev) => !prev)}
+        gitStatus={gitStatus}
+        autoPushEnabled={autoPushEnabled}
+        onToggleGit={() => setActivityTab((prev) => (prev === "git" ? "explorer" : "git"))}
       />
 
       {/* Modals & Dialogs */}

@@ -1,12 +1,18 @@
 import React from "react";
-import { ClaudeCliInfo, EditorTab, SystemFootprint } from "../types";
-import { Sparkles, GitBranch, Cpu, Activity } from "lucide-react";
+import { ClaudeCliInfo, EditorTab, SystemFootprint, GitStatus } from "../types";
+import { Sparkles, GitBranch, Cpu, AlertCircle, AlertTriangle, Zap } from "lucide-react";
 
 interface StatusBarProps {
   activeTab?: EditorTab;
   footprint?: SystemFootprint;
   claudeInfo?: ClaudeCliInfo;
   onToggleClaude: () => void;
+  errorCount?: number;
+  warningCount?: number;
+  onToggleProblems?: () => void;
+  gitStatus?: GitStatus;
+  autoPushEnabled?: boolean;
+  onToggleGit?: () => void;
 }
 
 export const StatusBar: React.FC<StatusBarProps> = ({
@@ -14,60 +20,86 @@ export const StatusBar: React.FC<StatusBarProps> = ({
   footprint,
   claudeInfo,
   onToggleClaude,
+  errorCount = 0,
+  warningCount = 0,
+  onToggleProblems,
+  gitStatus,
+  autoPushEnabled = false,
+  onToggleGit,
 }) => {
   return (
     <footer className="app-statusbar-cyber">
-      {/* Left Sci-Fi Telemetry & Git Branch */}
+      {/* Left: Git Branch & Diagnostics Problems */}
       <div className="statusbar-left">
-        <div className="cyber-pill-branch" title="Git Matrix Branch: main">
-          <GitBranch size={11} color="#73daca" />
-          <span>BRANCH: main</span>
+        {/* Git Branch & Auto Bot Status */}
+        <div
+          className="cyber-pill-branch"
+          onClick={onToggleGit}
+          title={`Git Branch: ${gitStatus?.branch || "main"} (${autoPushEnabled ? "Auto Git Bot ON" : "Manual Push"}) - Klik untuk buka Source Control`}
+        >
+          <GitBranch size={11} className="text-emerald-400" />
+          <span>{gitStatus?.branch || "main"}</span>
+          {autoPushEnabled && (
+            <span className="flex items-center gap-1 text-[9.5px] text-emerald-300 ml-1">
+              <Zap size={9} />
+              <span>Bot</span>
+            </span>
+          )}
         </div>
-        <div className="cyber-status-item">
-          <span className="telemetry-tag err">ERR: 0</span>
-          <span className="telemetry-tag warn">WARN: 0</span>
+
+        {/* Problems & Diagnostics Clickable Pill */}
+        <div
+          className="cyber-status-item clickable"
+          onClick={onToggleProblems}
+          title="Toggle Problems & Syntax Diagnostics Panel"
+        >
+          <span className="telemetry-tag err">
+            <AlertCircle size={10} />
+            <span>{errorCount}</span>
+          </span>
+          <span className="telemetry-tag warn">
+            <AlertTriangle size={10} />
+            <span>{warningCount}</span>
+          </span>
         </div>
       </div>
 
-      {/* Right Sci-Fi Metrics & Memory Telemetry */}
+      {/* Right: Telemetry, Memory & Claude Companion */}
       <div className="statusbar-right">
         <div className="cyber-status-item cursor-pos">
-          <span>LN {activeTab?.line || 24} : COL {activeTab?.col || 18}</span>
+          <span>Ln {activeTab?.line || 1}, Col {activeTab?.col || 1}</span>
         </div>
         <div className="cyber-status-item spaces-tag">
-          <span>SPACES: 4</span>
+          <span>Spaces: 2</span>
         </div>
         <div className="cyber-status-item encoding-tag">
-          <span>UTF-8 // LF</span>
+          <span>UTF-8</span>
         </div>
         <div className="cyber-status-item lang-tag">
-          <span>{activeTab?.language?.toUpperCase() || "TSX"}</span>
+          <span>{activeTab?.language?.toUpperCase() || "PLAINTEXT"}</span>
         </div>
 
-        {/* Futuristic RAM Telemetry Chip (Vibrant Lime) */}
+        {/* M1 RAM Telemetry Chip */}
         <div
           className="cyber-pill-memory"
-          title={`Nozel Code RAM: ${footprint?.app_memory_mb || 38.4} MB vs VS Code ~650 MB (Zero Bloat)`}
+          title={`Nozel Code RAM Footprint: ${footprint ? `${Math.round(footprint.app_memory_mb)} MB` : "38 MB"} vs VS Code ~650 MB`}
         >
-          <Cpu size={11} color="#9ece6a" />
-          <span>MEM: {footprint ? `${Math.round(footprint.app_memory_mb)} MB` : "38 MB"}</span>
+          <Cpu size={11} />
+          <span>{footprint ? `${Math.round(footprint.app_memory_mb)} MB` : "38 MB"}</span>
         </div>
 
-        {/* Holographic Claude Pro Neural Agent Pill (Sunset Gradient) */}
+        {/* Claude Pro Companion Pill */}
         <button
           className="cyber-pill-claude"
           onClick={onToggleClaude}
-          title={claudeInfo?.installed ? `Claude Pro CLI (${claudeInfo.version || "Active"})` : "Claude Neural Companion"}
+          title={claudeInfo?.installed ? `Claude Pro CLI (${claudeInfo.version || "Active"})` : "Claude Companion"}
         >
-          <Sparkles size={11} className="quantum-sparkle" />
-          <span>NEURAL CLAUDE PRO</span>
+          <Sparkles size={11} />
+          <span>Claude Pro</span>
         </button>
-
-        <div className="cyber-status-item live-pulse" title="System Latency: 0.2ms">
-          <Activity size={10} color="#7dcfff" />
-          <span>0.2ms</span>
-        </div>
       </div>
     </footer>
   );
 };
+
+export default StatusBar;

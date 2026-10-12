@@ -52,3 +52,28 @@ export interface UnsavedConfirmState {
   onSaveAndClose?: () => void;
   onDiscardAndClose?: () => void;
 }
+
+export interface GitStatus {
+  is_git_repo: boolean;
+  branch: string;
+  has_changes: boolean;
+  modified_count: number;
+  untracked_count: number;
+  changed_files: string[];
+}
+
+export interface GitPushResult {
+  success: boolean;
+  branch: string;
+  commit_hash?: string;
+  message: string;
+  pushed_to_remote: boolean;
+}
+
+export interface CodeProblem {
+  line: number;
+  col: number;
+  message: string;
+  severity: "error" | "warning" | "info";
+  source?: string;
+}

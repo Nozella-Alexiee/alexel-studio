@@ -1,6 +1,6 @@
 import { invoke } from "@tauri-apps/api/core";
 import { open } from "@tauri-apps/plugin-dialog";
-import { ClaudeCliInfo, FileEntry, SystemFootprint } from "../types";
+import { ClaudeCliInfo, FileEntry, SystemFootprint, GitStatus, GitPushResult } from "../types";
 
 export const isTauriEnvironment = (): boolean => {
   return typeof window !== "undefined" && "__TAURI_INTERNALS__" in window;
@@ -269,5 +269,40 @@ export async function getSystemFootprint(): Promise<SystemFootprint> {
     app_uptime_secs: 120,
     vscode_baseline_mb: 650.0,
     savings_percentage: 94.1,
+  };
+}
+
+export async function gitGetStatus(projectDir: string): Promise<GitStatus> {
+  if (isTauriEnvironment()) {
+    return await invoke<GitStatus>("git_get_status", { projectDir });
+  }
+
+  return {
+    is_git_repo: true,
+    branch: "main",
+    has_changes: false,
+    modified_count: 0,
+    untracked_count: 0,
+    changed_files: [],
+  };
+}
+
+export async function gitAutoCommitAndPush(
+  projectDir: string,
+  commitMessage?: string
+): Promise<GitPushResult> {
+  if (isTauriEnvironment()) {
+    return await invoke<GitPushResult>("git_auto_commit_and_push", {
+      projectDir,
+      commitMessage: commitMessage || null,
+    });
+  }
+
+  return {
+    success: true,
+    branch: "main",
+    commit_hash: "a1b2c3d",
+    message: "Committed and pushed to GitHub origin/main [Auto Git Bot active]",
+    pushed_to_remote: true,
   };
 }

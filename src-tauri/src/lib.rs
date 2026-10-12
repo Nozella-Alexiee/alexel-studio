@@ -33,6 +33,25 @@ pub struct SystemFootprint {
     pub savings_percentage: f64,
 }
 
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct GitStatus {
+    pub is_git_repo: bool,
+    pub branch: String,
+    pub has_changes: bool,
+    pub modified_count: usize,
+    pub untracked_count: usize,
+    pub changed_files: Vec<String>,
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct GitPushResult {
+    pub success: bool,
+    pub branch: String,
+    pub commit_hash: Option<String>,
+    pub message: String,
+    pub pushed_to_remote: bool,
+}
+
 /// List files and directories inside a target directory.
 /// Excludes heavy directories like .git and node_modules by default to keep Nozel Code fast on 8GB RAM.
 #[tauri::command]
@@ -379,6 +398,157 @@ fn get_system_footprint() -> SystemFootprint {
     }
 }
 
+/// Query live Git repository status (branch, modified/untracked files)
+#[tauri::command]
+fn git_get_status(project_dir: String) -> Result<GitStatus, String> {
+    let p = Path::new(&project_dir);
+    if !p.exists() || !p.join(".git").exists() {
+        return Ok(GitStatus {
+            is_git_repo: false,
+            branch: "none".to_string(),
+            has_changes: false,
+            modified_count: 0,
+            untracked_count: 0,
+            changed_files: Vec::new(),
+        });
+    }
+
+    // Branch detection
+    let branch_out = Command::new("git")
+        .current_dir(p)
+        .args(["rev-parse", "--abbrev-ref", "HEAD"])
+        .output();
+    let branch = match branch_out {
+        Ok(out) if out.status.success() => String::from_utf8_lossy(&out.stdout).trim().to_string(),
+        _ => "main".to_string(),
+    };
+
+    // Status check
+    let status_out = Command::new("git")
+        .current_dir(p)
+        .args(["status", "--porcelain"])
+        .output()
+        .map_err(|e| format!("Failed to run git status: {}", e))?;
+
+    let status_str = String::from_utf8_lossy(&status_out.stdout);
+    let mut modified_count = 0;
+    let mut untracked_count = 0;
+    let mut changed_files = Vec::new();
+
+    for line in status_str.lines() {
+        if line.len() > 3 {
+            let code = &line[0..2];
+            let file = line[3..].trim().to_string();
+            if code.contains('?') {
+                untracked_count += 1;
+            } else {
+                modified_count += 1;
+            }
+            changed_files.push(file);
+        }
+    }
+
+    Ok(GitStatus {
+        is_git_repo: true,
+        branch,
+        has_changes: !changed_files.is_empty(),
+        modified_count,
+        untracked_count,
+        changed_files,
+    })
+}
+
+/// Auto-Commit and Push Git Bot (Cmd+S integration & automated push to GitHub)
+#[tauri::command]
+fn git_auto_commit_and_push(project_dir: String, commit_message: Option<String>) -> Result<GitPushResult, String> {
+    let p = Path::new(&project_dir);
+    if !p.exists() || !p.join(".git").exists() {
+        return Err("Project directory is not an initialized Git repository.".to_string());
+    }
+
+    // 1. Stage all changes
+    let add_out = Command::new("git")
+        .current_dir(p)
+        .args(["add", "-A"])
+        .output()
+        .map_err(|e| format!("Failed to run git add: {}", e))?;
+    if !add_out.status.success() {
+        return Err(format!("git add failed: {}", String::from_utf8_lossy(&add_out.stderr)));
+    }
+
+    // 2. Commit message
+    let msg = commit_message.unwrap_or_else(|| {
+        let ts = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .map(|d| d.as_secs())
+            .unwrap_or(0);
+        format!("auto: sync changes from Nozel Code ({})", ts)
+    });
+
+    let _commit_out = Command::new("git")
+        .current_dir(p)
+        .args(["commit", "-m", &msg])
+        .output()
+        .map_err(|e| format!("Failed to run git commit: {}", e))?;
+
+    // Current branch
+    let branch = Command::new("git")
+        .current_dir(p)
+        .args(["rev-parse", "--abbrev-ref", "HEAD"])
+        .output()
+        .map(|o| String::from_utf8_lossy(&o.stdout).trim().to_string())
+        .unwrap_or_else(|_| "main".to_string());
+
+    // Commit hash
+    let hash = Command::new("git")
+        .current_dir(p)
+        .args(["rev-parse", "--short", "HEAD"])
+        .output()
+        .ok()
+        .map(|o| String::from_utf8_lossy(&o.stdout).trim().to_string());
+
+    // 3. Check for remote origin
+    let remote_check = Command::new("git")
+        .current_dir(p)
+        .args(["remote"])
+        .output();
+
+    let mut pushed = false;
+    let mut details = format!("Committed locally [{}]: {}", hash.as_deref().unwrap_or("ok"), msg);
+
+    if let Ok(rem_out) = remote_check {
+        let rem_str = String::from_utf8_lossy(&rem_out.stdout);
+        if rem_str.trim().contains("origin") {
+            let push_out = Command::new("git")
+                .current_dir(p)
+                .args(["push", "origin", &branch])
+                .output();
+
+            match push_out {
+                Ok(p_out) if p_out.status.success() => {
+                    pushed = true;
+                    details = format!("Committed and pushed to origin/{} [commit {}]", branch, hash.as_deref().unwrap_or(""));
+                }
+                Ok(p_out) => {
+                    let err = String::from_utf8_lossy(&p_out.stderr);
+                    details = format!("Committed locally. Remote notice: {}", err.trim());
+                }
+                Err(e) => {
+                    details = format!("Committed locally. Push error: {}", e);
+                }
+            }
+        }
+    }
+
+    Ok(GitPushResult {
+        success: true,
+        branch,
+        commit_hash: hash,
+        message: details,
+        pushed_to_remote: pushed,
+    })
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     APP_START_TIME.get_or_init(Instant::now);
@@ -397,7 +567,9 @@ pub fn run() {
             check_claude_cli,
             launch_claude_terminal,
             run_claude_cli_print,
-            get_system_footprint
+            get_system_footprint,
+            git_get_status,
+            git_auto_commit_and_push
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
@@ -487,5 +659,15 @@ mod tests {
         assert!(footprint.app_memory_mb >= 0.0);
         assert!(footprint.vscode_baseline_mb > 0.0);
         assert!(footprint.savings_percentage >= 0.0);
+    }
+
+    #[test]
+    fn test_git_status_non_repo() {
+        let temp_dir = std::env::temp_dir().join("nozel_non_git");
+        let _ = fs::create_dir_all(&temp_dir);
+        let res = git_get_status(temp_dir.to_string_lossy().to_string()).unwrap();
+        assert!(!res.is_git_repo);
+        assert_eq!(res.branch, "none");
+        let _ = fs::remove_dir(temp_dir);
     }
 }

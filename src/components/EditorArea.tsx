@@ -7,8 +7,11 @@ import { keymap } from "@codemirror/view";
 import { indentWithTab } from "@codemirror/commands";
 import { searchKeymap } from "@codemirror/search";
 import { getSyntaxTheme } from "../utils/syntaxTheme";
+import { createCodeLinter } from "../utils/codeLinter";
+import { createCodeAutocomplete } from "../utils/codeAutocomplete";
 import { Cpu, Terminal, Sparkles, ChevronRight } from "lucide-react";
 import { FileIcon } from "./FileIcon";
+import { CodeProblem } from "../types";
 
 interface EditorAreaProps {
   activeTab?: EditorTab;
@@ -18,6 +21,8 @@ interface EditorAreaProps {
   onSave: () => void;
   onOpenFolder: () => void;
   onToggleClaude: () => void;
+  onDiagnosticsChange?: (problems: CodeProblem[]) => void;
+  jumpToLine?: { line: number; col: number; token: number };
 }
 
 export const EditorArea: React.FC<EditorAreaProps> = ({
@@ -28,6 +33,8 @@ export const EditorArea: React.FC<EditorAreaProps> = ({
   onSave,
   onOpenFolder,
   onToggleClaude,
+  onDiagnosticsChange,
+  jumpToLine,
 }) => {
   const editorContainerRef = useRef<HTMLDivElement>(null);
   const editorViewRef = useRef<EditorView | null>(null);
@@ -41,6 +48,8 @@ export const EditorArea: React.FC<EditorAreaProps> = ({
   onCursorChangeRef.current = onCursorChange;
   const onSaveRef = useRef(onSave);
   onSaveRef.current = onSave;
+  const onDiagnosticsChangeRef = useRef(onDiagnosticsChange);
+  onDiagnosticsChangeRef.current = onDiagnosticsChange;
 
   // Initialize CodeMirror view
   useEffect(() => {
@@ -68,11 +77,35 @@ export const EditorArea: React.FC<EditorAreaProps> = ({
 
     const themeExt = getSyntaxTheme(theme);
 
+    // 1. Diagnostics / Code Error Tracker
+    const linterExt = createCodeLinter(activeTab.name, (diagnostics) => {
+      if (!editorViewRef.current || !onDiagnosticsChangeRef.current) return;
+      const view = editorViewRef.current;
+      const doc = view.state.doc;
+      const problems: CodeProblem[] = diagnostics.map((d) => {
+        const safeFrom = Math.min(Math.max(d.from, 0), doc.length);
+        const lineObj = doc.lineAt(safeFrom);
+        return {
+          line: lineObj.number,
+          col: safeFrom - lineObj.from + 1,
+          message: d.message,
+          severity: (d.severity as any) || "error",
+          source: d.source,
+        };
+      });
+      onDiagnosticsChangeRef.current(problems);
+    });
+
+    // 2. Autocomplete & Code Snippets ("Preview Lanjutannya")
+    const autocompleteExt = createCodeAutocomplete(activeTab.name);
+
     const state = EditorState.create({
       doc: activeTab.content,
       extensions: [
         basicSetup,
         saveKeybinding,
+        linterExt,
+        autocompleteExt,
         languageCompartmentRef.current.of(langInfo.extension),
         themeCompartmentRef.current.of(themeExt),
         EditorView.updateListener.of((update) => {
@@ -121,6 +154,22 @@ export const EditorArea: React.FC<EditorAreaProps> = ({
       editorViewRef.current = null;
     };
   }, [activeTab?.id]);
+
+  // Jump to line when requested from Problems Panel
+  useEffect(() => {
+    if (!editorViewRef.current || !jumpToLine) return;
+    const view = editorViewRef.current;
+    const doc = view.state.doc;
+    const targetLine = Math.min(Math.max(jumpToLine.line, 1), doc.lines);
+    const lineObj = doc.line(targetLine);
+    const targetPos = Math.min(lineObj.from + Math.max(jumpToLine.col - 1, 0), lineObj.to);
+
+    view.dispatch({
+      selection: { anchor: targetPos, head: targetPos },
+      scrollIntoView: true,
+    });
+    view.focus();
+  }, [jumpToLine]);
 
   useEffect(() => {
     if (!editorViewRef.current) return;

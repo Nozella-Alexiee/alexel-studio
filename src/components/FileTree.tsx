@@ -8,7 +8,10 @@ import {
   ChevronRight,
   ChevronDown,
   Trash2,
-  Terminal,
+  FilePlus,
+  FolderPlus,
+  RotateCw,
+  FolderCode,
 } from "lucide-react";
 
 interface FileTreeProps {
@@ -34,11 +37,14 @@ export const FileTree: React.FC<FileTreeProps> = ({
   onToggleDir,
   onOpenFolder,
   onNewFile,
+  onNewFolder,
+  onRefresh,
   onDeleteEntry,
   mascotMessage,
   onClearMascotMessage,
 }) => {
-  // Render official programming language logos
+  const projectName = projectPath ? projectPath.split("/").pop() : "No Folder Open";
+
   const renderEntryIcon = (entry: FileEntry) => {
     if (entry.is_dir) {
       return entry.isOpen ? (
@@ -47,7 +53,6 @@ export const FileTree: React.FC<FileTreeProps> = ({
         <Folder size={14} color="#ffb703" className="folder-icon" />
       );
     }
-
     return <FileIcon filename={entry.name} extension={entry.extension} size={15} />;
   };
 
@@ -72,10 +77,10 @@ export const FileTree: React.FC<FileTreeProps> = ({
           >
             {node.is_dir ? (
               <span className="cyber-arrow-icon">
-                {node.isOpen ? <ChevronDown size={11} /> : <ChevronRight size={11} />}
+                {node.isOpen ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
               </span>
             ) : (
-              <span style={{ width: 11, flexShrink: 0 }} />
+              <span style={{ width: 12, flexShrink: 0 }} />
             )}
 
             <span className="cyber-badge-wrapper">{renderEntryIcon(node)}</span>
@@ -85,13 +90,13 @@ export const FileTree: React.FC<FileTreeProps> = ({
 
             <button
               className="btn-icon cyber-del-btn"
-              title={`Purge ${node.name}`}
+              title={`Delete ${node.name}`}
               onClick={(e) => {
                 e.stopPropagation();
                 onDeleteEntry(node);
               }}
             >
-              <Trash2 size={10} color="#f43f5e" />
+              <Trash2 size={11} color="#f43f5e" />
             </button>
           </div>
 
@@ -105,13 +110,13 @@ export const FileTree: React.FC<FileTreeProps> = ({
 
   return (
     <aside className="app-sidebar-cyber-card">
-      {/* 1. Futuristic Header with Mecha-Tux Cyber Mascot */}
+      {/* 1. Header with Compact Mecha-Tux Mascot */}
       <div className="cyber-card-header">
         <div className="cyber-brand-text">
-          <div className="cyber-main-title">NOZEL // CODE</div>
-          <div className="cyber-sub-status">
+          <div className="cyber-main-title">EXPLORER</div>
+          <div className="cyber-sub-status truncate" title={projectPath || "Nozel Code Studio"}>
             <span className="status-blink" />
-            <span>M1 SILICON CORE</span>
+            <span>{projectName}</span>
           </div>
         </div>
         <div className="cyber-mascot-unit">
@@ -122,27 +127,51 @@ export const FileTree: React.FC<FileTreeProps> = ({
         </div>
       </div>
 
-      {/* 2. Cyber HUD Directory Label */}
+      {/* 2. Workspace Actions Bar */}
       <div className="cyber-section-bar">
-        <span className="cyber-section-label">// WORKSPACE_INDEX</span>
-        <span className="cyber-section-line" />
+        <span className="cyber-section-label">FILES</span>
+        {projectPath && (
+          <div className="flex items-center gap-1">
+            <button
+              className="btn-icon"
+              title="New File"
+              onClick={() => onNewFile(projectPath)}
+            >
+              <FilePlus size={13} className="text-slate-400 hover:text-white" />
+            </button>
+            <button
+              className="btn-icon"
+              title="New Folder"
+              onClick={() => onNewFolder(projectPath)}
+            >
+              <FolderPlus size={13} className="text-slate-400 hover:text-white" />
+            </button>
+            <button
+              className="btn-icon"
+              title="Refresh Files"
+              onClick={onRefresh}
+            >
+              <RotateCw size={12} className="text-slate-400 hover:text-white" />
+            </button>
+          </div>
+        )}
       </div>
 
-      {/* 3. Futuristic Directory Tree */}
+      {/* 3. Directory Tree */}
       <div className="cyber-tree-scroll">
         {!projectPath ? (
           <div className="cyber-empty-state">
-            <Terminal size={22} color="#00f0ff" style={{ opacity: 0.8, marginBottom: 8 }} />
-            <p className="empty-sub">NO WORKSPACE ATTACHED</p>
+            <FolderCode size={28} className="text-slate-500 mb-2" />
+            <p className="empty-sub">Belum ada folder proyek yang dibuka</p>
             <button className="cyber-btn-mount" onClick={onOpenFolder}>
-              [ MOUNT DIRECTORY ]
+              Buka Folder Proyek
             </button>
           </div>
         ) : entries.length === 0 ? (
           <div className="cyber-empty-state">
-            <p className="empty-sub">EMPTY ROOT DIRECTORY</p>
+            <p className="empty-sub">Folder masih kosong</p>
             <button className="cyber-btn-mount" onClick={() => onNewFile(projectPath)}>
-              [ INITIALIZE FILE ]
+              + Buat File Baru
             </button>
           </div>
         ) : (
@@ -152,3 +181,5 @@ export const FileTree: React.FC<FileTreeProps> = ({
     </aside>
   );
 };
+
+export default FileTree;
