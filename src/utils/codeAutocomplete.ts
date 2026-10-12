@@ -158,6 +158,84 @@ const RUST_SNIPPETS: Completion[] = [
   }),
 ];
 
+const PHP_SNIPPETS: Completion[] = [
+  snippetCompletion("<?php\n\n${1}", {
+    label: "<?php",
+    type: "keyword",
+    detail: "PHP Open Tag",
+  }),
+  snippetCompletion("declare(strict_types=1);\n\n${1}", {
+    label: "strict",
+    type: "keyword",
+    detail: "Declare Strict Types",
+  }),
+  snippetCompletion("namespace ${1:App\\Services};\n\n${2}", {
+    label: "ns",
+    type: "keyword",
+    detail: "PHP Namespace Statement",
+  }),
+  snippetCompletion("public function ${1:name}(${2}): ${3:void} {\n\t${4}\n}", {
+    label: "pubf",
+    type: "function",
+    detail: "PHP Public Method",
+  }),
+  snippetCompletion("private function ${1:name}(${2}): ${3:void} {\n\t${4}\n}", {
+    label: "prif",
+    type: "function",
+    detail: "PHP Private Method",
+  }),
+  snippetCompletion("class ${1:ClassName} {\n\tpublic function __construct(\n\t\t${2:private readonly string \\$name},\n\t) {}\n}", {
+    label: "class",
+    type: "class",
+    detail: "PHP 8+ Class with Constructor Promotion",
+  }),
+  snippetCompletion("interface ${1:InterfaceName} {\n\tpublic function ${2:methodName}(${3}): ${4:void};\n}", {
+    label: "interface",
+    type: "class",
+    detail: "PHP Interface Declaration",
+  }),
+  snippetCompletion("enum ${1:Status}: string {\n\tcase ${2:Active} = '${3:active}';\n\tcase ${4:Inactive} = '${5:inactive}';\n}", {
+    label: "enum",
+    type: "class",
+    detail: "PHP 8.1 Backed Enum",
+  }),
+  snippetCompletion("private readonly ${1:string} \\$${2:name};", {
+    label: "prop",
+    type: "property",
+    detail: "PHP 8.1 Readonly Property",
+  }),
+  snippetCompletion("fn(${1:\\$x}) => ${2:\\$x * 2}", {
+    label: "fn",
+    type: "function",
+    detail: "PHP Arrow Function",
+  }),
+  snippetCompletion("try {\n\t${1}\n} catch (\\Throwable \\$e) {\n\t${2:error_log(\\$e->getMessage());}\n}", {
+    label: "trycatch",
+    type: "keyword",
+    detail: "PHP Try/Catch block",
+  }),
+  snippetCompletion("foreach (\\$${1:items} as \\$${2:item}) {\n\t${3}\n}", {
+    label: "foreach",
+    type: "keyword",
+    detail: "PHP Foreach Loop",
+  }),
+  snippetCompletion("match (\\$${1:status}) {\n\t${2:'active'} => ${3:true},\n\tdefault => ${4:false},\n};", {
+    label: "match",
+    type: "keyword",
+    detail: "PHP 8 Match Expression",
+  }),
+  snippetCompletion("echo \"${1:Hello World}\";", {
+    label: "echo",
+    type: "function",
+    detail: "PHP Echo Statement",
+  }),
+  snippetCompletion("var_dump(\\$${1:var});", {
+    label: "dump",
+    type: "function",
+    detail: "PHP var_dump debug helper",
+  }),
+];
+
 export function createCodeAutocomplete(filename: string): Extension[] {
   const ext = filename.split(".").pop()?.toLowerCase() || "";
   let langSnippets: Completion[] = [];
@@ -172,6 +250,8 @@ export function createCodeAutocomplete(filename: string): Extension[] {
     langSnippets = PYTHON_SNIPPETS;
   } else if (["rs"].includes(ext)) {
     langSnippets = RUST_SNIPPETS;
+  } else if (["php", "phtml", "php3", "php4", "php5", "php7", "phps"].includes(ext)) {
+    langSnippets = PHP_SNIPPETS;
   }
 
   const completionSource = completeFromList(langSnippets);

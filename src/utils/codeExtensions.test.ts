@@ -17,10 +17,12 @@ describe("Code Extensions", () => {
     expect(linterExt).toBeDefined();
   });
 
-  it("should create autocomplete extension for python and rust files", () => {
+  it("should create autocomplete extension for python, rust, and php files", () => {
     const pyExt = createCodeAutocomplete("script.py");
     const rsExt = createCodeAutocomplete("main.rs");
+    const phpExt = createCodeAutocomplete("server.php");
     expect(pyExt).toBeDefined();
     expect(rsExt).toBeDefined();
+    expect(phpExt).toBeDefined();
   });
 });

@@ -171,13 +171,15 @@ export const App: React.FC = () => {
       setFileTree(updatedTree);
 
       const indexPath = "/Users/demo/nozel-project/src/services/index.tsx";
+      const phpPath = "/Users/demo/nozel-project/src/server.php";
       const htmlPath = "/Users/demo/nozel-project/index.html";
       const cssPath = "/Users/demo/nozel-project/style.css";
       const apiPath = "/Users/demo/nozel-project/src/api.rs";
       const pyPath = "/Users/demo/nozel-project/src/analyze.py";
 
-      const [indexCode, htmlCode, cssCode, apiCode, pyCode] = await Promise.all([
+      const [indexCode, phpCode, htmlCode, cssCode, apiCode, pyCode] = await Promise.all([
         readFileText(indexPath).catch(() => ""),
+        readFileText(phpPath).catch(() => ""),
         readFileText(htmlPath).catch(() => ""),
         readFileText(cssPath).catch(() => ""),
         readFileText(apiPath).catch(() => ""),
@@ -195,6 +197,18 @@ export const App: React.FC = () => {
         language: "typescript",
         line: 24,
         col: 18,
+      };
+
+      const tabPhp: EditorTab = {
+        id: phpPath,
+        path: phpPath,
+        name: "server.php",
+        content: phpCode,
+        initialContent: phpCode,
+        isDirty: false,
+        language: "php",
+        line: 14,
+        col: 1,
       };
 
       const tab2: EditorTab = {
@@ -245,8 +259,8 @@ export const App: React.FC = () => {
         col: 1,
       };
 
-      setTabs([tab1, tab2, tab3, tab4, tab5]);
-      setActiveTabId(tab1.id);
+      setTabs([tab1, tabPhp, tab2, tab3, tab4, tab5]);
+      setActiveTabId(view === "php" ? tabPhp.id : tab1.id);
 
       // Populate mock Git status for demo
       setGitStatus({
@@ -258,10 +272,12 @@ export const App: React.FC = () => {
         changed_files: ["src/services/index.tsx", "style.css", "analyze.py"],
       });
 
+      if (params.get("theme") === "light" || view === "light") {
+        setTheme("light");
+      }
+
       if (view === "claude") {
         setIsClaudePanelOpen(true);
-      } else if (view === "light") {
-        setTheme("light");
       } else if (view === "git") {
         setActivityTab("git");
         setAutoPushEnabled(true);

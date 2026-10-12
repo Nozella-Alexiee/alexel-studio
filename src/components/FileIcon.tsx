@@ -173,6 +173,32 @@ export const FileIcon: React.FC<FileIconProps> = ({
         </svg>
       );
 
+    // 11. PHP Official Badge Logo
+    case "php":
+    case "phtml":
+    case "php3":
+    case "php4":
+    case "php5":
+    case "php7":
+    case "phps":
+      return (
+        <svg width={size} height={size} viewBox="0 0 24 24" fill="none" className={className}>
+          <rect width="24" height="24" rx="4" fill="#4F5D95" stroke="#777BB4" strokeWidth="1" />
+          <path
+            d="M3.5 8H6.8C8 8 8.8 8.7 8.8 9.8C8.8 11 8 11.7 6.8 11.7H5V16H3.5V8ZM5 10.4H6.6C7.1 10.4 7.4 10.1 7.4 9.8C7.4 9.5 7.1 9.2 6.6 9.2H5V10.4Z"
+            fill="#FFFFFF"
+          />
+          <path
+            d="M9.8 8H11.2V11.2H13.8V8H15.2V16H13.8V12.4H11.2V16H9.8V8Z"
+            fill="#FFFFFF"
+          />
+          <path
+            d="M16.2 8H19.5C20.7 8 21.5 8.7 21.5 9.8C21.5 11 20.7 11.7 19.5 11.7H17.7V16H16.2V8ZM17.7 10.4H19.3C19.8 10.4 20.1 10.1 20.1 9.8C20.1 9.5 19.8 9.2 19.3 9.2H17.7V10.4Z"
+            fill="#FFFFFF"
+          />
+        </svg>
+      );
+
     // Default File Code Icon
     default:
       return (

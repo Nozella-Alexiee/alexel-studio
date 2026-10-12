@@ -15,32 +15,43 @@ import { EditorView } from "@codemirror/view";
  * - Muted Slate Italic: Comments
  */
 export const appleStudioHighlightStyle = HighlightStyle.define([
-  // Keywords & Control Flow (Apple Rose / Magenta)
-  { tag: [t.keyword, t.controlKeyword, t.definitionKeyword, t.moduleKeyword], color: "#ff7ab2", fontWeight: "600" },
-  { tag: [t.tagName, t.angleBracket], color: "#ff7ab2", fontWeight: "600" },
+  // Keywords & Control Flow & Modifiers (Apple Rose / Magenta)
+  { tag: [t.keyword, t.controlKeyword, t.definitionKeyword, t.moduleKeyword, t.modifier], color: "#ff7ab2", fontWeight: "600" },
+  { tag: [t.processingInstruction, t.tagName, t.angleBracket], color: "#ec4899", fontWeight: "700" },
+
+  // Self & Special References ($this, self, parent) (Apple Orchid / Lilac)
+  { tag: [t.self, t.special(t.variableName), t.special(t.propertyName)], color: "#c084fc", fontWeight: "600" },
 
   // Strings (Apple Coral Melon)
-  { tag: [t.string, t.special(t.string), t.character], color: "#ff8170" },
+  { tag: [t.string, t.special(t.string), t.character, t.attributeValue], color: "#ff8170" },
   { tag: t.regexp, color: "#f97316" },
 
-  // Numbers, Booleans (Apple Mint & Soft Gold)
+  // Numbers, Booleans, Atoms (Apple Mint & Soft Gold)
   { tag: [t.number, t.integer, t.float], color: "#d9c97c", fontWeight: "600" },
-  { tag: [t.bool, t.null], color: "#78c2b4", fontWeight: "700" },
+  { tag: [t.bool, t.null, t.atom], color: "#78c2b4", fontWeight: "700" },
 
   // Functions, Methods, Calls (Apple Sky Blue & Teal)
   { tag: [t.function(t.variableName), t.function(t.propertyName)], color: "#66c2cd", fontWeight: "600" },
-  { tag: t.attributeName, color: "#66c2cd" },
+  { tag: [t.annotation, t.attributeName], color: "#f472b6", fontWeight: "600" },
 
   // Types, Classes, Interfaces (Apple Warm Wheat / Lilac)
   { tag: [t.typeName, t.className, t.standard(t.typeName)], color: "#daba8b", fontWeight: "600" },
 
-  // Variables & Identifiers (Apple Silver)
-  { tag: t.definition(t.variableName), color: "#ffffff", fontWeight: "600" },
-  { tag: t.variableName, color: "#e2e8f0" },
-  { tag: t.propertyName, color: "#cbd5e1" },
+  // Namespaces (Apple Mint Teal)
+  { tag: t.namespace, color: "#5eead4", fontWeight: "600" },
+
+  // Constants (Apple Amber Gold)
+  { tag: [t.constant(t.variableName), t.standard(t.variableName)], color: "#fbbf24", fontWeight: "600" },
+
+  // Variables & Identifiers (Apple Sky Azure)
+  { tag: t.definition(t.variableName), color: "#38bdf8", fontWeight: "600" },
+  { tag: t.variableName, color: "#7dd3fc" },
+
+  // Properties & Object Fields (Apple Soft Lavender Periwinkle)
+  { tag: t.propertyName, color: "#c4b5fd" },
 
   // Operators, Punctuation (Apple Peach)
-  { tag: [t.operator, t.operatorKeyword], color: "#ff9e64" },
+  { tag: [t.operator, t.operatorKeyword, t.derefOperator, t.definitionOperator], color: "#ff9e64" },
   { tag: [t.punctuation, t.separator], color: "#94a3b8" },
   { tag: [t.bracket, t.paren, t.brace], color: "#daba8b" },
 
@@ -58,21 +69,48 @@ export const appleStudioHighlightStyle = HighlightStyle.define([
  * Apple Studio Light High Contrast Syntax Highlighting
  */
 export const appleLightHighlightStyle = HighlightStyle.define([
-  { tag: [t.keyword, t.controlKeyword, t.definitionKeyword, t.moduleKeyword], color: "#ad3da4", fontWeight: "600" },
-  { tag: [t.tagName, t.angleBracket], color: "#ad3da4", fontWeight: "600" },
-  { tag: [t.string, t.special(t.string), t.character], color: "#c41a16" },
+  // Keywords & Control Flow & Modifiers (Apple Magenta / Plum)
+  { tag: [t.keyword, t.controlKeyword, t.definitionKeyword, t.moduleKeyword, t.modifier], color: "#ad3da4", fontWeight: "600" },
+  { tag: [t.processingInstruction, t.tagName, t.angleBracket], color: "#ad3da4", fontWeight: "700" },
+
+  // Self & Special References ($this, self, parent) (Royal Purple)
+  { tag: [t.self, t.special(t.variableName), t.special(t.propertyName)], color: "#7c3aed", fontWeight: "600" },
+
+  // Strings (Apple Crimson / Ruby)
+  { tag: [t.string, t.special(t.string), t.character, t.attributeValue], color: "#c41a16" },
+  { tag: t.regexp, color: "#c2410c" },
+
+  // Numbers, Booleans, Atoms (Royal Cobalt & Emerald)
   { tag: [t.number, t.integer, t.float], color: "#1c00cf", fontWeight: "600" },
-  { tag: [t.bool, t.null], color: "#059669", fontWeight: "700" },
-  { tag: [t.function(t.variableName), t.function(t.propertyName)], color: "#326d74", fontWeight: "600" },
-  { tag: t.attributeName, color: "#326d74" },
+  { tag: [t.bool, t.null, t.atom], color: "#059669", fontWeight: "700" },
+
+  // Functions, Methods, Calls (Deep Teal)
+  { tag: [t.function(t.variableName), t.function(t.propertyName)], color: "#0f766e", fontWeight: "600" },
+  { tag: [t.annotation, t.attributeName], color: "#db2777", fontWeight: "600" },
+
+  // Types, Classes, Interfaces (Deep Purple)
   { tag: [t.typeName, t.className, t.standard(t.typeName)], color: "#703daa", fontWeight: "600" },
-  { tag: t.definition(t.variableName), color: "#0f172a", fontWeight: "600" },
-  { tag: t.variableName, color: "#1e293b" },
-  { tag: t.propertyName, color: "#475569" },
-  { tag: [t.operator, t.operatorKeyword], color: "#ea580c" },
+
+  // Namespaces (Teal Cyan)
+  { tag: t.namespace, color: "#0d9488", fontWeight: "600" },
+
+  // Constants (Deep Amber)
+  { tag: [t.constant(t.variableName), t.standard(t.variableName)], color: "#b45309", fontWeight: "600" },
+
+  // Variables & Identifiers (Apple Ocean Blue)
+  { tag: t.definition(t.variableName), color: "#0284c7", fontWeight: "600" },
+  { tag: t.variableName, color: "#0369a1" },
+
+  // Properties & Object Fields (Vibrant Indigo)
+  { tag: t.propertyName, color: "#4f46e5" },
+
+  // Operators, Punctuation (Apple Tangerine & Slate)
+  { tag: [t.operator, t.operatorKeyword, t.derefOperator, t.definitionOperator], color: "#ea580c" },
   { tag: [t.punctuation, t.separator], color: "#64748b" },
   { tag: [t.bracket, t.paren, t.brace], color: "#703daa" },
-  { tag: [t.comment, t.lineComment, t.blockComment], color: "#5c6570", fontStyle: "italic" },
+
+  // Comments (Slate Muted)
+  { tag: [t.comment, t.lineComment, t.blockComment, t.docComment], color: "#5c6570", fontStyle: "italic" },
 ]);
 
 export function getSyntaxTheme(theme: "dark" | "light"): Extension {

@@ -78,6 +78,95 @@ pub fn init_runtime() -> Result<(), Box<dyn std::error::Error>> {
     Ok(())
 }
 `,
+  "/Users/demo/nozel-project/src/server.php": `<?php
+
+declare(strict_types=1);
+
+namespace Nozel\\Core\\Server;
+
+use Exception;
+use DateTimeImmutable;
+use JsonSerializable;
+
+/**
+ * High-performance Nozel Microservice Controller
+ * Apple Silicon M-Series Ultra-lightweight Architecture
+ */
+#[Route(path: "/api/server", methods: ["GET", "POST"])]
+class MicroserviceController implements JsonSerializable {
+    public const MAX_CONNECTIONS = 1024;
+    public const DEFAULT_TIMEOUT_SEC = 30;
+
+    protected static int $instanceCount = 0;
+    private string $serviceName;
+    private int $port;
+    private bool $isRunning = false;
+    public readonly DateTimeImmutable $bootTime;
+
+    public function __construct(string $serviceName = "Quantum-API", int $port = 8080) {
+        $this->serviceName = $serviceName;
+        $this->port = $port;
+        $this->bootTime = new DateTimeImmutable();
+        self::$instanceCount++;
+    }
+
+    public function start(): array {
+        $this->isRunning = true;
+        $memoryUsageMb = round(memory_get_usage(true) / 1024 / 1024, 2);
+
+        // Telemetry payload
+        $response = [
+            "service" => $this->serviceName,
+            "port" => $this->port,
+            "status" => $this->isRunning ? "online" : "offline",
+            "memory_mb" => $memoryUsageMb,
+            "engine" => "PHP 8.3 JIT Native",
+            "max_conn" => self::MAX_CONNECTIONS,
+        ];
+
+        return $response;
+    }
+
+    public function jsonSerialize(): array {
+        return $this->start();
+    }
+
+    public function renderDashboard(string $clientIp): string {
+        $data = $this->start();
+        $badgeClass = $data["status"] === "online" ? "badge-success" : "badge-error";
+
+        return <<<HTML
+        <div class="server-card">
+            <h2>Nozel PHP Gateway &mdash; {$this->serviceName}</h2>
+            <p>Client Connected: <code>{$clientIp}</code></p>
+            <span class="badge {$badgeClass}">Status: {$data['status']}</span>
+            <div class="metrics">
+                <strong>RAM Usage:</strong> {$data['memory_mb']} MB (Ultra-Lightweight)
+            </div>
+        </div>
+        HTML;
+    }
+}
+
+// Instantiate server controller
+$controller = new MicroserviceController("Nozel-PHP-Gateway", 9000);
+$result = $controller->start();
+
+echo "⚡ Nozel PHP Service [{$result['service']}] launched on port {$result['port']}!\\n";
+echo "Memory footprint: {$result['memory_mb']} MB (~38MB app total).\\n";
+?>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title><?= $result['service'] ?> Dashboard</title>
+</head>
+<body>
+    <h1><?= htmlspecialchars($result['service']) ?></h1>
+    <p>PHP syntax highlighting is vibrant, beautiful, and fully colored!</p>
+</body>
+</html>
+`,
   "/Users/demo/nozel-project/src/README.md": `# Nozel Code ⚡
 The ultra-lightweight macOS code editor.
 RAM Footprint: ~38 MB. Claude Pro subscription native integration.
@@ -143,6 +232,7 @@ export async function listDirectory(dirPath: string): Promise<FileEntry[]> {
       { name: "services", path: "/Users/demo/nozel-project/src/services", is_dir: true },
       { name: "api.rs", path: "/Users/demo/nozel-project/src/api.rs", is_dir: false, extension: "rs", size: 140 },
       { name: "analyze.py", path: "/Users/demo/nozel-project/src/analyze.py", is_dir: false, extension: "py", size: 165 },
+      { name: "server.php", path: "/Users/demo/nozel-project/src/server.php", is_dir: false, extension: "php", size: 1980 },
       { name: "package.json", path: "/Users/demo/nozel-project/src/package.json", is_dir: false, extension: "json", size: 85 },
     ];
   } else if (dirPath === "/Users/demo/nozel-project/src/services") {

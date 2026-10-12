@@ -32,6 +32,16 @@ describe("detectLanguage", () => {
     expect(detectLanguage("main.rs").name).toBe("Rust");
   });
 
+  it("detects PHP files with rich language support", () => {
+    const php = detectLanguage("server.php");
+    expect(php.name).toBe("PHP");
+    expect(php.extension).toBeDefined();
+
+    const phtml = detectLanguage("template.phtml");
+    expect(phtml.name).toBe("PHP");
+    expect(phtml.extension).toBeDefined();
+  });
+
   it("handles unknown or extensionless files gracefully", () => {
     const txt = detectLanguage("notes.txt");
     expect(txt.name).toBe("Plain Text");
