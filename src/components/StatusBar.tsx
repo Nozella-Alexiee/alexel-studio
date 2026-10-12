@@ -20,12 +20,12 @@ export const StatusBar: React.FC<StatusBarProps> = ({
       {/* Left Sci-Fi Telemetry & Git Branch */}
       <div className="statusbar-left">
         <div className="cyber-pill-branch" title="Git Matrix Branch: main">
-          <GitBranch size={10} color="#00f0ff" />
+          <GitBranch size={11} color="#73daca" />
           <span>BRANCH: main</span>
         </div>
         <div className="cyber-status-item">
-          <span className="telemetry-tag">ERR: 0</span>
-          <span className="telemetry-tag">WARN: 0</span>
+          <span className="telemetry-tag err">ERR: 0</span>
+          <span className="telemetry-tag warn">WARN: 0</span>
         </div>
       </div>
 
@@ -34,26 +34,26 @@ export const StatusBar: React.FC<StatusBarProps> = ({
         <div className="cyber-status-item cursor-pos">
           <span>LN {activeTab?.line || 24} : COL {activeTab?.col || 18}</span>
         </div>
-        <div className="cyber-status-item">
+        <div className="cyber-status-item spaces-tag">
           <span>SPACES: 4</span>
         </div>
-        <div className="cyber-status-item">
+        <div className="cyber-status-item encoding-tag">
           <span>UTF-8 // LF</span>
         </div>
-        <div className="cyber-status-item">
+        <div className="cyber-status-item lang-tag">
           <span>{activeTab?.language?.toUpperCase() || "TSX"}</span>
         </div>
 
-        {/* Futuristic RAM Telemetry Chip */}
+        {/* Futuristic RAM Telemetry Chip (Vibrant Lime) */}
         <div
           className="cyber-pill-memory"
           title={`Nozel Code RAM: ${footprint?.app_memory_mb || 38.4} MB vs VS Code ~650 MB (Zero Bloat)`}
         >
-          <Cpu size={11} color="#00f0ff" />
+          <Cpu size={11} color="#9ece6a" />
           <span>MEM: {footprint ? `${Math.round(footprint.app_memory_mb)} MB` : "38 MB"}</span>
         </div>
 
-        {/* Holographic Claude Pro Neural Agent Pill */}
+        {/* Holographic Claude Pro Neural Agent Pill (Sunset Gradient) */}
         <button
           className="cyber-pill-claude"
           onClick={onToggleClaude}
@@ -64,7 +64,7 @@ export const StatusBar: React.FC<StatusBarProps> = ({
         </button>
 
         <div className="cyber-status-item live-pulse" title="System Latency: 0.2ms">
-          <Activity size={10} color="#10b981" />
+          <Activity size={10} color="#7dcfff" />
           <span>0.2ms</span>
         </div>
       </div>

@@ -44,32 +44,32 @@ export const ActivityBar: React.FC<ActivityBarProps> = ({
 
         {/* 2. File HUD Explorer (Active Laser Strip) */}
         <button
-          className={`cyber-activity-btn ${activeTab === "explorer" ? "active" : ""}`}
+          className={`cyber-activity-btn btn-explorer ${activeTab === "explorer" ? "active" : ""}`}
           onClick={() => onSelectTab("explorer")}
           title="File Matrix (Cmd+Shift+E)"
         >
-          <Folder size={17} strokeWidth={2} />
-          {activeTab === "explorer" && <div className="cyber-laser-strip" />}
+          <Folder size={17} strokeWidth={2} className="btn-icon-explorer" />
+          {activeTab === "explorer" && <div className="cyber-laser-strip laser-blue" />}
         </button>
 
         {/* 3. Neural Search */}
         <button
-          className={`cyber-activity-btn ${activeTab === "search" ? "active" : ""}`}
+          className={`cyber-activity-btn btn-search ${activeTab === "search" ? "active" : ""}`}
           onClick={() => onSelectTab("search")}
           title="Neural Code Search (Cmd+Shift+F)"
         >
-          <Search size={17} strokeWidth={2} />
-          {activeTab === "search" && <div className="cyber-laser-strip" />}
+          <Search size={17} strokeWidth={2} className="btn-icon-search" />
+          {activeTab === "search" && <div className="cyber-laser-strip laser-purple" />}
         </button>
 
         {/* 4. Git Quantum Diff */}
         <button
-          className={`cyber-activity-btn ${activeTab === "git" ? "active" : ""}`}
+          className={`cyber-activity-btn btn-git ${activeTab === "git" ? "active" : ""}`}
           onClick={() => onSelectTab("git")}
           title="Quantum Source Control"
         >
-          <GitBranch size={17} strokeWidth={2} />
-          {activeTab === "git" && <div className="cyber-laser-strip" />}
+          <GitBranch size={17} strokeWidth={2} className="btn-icon-git" />
+          {activeTab === "git" && <div className="cyber-laser-strip laser-orange" />}
         </button>
 
         {/* 5. Holographic Neural Claude AI Pill Button */}
@@ -87,28 +87,33 @@ export const ActivityBar: React.FC<ActivityBarProps> = ({
       <div className="activitybar-bottom">
         {/* Theme Matrix Switcher */}
         <button
-          className="cyber-activity-btn"
+          className="cyber-activity-btn btn-theme"
           onClick={onToggleTheme}
-          title={`Switch Environment (${theme === "dark" ? "Neo-Tokyo Lab Light" : "Cosmic Dark"})`}
+          title={`Switch Environment (${theme === "dark" ? "Neo-Tokyo Lab Light" : "Tokyo Night Rainbow"})`}
         >
-          {theme === "dark" ? <Sun size={16} /> : <Moon size={16} />}
+          {theme === "dark" ? (
+            <Sun size={16} className="btn-icon-sun" />
+          ) : (
+            <Moon size={16} className="btn-icon-moon" />
+          )}
         </button>
 
         {/* User Identity Hologram */}
         <button
-          className="cyber-activity-btn"
+          className="cyber-activity-btn btn-shield"
           title="User Auth: Root / M1 Developer"
         >
-          <ShieldCheck size={16} color="#00f0ff" />
+          <ShieldCheck size={16} className="btn-icon-shield" />
         </button>
 
         {/* Settings Engine */}
         <button
-          className={`cyber-activity-btn ${activeTab === "settings" ? "active" : ""}`}
+          className={`cyber-activity-btn btn-settings ${activeTab === "settings" ? "active" : ""}`}
           onClick={() => onSelectTab("settings")}
           title="System Configuration"
         >
-          <Settings size={16} />
+          <Settings size={16} className="btn-icon-settings" />
+          {activeTab === "settings" && <div className="cyber-laser-strip laser-cyan" />}
         </button>
       </div>
     </nav>

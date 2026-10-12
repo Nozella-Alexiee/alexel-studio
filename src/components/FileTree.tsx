@@ -42,9 +42,9 @@ export const FileTree: React.FC<FileTreeProps> = ({
   const renderEntryIcon = (entry: FileEntry) => {
     if (entry.is_dir) {
       return entry.isOpen ? (
-        <FolderOpen size={14} color="#00f0ff" />
+        <FolderOpen size={14} color="#ffd166" className="folder-icon open" />
       ) : (
-        <Folder size={14} color="#38bdf8" />
+        <Folder size={14} color="#ffb703" className="folder-icon" />
       );
     }
 

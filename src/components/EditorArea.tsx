@@ -6,7 +6,7 @@ import { EditorState, Compartment } from "@codemirror/state";
 import { keymap } from "@codemirror/view";
 import { indentWithTab } from "@codemirror/commands";
 import { searchKeymap } from "@codemirror/search";
-import { oneDark } from "@codemirror/theme-one-dark";
+import { getSyntaxTheme } from "../utils/syntaxTheme";
 import { Cpu, Terminal, Sparkles, ChevronRight } from "lucide-react";
 import { FileIcon } from "./FileIcon";
 
@@ -66,7 +66,7 @@ export const EditorArea: React.FC<EditorAreaProps> = ({
       ...searchKeymap,
     ]);
 
-    const themeExt = theme === "dark" ? oneDark : [];
+    const themeExt = getSyntaxTheme(theme);
 
     const state = EditorState.create({
       doc: activeTab.content,
@@ -94,26 +94,12 @@ export const EditorArea: React.FC<EditorAreaProps> = ({
             height: "100%",
             fontSize: "13px",
             fontFamily: "var(--font-mono)",
-            backgroundColor: "transparent",
           },
           ".cm-content": {
-            caretColor: "#00f0ff",
             padding: "10px 0",
           },
           ".cm-gutters": {
-            backgroundColor: "transparent",
-            borderRight: "1px solid rgba(255, 255, 255, 0.05)",
-            color: "var(--text-muted)",
             paddingRight: "10px",
-          },
-          ".cm-activeLine": {
-            backgroundColor: "rgba(0, 240, 255, 0.07) !important",
-            borderLeft: "2.5px solid #00f0ff",
-          },
-          ".cm-activeLineGutter": {
-            backgroundColor: "transparent !important",
-            color: "#00f0ff !important",
-            fontWeight: "700",
           },
         }),
       ],
@@ -139,9 +125,7 @@ export const EditorArea: React.FC<EditorAreaProps> = ({
   useEffect(() => {
     if (!editorViewRef.current) return;
     editorViewRef.current.dispatch({
-      effects: themeCompartmentRef.current.reconfigure(
-        theme === "dark" ? oneDark : []
-      ),
+      effects: themeCompartmentRef.current.reconfigure(getSyntaxTheme(theme)),
     });
   }, [theme]);
 

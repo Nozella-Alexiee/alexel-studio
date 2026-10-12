@@ -70,34 +70,42 @@ export const PenguinMascot: React.FC<PenguinMascotProps> = ({
           xmlns="http://www.w3.org/2000/svg"
         >
           <defs>
-            {/* Carbon Fiber / Metallic Obsidian Body Gradient */}
+            {/* Rich Sapphire & Midnight Navy Body Gradient */}
             <radialGradient id="carbonBody" cx="40%" cy="30%" r="70%">
-              <stop offset="0%" stopColor="#2a3042" />
-              <stop offset="35%" stopColor="#141724" />
-              <stop offset="75%" stopColor="#080a12" />
-              <stop offset="100%" stopColor="#020307" />
+              <stop offset="0%" stopColor="#3b4261" />
+              <stop offset="35%" stopColor="#24283b" />
+              <stop offset="75%" stopColor="#161726" />
+              <stop offset="100%" stopColor="#10111a" />
             </radialGradient>
 
-            {/* Titanium Chest Plate Gradient */}
+            {/* Bright Crisp White & Platinum Belly Plate Gradient */}
             <linearGradient id="titaniumPlate" x1="0%" y1="0%" x2="100%" y2="100%">
-              <stop offset="0%" stopColor="#e2e8f0" />
-              <stop offset="45%" stopColor="#94a3b8" />
-              <stop offset="85%" stopColor="#334155" />
-              <stop offset="100%" stopColor="#0f172a" />
+              <stop offset="0%" stopColor="#ffffff" />
+              <stop offset="45%" stopColor="#f8fafc" />
+              <stop offset="85%" stopColor="#e2e8f0" />
+              <stop offset="100%" stopColor="#cbd5e1" />
             </linearGradient>
 
             {/* Electric Cyber Cyan Glow */}
             <linearGradient id="cyberLaser" x1="0%" y1="0%" x2="100%" y2="0%">
               <stop offset="0%" stopColor="#00f0ff" />
-              <stop offset="50%" stopColor="#38bdf8" />
-              <stop offset="100%" stopColor="#818cf8" />
+              <stop offset="50%" stopColor="#7dcfff" />
+              <stop offset="100%" stopColor="#bb9af7" />
             </linearGradient>
 
-            {/* Golden Plasma Beak */}
+            {/* Glowing Golden Amber Beak & Feet */}
             <linearGradient id="plasmaGold" x1="0%" y1="0%" x2="0%" y2="100%">
-              <stop offset="0%" stopColor="#fef08a" />
-              <stop offset="50%" stopColor="#f59e0b" />
-              <stop offset="100%" stopColor="#b45309" />
+              <stop offset="0%" stopColor="#fffbeb" />
+              <stop offset="35%" stopColor="#ffc777" />
+              <stop offset="75%" stopColor="#ff9e64" />
+              <stop offset="100%" stopColor="#f97316" />
+            </linearGradient>
+
+            {/* Arc Reactor Neon Pink/Cyan Gradient */}
+            <linearGradient id="arcReactorGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stopColor="#ff007f" />
+              <stop offset="50%" stopColor="#bb9af7" />
+              <stop offset="100%" stopColor="#00f0ff" />
             </linearGradient>
 
             {/* Neon Glow Filter */}
@@ -116,31 +124,33 @@ export const PenguinMascot: React.FC<PenguinMascotProps> = ({
           </defs>
 
           {/* Holographic Platform Ring */}
-          <ellipse cx="80" cy="148" rx="46" ry="7" fill="rgba(0, 240, 255, 0.15)" filter="url(#neonGlow)" />
-          <ellipse cx="80" cy="148" rx="36" ry="5" fill="none" stroke="#00f0ff" strokeWidth="1" opacity="0.6" strokeDasharray="4 3" />
+          <ellipse cx="80" cy="148" rx="46" ry="7" fill="rgba(125, 207, 255, 0.2)" filter="url(#neonGlow)" />
+          <ellipse cx="80" cy="148" rx="36" ry="5" fill="none" stroke="#7dcfff" strokeWidth="1.2" opacity="0.8" strokeDasharray="4 3" />
 
-          {/* Cyber Thruster / Feet */}
+          {/* Cyber Thruster / Feet (Golden Amber) */}
           <path d="M 52 140 L 46 148 L 68 148 L 64 140 Z" fill="url(#plasmaGold)" />
           <path d="M 96 140 L 92 148 L 114 148 L 108 140 Z" fill="url(#plasmaGold)" />
 
           {/* Main Mecha Body Chassis */}
           <ellipse cx="80" cy="86" rx="44" ry="52" fill="url(#carbonBody)" filter="url(#chassisShadow)" />
 
-          {/* Cybernetic Panel Seam Lines */}
-          <path d="M 46 64 C 44 80, 48 108, 58 126" fill="none" stroke="rgba(0, 240, 255, 0.4)" strokeWidth="1" />
-          <path d="M 114 64 C 116 80, 112 108, 102 126" fill="none" stroke="rgba(0, 240, 255, 0.4)" strokeWidth="1" />
+          {/* Cybernetic Panel Seam Lines (Neon Cyan & Violet) */}
+          <path d="M 46 64 C 44 80, 48 108, 58 126" fill="none" stroke="#7dcfff" strokeWidth="1.2" opacity="0.7" />
+          <path d="M 114 64 C 116 80, 112 108, 102 126" fill="none" stroke="#bb9af7" strokeWidth="1.2" opacity="0.7" />
 
-          {/* Armor Chest Plate (Titanium Hex Core) */}
+          {/* Armor Chest Plate (Crisp White/Platinum Belly) */}
           <path
             d="M 62 76 L 98 76 L 104 108 L 80 128 L 56 108 Z"
             fill="url(#titaniumPlate)"
-            opacity="0.95"
+            stroke="rgba(125, 207, 255, 0.4)"
+            strokeWidth="1"
+            opacity="0.98"
           />
 
-          {/* Quantum Arc Reactor Core (Glowing Cyan Hexagon) */}
+          {/* Quantum Arc Reactor Core (Glowing Rainbow Core) */}
           <polygon
             points="80,94 88,98 88,107 80,111 72,107 72,98"
-            fill="#00f0ff"
+            fill="url(#arcReactorGrad)"
             filter="url(#neonGlow)"
           />
           <circle cx="80" cy="102.5" r="2.5" fill="#ffffff" />
