@@ -1,6 +1,11 @@
 import { invoke } from "@tauri-apps/api/core";
 import { open } from "@tauri-apps/plugin-dialog";
-import { ClaudeCliInfo, FileEntry, SystemFootprint, GitStatus, GitPushResult } from "../types";
+import { ClaudeCliInfo, FileEntry, SystemFootprint, GitStatus, GitPushResult, ImageFileData } from "../types";
+
+export const isImageFile = (filename: string): boolean => {
+  const ext = filename.split(".").pop()?.toLowerCase() || "";
+  return ["png", "jpg", "jpeg", "gif", "svg", "webp", "ico", "bmp"].includes(ext);
+};
 
 export const isTauriEnvironment = (): boolean => {
   return typeof window !== "undefined" && "__TAURI_INTERNALS__" in window;
@@ -225,6 +230,7 @@ export async function listDirectory(dirPath: string): Promise<FileEntry[]> {
       { name: "style.css", path: "/Users/demo/nozel-project/style.css", is_dir: false, extension: "css", size: 180 },
       { name: "package.json", path: "/Users/demo/nozel-project/package.json", is_dir: false, extension: "json", size: 120 },
       { name: "README.md", path: "/Users/demo/nozel-project/README.md", is_dir: false, extension: "md", size: 210 },
+      { name: "logo.png", path: "/Users/demo/nozel-project/logo.png", is_dir: false, extension: "png", size: 42800 },
     ];
   } else if (dirPath === "/Users/demo/nozel-project/src") {
     return [
@@ -254,6 +260,34 @@ export async function readFileText(path: string): Promise<string> {
   }
 
   throw new Error(`File not found: ${path}`);
+}
+
+export async function readFileImage(path: string): Promise<ImageFileData> {
+  if (isTauriEnvironment()) {
+    return await invoke<ImageFileData>("read_file_image", { path });
+  }
+
+  // Fallback high-fidelity vector mock image for browser preview
+  const ext = path.split(".").pop()?.toLowerCase() || "png";
+  const mockSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="640" height="400" viewBox="0 0 640 400">
+    <rect width="640" height="400" rx="16" fill="#181a20"/>
+    <circle cx="320" cy="180" r="80" fill="#38bdf8" opacity="0.15"/>
+    <circle cx="320" cy="180" r="50" fill="#38bdf8" opacity="0.3"/>
+    <text x="320" y="185" font-family="-apple-system, sans-serif" font-size="26" font-weight="bold" fill="#ffffff" text-anchor="middle">Nozel Code Studio</text>
+    <text x="320" y="225" font-family="-apple-system, sans-serif" font-size="13" fill="#94a3b8" text-anchor="middle">Apple Silicon M-Series Ultra-Fast Native</text>
+    <rect x="220" y="260" width="200" height="34" rx="17" fill="rgba(56, 189, 248, 0.15)" stroke="#38bdf8" stroke-width="1"/>
+    <text x="320" y="282" font-family="monospace" font-size="12" font-weight="600" fill="#38bdf8" text-anchor="middle">640 x 400 | PNG</text>
+  </svg>`;
+  const b64 =
+    typeof btoa !== "undefined"
+      ? btoa(unescape(encodeURIComponent(mockSvg)))
+      : "";
+
+  return {
+    data_url: `data:image/svg+xml;base64,${b64}`,
+    size_bytes: 42800,
+    format: ext,
+  };
 }
 
 export async function writeFileText(path: string, content: string): Promise<void> {

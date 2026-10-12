@@ -6,11 +6,11 @@ interface PenguinMascotProps {
 }
 
 const CYBER_TELEMETRY = [
-  "SYSTEM NOMINAL // 38 MB RAM ⚡",
-  "NEURAL CLAUDE PRO // SYNCED 🚀",
-  "M1 SILICON // ZERO BLOAT 💻",
-  "CORE COMPILED // 0 LATENCY 🛡️",
-  "QUANTUM BUFFER // READY ✨",
+  "Ready to code • 38 MB RAM ⚡",
+  "Claude Pro Connected 🚀",
+  "M-Series Silicon Native 💻",
+  "Nozel Studio Pro ✨",
+  "Git Bot Ready 🛡️",
 ];
 
 export const PenguinMascot: React.FC<PenguinMascotProps> = ({
@@ -48,14 +48,14 @@ export const PenguinMascot: React.FC<PenguinMascotProps> = ({
     <div
       className="cyber-tux-container"
       onClick={handleMascotClick}
-      title="Mecha-Tux 3.0 // Cyber Coder AI Unit (Click to Ping)"
+      title="Nozel Studio Helper (Click for status)"
     >
-      {/* Holographic Cyber HUD Bubble */}
+      {/* HUD Bubble */}
       {showHud && (
         <div className="cyber-hud-bubble" onClick={(e) => e.stopPropagation()}>
           <div className="hud-header">
             <span className="hud-dot" />
-            <span className="hud-title">MECHA_TUX // TELEMETRY</span>
+            <span className="hud-title">NOZEL // STATUS</span>
           </div>
           <div className="hud-text">{currentDisplay}</div>
           <div className="hud-corner-accent" />

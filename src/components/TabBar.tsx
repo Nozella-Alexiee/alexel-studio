@@ -46,9 +46,9 @@ export const TabBar: React.FC<TabBarProps> = ({
               {getTabBadge(tab)}
               <span className="cyber-tab-title">{tab.name}</span>
 
-              {/* Glowing Laser Dot for active or modified file */}
+              {/* Dot for active or modified file */}
               {tab.isDirty ? (
-                <span className="cyber-tab-dot dirty" title="Unsaved Memory Buffer" />
+                <span className="cyber-tab-dot dirty" title="Unsaved changes" />
               ) : isActive ? (
                 <span className="cyber-tab-dot active" />
               ) : null}
@@ -56,24 +56,26 @@ export const TabBar: React.FC<TabBarProps> = ({
               <button
                 className="cyber-tab-close"
                 onClick={(e) => onCloseTab(tab.id, e)}
-                title="Detach Buffer"
+                title="Close (⌘W)"
               >
-                <X size={10} />
+                <X size={11} />
               </button>
             </div>
           );
         })}
       </div>
 
-      {/* Cyber Viewport Controls */}
+      {/* Viewport & Editor Controls */}
       <div className="cyber-tabbar-tools">
-        <button className="cyber-tool-btn" title="Split Viewport Horizontal">
-          <Columns2 size={12} />
+        <button className="cyber-tool-btn" title="Split Editor Right">
+          <Columns2 size={13} />
         </button>
-        <button className="cyber-tool-btn" title="Buffer Operations">
-          <MoreHorizontal size={12} />
+        <button className="cyber-tool-btn" title="More Actions">
+          <MoreHorizontal size={13} />
         </button>
       </div>
     </div>
   );
 };
+
+export default TabBar;

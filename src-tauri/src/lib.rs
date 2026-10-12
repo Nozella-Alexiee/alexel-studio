@@ -17,6 +17,13 @@ pub struct FileEntry {
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct ImageFileData {
+    pub data_url: String,
+    pub size_bytes: u64,
+    pub format: String,
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct ClaudeCliInfo {
     pub installed: bool,
     pub path: Option<String>,
@@ -141,6 +148,53 @@ fn read_file_text(path: String) -> Result<String, String> {
     }
 
     String::from_utf8(bytes).map_err(|_| "File is not valid UTF-8 text.".to_string())
+}
+
+/// Read an image file safely and return a Base64 data URL with metadata for Native Image Viewer
+#[tauri::command]
+fn read_file_image(path: String) -> Result<ImageFileData, String> {
+    let p = Path::new(&path);
+    if !p.exists() {
+        return Err(format!("File does not exist: {}", path));
+    }
+    if p.is_dir() {
+        return Err(format!("Cannot open a directory as an image: {}", path));
+    }
+
+    let meta = fs::metadata(p).map_err(|e| format!("Failed to read metadata: {}", e))?;
+    if meta.len() > 25 * 1024 * 1024 {
+        return Err(format!(
+            "Image is too large ({:.2} MB). Maximum supported size is 25 MB.",
+            meta.len() as f64 / (1024.0 * 1024.0)
+        ));
+    }
+
+    let ext = p
+        .extension()
+        .map(|e| e.to_string_lossy().to_lowercase())
+        .unwrap_or_default();
+
+    let mime = match ext.as_str() {
+        "png" => "image/png",
+        "jpg" | "jpeg" => "image/jpeg",
+        "gif" => "image/gif",
+        "svg" => "image/svg+xml",
+        "webp" => "image/webp",
+        "ico" => "image/x-icon",
+        "bmp" => "image/bmp",
+        _ => "application/octet-stream",
+    };
+
+    let bytes = fs::read(p).map_err(|e| format!("Failed to read image bytes: {}", e))?;
+    use base64::Engine;
+    let b64 = base64::engine::general_purpose::STANDARD.encode(&bytes);
+    let data_url = format!("data:{};base64,{}", mime, b64);
+
+    Ok(ImageFileData {
+        data_url,
+        size_bytes: meta.len(),
+        format: ext,
+    })
 }
 
 /// Write text content to file safely
@@ -559,6 +613,7 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             list_dir,
             read_file_text,
+            read_file_image,
             write_file_text,
             create_file,
             create_dir,
@@ -668,6 +723,32 @@ mod tests {
         let res = git_get_status(temp_dir.to_string_lossy().to_string()).unwrap();
         assert!(!res.is_git_repo);
         assert_eq!(res.branch, "none");
+        let _ = fs::remove_dir(temp_dir);
+    }
+
+    #[test]
+    fn test_read_file_image() {
+        let temp_dir = std::env::temp_dir().join("nozel_test_img");
+        let _ = fs::create_dir_all(&temp_dir);
+        let img_file = temp_dir.join("sample.png");
+        let img_path = img_file.to_string_lossy().to_string();
+
+        // 1x1 PNG transparent pixel bytes
+        let png_bytes = [
+            0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A, 0x00, 0x00, 0x00, 0x0D, 0x49, 0x48,
+            0x44, 0x52, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x01, 0x08, 0x06, 0x00, 0x00,
+            0x00, 0x1F, 0x15, 0xC4, 0x89, 0x00, 0x00, 0x00, 0x0A, 0x49, 0x44, 0x41, 0x54, 0x78,
+            0x9C, 0x63, 0x00, 0x01, 0x00, 0x00, 0x05, 0x00, 0x01, 0x0D, 0x0A, 0x2D, 0xB4, 0x00,
+            0x00, 0x00, 0x00, 0x49, 0x45, 0x4E, 0x44, 0xAE, 0x42, 0x60, 0x82,
+        ];
+        let _ = fs::write(&img_file, &png_bytes);
+
+        let res = read_file_image(img_path).unwrap();
+        assert_eq!(res.format, "png");
+        assert_eq!(res.size_bytes, png_bytes.len() as u64);
+        assert!(res.data_url.starts_with("data:image/png;base64,"));
+
+        let _ = fs::remove_file(img_file);
         let _ = fs::remove_dir(temp_dir);
     }
 }

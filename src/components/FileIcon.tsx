@@ -199,6 +199,90 @@ export const FileIcon: React.FC<FileIconProps> = ({
         </svg>
       );
 
+    // 12. Native Images (PNG, JPG, GIF, WEBP, ICO)
+    case "png":
+    case "jpg":
+    case "jpeg":
+    case "gif":
+    case "webp":
+    case "ico":
+    case "bmp":
+      return (
+        <svg width={size} height={size} viewBox="0 0 24 24" fill="none" className={className}>
+          <rect width="24" height="24" rx="4" fill="#0284c7" />
+          <circle cx="8" cy="8" r="2" fill="#ffffff" />
+          <path d="M4 18L10 12L14 16L17 13L20 16V18H4Z" fill="#ffffff" />
+          <path d="M4 18H20V20H4V18Z" fill="#bae6fd" opacity="0.6" />
+        </svg>
+      );
+
+    // 13. C / C++
+    case "c":
+    case "cpp":
+    case "cc":
+    case "cxx":
+    case "h":
+    case "hpp":
+      return (
+        <svg width={size} height={size} viewBox="0 0 24 24" fill="none" className={className}>
+          <rect width="24" height="24" rx="4" fill="#00599C" />
+          <path d="M14 8C10.5 8 8 10 8 12C8 14 10.5 16 14 16C15.2 16 16.2 15.6 17 15L16 13.5C15.5 14 14.8 14.3 14 14.3C11.8 14.3 10.2 13.2 10.2 12C10.2 10.8 11.8 9.7 14 9.7C14.8 9.7 15.5 10 16 10.5L17 9C16.2 8.4 15.2 8 14 8Z" fill="#ffffff" />
+          <path d="M18 10.5H19.5V12H18V13.5H16.5V12H15V10.5H16.5V9H18V10.5Z" fill="#00A0D6" />
+        </svg>
+      );
+
+    // 14. Java
+    case "java":
+      return (
+        <svg width={size} height={size} viewBox="0 0 24 24" fill="none" className={className}>
+          <rect width="24" height="24" rx="4" fill="#E76F00" />
+          <path d="M12 4C10 7 14 8 11 11C9 13 10 14 12 15C10 16 7 15 8 13C9 11 11 10 9 8C8 6 10 5 12 4Z" fill="#5382A1" />
+          <ellipse cx="12" cy="18" rx="6" ry="1.5" fill="#ffffff" />
+        </svg>
+      );
+
+    // 15. Go
+    case "go":
+      return (
+        <svg width={size} height={size} viewBox="0 0 24 24" fill="none" className={className}>
+          <rect width="24" height="24" rx="4" fill="#00ACD7" />
+          <path d="M7 12C7 9.8 8.8 8 11 8C12.5 8 13.8 8.8 14.5 10L12.8 11C12.4 10.4 11.8 10 11 10C9.9 10 9 10.9 9 12C9 13.1 9.9 14 11 14C11.8 14 12.4 13.6 12.8 13H11V11.5H14.8C14.9 11.8 15 12.1 15 12.5C15 14.7 13.2 16.5 11 16.5C8.8 16.5 7 14.2 7 12Z" fill="#ffffff" />
+        </svg>
+      );
+
+    // 16. SQL
+    case "sql":
+      return (
+        <svg width={size} height={size} viewBox="0 0 24 24" fill="none" className={className}>
+          <rect width="24" height="24" rx="4" fill="#CC292B" />
+          <ellipse cx="12" cy="7" rx="6" ry="2.5" fill="#ffffff" />
+          <path d="M6 7V17C6 18.5 8.7 19.5 12 19.5C15.3 19.5 18 18.5 18 17V7" stroke="#ffffff" strokeWidth="1.5" fill="none" />
+          <path d="M6 12C6 13.5 8.7 14.5 12 14.5C15.3 14.5 18 13.5 18 12" stroke="#ffffff" strokeWidth="1.5" fill="none" />
+        </svg>
+      );
+
+    // 17. YAML
+    case "yaml":
+    case "yml":
+      return (
+        <svg width={size} height={size} viewBox="0 0 24 24" fill="none" className={className}>
+          <rect width="24" height="24" rx="4" fill="#CB171E" />
+          <text x="12" y="16" fill="#ffffff" fontSize="10" fontWeight="bold" textAnchor="middle" fontFamily="sans-serif">YML</text>
+        </svg>
+      );
+
+    // 18. Shell / Bash
+    case "sh":
+    case "bash":
+    case "zsh":
+      return (
+        <svg width={size} height={size} viewBox="0 0 24 24" fill="none" className={className}>
+          <rect width="24" height="24" rx="4" fill="#2E3440" stroke="#4C566A" strokeWidth="1" />
+          <path d="M6 8L10 12L6 16" stroke="#A3BE8C" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+          <path d="M12 16H18" stroke="#A3BE8C" strokeWidth="2" strokeLinecap="round" />
+        </svg>
+      );
+
     // Default File Code Icon
     default:
       return (

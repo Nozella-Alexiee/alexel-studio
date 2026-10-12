@@ -6,6 +6,8 @@ import {
   createFile,
   checkClaudeCli,
   getSystemFootprint,
+  isImageFile,
+  readFileImage,
 } from "./tauriService";
 
 describe("tauriService (mock / browser environment fallback)", () => {
@@ -37,5 +39,24 @@ describe("tauriService (mock / browser environment fallback)", () => {
     const footprint = await getSystemFootprint();
     expect(footprint.app_memory_mb).toBeLessThan(100);
     expect(footprint.savings_percentage).toBeGreaterThan(50);
+  });
+
+  it("detects image files correctly across formats", () => {
+    expect(isImageFile("photo.png")).toBe(true);
+    expect(isImageFile("avatar.jpg")).toBe(true);
+    expect(isImageFile("hero.jpeg")).toBe(true);
+    expect(isImageFile("anim.gif")).toBe(true);
+    expect(isImageFile("vector.svg")).toBe(true);
+    expect(isImageFile("modern.webp")).toBe(true);
+    expect(isImageFile("favicon.ico")).toBe(true);
+    expect(isImageFile("code.ts")).toBe(false);
+    expect(isImageFile("doc.md")).toBe(false);
+  });
+
+  it("reads image file and returns valid data URL and size", async () => {
+    const imgData = await readFileImage("/Users/demo/nozel-project/logo.png");
+    expect(imgData.format).toBe("png");
+    expect(imgData.data_url).toContain("data:image/svg+xml;base64,");
+    expect(imgData.size_bytes).toBeGreaterThan(0);
   });
 });

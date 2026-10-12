@@ -25,6 +25,8 @@ import {
   getSystemFootprint,
   gitGetStatus,
   gitAutoCommitAndPush,
+  isImageFile,
+  readFileImage,
 } from "./services/tauriService";
 import { TitleBar } from "./components/TitleBar";
 import { ActivityBar, ActivityTab } from "./components/ActivityBar";
@@ -176,14 +178,18 @@ export const App: React.FC = () => {
       const cssPath = "/Users/demo/nozel-project/style.css";
       const apiPath = "/Users/demo/nozel-project/src/api.rs";
       const pyPath = "/Users/demo/nozel-project/src/analyze.py";
+      const readmePath = "/Users/demo/nozel-project/README.md";
+      const logoPath = "/Users/demo/nozel-project/logo.png";
 
-      const [indexCode, phpCode, htmlCode, cssCode, apiCode, pyCode] = await Promise.all([
+      const [indexCode, phpCode, htmlCode, cssCode, apiCode, pyCode, readmeCode, logoData] = await Promise.all([
         readFileText(indexPath).catch(() => ""),
         readFileText(phpPath).catch(() => ""),
         readFileText(htmlPath).catch(() => ""),
         readFileText(cssPath).catch(() => ""),
         readFileText(apiPath).catch(() => ""),
         readFileText(pyPath).catch(() => ""),
+        readFileText(readmePath).catch(() => "# Nozel Code ⚡\n\nUltra-lightweight macOS code editor."),
+        readFileImage(logoPath).catch(() => ({ data_url: "", size_bytes: 42800, format: "png" })),
       ]);
 
       const isUnsaved = view === "unsaved";
@@ -209,6 +215,32 @@ export const App: React.FC = () => {
         language: "php",
         line: 14,
         col: 1,
+      };
+
+      const tabMd: EditorTab = {
+        id: readmePath,
+        path: readmePath,
+        name: "README.md",
+        content: readmeCode,
+        initialContent: readmeCode,
+        isDirty: false,
+        language: "markdown",
+        line: 1,
+        col: 1,
+      };
+
+      const tabImg: EditorTab = {
+        id: logoPath,
+        path: logoPath,
+        name: "logo.png",
+        content: "",
+        initialContent: "",
+        isDirty: false,
+        language: "image",
+        line: 1,
+        col: 1,
+        isImage: true,
+        imageData: logoData,
       };
 
       const tab2: EditorTab = {
@@ -259,8 +291,11 @@ export const App: React.FC = () => {
         col: 1,
       };
 
-      setTabs([tab1, tabPhp, tab2, tab3, tab4, tab5]);
-      setActiveTabId(view === "php" ? tabPhp.id : tab1.id);
+      setTabs([tab1, tabMd, tabImg, tabPhp, tab2, tab3, tab4, tab5]);
+      if (view === "php") setActiveTabId(tabPhp.id);
+      else if (view === "image" || view === "img") setActiveTabId(tabImg.id);
+      else if (view === "markdown" || view === "md") setActiveTabId(tabMd.id);
+      else setActiveTabId(tab1.id);
 
       // Populate mock Git status for demo
       setGitStatus({
@@ -380,6 +415,27 @@ export const App: React.FC = () => {
     }
 
     try {
+      if (isImageFile(file.name)) {
+        const imgData = await readFileImage(file.path);
+        const newTab: EditorTab = {
+          id: file.path,
+          path: file.path,
+          name: file.name,
+          content: "",
+          initialContent: "",
+          isDirty: false,
+          language: "image",
+          line: 1,
+          col: 1,
+          isImage: true,
+          imageData: imgData,
+        };
+        setTabs((prev) => [...prev, newTab]);
+        setActiveTabId(newTab.id);
+        setMascotMessage(`Membuka gambar ${file.name}! 🖼️`);
+        return;
+      }
+
       const text = await readFileText(file.path);
       const langInfo = detectLanguage(file.name);
 
@@ -460,7 +516,7 @@ export const App: React.FC = () => {
   // Save tab content (Triggers Auto Git Bot if enabled)
   const handleSaveTab = async (tabToSave?: EditorTab) => {
     const target = tabToSave || tabs.find((t) => t.id === activeTabId);
-    if (!target) return;
+    if (!target || target.isImage) return;
 
     try {
       await writeFileText(target.path, target.content);
@@ -728,6 +784,7 @@ export const App: React.FC = () => {
             onToggleClaude={() => setIsClaudePanelOpen(true)}
             onDiagnosticsChange={(probs) => setActiveProblems(probs)}
             jumpToLine={jumpToLine}
+            problems={activeProblems}
           />
 
           {/* Clickable Problems & Syntax Linter Panel */}

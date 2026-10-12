@@ -8,6 +8,12 @@ export interface FileEntry {
   isOpen?: boolean;
 }
 
+export interface ImageFileData {
+  data_url: string;
+  size_bytes: number;
+  format: string;
+}
+
 export interface EditorTab {
   id: string; // file path
   path: string;
@@ -18,6 +24,9 @@ export interface EditorTab {
   language: string;
   line: number;
   col: number;
+  isImage?: boolean;
+  imageData?: ImageFileData;
+  markdownMode?: "code" | "split" | "preview";
 }
 
 export interface ClaudeCliInfo {

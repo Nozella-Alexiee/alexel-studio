@@ -1,5 +1,5 @@
-import React, { useEffect, useRef } from "react";
-import { EditorTab, ThemeMode } from "../types";
+import React, { useEffect, useRef, useState } from "react";
+import { EditorTab, ThemeMode, CodeProblem } from "../types";
 import { detectLanguage } from "../utils/editorLanguage";
 import { EditorView, basicSetup } from "codemirror";
 import { EditorState, Compartment } from "@codemirror/state";
@@ -9,9 +9,11 @@ import { searchKeymap } from "@codemirror/search";
 import { getSyntaxTheme } from "../utils/syntaxTheme";
 import { createCodeLinter } from "../utils/codeLinter";
 import { createCodeAutocomplete } from "../utils/codeAutocomplete";
-import { Cpu, Terminal, Sparkles, ChevronRight } from "lucide-react";
+import { Cpu, Folder, Sparkles, ChevronRight } from "lucide-react";
 import { FileIcon } from "./FileIcon";
-import { CodeProblem } from "../types";
+import { ImageViewer } from "./ImageViewer";
+import { MarkdownViewer } from "./MarkdownViewer";
+import { CodeMinimap } from "./CodeMinimap";
 
 interface EditorAreaProps {
   activeTab?: EditorTab;
@@ -23,6 +25,7 @@ interface EditorAreaProps {
   onToggleClaude: () => void;
   onDiagnosticsChange?: (problems: CodeProblem[]) => void;
   jumpToLine?: { line: number; col: number; token: number };
+  problems?: CodeProblem[];
 }
 
 export const EditorArea: React.FC<EditorAreaProps> = ({
@@ -35,9 +38,13 @@ export const EditorArea: React.FC<EditorAreaProps> = ({
   onToggleClaude,
   onDiagnosticsChange,
   jumpToLine,
+  problems = [],
 }) => {
   const editorContainerRef = useRef<HTMLDivElement>(null);
   const editorViewRef = useRef<EditorView | null>(null);
+
+  const [activeProblems, setActiveProblems] = useState<CodeProblem[]>([]);
+  const [markdownMode, setMarkdownMode] = useState<"code" | "split" | "preview">("split");
 
   const languageCompartmentRef = useRef(new Compartment());
   const themeCompartmentRef = useRef(new Compartment());
@@ -51,9 +58,9 @@ export const EditorArea: React.FC<EditorAreaProps> = ({
   const onDiagnosticsChangeRef = useRef(onDiagnosticsChange);
   onDiagnosticsChangeRef.current = onDiagnosticsChange;
 
-  // Initialize CodeMirror view
+  // Initialize CodeMirror view when tab changes
   useEffect(() => {
-    if (!editorContainerRef.current || !activeTab) {
+    if (!editorContainerRef.current || !activeTab || activeTab.isImage) {
       if (editorViewRef.current) {
         editorViewRef.current.destroy();
         editorViewRef.current = null;
@@ -77,12 +84,12 @@ export const EditorArea: React.FC<EditorAreaProps> = ({
 
     const themeExt = getSyntaxTheme(theme);
 
-    // 1. Diagnostics / Code Error Tracker
+    // 1. Diagnostics / Real-time Wavy Red Squiggly Error Tracker
     const linterExt = createCodeLinter(activeTab.name, (diagnostics) => {
       if (!editorViewRef.current || !onDiagnosticsChangeRef.current) return;
       const view = editorViewRef.current;
       const doc = view.state.doc;
-      const problems: CodeProblem[] = diagnostics.map((d) => {
+      const parsedProblems: CodeProblem[] = diagnostics.map((d) => {
         const safeFrom = Math.min(Math.max(d.from, 0), doc.length);
         const lineObj = doc.lineAt(safeFrom);
         return {
@@ -93,10 +100,11 @@ export const EditorArea: React.FC<EditorAreaProps> = ({
           source: d.source,
         };
       });
-      onDiagnosticsChangeRef.current(problems);
+      setActiveProblems(parsedProblems);
+      onDiagnosticsChangeRef.current(parsedProblems);
     });
 
-    // 2. Autocomplete & Code Snippets ("Preview Lanjutannya")
+    // 2. Autocomplete & Code Snippets
     const autocompleteExt = createCodeAutocomplete(activeTab.name);
 
     const state = EditorState.create({
@@ -149,11 +157,24 @@ export const EditorArea: React.FC<EditorAreaProps> = ({
 
     editorViewRef.current = view;
 
+    // Asynchronously load language grammar if dynamic loader is available
+    if (langInfo.loadAsync && (!langInfo.extension || (Array.isArray(langInfo.extension) && langInfo.extension.length === 0))) {
+      langInfo.loadAsync().then((asyncExt) => {
+        if (editorViewRef.current) {
+          editorViewRef.current.dispatch({
+            effects: languageCompartmentRef.current.reconfigure(asyncExt),
+          });
+        }
+      }).catch((err) => {
+        console.warn("Async language loader error:", err);
+      });
+    }
+
     return () => {
       view.destroy();
       editorViewRef.current = null;
     };
-  }, [activeTab?.id]);
+  }, [activeTab?.id, activeTab?.isImage]);
 
   // Jump to line when requested from Problems Panel
   useEffect(() => {
@@ -171,6 +192,7 @@ export const EditorArea: React.FC<EditorAreaProps> = ({
     view.focus();
   }, [jumpToLine]);
 
+  // Update theme dynamically
   useEffect(() => {
     if (!editorViewRef.current) return;
     editorViewRef.current.dispatch({
@@ -181,24 +203,24 @@ export const EditorArea: React.FC<EditorAreaProps> = ({
   // Welcome state if no tab is open
   if (!activeTab) {
     return (
-      <div className="app-editor-area cyber-welcome">
-        <div className="cyber-welcome-box">
-          <div className="cyber-hex-orb">
-            <Cpu size={32} color="#00f0ff" />
+      <div className="app-editor-area pro-welcome">
+        <div className="pro-welcome-box">
+          <div className="pro-welcome-orb">
+            <Cpu size={32} color="var(--accent-color)" />
           </div>
-          <h2 className="cyber-welcome-title">NOZEL // STUDIO 2030</h2>
-          <p className="cyber-welcome-desc">
-            Ultra-lightweight quantum code matrix for macOS Apple Silicon.
-            Zero bloat, 38 MB memory footprint, native Claude Pro Neural Companion.
+          <h2 className="pro-welcome-title">Nozel Code</h2>
+          <p className="pro-welcome-desc">
+            Ultra-lightweight native code editor for macOS Apple Silicon.
+            Zero bloat, 38 MB memory footprint, native Claude Pro companion.
           </p>
-          <div className="cyber-welcome-actions">
-            <button className="cyber-btn-primary" onClick={onOpenFolder}>
-              <Terminal size={13} />
-              <span>[ MOUNT PROJECT ]</span>
+          <div className="pro-welcome-actions">
+            <button className="pro-btn-primary" onClick={onOpenFolder}>
+              <Folder size={14} />
+              <span>Open Folder</span>
             </button>
-            <button className="cyber-btn-secondary" onClick={onToggleClaude}>
-              <Sparkles size={13} color="#00f0ff" />
-              <span>[ NEURAL CLAUDE HUB ]</span>
+            <button className="pro-btn-secondary" onClick={onToggleClaude}>
+              <Sparkles size={14} color="var(--accent-color)" />
+              <span>Claude Companion</span>
             </button>
           </div>
         </div>
@@ -206,65 +228,64 @@ export const EditorArea: React.FC<EditorAreaProps> = ({
     );
   }
 
-  // Parse path breadcrumbs in cyber format
+  // Native Image Viewer
+  if (activeTab.isImage) {
+    return <ImageViewer tab={activeTab} />;
+  }
+
+  // Parse path breadcrumbs
   const pathParts = activeTab.path.split("/").filter(Boolean);
   const displayParts = pathParts.length > 3 ? pathParts.slice(-3) : pathParts;
 
-  // Generate minimap line representations
-  const codeLines = activeTab.content.split("\n").slice(0, 50);
+  const isMarkdown =
+    activeTab.name.endsWith(".md") ||
+    activeTab.name.endsWith(".markdown") ||
+    activeTab.language === "markdown" ||
+    activeTab.language === "Markdown";
+
+  const editorNode = (
+    <div className="pro-code-wrapper">
+      <div className="pro-code-container" ref={editorContainerRef} />
+      <CodeMinimap
+        content={activeTab.content}
+        editorView={editorViewRef.current}
+        theme={theme}
+        problems={activeProblems.length > 0 ? activeProblems : problems}
+      />
+    </div>
+  );
 
   return (
     <div className="app-editor-area">
-      {/* 1. Cyber HUD Breadcrumbs Bar */}
-      <div className="cyber-breadcrumbs-bar">
-        <span className="cyber-crumb-root">// NOZEL</span>
-        <ChevronRight size={11} className="cyber-crumb-sep" />
-        {displayParts.slice(0, -1).map((part, idx) => (
-          <React.Fragment key={idx}>
-            <span className="cyber-crumb-dir">{part.toUpperCase()}</span>
-            <ChevronRight size={11} className="cyber-crumb-sep" />
-          </React.Fragment>
-        ))}
-        <span className="cyber-crumb-active">
-          <FileIcon filename={activeTab.name} size={13} />
-          {activeTab.name}
-        </span>
+      {/* 1. Clean macOS Studio Breadcrumbs Bar */}
+      <div className="pro-breadcrumbs-bar">
+        {displayParts.map((part, idx) => {
+          const isLast = idx === displayParts.length - 1;
+          return (
+            <React.Fragment key={idx}>
+              {idx > 0 && <ChevronRight size={11} className="pro-crumb-sep" />}
+              <span className={`pro-crumb-item ${isLast ? "active" : ""}`}>
+                {isLast && <FileIcon filename={activeTab.name} size={13} className="mr-1.5" />}
+                <span>{part}</span>
+              </span>
+            </React.Fragment>
+          );
+        })}
       </div>
 
-      {/* 2. Main Editor Split with Holographic Minimap on Right */}
-      <div className="cyber-editor-layout">
-        <div className="cyber-code-container" ref={editorContainerRef} />
-
-        {/* Futuristic Code Minimap HUD */}
-        <aside className="cyber-minimap-hud" aria-hidden="true">
-          <div className="cyber-minimap-header">HUD_MAP</div>
-          <div className="cyber-minimap-slider" />
-          <div className="cyber-minimap-lines">
-            {codeLines.map((line, idx) => {
-              const len = Math.min(Math.max(line.trim().length * 2.2, 8), 90);
-              const isComment = line.trim().startsWith("//");
-              const isImport = line.trim().startsWith("import") || line.trim().startsWith("export");
-              const isSpecial = line.trim().startsWith("return") || line.trim().startsWith("const");
-
-              let color = "rgba(255, 255, 255, 0.25)";
-              if (isComment) color = "rgba(100, 116, 139, 0.4)";
-              else if (isImport) color = "rgba(244, 63, 94, 0.7)";
-              else if (isSpecial) color = "rgba(0, 240, 255, 0.7)";
-
-              return (
-                <div
-                  key={idx}
-                  className="cyber-minimap-bar"
-                  style={{
-                    width: `${len}%`,
-                    backgroundColor: color,
-                  }}
-                />
-              );
-            })}
-          </div>
-        </aside>
-      </div>
+      {/* 2. Editor Layout: Markdown Live Preview or Standard Code Area */}
+      {isMarkdown ? (
+        <MarkdownViewer
+          content={activeTab.content}
+          mode={markdownMode}
+          onModeChange={setMarkdownMode}
+          editorElement={editorNode}
+        />
+      ) : (
+        editorNode
+      )}
     </div>
   );
 };
+
+export default EditorArea;

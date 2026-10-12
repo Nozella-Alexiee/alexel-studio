@@ -52,8 +52,17 @@ export function createCodeLinter(
       }
     }
 
-    // 2. JS / TS / TSX / JSX / CSS / Rust Bracket & Quote Matching
-    if (["ts", "tsx", "js", "jsx", "rs", "css", "py"].includes(ext)) {
+    // 2. Multi-Language Bracket & Quote Matching (30+ Languages)
+    const codeExts = [
+      "ts", "tsx", "js", "jsx", "mjs", "cjs",
+      "c", "h", "cpp", "hpp", "cc", "cxx",
+      "java", "cs", "go", "rs", "py", "php", "phtml",
+      "rb", "kt", "kts", "swift", "dart", "lua",
+      "sh", "bash", "zsh", "sql", "css", "scss", "less",
+      "toml"
+    ];
+
+    if (codeExts.includes(ext)) {
       const stack: { char: string; pos: number; line: number }[] = [];
       const lines = doc.split("\n");
       let currentPos = 0;
@@ -62,8 +71,13 @@ export function createCodeLinter(
         const line = lines[lineIdx];
         const trimmed = line.trim();
 
-        // Skip full line comments
-        if (trimmed.startsWith("//") || trimmed.startsWith("#") || trimmed.startsWith("/*")) {
+        // Skip full line comments (C-style, Python/Shell/Ruby/YAML #, or SQL/Lua --)
+        if (
+          trimmed.startsWith("//") ||
+          trimmed.startsWith("#") ||
+          trimmed.startsWith("/*") ||
+          trimmed.startsWith("--")
+        ) {
           currentPos += line.length + 1;
           continue;
         }
@@ -120,7 +134,7 @@ export function createCodeLinter(
           diagnostics.push({
             from: currentPos,
             to: currentPos + line.length,
-            severity: "warning",
+            severity: "error",
             message: `Unclosed string literal (${stringChar}) on line ${lineIdx + 1}`,
             source: "Nozel Linter",
           });
@@ -141,8 +155,8 @@ export function createCodeLinter(
       }
     }
 
-    // 3. HTML Tag Verification
-    if (ext === "html" || ext === "htm") {
+    // 3. HTML / XML / SVG Tag Verification
+    if (["html", "htm", "xml", "svg", "xsd", "xsl", "plist"].includes(ext)) {
       const tagRegex = /<\/?([a-zA-Z0-9]+)(\s+[^>]*)?(\/?)>/g;
       const tagStack: { name: string; pos: number }[] = [];
       const voidTags = new Set(["area", "base", "br", "col", "embed", "hr", "img", "input", "link", "meta", "param", "source", "track", "wbr"]);
