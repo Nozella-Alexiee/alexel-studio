@@ -1,13 +1,13 @@
 import React from "react";
 import { FileEntry } from "../types";
 import { PenguinMascot } from "./PenguinMascot";
+import { FileIcon } from "./FileIcon";
 import {
   Folder,
   FolderOpen,
   ChevronRight,
   ChevronDown,
   Trash2,
-  FileCode,
   Terminal,
 } from "lucide-react";
 
@@ -38,34 +38,17 @@ export const FileTree: React.FC<FileTreeProps> = ({
   mascotMessage,
   onClearMascotMessage,
 }) => {
-  // Render high-tech cyber badges
+  // Render official programming language logos
   const renderEntryIcon = (entry: FileEntry) => {
     if (entry.is_dir) {
       return entry.isOpen ? (
-        <FolderOpen size={13} color="#00f0ff" />
+        <FolderOpen size={14} color="#00f0ff" />
       ) : (
-        <Folder size={13} color="#38bdf8" />
+        <Folder size={14} color="#38bdf8" />
       );
     }
 
-    const ext = entry.extension?.toLowerCase();
-    switch (ext) {
-      case "tsx":
-        return <span className="cyber-file-badge tsx">TSX</span>;
-      case "ts":
-        return <span className="cyber-file-badge ts">TS</span>;
-      case "js":
-      case "jsx":
-        return <span className="cyber-file-badge js">JS</span>;
-      case "rs":
-        return <span className="cyber-file-badge rs">RS</span>;
-      case "md":
-        return <span className="cyber-file-badge md">DOC</span>;
-      case "json":
-        return <span className="cyber-file-badge json">JSON</span>;
-      default:
-        return <FileCode size={12} color="#94a3b8" />;
-    }
+    return <FileIcon filename={entry.name} extension={entry.extension} size={15} />;
   };
 
   const renderNodes = (nodes: FileEntry[], depth = 0): React.ReactNode => {

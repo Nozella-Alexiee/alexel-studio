@@ -1,5 +1,6 @@
 import React from "react";
 import { EditorTab } from "../types";
+import { FileIcon } from "./FileIcon";
 import { X, Columns2, MoreHorizontal } from "lucide-react";
 
 interface TabBarProps {
@@ -20,21 +21,7 @@ export const TabBar: React.FC<TabBarProps> = ({
   }
 
   const getTabBadge = (tab: EditorTab) => {
-    const ext = tab.name.split(".").pop()?.toLowerCase();
-    switch (ext) {
-      case "tsx":
-        return <span className="cyber-tab-badge tsx">TSX</span>;
-      case "ts":
-        return <span className="cyber-tab-badge ts">TS</span>;
-      case "rs":
-        return <span className="cyber-tab-badge rs">RS</span>;
-      case "md":
-        return <span className="cyber-tab-badge md">DOC</span>;
-      case "json":
-        return <span className="cyber-tab-badge json">JSON</span>;
-      default:
-        return <span className="cyber-tab-badge">SRC</span>;
-    }
+    return <FileIcon filename={tab.name} size={14} />;
   };
 
   return (

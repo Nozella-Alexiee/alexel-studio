@@ -8,6 +8,7 @@ import { indentWithTab } from "@codemirror/commands";
 import { searchKeymap } from "@codemirror/search";
 import { oneDark } from "@codemirror/theme-one-dark";
 import { Cpu, Terminal, Sparkles, ChevronRight } from "lucide-react";
+import { FileIcon } from "./FileIcon";
 
 interface EditorAreaProps {
   activeTab?: EditorTab;
@@ -192,7 +193,7 @@ export const EditorArea: React.FC<EditorAreaProps> = ({
           </React.Fragment>
         ))}
         <span className="cyber-crumb-active">
-          <span className="crumb-pulse-dot" />
+          <FileIcon filename={activeTab.name} size={13} />
           {activeTab.name}
         </span>
       </div>

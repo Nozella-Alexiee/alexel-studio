@@ -39,6 +39,39 @@ export const NozelCodeEditor: FC<EditorProps> = ({ ... }) => {
   );
 };
 `,
+  "/Users/demo/nozel-project/index.html": `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Nozel Code Application</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div id="app">Hello Quantum Silicon!</div>
+</body>
+</html>
+`,
+  "/Users/demo/nozel-project/style.css": `/* Cyber Matrix Styles */
+:root {
+  --neon-cyan: #00f0ff;
+  --bg-dark: #040508;
+}
+
+body {
+  background: var(--bg-dark);
+  color: var(--neon-cyan);
+  font-family: monospace;
+}
+`,
+  "/Users/demo/nozel-project/src/analyze.py": `# Python Telemetry Script
+import time
+
+def monitor_quantum_buffer():
+    print("M1 Neural Engine Telemetry active: 38MB RAM")
+
+if __name__ == "__main__":
+    monitor_quantum_buffer()
+`,
   "/Users/demo/nozel-project/src/api.rs": `// High-performance Rust native backend bridge
 pub fn init_runtime() -> Result<(), Box<dyn std::error::Error>> {
     println!("Nozel Core Rust Engine initialized with 38MB RAM footprint.");
@@ -60,7 +93,7 @@ The ultra-lightweight desktop code editor for macOS (M1/M2/M3 Silicon).
 Designed for 8 GB RAM with instant cold start and native Claude Code companion.
 `,
   "/Users/demo/nozel-project/settings.json": `{
-  "editor.fontSize": 13.5,
+  "editor.fontSize": 13,
   "editor.tabSize": 4,
   "claude.mode": "cli-pro"
 }
@@ -94,21 +127,22 @@ export async function listDirectory(dirPath: string): Promise<FileEntry[]> {
     return await invoke<FileEntry[]>("list_dir", { dirPath });
   }
 
-  // Fallback mock matching nozel_mockup_glass
+  // Fallback mock with authentic programming files
   if (dirPath === "/Users/demo/nozel-project") {
     return [
       { name: "app", path: "/Users/demo/nozel-project/app", is_dir: true },
       { name: "src", path: "/Users/demo/nozel-project/src", is_dir: true },
+      { name: "index.html", path: "/Users/demo/nozel-project/index.html", is_dir: false, extension: "html", size: 310 },
+      { name: "style.css", path: "/Users/demo/nozel-project/style.css", is_dir: false, extension: "css", size: 180 },
+      { name: "package.json", path: "/Users/demo/nozel-project/package.json", is_dir: false, extension: "json", size: 120 },
       { name: "README.md", path: "/Users/demo/nozel-project/README.md", is_dir: false, extension: "md", size: 210 },
     ];
   } else if (dirPath === "/Users/demo/nozel-project/src") {
     return [
       { name: "core", path: "/Users/demo/nozel-project/src/core", is_dir: true },
       { name: "services", path: "/Users/demo/nozel-project/src/services", is_dir: true },
-      { name: "components", path: "/Users/demo/nozel-project/src/components", is_dir: true },
-      { name: "data", path: "/Users/demo/nozel-project/src/data", is_dir: true },
       { name: "api.rs", path: "/Users/demo/nozel-project/src/api.rs", is_dir: false, extension: "rs", size: 140 },
-      { name: "README.md", path: "/Users/demo/nozel-project/src/README.md", is_dir: false, extension: "md", size: 210 },
+      { name: "analyze.py", path: "/Users/demo/nozel-project/src/analyze.py", is_dir: false, extension: "py", size: 165 },
       { name: "package.json", path: "/Users/demo/nozel-project/src/package.json", is_dir: false, extension: "json", size: 85 },
     ];
   } else if (dirPath === "/Users/demo/nozel-project/src/services") {

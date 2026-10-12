@@ -135,15 +135,17 @@ export const App: React.FC = () => {
       setFileTree(updatedTree);
 
       const indexPath = "/Users/demo/nozel-project/src/services/index.tsx";
+      const htmlPath = "/Users/demo/nozel-project/index.html";
+      const cssPath = "/Users/demo/nozel-project/style.css";
       const apiPath = "/Users/demo/nozel-project/src/api.rs";
-      const readmePath = "/Users/demo/nozel-project/src/README.md";
-      const settingsPath = "/Users/demo/nozel-project/settings.json";
+      const pyPath = "/Users/demo/nozel-project/src/analyze.py";
 
-      const [indexCode, apiCode, readmeCode, settingsCode] = await Promise.all([
+      const [indexCode, htmlCode, cssCode, apiCode, pyCode] = await Promise.all([
         readFileText(indexPath).catch(() => ""),
+        readFileText(htmlPath).catch(() => ""),
+        readFileText(cssPath).catch(() => ""),
         readFileText(apiPath).catch(() => ""),
-        readFileText(readmePath).catch(() => ""),
-        readFileText(settingsPath).catch(() => ""),
+        readFileText(pyPath).catch(() => ""),
       ]);
 
       const isUnsaved = view === "unsaved";
@@ -160,6 +162,30 @@ export const App: React.FC = () => {
       };
 
       const tab2: EditorTab = {
+        id: htmlPath,
+        path: htmlPath,
+        name: "index.html",
+        content: htmlCode,
+        initialContent: htmlCode,
+        isDirty: false,
+        language: "html",
+        line: 1,
+        col: 1,
+      };
+
+      const tab3: EditorTab = {
+        id: cssPath,
+        path: cssPath,
+        name: "style.css",
+        content: cssCode,
+        initialContent: cssCode,
+        isDirty: false,
+        language: "css",
+        line: 1,
+        col: 1,
+      };
+
+      const tab4: EditorTab = {
         id: apiPath,
         path: apiPath,
         name: "api.rs",
@@ -171,31 +197,19 @@ export const App: React.FC = () => {
         col: 1,
       };
 
-      const tab3: EditorTab = {
-        id: readmePath,
-        path: readmePath,
-        name: "README.md",
-        content: readmeCode,
-        initialContent: readmeCode,
+      const tab5: EditorTab = {
+        id: pyPath,
+        path: pyPath,
+        name: "analyze.py",
+        content: pyCode,
+        initialContent: pyCode,
         isDirty: false,
-        language: "markdown",
+        language: "python",
         line: 1,
         col: 1,
       };
 
-      const tab4: EditorTab = {
-        id: settingsPath,
-        path: settingsPath,
-        name: "settings.json",
-        content: settingsCode,
-        initialContent: settingsCode,
-        isDirty: false,
-        language: "json",
-        line: 1,
-        col: 1,
-      };
-
-      setTabs([tab1, tab2, tab3, tab4]);
+      setTabs([tab1, tab2, tab3, tab4, tab5]);
       setActiveTabId(tab1.id);
 
       if (view === "claude") {
