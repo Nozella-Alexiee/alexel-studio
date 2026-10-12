@@ -22,6 +22,7 @@ import {
   getSystemFootprint,
 } from "./services/tauriService";
 import { TitleBar } from "./components/TitleBar";
+import { ActivityBar, ActivityTab } from "./components/ActivityBar";
 import { FileTree } from "./components/FileTree";
 import { TabBar } from "./components/TabBar";
 import { EditorArea } from "./components/EditorArea";
@@ -39,6 +40,8 @@ export const App: React.FC = () => {
   const [tabs, setTabs] = useState<EditorTab[]>([]);
   const [activeTabId, setActiveTabId] = useState<string | undefined>(undefined);
   const [theme, setTheme] = useState<ThemeMode>("dark");
+  const [activityTab, setActivityTab] = useState<ActivityTab>("explorer");
+  const [mascotMessage, setMascotMessage] = useState<string | null>(null);
   const [isClaudePanelOpen, setIsClaudePanelOpen] = useState(false);
   const [claudeInfo, setClaudeInfo] = useState<ClaudeCliInfo | undefined>(undefined);
   const [footprint, setFootprint] = useState<SystemFootprint | undefined>(undefined);
@@ -102,6 +105,65 @@ export const App: React.FC = () => {
     document.documentElement.setAttribute("data-theme", theme);
   }, [theme]);
 
+  // Support preview states via URL parameters (e.g. ?view=editor, ?view=claude, ?view=light, ?view=unsaved, ?view=newfile)
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const view = params.get("view");
+    if (!view || view === "welcome") return;
+
+    const demoPath = "/Users/demo/nozel-project";
+    setProjectPath(demoPath);
+    listDirectory(demoPath).then(async (entries) => {
+      const updated = await Promise.all(
+        entries.map(async (e) => {
+          if (e.name === "src") {
+            const children = await listDirectory(e.path);
+            return { ...e, isOpen: true, children };
+          }
+          return e;
+        })
+      );
+      setFileTree(updated);
+
+      const filePath = "/Users/demo/nozel-project/src/index.ts";
+      const text = await readFileText(filePath);
+      const isUnsaved = view === "unsaved";
+      const tab: EditorTab = {
+        id: filePath,
+        path: filePath,
+        name: "index.ts",
+        content: isUnsaved ? text + "\n// Unsaved modifications..." : text,
+        initialContent: text,
+        isDirty: isUnsaved,
+        language: "TypeScript",
+        line: 14,
+        col: 5,
+      };
+      setTabs([tab]);
+      setActiveTabId(tab.id);
+
+      if (view === "claude") {
+        setIsClaudePanelOpen(true);
+      } else if (view === "light") {
+        setTheme("light");
+      } else if (view === "unsaved") {
+        setUnsavedState({
+          isOpen: true,
+          tabId: tab.id,
+          fileName: tab.name,
+          filePath: tab.path,
+        });
+      } else if (view === "newfile") {
+        setModalPrompt({
+          isOpen: true,
+          title: "New File",
+          type: "file",
+          targetDirPath: demoPath,
+        });
+      }
+    });
+  }, []);
+
   // Load project directory tree
   const loadDirectory = async (dirPath: string) => {
     try {
@@ -119,6 +181,7 @@ export const App: React.FC = () => {
       if (selected) {
         setProjectPath(selected);
         await loadDirectory(selected);
+        setMascotMessage("Folder proyek berhasil dibuka! 📂✨");
       }
     } catch (err) {
       addToast("error", `Error opening folder: ${String(err)}`);
@@ -191,6 +254,7 @@ export const App: React.FC = () => {
 
       setTabs((prev) => [...prev, newTab]);
       setActiveTabId(newTab.id);
+      setMascotMessage(`Membuka ${file.name}! Selamat ngoding 💻`);
     } catch (err) {
       addToast("error", `Could not open file: ${String(err)}`);
     }
@@ -239,6 +303,7 @@ export const App: React.FC = () => {
         )
       );
       addToast("success", `Saved ${target.name}`);
+      setMascotMessage("File tersimpan rapi! 🐧🎉");
     } catch (err) {
       addToast("error", `Failed to save ${target.name}: ${String(err)}`);
     }
@@ -252,6 +317,7 @@ export const App: React.FC = () => {
     if (!targetTab) return;
 
     if (targetTab.isDirty) {
+      setMascotMessage("Kodinganmu belum disimpan! ⚠️");
       setUnsavedState({
         isOpen: true,
         tabId: targetTab.id,
@@ -392,6 +458,29 @@ export const App: React.FC = () => {
 
       {/* Main Area */}
       <div className="app-main">
+        {/* Activity Bar (VS Code Style) */}
+        <ActivityBar
+          activeTab={activityTab}
+          onSelectTab={(tab) => {
+            setActivityTab(tab);
+            if (tab === "claude") {
+              setIsClaudePanelOpen(true);
+              setMascotMessage("Claude Pro aktif mendampingi! ⚡");
+            }
+          }}
+          isClaudeOpen={isClaudePanelOpen}
+          onToggleClaude={() => {
+            setIsClaudePanelOpen((prev) => !prev);
+            if (!isClaudePanelOpen) {
+              setMascotMessage("Claude Pro siap bantuin kamu! 🚀");
+            }
+          }}
+          theme={theme}
+          onToggleTheme={() =>
+            setTheme((prev) => (prev === "dark" ? "light" : "dark"))
+          }
+        />
+
         {/* Sidebar File Tree */}
         <FileTree
           entries={fileTree}
@@ -404,6 +493,8 @@ export const App: React.FC = () => {
           onNewFolder={handlePromptNewFolder}
           onRefresh={handleRefreshTree}
           onDeleteEntry={handleDeleteEntry}
+          mascotMessage={mascotMessage}
+          onClearMascotMessage={() => setMascotMessage(null)}
         />
 
         {/* Editor Area */}

@@ -1,5 +1,6 @@
 import React from "react";
 import { FileEntry } from "../types";
+import { PenguinMascot } from "./PenguinMascot";
 import {
   Folder,
   FolderOpen,
@@ -25,6 +26,8 @@ interface FileTreeProps {
   onNewFolder: (targetDir: string) => void;
   onRefresh: () => void;
   onDeleteEntry: (entry: FileEntry) => void;
+  mascotMessage?: string | null;
+  onClearMascotMessage?: () => void;
 }
 
 export const FileTree: React.FC<FileTreeProps> = ({
@@ -38,6 +41,8 @@ export const FileTree: React.FC<FileTreeProps> = ({
   onNewFolder,
   onRefresh,
   onDeleteEntry,
+  mascotMessage,
+  onClearMascotMessage,
 }) => {
   const getFileIcon = (entry: FileEntry) => {
     if (entry.is_dir) {
@@ -129,6 +134,14 @@ export const FileTree: React.FC<FileTreeProps> = ({
 
   return (
     <aside className="app-sidebar">
+      {/* Tuxy Penguin Mascot Card */}
+      <div className="sidebar-mascot-card">
+        <PenguinMascot
+          customMessage={mascotMessage}
+          onClearMessage={onClearMascotMessage}
+        />
+      </div>
+
       <div className="sidebar-header">
         <span className="sidebar-title">Explorer</span>
         {projectPath && (
