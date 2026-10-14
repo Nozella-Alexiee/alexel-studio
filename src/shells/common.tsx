@@ -100,6 +100,18 @@ function useFootprint() {
   return fp;
 }
 
+/** Menu ganti project: project terakhir, buka folder lain, tutup folder (kembali ke Welcome). */
+export function openProjectMenu(e: React.MouseEvent) {
+  const { root, recents } = useStore.getState();
+  const others = recents.filter((r) => r !== root).slice(0, 8);
+  openMenu(e, [
+    ...others.map((r) => ({ label: r.split("/").pop() ?? r, keys: r.replace(/^\/Users\/[^/]+/, "~").split("/").slice(0, -1).join("/"), run: () => void A.openProject(r) })),
+    ...(others.length ? [{ label: "", separator: true }] : []),
+    { label: "Buka folder…", keys: "⌘O", run: () => void A.openProjectDialog() },
+    ...(root ? [{ label: "Tutup folder", run: () => void A.closeProject() }] : []),
+  ]);
+}
+
 export function DesignButton({ compact }: { compact?: boolean }) {
   const design = useStore((s) => s.settings.design);
   return (

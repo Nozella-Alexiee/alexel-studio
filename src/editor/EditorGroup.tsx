@@ -1,5 +1,5 @@
 import { AlertTriangle, ChevronRight, Columns2, Code2, Eye, Play, Settings as Cog, X } from "lucide-react";
-import React, { Suspense, lazy } from "react";
+import React, { Suspense, lazy, useEffect, useRef, useState } from "react";
 import * as A from "../app/actions";
 import { runActiveFile } from "../app/run";
 import { FileIcon } from "../components/FileIcon";
@@ -66,10 +66,39 @@ function TabItem({ tab, group, active }: { tab: Tab; group: number; active: bool
 export function TabStrip({ group, extra }: { group: number; extra?: React.ReactNode }) {
   const g = useStore((s) => s.groups[group]);
   const tabs = useStore((s) => s.tabs);
+  const ref = useRef<HTMLDivElement>(null);
+  const [edge, setEdge] = useState({ l: false, r: false });
+  const measure = () => {
+    const el = ref.current;
+    if (el) setEdge({ l: el.scrollLeft > 2, r: el.scrollLeft + el.clientWidth < el.scrollWidth - 2 });
+  };
+  // Tab aktif selalu terlihat; roda mouse vertikal menggulir tab ke samping (seperti VS Code).
+  useEffect(() => {
+    const el = ref.current;
+    el?.querySelector<HTMLElement>(".tab.is-active")?.scrollIntoView({ block: "nearest", inline: "nearest" });
+    measure();
+  }, [g?.active, g?.tabs.length]);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const onWheel = (e: WheelEvent) => {
+      if (Math.abs(e.deltaY) > Math.abs(e.deltaX)) {
+        el.scrollLeft += e.deltaY;
+        e.preventDefault();
+      }
+    };
+    const ro = new ResizeObserver(measure);
+    ro.observe(el);
+    el.addEventListener("wheel", onWheel, { passive: false });
+    return () => {
+      el.removeEventListener("wheel", onWheel);
+      ro.disconnect();
+    };
+  }, []);
   if (!g) return null;
   return (
-    <div className="tabstrip">
-      <div className="tabs" role="tablist" aria-label="Berkas terbuka">
+    <div className={`tabstrip ${edge.l ? "fade-l" : ""} ${edge.r ? "fade-r" : ""}`}>
+      <div className="tabs" role="tablist" aria-label="Berkas terbuka" ref={ref} onScroll={measure}>
         {g.tabs.map((id) => tabs[id] && <TabItem key={id} tab={tabs[id]} group={group} active={g.active === id} />)}
       </div>
       <div className="tabstrip-actions">{extra}</div>

@@ -9,7 +9,7 @@ import { PinguBrand, PinguPeek } from "../components/PenguinMascot";
 import { IconButton, Kbd, Segmented } from "../components/ui";
 import { BottomPanel } from "../panels/BottomPanel";
 import { setLayout, useLayout, useStore, type SideView } from "../state/store";
-import { EditorGroups, RightContent, SideContent, SideResizer, StatusBar } from "./common";
+import { EditorGroups, RightContent, SideContent, SideResizer, StatusBar, openProjectMenu } from "./common";
 
 export default function AuroraShell() {
   const l = useLayout();
@@ -53,7 +53,7 @@ export default function AuroraShell() {
                   {(name ?? "N")[0].toUpperCase()}
                 </div>
                 <div className="ws-text">
-                  <button className="ws-name" onClick={() => void A.openProjectDialog()} title="Buka folder lain">
+                  <button className="ws-name" onClick={openProjectMenu} title="Ganti project" aria-haspopup="menu">
                     {name ?? "Belum ada folder"}
                   </button>
                   {git?.is_repo && (

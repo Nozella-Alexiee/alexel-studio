@@ -4,7 +4,7 @@ import * as docs from "../editor/documents";
 import { api, errMsg } from "../lib/ipc";
 import { basename } from "../lib/paths";
 import type { RunTarget } from "../lib/types";
-import { activeTab, getState, toast } from "../state/store";
+import { activeTab, getState, setState, toast } from "../state/store";
 
 let busy = false;
 
@@ -42,4 +42,24 @@ export async function openClaudeInteractive() {
   const { newTerminal } = await import("../terminal/terminals");
   const q = `'${info.path.replace(/'/g, "'\\''")}'`;
   await newTerminal({ kind: "claude", title: "Claude", command: q });
+}
+
+/**
+ * Ctrl+` ala VS Code: panel terminal tertutup → buka (dan buat shell bila belum ada shell);
+ * panel terminal sudah tampil → tutup. Sesi Run/Claude tidak dihitung sebagai shell.
+ */
+export async function toggleTerminal() {
+  const s = getState();
+  const l = s.layouts[s.settings.design];
+  if (l.panel && l.panelTab === "terminal") {
+    const A = await import("./actions");
+    return A.togglePanel();
+  }
+  const shell = s.terminals.find((t) => t.kind === "shell" && t.status !== "exited");
+  if (!shell) return openShell();
+  const A = await import("./actions");
+  A.togglePanel("terminal");
+  setState({ activeTerminal: shell.key });
+  const { focusTerminal } = await import("../terminal/terminals");
+  requestAnimationFrame(() => focusTerminal(shell.key));
 }

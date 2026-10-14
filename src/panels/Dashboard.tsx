@@ -8,57 +8,93 @@ import { PinguHero, moodLine, usePenguinMood, usePenguinVariant } from "../compo
 import { Kbd, Spinner } from "../components/ui";
 import { DESIGNS } from "../design/designs";
 import { api, isDemo } from "../lib/ipc";
-import { basename, shortenHome } from "../lib/paths";
+import { basename, dirname, shortenHome } from "../lib/paths";
 import { formatBytes, timeAgo } from "../lib/format";
-import type { ProjectOverview } from "../lib/types";
+import type { FoundProject, ProjectOverview } from "../lib/types";
 import { setLayout, useStore } from "../state/store";
 import { refreshTodos } from "./todoData";
 
-function Welcome() {
+function ProjectPicker() {
   const recents = useStore((s) => s.recents);
+  const [found, setFound] = useState<FoundProject[] | null>(null);
+  const [q, setQ] = useState("");
+  useEffect(() => {
+    let alive = true;
+    // Folder induk project terakhir ikut dipindai: project "saudara" biasanya relevan.
+    const parents = [...new Set(recents.map((r) => dirname(r)))];
+    api.discoverProjects(parents).then((f) => alive && setFound(f)).catch(() => alive && setFound([]));
+    return () => {
+      alive = false;
+    };
+  }, [recents]);
+  const recentSet = new Set(recents);
+  const rows = [
+    ...recents.map((r) => ({ path: r, name: basename(r), kind: found?.find((f) => f.path === r)?.kind ?? "", mtimeMs: 0, recent: true })),
+    ...(found ?? []).filter((f) => !recentSet.has(f.path)).map((f) => ({ ...f, recent: false })),
+  ];
+  const needle = q.trim().toLowerCase();
+  const shown = needle ? rows.filter((r) => r.name.toLowerCase().includes(needle) || r.path.toLowerCase().includes(needle)) : rows;
+  return (
+    <section className="card project-card">
+      <div className="project-head">
+        <h2 className="card-title">Project</h2>
+        <input className="input project-filter" placeholder="Cari project…" value={q} onChange={(e) => setQ(e.target.value)} aria-label="Cari project" autoFocus />
+      </div>
+      {found === null && !recents.length ? (
+        <div className="pad">
+          <Spinner />
+        </div>
+      ) : shown.length === 0 ? (
+        <p className="hint">{needle ? "Tidak ada project yang cocok." : "Belum ketemu project. Klik Buka folder untuk memilih sendiri."}</p>
+      ) : (
+        <ul className="project-list">
+          {shown.slice(0, 80).map((r) => (
+            <li key={r.path}>
+              <button className="project-row" onClick={() => void A.openProject(r.path)} title={r.path}>
+                <FolderOpen size={15} aria-hidden className="project-ico" />
+                <span className="project-name">{r.name}</span>
+                {r.kind && <span className="project-kind">{r.kind}</span>}
+                {r.recent && <span className="project-kind is-recent">terakhir</span>}
+                <span className="project-path">{shortenHome(dirname(r.path))}</span>
+                {r.mtimeMs > 0 && <span className="project-time">{timeAgo(r.mtimeMs)}</span>}
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+    </section>
+  );
+}
+
+function Welcome() {
   const design = useStore((s) => s.settings.design);
   const penguin = usePenguinVariant();
   return (
     <div className="welcome">
       <div className="welcome-hero">
         {penguin ? (
-          <PinguHero size={150} />
+          <PinguHero size={96} />
         ) : (
           <div className="logo-mark" aria-hidden>
             N
           </div>
         )}
-        <h1>{penguin ? "Halo! Pingu siap ngoding." : "Nozel Code"}</h1>
-        <p className="hint">Editor kode untuk Mac, dengan terminal sungguhan dan Claude Code bawaan.</p>
-        <div className="welcome-actions">
-          <button className="btn btn-primary" onClick={() => void A.openProjectDialog()}>
-            <FolderOpen size={15} /> Buka folder
-          </button>
-          <button className="btn" onClick={() => void openShell()}>
-            <TerminalSquare size={15} /> Terminal
-          </button>
+        <div className="welcome-hero-text">
+          <h1>{penguin ? "Halo! Pingu siap ngoding." : "Nozel Code"}</h1>
+          <p className="hint">Pilih project di bawah, atau buka folder lain.</p>
+          <div className="welcome-actions">
+            <button className="btn btn-primary" onClick={() => void A.openProjectDialog()}>
+              <FolderOpen size={15} /> Buka folder…
+            </button>
+            <button className="btn" onClick={() => void openShell()}>
+              <TerminalSquare size={15} /> Terminal
+            </button>
+          </div>
         </div>
-        {isDemo && <p className="hint small">Mode pratinjau browser: backend tiruan. Buka lewat aplikasi Nozel untuk berkas sungguhan.</p>}
       </div>
+      {isDemo && <p className="hint small">Mode pratinjau browser: backend tiruan. Buka lewat aplikasi Nozel untuk berkas sungguhan.</p>}
       <div className="welcome-grid">
-        <section className="card">
-          <h2 className="card-title">Project terakhir</h2>
-          {recents.length ? (
-            <ul className="recent-list">
-              {recents.map((r) => (
-                <li key={r}>
-                  <button className="recent" onClick={() => void A.openProject(r)}>
-                    <FolderOpen size={14} aria-hidden />
-                    <span className="recent-name">{basename(r)}</span>
-                    <span className="recent-path">{shortenHome(r)}</span>
-                  </button>
-                </li>
-              ))}
-            </ul>
-          ) : (
-            <p className="hint">Belum ada. Folder yang kamu buka akan muncul di sini.</p>
-          )}
-        </section>
+        <ProjectPicker />
         <section className="card">
           <h2 className="card-title">Desain</h2>
           <div className="design-mini">
@@ -74,9 +110,9 @@ function Welcome() {
           </div>
           <h2 className="card-title">Shortcut penting</h2>
           <ul className="shortcut-list">
+            <li><Kbd keys="Mod+O" /> Buka folder</li>
             <li><Kbd keys="Mod+P" /> Buka berkas</li>
             <li><Kbd keys="Mod+K" /> Semua perintah</li>
-            <li><Kbd keys="Mod+Shift+F" /> Cari di project</li>
             <li><Kbd keys="Ctrl+`" /> Terminal</li>
             <li><Kbd keys="Mod+L" /> Tanya Claude</li>
             <li><Kbd keys="Mod+R" /> Jalankan berkas</li>

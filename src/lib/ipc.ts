@@ -3,6 +3,7 @@
 // supaya UI tetap bisa dicoba. Mode tiruan TIDAK pernah aktif di build produksi.
 
 import type {
+  FoundProject,
   Branches,
   ClaudeInfo,
   Commit,
@@ -134,6 +135,7 @@ export const api = {
 
   // Sistem
   footprint: () => call<Footprint>("system_footprint"),
+  discoverProjects: (parents: string[]) => call<FoundProject[]>("discover_projects", { parents }),
   power: () => call<PowerStatus>("power_status"),
   ports: () => call<ListeningPort[]>("list_ports"),
   kill: (pid: number, force = false) => call<void>("kill_process", { pid, force }),

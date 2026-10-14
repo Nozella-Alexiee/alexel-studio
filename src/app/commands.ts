@@ -4,7 +4,7 @@ import { DESIGNS, designById } from "../design/designs";
 import * as docs from "../editor/documents";
 import { getState, setState, activeTab, setLayout } from "../state/store";
 import * as A from "./actions";
-import { openClaudeInteractive, openShell, runActiveFile } from "./run";
+import { openClaudeInteractive, openShell, runActiveFile, toggleTerminal } from "./run";
 
 export interface Command {
   id: string;
@@ -65,7 +65,7 @@ export const COMMANDS: Command[] = [
   { id: "extThemeOff", label: "Lepas tema ekstensi", group: "Desain", run: () => A.updateSettings({ extTheme: null }), when: () => !!getState().settings.extTheme },
   { id: "iconThemeOff", label: "Lepas tema ikon berkas", group: "Desain", run: () => A.updateSettings({ iconTheme: null }), when: () => !!getState().settings.iconTheme },
   { id: "panel", label: "Tampilkan/sembunyikan panel bawah", group: "Tampilan", keys: "Mod+J", run: () => A.togglePanel() },
-  { id: "terminal", label: "Terminal", group: "Terminal", keys: "Ctrl+`", run: async () => { const s = getState(); if (!s.terminals.length) await openShell(); else A.togglePanel("terminal"); } },
+  { id: "terminal", label: "Terminal", group: "Terminal", keys: "Ctrl+`", run: toggleTerminal },
   { id: "newTerminal", label: "Terminal baru", group: "Terminal", keys: "Ctrl+Shift+`", run: openShell },
   { id: "problems", label: "Masalah (error & peringatan)", group: "Tampilan", keys: "Mod+Shift+M", run: () => A.togglePanel("problems") },
   { id: "ports", label: "Port & proses yang berjalan", group: "Tampilan", run: () => A.togglePanel("ports") },

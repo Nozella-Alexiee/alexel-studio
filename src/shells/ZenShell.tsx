@@ -15,7 +15,7 @@ import { relative } from "../lib/paths";
 import { PanelContent, PanelTabs } from "../panels/BottomPanel";
 import { FileTree } from "../panels/Explorer";
 import { activeTab, getState, setLayout, useLayout, useStore } from "../state/store";
-import { EditorGroups, RightContent, SideContent, SideResizer, StatusBar } from "./common";
+import { EditorGroups, RightContent, SideContent, SideResizer, StatusBar, openProjectMenu } from "./common";
 
 function Section({ title, children, defaultOpen = true, action }: { title: string; children: ReactNode; defaultOpen?: boolean; action?: ReactNode }) {
   const [open, setOpen] = useState(defaultOpen);
@@ -119,7 +119,9 @@ export default function ZenShell() {
         <div className="traffic-space" />
         <PinguBrand />
         <div className="zen-crumb">
-          {root && <span className="zen-root">{root.split("/").pop()}</span>}
+          <button className="zen-root" onClick={openProjectMenu} title="Ganti project" aria-haspopup="menu">
+            {root ? root.split("/").pop() : "Buka project"}
+          </button>
           {rel && (
             <>
               <span className="zen-slash">/</span>

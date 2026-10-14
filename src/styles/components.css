@@ -169,6 +169,16 @@
 .tabs::-webkit-scrollbar {
   display: none;
 }
+/* Petunjuk ada tab tersembunyi di kiri/kanan. */
+.tabstrip.fade-r .tabs {
+  mask-image: linear-gradient(to right, #000 calc(100% - 36px), transparent);
+}
+.tabstrip.fade-l .tabs {
+  mask-image: linear-gradient(to right, transparent, #000 36px);
+}
+.tabstrip.fade-l.fade-r .tabs {
+  mask-image: linear-gradient(to right, transparent, #000 36px, #000 calc(100% - 36px), transparent);
+}
 .tab {
   display: flex;
   align-items: center;
@@ -1580,15 +1590,111 @@ button.crumb:hover {
   white-space: nowrap;
 }
 .welcome-hero {
-  text-align: center;
-  padding: 40px 0 10px;
+  padding: 8px 0 4px;
+  display: flex;
+  align-items: center;
+  gap: 22px;
+}
+.welcome-hero-text {
   display: flex;
   flex-direction: column;
-  align-items: center;
-  gap: 10px;
+  gap: 4px;
+  min-width: 0;
 }
 .welcome-hero h1 {
-  font-size: 30px;
+  font-size: 26px;
+  letter-spacing: -0.01em;
+}
+.welcome .welcome-grid {
+  grid-template-columns: minmax(0, 1.7fr) minmax(260px, 1fr);
+  align-items: start;
+}
+@media (max-width: 980px) {
+  .welcome .welcome-grid {
+    grid-template-columns: 1fr;
+  }
+}
+.project-card {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+.project-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+.project-head .card-title {
+  margin: 0;
+}
+.project-filter {
+  margin-left: auto;
+  max-width: 240px;
+  height: 28px;
+}
+.project-list {
+  list-style: none;
+  margin: 0 -8px;
+  padding: 0;
+  max-height: 52vh;
+  overflow: auto;
+}
+.project-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 7px 8px;
+  border-radius: var(--radius-sm);
+  text-align: left;
+  min-width: 0;
+}
+.project-row:hover,
+.project-row:focus-visible {
+  background: var(--surface-hover);
+}
+.project-ico {
+  color: var(--accent);
+  flex: none;
+}
+.project-name {
+  color: var(--fg-strong);
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+  flex: 0 1 auto;
+}
+.project-kind {
+  flex: none;
+  font: 600 10px var(--font-ui);
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: var(--surface-3);
+  color: var(--fg-muted);
+}
+.project-kind.is-recent {
+  background: var(--accent-softer, var(--surface-3));
+  color: var(--accent);
+}
+.project-path {
+  color: var(--fg-subtle);
+  font-size: 11px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+  flex: 1 1 0;
+  text-align: right;
+}
+.project-time {
+  flex: none;
+  color: var(--fg-subtle);
+  font-size: 11px;
+  width: 78px;
+  text-align: right;
 }
 .logo-mark {
   width: 56px;
@@ -2391,4 +2497,16 @@ button.crumb:hover {
 .ext-theme.is-on .right {
   color: var(--accent);
   font-weight: 600;
+}
+
+.tree-empty-hint {
+  padding: 10px 16px;
+  color: var(--fg-subtle);
+  font-size: var(--ui-small, 12px);
+  line-height: 1.5;
+}
+.tree-empty-hint .link {
+  color: var(--accent);
+  text-decoration: underline;
+  text-underline-offset: 2px;
 }

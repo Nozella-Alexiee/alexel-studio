@@ -185,8 +185,11 @@ const BuiltinFileIcon: React.FC<FileIconProps> = ({
     case "svg":
       return (
         <svg width={size} height={size} viewBox="0 0 24 24" fill="none" className={className}>
-          <rect width="24" height="24" rx="4" fill="#FFB13B" />
-          <path d="M6 14L9 7L12 14M7.2 12H10.8M14 7V14H18" stroke="#FFFFFF" strokeWidth="1.8" strokeLinecap="round" />
+          {/* Kurva bezier dengan titik kendali: ikon "vektor", bukan huruf. */}
+          <path d="M4 18C7 6 17 6 20 18" stroke="#FFB13B" strokeWidth="2" strokeLinecap="round" />
+          <rect x="2" y="16" width="4" height="4" rx="1" fill="#FFB13B" />
+          <rect x="18" y="16" width="4" height="4" rx="1" fill="#FFB13B" />
+          <circle cx="12" cy="6" r="2.2" fill="#FFB13B" />
         </svg>
       );
 

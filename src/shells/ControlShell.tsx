@@ -1,7 +1,7 @@
 // Desain C — Control Room: padat ala IDE. Toolbar run dengan pilihan target Smart Run,
 // rail ikon, sidebar, split editor, panel bawah ter-dock, panel Git/Claude di kanan.
 
-import { ChevronDown, Columns2, Files, GitBranch, ListTodo, Play, Puzzle, Search, Settings, Sparkles, Square, Network, TerminalSquare } from "lucide-react";
+import { ChevronDown, Columns2, Files, FolderOpen, GitBranch, ListTodo, Play, Puzzle, Search, Settings, Sparkles, Square, Network, TerminalSquare } from "lucide-react";
 import { useState, type ReactNode } from "react";
 import * as A from "../app/actions";
 import { openPalette } from "../app/commands";
@@ -11,7 +11,7 @@ import { PinguBrand } from "../components/PenguinMascot";
 import { IconButton } from "../components/ui";
 import { BottomPanel } from "../panels/BottomPanel";
 import { getState, setLayout, useLayout, useStore } from "../state/store";
-import { EditorGroups, RightContent, SideContent, SideResizer, StatusBar } from "./common";
+import { EditorGroups, RightContent, SideContent, SideResizer, StatusBar, openProjectMenu } from "./common";
 
 function RunConfig() {
   const targets = useStore((s) => s.runTargets);
@@ -75,9 +75,12 @@ export default function ControlShell() {
         <PinguBrand />
         <RunConfig />
         <div className="ctl-center">
-          <button className="ctl-project" onClick={() => openPalette("")} title="Cari berkas (⌘P)">
-            <Search size={12} aria-hidden /> {root ? root.split("/").pop() : "Nozel Code"}
+          <button className="ctl-project" onClick={openProjectMenu} title="Ganti project" aria-haspopup="menu">
+            <FolderOpen size={12} aria-hidden /> {root ? root.split("/").pop() : "Buka project"}
             {git?.is_repo && <span className="ctl-branch">· {git.branch}</span>}
+          </button>
+          <button className="ctl-search" onClick={() => openPalette("")} title="Cari berkas (⌘P)" aria-label="Cari berkas">
+            <Search size={12} aria-hidden /> <span>Cari berkas</span> <kbd>⌘P</kbd>
           </button>
         </div>
         <div className="titlebar-actions">

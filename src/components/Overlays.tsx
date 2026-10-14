@@ -180,7 +180,16 @@ const useMenu = create<{ x: number; y: number; items: MenuItem[] } | { items: nu
 export function openMenu(e: React.MouseEvent | MouseEvent, items: MenuItem[]) {
   e.preventDefault();
   e.stopPropagation();
-  useMenu.setState({ x: e.clientX, y: e.clientY, items });
+  // Dibuka lewat keyboard (Enter/Spasi) → tidak ada koordinat mouse; tempelkan ke elemen pemicunya.
+  let x = e.clientX;
+  let y = e.clientY;
+  const el = e.currentTarget as HTMLElement | null;
+  if (!x && !y && el?.getBoundingClientRect) {
+    const r = el.getBoundingClientRect();
+    x = r.left;
+    y = r.bottom + 4 > window.innerHeight - 40 ? r.top : r.bottom + 4;
+  }
+  useMenu.setState({ x, y, items });
 }
 
 export function ContextMenuHost() {

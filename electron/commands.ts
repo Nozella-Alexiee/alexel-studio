@@ -14,6 +14,7 @@ import * as pty from "./pty";
 import * as runner from "./runner";
 import * as S from "./search";
 import * as store from "./store";
+import { discoverProjects } from "./projects";
 import * as sys from "./system";
 import type { Ctx } from "./util";
 import * as watcher from "./watcher";
@@ -91,6 +92,7 @@ export function buildCommands(ctx: Ctx, hooks: { confirmClose: (win: BrowserWind
     lsp_stop: (a) => lsp.lspStop(a.key),
 
     // Sistem
+    discover_projects: (a) => discoverProjects(Array.isArray(a.parents) ? (a.parents as string[]) : []),
     system_footprint: () => {
       const m = app.getAppMetrics();
       const kb = m.reduce((s, p) => s + (p.memory?.workingSetSize ?? 0), 0);

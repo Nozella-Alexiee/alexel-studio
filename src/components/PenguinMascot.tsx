@@ -221,25 +221,62 @@ export function PinguStatus() {
 }
 
 /** Pingu mengintip di bawah sidebar sambil memberi tips (Antartika). */
+const PEEK_KEY = "nozel.pinguPeekHidden";
+const readHidden = () => {
+  try {
+    return localStorage.getItem(PEEK_KEY) === "1";
+  } catch {
+    return false;
+  }
+};
+
 export function PinguPeek() {
   const v = usePenguinVariant();
   const mood = usePenguinMood();
   const tip = useTip();
-  const [hidden, setHidden] = useState(false);
+  const [hidden, setHidden] = useState(readHidden);
+  // Gelembung tampil sebentar saat tips/suasana berganti, lalu mengecil supaya Explorer lega.
+  const [bubble, setBubble] = useState(true);
+  useEffect(() => {
+    setBubble(true);
+    const t = setTimeout(() => setBubble(false), 9000);
+    return () => clearTimeout(t);
+  }, [tip, mood]);
   if (!v || hidden) return null;
+  const hide = () => {
+    setHidden(true);
+    try {
+      localStorage.setItem(PEEK_KEY, "1");
+    } catch {
+      /* abaikan */
+    }
+  };
   return (
-    <div className="pingu-peek">
-      <button className="pingu-bubble" onClick={() => nextTip()} title="Tips berikutnya">
-        {mood === "idle" ? tip : moodLine(mood)}
-      </button>
-      <button className="pingu-peek-x" aria-label="Sembunyikan Pingu" onClick={() => setHidden(true)}>
-        ×
-      </button>
+    <div className={`pingu-peek ${bubble ? "has-bubble" : ""}`} onMouseEnter={() => setBubble(true)} onMouseLeave={() => setBubble(false)}>
+      {bubble && (
+        <>
+          <button className="pingu-bubble" onClick={() => nextTip()} title="Tips berikutnya">
+            {mood === "idle" ? tip : moodLine(mood)}
+          </button>
+          <button className="pingu-peek-x" aria-label="Sembunyikan Pingu" title="Sembunyikan Pingu (bisa dimunculkan lagi di Pengaturan)" onClick={hide}>
+            ×
+          </button>
+        </>
+      )}
       <div className="pingu-peek-body">
-        <PenguinMascot variant={v} mood={mood} size={58} />
+        <PenguinMascot variant={v} mood={mood} size={44} />
       </div>
     </div>
   );
+}
+
+/** Munculkan lagi Pingu di sidebar (dipanggil dari Pengaturan). */
+export function showPinguPeek() {
+  try {
+    localStorage.removeItem(PEEK_KEY);
+  } catch {
+    /* abaikan */
+  }
 }
 
 /** Pingu besar di beranda/dashboard. Kawanan menampilkan tiga pinguin. */

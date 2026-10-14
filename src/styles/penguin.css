@@ -117,8 +117,22 @@
 .pingu-peek {
   position: relative;
   flex: none;
-  height: 120px;
-  margin: 8px 2px 0;
+  height: 52px;
+  margin: 4px 2px 0;
+}
+/* Gelembung melayang di atas daftar berkas hanya sebentar; tidak memakan tinggi sidebar. */
+.pingu-peek .pingu-bubble {
+  bottom: 54px;
+  top: auto;
+  box-shadow: var(--shadow-pop);
+  z-index: 2;
+}
+.pingu-peek .pingu-peek-x {
+  bottom: 60px;
+  top: auto;
+  right: 2px;
+  z-index: 3;
+  background: var(--surface-popover);
 }
 .pingu-bubble {
   position: absolute;

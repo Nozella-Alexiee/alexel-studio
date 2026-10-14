@@ -1,9 +1,9 @@
-import { ChevronRight, FilePlus2, FolderOpen, FolderPlus, ListCollapse, RefreshCw } from "lucide-react";
+import { ChevronRight, FilePlus2, FolderPlus, ListCollapse, RefreshCw } from "lucide-react";
 import React, { useCallback, useMemo, useRef, useState } from "react";
 import * as A from "../app/actions";
 import { FileIcon, FolderIcon } from "../components/FileIcon";
 import { openMenu } from "../components/Overlays";
-import { Empty, IconButton } from "../components/ui";
+import { IconButton } from "../components/ui";
 import { basename, dirname } from "../lib/paths";
 import type { FileEntry } from "../lib/types";
 import { activeTabId, getState, setState, useStore } from "../state/store";
@@ -166,9 +166,14 @@ export function FileTree() {
 
   if (!root) {
     return (
-      <Empty icon={<FolderOpen size={28} />} title="Belum ada folder" action={<button className="btn btn-primary" onClick={() => void A.openProjectDialog()}>Buka folder</button>}>
-        Buka folder project untuk mulai.
-      </Empty>
+      // Halaman Welcome sudah menampilkan daftar project; di sini cukup petunjuk singkat.
+      <div className="tree-empty-hint">
+        Pilih project di halaman sambutan, atau{" "}
+        <button className="link" onClick={() => void A.openProjectDialog()}>
+          buka folder
+        </button>
+        .
+      </div>
     );
   }
   return (

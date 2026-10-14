@@ -449,6 +449,10 @@ export function createMockBackend(emit: (event: string, payload: unknown) => voi
       setTimeout(() => emit("claude-done", { run_id: runId, code: 0, stderr: "" }), 1350);
     },
     claude_cancel: ({ runId }) => emit("claude-done", { run_id: runId, code: 130, stderr: "dibatalkan" }),
+    discover_projects: () => [
+      { path: "/Users/demo/Projects/toko-online", name: "toko-online", kind: "Laravel", mtimeMs: Date.now() - 3600e3, git: true },
+      { path: "/Users/demo/Projects/portofolio", name: "portofolio", kind: "Node", mtimeMs: Date.now() - 86400e3, git: true },
+    ],
     system_footprint: () => ({ core_mb: 41.2 + Math.random() * 2, cpu_percent: Math.round(Math.random() * 30) / 10, uptime_s: 120 }),
     power_status: () => ({ on_battery: false, percent: 86, charging: true, low_power_mode: false }),
     list_ports: () => [

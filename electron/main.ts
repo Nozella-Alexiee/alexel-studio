@@ -38,7 +38,7 @@ if (process.env.NOZEL_USER_DATA) app.setPath("userData", process.env.NOZEL_USER_
 
 protocol.registerSchemesAsPrivileged([
   { scheme: "app", privileges: { standard: true, secure: true, supportFetchAPI: true, codeCache: true } },
-  { scheme: "nozelpreview", privileges: { standard: true, secure: true, supportFetchAPI: true, stream: true } },
+  { scheme: "nozelpreview", privileges: { standard: true, secure: true, supportFetchAPI: true, stream: true, corsEnabled: true } },
   { scheme: "nozelext", privileges: { standard: true, secure: true } },
 ]);
 
@@ -64,6 +64,42 @@ const commands = buildCommands(ctx, {
     w.close();
   },
 });
+
+// Mode uji otomatis saja: skrip uji boleh minta screenshot berkali-kali ke folder NOZEL_SMOKE_SHOTS.
+if (process.env.NOZEL_SMOKE && process.env.NOZEL_SMOKE_SHOTS) {
+  const dir = process.env.NOZEL_SMOKE_SHOTS;
+  commands.smoke_shot = async (a, w) => {
+    const name = String(a.name ?? "shot").replace(/[^\w.-]/g, "_");
+    if (!w) return null;
+    fs.mkdirSync(dir, { recursive: true });
+    fs.writeFileSync(path.join(dir, `${name}.png`), (await w.webContents.capturePage()).toPNG());
+    return name;
+  };
+  // Input asli (mouse/keyboard) seperti pengguna, bukan event DOM sintetis.
+  commands.smoke_input = async (a, w) => {
+    if (!w) return null;
+    const wc = w.webContents;
+    const mods = (a.modifiers as ("cmd" | "shift" | "alt" | "control")[] | undefined)?.map((m) => (m === "cmd" ? "meta" : m)) as Electron.InputEvent["modifiers"];
+    if (a.type === "click") {
+      const x = Number(a.x), y = Number(a.y);
+      wc.sendInputEvent({ type: "mouseMove", x, y });
+      wc.sendInputEvent({ type: "mouseDown", x, y, button: "left", clickCount: 1 });
+      wc.sendInputEvent({ type: "mouseUp", x, y, button: "left", clickCount: 1 });
+    } else if (a.type === "key") {
+      const keyCode = String(a.key);
+      wc.sendInputEvent({ type: "keyDown", keyCode, modifiers: mods });
+      if (keyCode.length === 1 && !mods?.some((m) => m === "meta" || m === "control")) wc.sendInputEvent({ type: "char", keyCode, modifiers: mods });
+      wc.sendInputEvent({ type: "keyUp", keyCode, modifiers: mods });
+    } else if (a.type === "text") {
+      for (const ch of String(a.text)) {
+        wc.sendInputEvent({ type: "keyDown", keyCode: ch });
+        wc.sendInputEvent({ type: "char", keyCode: ch });
+        wc.sendInputEvent({ type: "keyUp", keyCode: ch });
+      }
+    }
+    return true;
+  };
+}
 
 function isTrustedSender(url: string) {
   return url.startsWith(APP_ORIGIN + "/") || (!!DEV_URL && url.startsWith(DEV_URL));
@@ -109,6 +145,8 @@ function serveApp() {
       headers: {
         "Content-Type": r.mime,
         "Cache-Control": "no-store",
+        // Iframe pratinjau ber-sandbox (origin "null"); script type=module & crossorigin butuh izin CORS.
+        "Access-Control-Allow-Origin": "*",
         "Content-Security-Policy": "default-src * data: blob: 'unsafe-inline' 'unsafe-eval'",
       },
     });
@@ -199,6 +237,9 @@ function createWindow() {
 /** Uji otomatis (hanya bila env NOZEL_SMOKE berisi path skrip): jalankan skrip di renderer,
  *  cetak hasilnya, simpan screenshot, lalu keluar. Tidak aktif dalam pemakaian normal. */
 function runSmoke(w: BrowserWindow, scriptPath: string) {
+  w.webContents.on("console-message", (e) => {
+    if (e.level === "error" || e.level === "warning") process.stdout.write(`SMOKE_CONSOLE ${e.level} ${e.message.slice(0, 400)}\n`);
+  });
   w.webContents.once("did-finish-load", async () => {
     try {
       const code = fs.readFileSync(scriptPath, "utf8");

@@ -62,11 +62,11 @@ export interface Layout {
 }
 
 export const DEFAULT_LAYOUTS: Record<DesignId, Layout> = {
-  aurora: { sidebar: true, sidebarW: 248, sideView: "files", panel: true, panelH: 210, panelTab: "terminal", right: true, rightW: 320, rightView: "claude" },
+  aurora: { sidebar: true, sidebarW: 248, sideView: "files", panel: false, panelH: 220, panelTab: "terminal", right: false, rightW: 320, rightView: "claude" },
   zen: { sidebar: true, sidebarW: 232, sideView: "files", panel: false, panelH: 180, panelTab: "terminal", right: false, rightW: 340, rightView: "claude" },
-  control: { sidebar: true, sidebarW: 252, sideView: "files", panel: true, panelH: 220, panelTab: "terminal", right: true, rightW: 296, rightView: "git" },
-  antartika: { sidebar: true, sidebarW: 236, sideView: "files", panel: false, panelH: 200, panelTab: "terminal", right: true, rightW: 300, rightView: "claude" },
-  tuxedo: { sidebar: true, sidebarW: 224, sideView: "files", panel: true, panelH: 190, panelTab: "terminal", right: true, rightW: 290, rightView: "claude" },
+  control: { sidebar: true, sidebarW: 252, sideView: "files", panel: false, panelH: 220, panelTab: "terminal", right: false, rightW: 296, rightView: "git" },
+  antartika: { sidebar: true, sidebarW: 236, sideView: "files", panel: false, panelH: 220, panelTab: "terminal", right: false, rightW: 300, rightView: "claude" },
+  tuxedo: { sidebar: true, sidebarW: 224, sideView: "files", panel: false, panelH: 220, panelTab: "terminal", right: false, rightW: 290, rightView: "claude" },
   kawanan: { sidebar: true, sidebarW: 240, sideView: "files", panel: false, panelH: 190, panelTab: "terminal", right: false, rightW: 330, rightView: "claude" },
 };
 

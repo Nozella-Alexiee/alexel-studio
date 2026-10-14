@@ -3,7 +3,7 @@ import React, { useEffect, useState } from "react";
 import { serverStatus, type ServerStatus } from "../editor/lsp";
 import { COMMANDS, prettyKeys } from "../app/commands";
 import * as A from "../app/actions";
-import { PenguinMascot } from "../components/PenguinMascot";
+import { PenguinMascot, showPinguPeek } from "../components/PenguinMascot";
 import { Segmented } from "../components/ui";
 import { ACCENTS, DESIGNS, type DesignInfo } from "../design/designs";
 import { isSaver, useStore, type Settings } from "../state/store";
@@ -134,6 +134,17 @@ export default function SettingsView() {
         <Row label="Tata letak" hint="Lebar panel yang kamu geser disimpan per desain.">
           <button className="btn btn-sm" onClick={A.resetLayout}>
             Kembalikan bawaan
+          </button>
+        </Row>
+        <Row label="Pingu di sidebar" hint="Pingu kecil dengan tips di bawah Explorer (desain Pinguin).">
+          <button
+            className="btn btn-sm"
+            onClick={() => {
+              showPinguPeek();
+              location.reload();
+            }}
+          >
+            Munculkan lagi
           </button>
         </Row>
       </section>

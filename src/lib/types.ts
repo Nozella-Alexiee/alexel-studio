@@ -139,3 +139,11 @@ export interface ListeningPort {
   address: string;
   command: string;
 }
+
+export interface FoundProject {
+  path: string;
+  name: string;
+  kind: string;
+  mtimeMs: number;
+  git: boolean;
+}
