@@ -38,6 +38,7 @@ export async function openProject(root: string, opts: { restoreTabs?: { groups: 
   if (prev && prev !== root) {
     const ok = await closeAllTabs();
     if (!ok) return;
+    void import("../editor/lsp").then((m) => m.stopAllLsp());
   }
   setState({
     root,

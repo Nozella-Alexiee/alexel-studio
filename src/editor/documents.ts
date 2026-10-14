@@ -44,6 +44,11 @@ export interface Doc {
   states: (EditorState | null)[];
   scroll: number[];
   head: string | null | undefined;
+  /** Ekstensi language server (kalau ada server untuk bahasa ini). */
+  lsp: Extension | null;
+  /** Grup editor yang memegang koneksi LSP (satu view per berkas). */
+  lspGroup: number;
+  lspName?: string;
 }
 
 const docs = new Map<string, Doc>();
@@ -52,6 +57,8 @@ const views: (EditorView | null)[] = [null, null];
 const shown: (string | null)[] = [null, null];
 const langComp = new Compartment();
 const settingsComp = new Compartment();
+const lintComp = new Compartment();
+const lspComp = new Compartment();
 
 export const getDoc = (path: string) => docs.get(path);
 export const openDocs = () => [...docs.values()];
@@ -103,20 +110,46 @@ function baseExtensions(doc: Doc, group: number): Extension {
     nozelEditorTheme,
     snippetExtension(doc.langId),
     lintGutter(),
-    nozelLinter(doc.langId, saver ? 1200 : 450, (d, state) => {
-      setProblems(
-        doc.path,
-        d.map((x) => {
-          const line = state.doc.lineAt(Math.min(x.from, state.doc.length));
-          return { line: line.number, col: x.from - line.from + 1, message: x.message, severity: x.severity as Problem["severity"], source: x.source };
-        })
-      );
-    }),
+    lintComp.of(doc.lsp ? [] : lezerLinter(doc, saver)),
+    lspComp.of(doc.lsp && group === doc.lspGroup ? doc.lsp : []),
     gitGutter(() => doc.head),
     langComp.of(doc.language ?? []),
     settingsComp.of(currentSettingsExt()),
     EditorView.updateListener.of((u) => onUpdate(doc, group, u)),
   ];
+}
+
+function lezerLinter(doc: Doc, saver: boolean): Extension {
+  return nozelLinter(doc.langId, saver ? 1200 : 450, (d, state) => {
+    setProblems(
+      doc.path,
+      d.map((x) => {
+        const line = state.doc.lineAt(Math.min(x.from, state.doc.length));
+        return { line: line.number, col: x.from - line.from + 1, message: x.message, severity: x.severity as Problem["severity"], source: x.source };
+      })
+    );
+  });
+}
+
+/** Sambungkan dokumen ke language server bila tersedia (async, tidak menahan pembukaan berkas). */
+async function attachLsp(doc: Doc) {
+  try {
+    const { lspFor } = await import("./lsp");
+    const r = await lspFor(doc.path, doc.langId);
+    if (!r || docs.get(doc.path) !== doc) return;
+    doc.lsp = r.extension;
+    doc.lspName = r.server.name;
+    const shownIn = shown.findIndex((p) => p === doc.path);
+    doc.lspGroup = shownIn >= 0 ? shownIn : doc.states.findIndex(Boolean) >= 0 ? doc.states.findIndex(Boolean) : 0;
+    for (let g = 0; g < doc.states.length; g++) {
+      const effects = [lintComp.reconfigure([]), lspComp.reconfigure(g === doc.lspGroup ? r.extension : [])];
+      const v = views[g];
+      if (v && shown[g] === doc.path) v.dispatch({ effects });
+      else if (doc.states[g]) doc.states[g] = doc.states[g]!.update({ effects }).state;
+    }
+  } catch (e) {
+    console.warn("LSP", doc.path, e);
+  }
 }
 
 function createState(doc: Doc, group: number, text: Text | string): EditorState {
@@ -261,10 +294,13 @@ export async function openDocument(path: string): Promise<Doc> {
     states: [null, null],
     scroll: [0, 0],
     head: undefined,
+    lsp: null,
+    lspGroup: 0,
   };
   docs.set(path, doc);
   void loadLanguage(doc);
   void loadHead(doc);
+  void attachLsp(doc);
   return doc;
 }
 

@@ -184,7 +184,10 @@ export function StatusBar({ variant }: { variant: "aurora" | "zen" | "control" }
           </span>
           {!zen && <span className="status-item">Spasi: {tabSize}</span>}
           {!zen && doc && <span className="status-item">{doc.eol === "crlf" ? "CRLF" : "LF"}</span>}
-          <span className="status-item sb-lang">{tab.lang}</span>
+          <span className="status-item sb-lang" title={doc?.lspName ? `Server bahasa: ${doc.lspName}` : "Tanpa server bahasa"}>
+            {tab.lang}
+            {doc?.lspName && <span className="sb-lsp" aria-label="Server bahasa aktif" />}
+          </span>
         </>
       )}
       {fp && (

@@ -17,9 +17,11 @@ import "./styles/penguin.css";
 
 // Handle debug untuk pengujian di mode dev saja (tidak ikut build produksi).
 if (import.meta.env.DEV) {
-  void Promise.all([import("./editor/documents"), import("./app/actions"), import("./state/store")]).then(([docs, actions, store]) => {
-    (window as unknown as { __nozel: unknown }).__nozel = { docs, actions, store };
-  });
+  void Promise.all([import("./editor/documents"), import("./app/actions"), import("./state/store"), import("@codemirror/lsp-client"), import("@codemirror/autocomplete"), import("./terminal/terminals")]).then(
+    ([docs, actions, store, lspClient, autocomplete, terminals]) => {
+      (window as unknown as { __nozel: unknown }).__nozel = { docs, actions, store, lspClient, autocomplete, terminals };
+    }
+  );
 }
 
 // Terapkan desain terakhir sebelum render supaya tidak berkedip.

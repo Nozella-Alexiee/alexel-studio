@@ -1,5 +1,6 @@
 import { BatteryCharging, Leaf, Plug } from "lucide-react";
-import React from "react";
+import React, { useEffect, useState } from "react";
+import { serverStatus, type ServerStatus } from "../editor/lsp";
 import { COMMANDS, prettyKeys } from "../app/commands";
 import * as A from "../app/actions";
 import { PenguinMascot } from "../components/PenguinMascot";
@@ -47,6 +48,47 @@ function LayoutThumb({ d }: { d: DesignInfo }) {
         </div>
       )}
     </div>
+  );
+}
+
+function LanguageServers() {
+  const [list, setList] = useState<ServerStatus[] | null>(null);
+  const refresh = () => void serverStatus(true).then(setList);
+  useEffect(refresh, []);
+  return (
+    <section className="set-section">
+      <h2>Server bahasa (autocomplete & go-to-definition)</h2>
+      <p className="hint">TypeScript/JavaScript sudah dibundel. Bahasa lain memakai server yang terpasang di Mac-mu. Pintasan: F12 ke definisi (atau ⌘+klik), F2 rename, ⇧⌥F format, ⇧F12 referensi.</p>
+      {list === null ? (
+        <p className="hint">Memeriksa…</p>
+      ) : list.length === 0 ? (
+        <p className="hint">Hanya tersedia di aplikasi desktop.</p>
+      ) : (
+        list.map((s) => (
+          <Row key={s.id} label={s.name} hint={s.bundled ? "Dibundel bersama Nozel" : s.available ? "Terpasang" : s.install ?? undefined}>
+            {s.available ? (
+              <span className="tone-success-fg">Aktif</span>
+            ) : (
+              <button
+                className="btn btn-sm"
+                onClick={() =>
+                  void import("../terminal/terminals").then(async (m) => {
+                    await m.newTerminal({ kind: "run", title: `Pasang ${s.id}`, command: s.install! });
+                  })
+                }
+              >
+                Pasang
+              </button>
+            )}
+          </Row>
+        ))
+      )}
+      {list && list.length > 0 && (
+        <button className="btn btn-sm btn-ghost" onClick={refresh}>
+          Periksa ulang
+        </button>
+      )}
+    </section>
   );
 }
 
@@ -173,6 +215,8 @@ export default function SettingsView() {
           <Toggle label="Sertakan berkas aktif" value={s.claudeIncludeFile} onChange={(v) => set({ claudeIncludeFile: v })} />
         </Row>
       </section>
+
+      <LanguageServers />
 
       <section className="set-section">
         <h2>Terminal & berkas</h2>

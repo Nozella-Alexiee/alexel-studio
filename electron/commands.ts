@@ -7,6 +7,7 @@ import * as claude from "./claude";
 import * as F from "./fsOps";
 import * as G from "./git";
 import * as H from "./history";
+import * as lsp from "./lsp";
 import * as preview from "./preview";
 import * as pty from "./pty";
 import * as runner from "./runner";
@@ -74,6 +75,12 @@ export function buildCommands(ctx: Ctx, hooks: { confirmClose: (win: BrowserWind
     claude_detect: () => claude.claudeDetect(),
     claude_run: (a) => claude.claudeRun(ctx, a.runId, a.projectDir, a.prompt, a.resumeSession),
     claude_cancel: (a) => claude.claudeCancel(a.runId),
+
+    // Language server
+    lsp_status: () => lsp.serverStatus(),
+    lsp_start: (a) => lsp.lspStart(ctx, a.serverId, a.root),
+    lsp_send: (a) => lsp.lspSend(a.key, a.message),
+    lsp_stop: (a) => lsp.lspStop(a.key),
 
     // Sistem
     system_footprint: () => {

@@ -1,0 +1,139 @@
+// Language server (LSP) untuk autocomplete, hover, go-to-definition, rename, dan diagnostik asli.
+// Server dijalankan per (folder project, bahasa). Pesan JSON-RPC dibingkai Content-Length di sini;
+// renderer hanya menerima/mengirim JSON mentah lewat event `lsp-message` dan command `lsp_send`.
+
+import { spawn, type ChildProcess } from "node:child_process";
+import fs from "node:fs";
+import path from "node:path";
+import { augmentedPath, childEnv, isWin, type Ctx } from "./util";
+
+export interface ServerDef {
+  id: string;
+  name: string;
+  /** Bahasa (id dari src/editor/languages.ts) yang dilayani. */
+  langs: string[];
+  /** Perintah dari PATH (kalau tidak dibundel). */
+  bin?: string;
+  args?: string[];
+  bundled?: boolean;
+  install?: string;
+}
+
+export const SERVERS: ServerDef[] = [
+  { id: "typescript", name: "TypeScript & JavaScript", langs: ["ts", "js"], bundled: true },
+  { id: "python", name: "Python (Pyright)", langs: ["py"], bin: "pyright-langserver", args: ["--stdio"], install: "npm install -g pyright" },
+  { id: "php", name: "PHP (Intelephense)", langs: ["php"], bin: "intelephense", args: ["--stdio"], install: "npm install -g intelephense" },
+  { id: "rust", name: "Rust (rust-analyzer)", langs: ["rs"], bin: "rust-analyzer", args: [], install: "rustup component add rust-analyzer" },
+  { id: "go", name: "Go (gopls)", langs: ["go"], bin: "gopls", args: [], install: "go install golang.org/x/tools/gopls@latest" },
+  { id: "c", name: "C/C++ (clangd)", langs: ["c", "cpp"], bin: "clangd", args: [], install: "xcode-select --install" },
+  { id: "css", name: "CSS/HTML/JSON (vscode-langservers)", langs: ["css"], bin: "vscode-css-language-server", args: ["--stdio"], install: "npm install -g vscode-langservers-extracted" },
+];
+
+function whichBin(bin: string): string | null {
+  for (const dir of augmentedPath().split(isWin ? ";" : ":")) {
+    for (const ext of isWin ? [".cmd", ".exe", ""] : [""]) {
+      const p = path.join(dir, bin + ext);
+      if (fs.existsSync(p)) return p;
+    }
+  }
+  return null;
+}
+
+/** Path modul yang dibundel; di aplikasi terpaket, modul ada di app.asar.unpacked. */
+function bundledPath(rel: string): string {
+  return require.resolve(rel).replace(`app.asar${path.sep}`, `app.asar.unpacked${path.sep}`);
+}
+
+export function serverStatus() {
+  return SERVERS.map((s) => ({ id: s.id, name: s.name, langs: s.langs, available: s.bundled ? true : !!(s.bin && whichBin(s.bin)), bundled: !!s.bundled, install: s.install ?? null }));
+}
+
+interface Running {
+  key: string;
+  proc: ChildProcess;
+  buf: Buffer;
+}
+const running = new Map<string, Running>();
+
+/** Pecah stream stdout menjadi pesan JSON berdasarkan header Content-Length. */
+export function parseFrames(buf: Buffer): { messages: string[]; rest: Buffer } {
+  const messages: string[] = [];
+  let b = buf;
+  for (;;) {
+    const sep = b.indexOf("\r\n\r\n");
+    if (sep < 0) break;
+    const header = b.subarray(0, sep).toString("ascii");
+    const m = /Content-Length:\s*(\d+)/i.exec(header);
+    if (!m) {
+      b = b.subarray(sep + 4);
+      continue;
+    }
+    const len = Number(m[1]);
+    if (b.length < sep + 4 + len) break;
+    messages.push(b.subarray(sep + 4, sep + 4 + len).toString("utf8"));
+    b = b.subarray(sep + 4 + len);
+  }
+  return { messages, rest: b };
+}
+
+export const frame = (json: string) => `Content-Length: ${Buffer.byteLength(json, "utf8")}\r\n\r\n${json}`;
+
+export function lspStart(ctx: Ctx, serverId: string, root: string): { key: string; initializationOptions: unknown } {
+  const def = SERVERS.find((s) => s.id === serverId);
+  if (!def) throw new Error(`Server bahasa tidak dikenal: ${serverId}`);
+  const key = `${serverId}::${root}`;
+  let initializationOptions: unknown = undefined;
+  if (def.bundled) initializationOptions = { tsserver: { fallbackPath: bundledPath("bundled-typescript/lib/tsserver.js") }, preferences: { includeCompletionsForModuleExports: true, includeCompletionsWithInsertText: true } };
+  if (running.has(key)) return { key, initializationOptions };
+
+  let cmd: string;
+  let args: string[];
+  let env = childEnv();
+  if (def.bundled) {
+    // Jalankan dengan Node bawaan Electron supaya tidak bergantung Node milik pengguna.
+    cmd = process.execPath;
+    args = [bundledPath("typescript-language-server/lib/cli.mjs"), "--stdio"];
+    env = childEnv({ ELECTRON_RUN_AS_NODE: "1" });
+  } else {
+    const p = def.bin ? whichBin(def.bin) : null;
+    if (!p) throw new Error(`${def.name} belum terpasang. Pasang dengan: ${def.install}`);
+    cmd = p;
+    args = def.args ?? [];
+  }
+  const proc = spawn(cmd, args, { cwd: fs.existsSync(root) ? root : undefined, env, stdio: ["pipe", "pipe", "pipe"], windowsHide: true });
+  const r: Running = { key, proc, buf: Buffer.alloc(0) };
+  running.set(key, r);
+  proc.stdout?.on("data", (chunk: Buffer) => {
+    const { messages, rest } = parseFrames(Buffer.concat([r.buf, chunk]));
+    r.buf = rest;
+    for (const message of messages) ctx.emit("lsp-message", { key, message });
+  });
+  proc.stderr?.on("data", () => {
+    /* log server diabaikan */
+  });
+  const gone = (code: number | null) => {
+    if (running.get(key) === r) running.delete(key);
+    ctx.emit("lsp-exit", { key, code });
+  };
+  proc.on("exit", gone);
+  proc.on("error", () => gone(null));
+  return { key, initializationOptions };
+}
+
+export function lspSend(key: string, message: string) {
+  const r = running.get(key);
+  if (!r?.proc.stdin?.writable) throw new Error("Server bahasa tidak berjalan.");
+  r.proc.stdin.write(frame(message));
+}
+
+export function lspStop(key: string) {
+  const r = running.get(key);
+  if (!r) return;
+  running.delete(key);
+  r.proc.kill();
+}
+
+export function killAllLsp() {
+  for (const r of running.values()) r.proc.kill();
+  running.clear();
+}

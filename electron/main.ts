@@ -7,6 +7,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
 import { killAllClaude } from "./claude";
+import { killAllLsp } from "./lsp";
 import { buildCommands } from "./commands";
 import { resolvePreview } from "./preview";
 import { killAllPtys } from "./pty";
@@ -220,6 +221,7 @@ app.on("before-quit", () => {
 app.on("will-quit", () => {
   killAllPtys();
   killAllClaude();
+  killAllLsp();
   void unwatch();
 });
 

@@ -241,3 +241,17 @@ describe("system, watcher, preview, store", () => {
     expect(validKey("A")).toBe(false);
   });
 });
+
+describe("lsp framing", async () => {
+  const { frame, parseFrames } = await import("./lsp");
+  it("membingkai & memecah pesan, termasuk potongan dan unicode", () => {
+    const a = frame('{"id":1,"result":"✓ pinguin"}');
+    const b = frame('{"id":2}');
+    const all = Buffer.from(a + b);
+    const first = parseFrames(all.subarray(0, all.length - 3));
+    expect(first.messages).toEqual(['{"id":1,"result":"✓ pinguin"}']);
+    const second = parseFrames(Buffer.concat([first.rest, all.subarray(all.length - 3)]));
+    expect(second.messages).toEqual(['{"id":2}']);
+    expect(second.rest.length).toBe(0);
+  });
+});
