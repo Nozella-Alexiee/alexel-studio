@@ -7,6 +7,7 @@ import * as A from "../app/actions";
 import { openPalette } from "../app/commands";
 import { runActiveFile } from "../app/run";
 import { FileIcon } from "../components/FileIcon";
+import { PinguBrand, PinguProcesses, usePenguinVariant } from "../components/PenguinMascot";
 import { IconButton, Kbd } from "../components/ui";
 import * as docs from "../editor/documents";
 import { extractSymbols } from "../editor/symbols";
@@ -109,12 +110,14 @@ export default function ZenShell() {
   const root = useStore((s) => s.root);
   const git = useStore((s) => s.git);
   const split = useStore((s) => s.groups.length > 1);
+  const penguin = usePenguinVariant();
   const rel = tab?.kind === "text" || tab?.kind === "image" ? relative(root ?? "", tab.id) : tab?.name;
 
   return (
     <div className="shell shell-zen">
       <header className="titlebar" data-tauri-drag-region>
         <div className="traffic-space" data-tauri-drag-region />
+        <PinguBrand />
         <div className="zen-crumb" data-tauri-drag-region>
           {root && <span className="zen-root">{root.split("/").pop()}</span>}
           {rel && (
@@ -172,6 +175,11 @@ export default function ZenShell() {
                     <Section title="Berkas" defaultOpen={!!root}>
                       <FileTree />
                     </Section>
+                    {penguin && (
+                      <Section title="Kawanan">
+                        <PinguProcesses />
+                      </Section>
+                    )}
                   </>
                 ) : (
                   <SideContent />

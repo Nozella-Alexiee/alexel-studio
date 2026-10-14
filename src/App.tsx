@@ -4,6 +4,7 @@ import { handleGlobalKey } from "./app/commands";
 import { restoreAll } from "./app/persist";
 import { detectClaude } from "./claude/claude";
 import { ErrorBoundary } from "./components/ErrorBoundary";
+import { designById } from "./design/designs";
 import { ContextMenuHost, DialogHost, Toasts } from "./components/Overlays";
 import { api, isDemo, on, windowApi } from "./lib/ipc";
 import { CommandPalette } from "./panels/CommandPalette";
@@ -24,6 +25,12 @@ function useBackgroundTasks() {
       booted = true;
       void restoreAll();
       void detectClaude();
+      // Muat semua shell di latar supaya ganti desain pertama kali tidak berkedip.
+      setTimeout(() => {
+        void import("./shells/AuroraShell");
+        void import("./shells/ZenShell");
+        void import("./shells/ControlShell");
+      }, 1500);
     }
 
     window.addEventListener("keydown", handleGlobalKey, true);
@@ -118,7 +125,8 @@ export default function App() {
   const design = useStore((s) => s.settings.design);
   const compare = useStore((s) => !!s.compare);
   const snapshot = useStore((s) => s.snapshotOpen);
-  const Shell = design === "zen" ? ZenShell : design === "control" ? ControlShell : AuroraShell;
+  const shell = designById(design).shell;
+  const Shell = shell === "zen" ? ZenShell : shell === "control" ? ControlShell : AuroraShell;
   return (
     <>
       {isDemo && <div className="demo-ribbon">Pratinjau browser</div>}

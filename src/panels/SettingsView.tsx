@@ -2,8 +2,9 @@ import { BatteryCharging, Leaf, Plug } from "lucide-react";
 import React from "react";
 import { COMMANDS, prettyKeys } from "../app/commands";
 import * as A from "../app/actions";
+import { PenguinMascot } from "../components/PenguinMascot";
 import { Segmented } from "../components/ui";
-import { ACCENTS, DESIGNS, type DesignId } from "../design/designs";
+import { ACCENTS, DESIGNS, type DesignInfo } from "../design/designs";
 import { isSaver, useStore, type Settings } from "../state/store";
 import { detectClaude } from "../claude/claude";
 
@@ -24,7 +25,8 @@ function Toggle({ value, onChange, label }: { value: boolean; onChange: (v: bool
 }
 
 /** Miniatur tata letak tiap desain (digambar dengan CSS, bukan gambar). */
-function LayoutThumb({ id }: { id: DesignId }) {
+function LayoutThumb({ d }: { d: DesignInfo }) {
+  const id = d.shell;
   return (
     <div className={`thumb thumb-${id}`} aria-hidden>
       <div className="t-bar" />
@@ -39,6 +41,11 @@ function LayoutThumb({ id }: { id: DesignId }) {
         </div>
         <div className="t-right" />
       </div>
+      {d.penguin && (
+        <div className="thumb-penguin">
+          <PenguinMascot variant={d.penguin} size={30} />
+        </div>
+      )}
     </div>
   );
 }
@@ -58,15 +65,20 @@ export default function SettingsView() {
       <section className="set-section">
         <h2>Desain</h2>
         <p className="hint">Ganti kapan saja. Tata letak, warna, font, dan kepadatan ikut berubah. Shortcut: {prettyKeys("Ctrl+Mod+T")}.</p>
-        <div className="design-cards">
-          {DESIGNS.map((d) => (
-            <button key={d.id} className={`design-card ${s.design === d.id ? "is-on" : ""}`} onClick={() => A.setDesign(d.id)} aria-pressed={s.design === d.id} style={{ "--sw-bg": d.swatch.bg, "--sw-panel": d.swatch.panel, "--sw-accent": d.swatch.accent, "--sw-text": d.swatch.text, "--sw-alt": d.swatch.alt } as React.CSSProperties}>
-              <LayoutThumb id={d.id} />
-              <div className="design-name">{d.name}</div>
-              <div className="design-tag">{d.tagline}</div>
-            </button>
-          ))}
-        </div>
+        {(["Pinguin", "Klasik"] as const).map((group) => (
+          <React.Fragment key={group}>
+            <h3 className="design-group-title">{group === "Pinguin" ? "Identitas Pingu" : "Klasik"}</h3>
+            <div className="design-cards">
+              {DESIGNS.filter((d) => d.group === group).map((d) => (
+                <button key={d.id} className={`design-card ${s.design === d.id ? "is-on" : ""}`} onClick={() => A.setDesign(d.id)} aria-pressed={s.design === d.id} style={{ "--sw-bg": d.swatch.bg, "--sw-panel": d.swatch.panel, "--sw-accent": d.swatch.accent, "--sw-text": d.swatch.text, "--sw-alt": d.swatch.alt } as React.CSSProperties}>
+                  <LayoutThumb d={d} />
+                  <div className="design-name">{d.name}</div>
+                  <div className="design-tag">{d.tagline}</div>
+                </button>
+              ))}
+            </div>
+          </React.Fragment>
+        ))}
         <Row label="Warna aksen" hint="Khusus desain yang sedang dipakai.">
           <div className="accent-row">
             <button className={`accent-dot auto ${!s.accent ? "is-on" : ""}`} onClick={() => set({ accent: null })} aria-label="Bawaan desain">

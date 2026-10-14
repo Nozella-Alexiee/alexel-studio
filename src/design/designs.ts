@@ -1,13 +1,19 @@
 // Tiga desain Nozel Code. Masing-masing mengubah warna, font, kepadatan,
 // DAN tata letak. Warna & ukuran ada di src/styles/tokens.css per [data-design].
 
-export type DesignId = "aurora" | "zen" | "control";
+export type DesignId = "aurora" | "zen" | "control" | "antartika" | "tuxedo" | "kawanan";
+export type ShellId = "aurora" | "zen" | "control";
 
 export interface DesignInfo {
   id: DesignId;
   name: string;
   tagline: string;
   scheme: "dark" | "light";
+  /** Tata letak yang dipakai desain ini. */
+  shell: ShellId;
+  /** Gaya maskot Pingu (khusus desain pinguin). */
+  penguin?: "antartika" | "tuxedo" | "kawanan";
+  group: "Klasik" | "Pinguin";
   /** Warna contoh untuk kartu pratinjau di Pengaturan. */
   swatch: { bg: string; panel: string; accent: string; text: string; alt: string };
 }
@@ -18,6 +24,8 @@ export const DESIGNS: DesignInfo[] = [
     name: "Aurora Glass",
     tagline: "Gelap ala macOS. Sidebar kaca, palette di title bar, agen Claude di kanan, terminal melayang.",
     scheme: "dark",
+    shell: "aurora",
+    group: "Klasik",
     swatch: { bg: "#0e1016", panel: "#13151d", accent: "#7aa2f7", text: "#c9d1e0", alt: "#d97757" },
   },
   {
@@ -25,6 +33,8 @@ export const DESIGNS: DesignInfo[] = [
     name: "Zen Paper",
     tagline: "Terang dan hangat. Satu kolom fokus tanpa activity bar, saran Claude inline, omnibar di bawah.",
     scheme: "light",
+    shell: "zen",
+    group: "Klasik",
     swatch: { bg: "#faf9f5", panel: "#f3f0e6", accent: "#d97757", text: "#3d3d3a", alt: "#2f6fb5" },
   },
   {
@@ -32,7 +42,39 @@ export const DESIGNS: DesignInfo[] = [
     name: "Control Room",
     tagline: "Padat ala IDE. Toolbar run, split editor, panel Git dengan staging, terminal multi-tab.",
     scheme: "dark",
+    shell: "control",
+    group: "Klasik",
     swatch: { bg: "#07090d", panel: "#0d121a", accent: "#8be9fd", text: "#b8c2d4", alt: "#ff79c6" },
+  },
+  {
+    id: "antartika",
+    name: "Antartika",
+    tagline: "Gelap biru es. Pingu berkupluk menemani di sidebar dan beranda, aksen oranye paruh.",
+    scheme: "dark",
+    shell: "aurora",
+    penguin: "antartika",
+    group: "Pinguin",
+    swatch: { bg: "#0b1220", panel: "#0f1a2e", accent: "#6cc4ff", text: "#d6e2f5", alt: "#ff9a3c" },
+  },
+  {
+    id: "tuxedo",
+    name: "Tuxedo",
+    tagline: "Hitam-putih kontras tinggi, Pingu berdasi kupu-kupu kuning. Rapi dan profesional.",
+    scheme: "dark",
+    shell: "control",
+    penguin: "tuxedo",
+    group: "Pinguin",
+    swatch: { bg: "#0a0a0a", panel: "#151515", accent: "#ffd23f", text: "#ededed", alt: "#ffffff" },
+  },
+  {
+    id: "kawanan",
+    name: "Kawanan",
+    tagline: "Terang seperti salju, kawanan Pingu berselendang di beranda. Ceria dan bulat.",
+    scheme: "light",
+    shell: "zen",
+    penguin: "kawanan",
+    group: "Pinguin",
+    swatch: { bg: "#f3f8fc", panel: "#ffffff", accent: "#ff8a3d", text: "#2b3a55", alt: "#3a7bd5" },
   },
 ];
 
@@ -42,6 +84,9 @@ export const ACCENTS: Record<DesignId, string[]> = {
   aurora: ["#7aa2f7", "#5ee0a0", "#c792ea", "#d97757"],
   zen: ["#d97757", "#2f6fb5", "#5b7d3a", "#7a5fc0"],
   control: ["#8be9fd", "#ff79c6", "#50fa7b", "#bd93f9"],
+  antartika: ["#6cc4ff", "#ff9a3c", "#7ee0a5", "#c3a6ff"],
+  tuxedo: ["#ffd23f", "#ffffff", "#7ee0a5", "#ff8a8a"],
+  kawanan: ["#ff8a3d", "#3a7bd5", "#2f855a", "#7c3aed"],
 };
 
 const CACHE_KEY = "nozel:design";
@@ -51,6 +96,9 @@ export function applyDesign(id: DesignId, accent?: string | null) {
   const root = document.documentElement;
   root.dataset.design = id;
   root.dataset.scheme = designById(id).scheme;
+  root.dataset.shell = designById(id).shell;
+  if (designById(id).penguin) root.dataset.penguin = designById(id).penguin;
+  else delete root.dataset.penguin;
   if (accent) root.style.setProperty("--accent", accent);
   else root.style.removeProperty("--accent");
   try {

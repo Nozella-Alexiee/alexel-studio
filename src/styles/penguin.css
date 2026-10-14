@@ -1,0 +1,388 @@
+/* Identitas pinguin: maskot Pingu + penyesuaian tata letak untuk desain
+   Antartika (shell aurora), Tuxedo (shell control), dan Kawanan (shell zen). */
+
+/* ---------- Animasi Pingu ---------- */
+.penguin {
+  overflow: visible;
+  flex: none;
+}
+.penguin .penguin-body {
+  transform-origin: 60px 130px;
+}
+.penguin.mood-idle .penguin-body {
+  animation: pingu-breathe 4.5s ease-in-out infinite;
+}
+.penguin.mood-sibuk .penguin-body {
+  animation: pingu-waddle 0.9s ease-in-out infinite;
+}
+.penguin.mood-sukses .penguin-body {
+  animation: pingu-hop 0.7s ease-out 2;
+}
+.penguin.mood-error .penguin-body {
+  animation: pingu-shake 0.4s ease-in-out 2;
+}
+.penguin .penguin-dots circle {
+  animation: pingu-dot 1.2s ease-in-out infinite;
+}
+.penguin .penguin-dots circle:nth-child(2) {
+  animation-delay: 0.2s;
+}
+.penguin .penguin-dots circle:nth-child(3) {
+  animation-delay: 0.4s;
+}
+.penguin .penguin-spark {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: pingu-spark 1.4s ease-in-out infinite;
+}
+@keyframes pingu-breathe {
+  50% {
+    transform: scaleY(0.975);
+  }
+}
+@keyframes pingu-waddle {
+  25% {
+    transform: rotate(-4deg);
+  }
+  75% {
+    transform: rotate(4deg);
+  }
+}
+@keyframes pingu-hop {
+  40% {
+    transform: translateY(-9px);
+  }
+}
+@keyframes pingu-shake {
+  25% {
+    transform: translateX(-3px);
+  }
+  75% {
+    transform: translateX(3px);
+  }
+}
+@keyframes pingu-dot {
+  50% {
+    opacity: 0.15;
+  }
+}
+@keyframes pingu-spark {
+  50% {
+    transform: scale(0.6) rotate(20deg);
+  }
+}
+
+/* ---------- Potongan UI ---------- */
+.pingu-brand {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin-right: 6px;
+  font-weight: 800;
+  font-size: 15px;
+  color: var(--fg-strong);
+  white-space: nowrap;
+  flex: none;
+}
+[data-design="tuxedo"] .pingu-brand {
+  font-weight: 700;
+  font-size: 12px;
+  letter-spacing: 0.18em;
+}
+[data-design="kawanan"] .pingu-brand {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 18px;
+}
+.pingu-status {
+  font-weight: 700;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 0 9px 0 3px;
+  height: 22px;
+}
+[data-design="tuxedo"] .pingu-status {
+  background: var(--accent);
+  color: var(--accent-fg);
+  border-color: var(--accent);
+  border-radius: 3px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-size: 10.5px;
+}
+[data-design="tuxedo"] .pingu-status:hover {
+  background: var(--accent) !important;
+  color: var(--accent-fg) !important;
+}
+.pingu-peek {
+  position: relative;
+  flex: none;
+  height: 120px;
+  margin: 8px 2px 0;
+}
+.pingu-bubble {
+  position: absolute;
+  left: 4px;
+  right: 54px;
+  top: 0;
+  padding: 8px 10px;
+  border-radius: 14px 14px 4px 14px;
+  background: var(--surface-popover);
+  border: 1px solid var(--border-strong);
+  color: var(--fg);
+  font-size: 12px;
+  line-height: 1.45;
+  text-align: left;
+}
+.pingu-bubble:hover {
+  border-color: var(--penguin-accent);
+}
+.pingu-peek-x {
+  position: absolute;
+  right: 4px;
+  top: 0;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  color: var(--fg-subtle);
+}
+.pingu-peek-x:hover {
+  color: var(--fg-strong);
+  background: var(--surface-hover);
+}
+.pingu-peek-body {
+  position: absolute;
+  right: 0;
+  bottom: -6px;
+}
+.pingu-hero {
+  position: relative;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  flex: none;
+}
+.pingu-floe {
+  position: absolute;
+  bottom: 2px;
+  left: 50%;
+  width: 130%;
+  height: 26%;
+  transform: translateX(-50%);
+  border-radius: 50%;
+  background: #1b2f52;
+  box-shadow: inset 0 -6px 0 #142443;
+}
+.pingu-hero > .penguin {
+  position: relative;
+}
+.pingu-flock {
+  gap: 0;
+}
+.pingu-flock > .penguin:first-child {
+  margin-right: -14px;
+}
+.pingu-flock > .penguin:last-child {
+  margin-left: -12px;
+}
+.pingu-banner {
+  display: flex;
+  align-items: center;
+  gap: 28px;
+  padding: 20px 28px 16px;
+  border-radius: var(--radius-lg);
+  background: var(--surface-1);
+  border: 1px solid var(--border);
+  overflow: hidden;
+}
+.pingu-banner h2 {
+  font-size: 24px;
+  margin-bottom: 6px;
+}
+.pingu-banner.pb-antartika {
+  background: radial-gradient(120% 140% at 0% 100%, #16264a 0%, var(--surface-1) 60%);
+}
+.pingu-banner.pb-tuxedo {
+  background: var(--bg);
+  border-color: var(--border-strong);
+}
+.pingu-banner.pb-tuxedo h2 {
+  font-size: 34px;
+  letter-spacing: -0.02em;
+}
+.pingu-banner.pb-kawanan {
+  background: linear-gradient(180deg, #eaf4fd 0%, #ffffff 100%);
+}
+.pingu-banner.pb-kawanan h2 {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 28px;
+}
+.empty-pingu {
+  margin-bottom: 2px;
+}
+.pingu-procs {
+  list-style: none;
+  margin: 0;
+  padding: 2px 14px 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  color: var(--fg-muted);
+  font-size: 12.5px;
+}
+.pingu-procs li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ---------- Antartika (shell aurora) ---------- */
+[data-design="antartika"] .shell-aurora .titlebar,
+[data-design="antartika"] .shell-aurora .statusbar {
+  background: var(--surface-1);
+}
+[data-design="antartika"] .palette-pill {
+  border-radius: 999px;
+  height: 30px;
+}
+[data-design="antartika"] .workspace-card .ws-icon {
+  background: var(--penguin-accent);
+  color: #2a1300;
+}
+[data-design="antartika"] .btn,
+[data-design="antartika"] .chip {
+  font-weight: 700;
+}
+[data-design="antartika"] .tab.is-dirty .tab-dot {
+  background: var(--penguin-accent);
+}
+
+/* ---------- Tuxedo (shell control) ---------- */
+[data-design="tuxedo"] .shell-control .shell-body {
+  padding: 0;
+}
+[data-design="tuxedo"] .shell-control .tile {
+  border-radius: 0;
+  border-width: 0 1px 0 0;
+}
+[data-design="tuxedo"] .shell-control .rail {
+  margin-right: 0;
+}
+[data-design="tuxedo"] .shell-control .rail button.is-on {
+  background: var(--accent);
+  color: var(--accent-fg);
+}
+[data-design="tuxedo"] .shell-control .rail button.is-on::before {
+  display: none;
+}
+[data-design="tuxedo"] .shell-control .main > .resizer-y {
+  height: 1px;
+  background: var(--border);
+}
+[data-design="tuxedo"] .shell-control .shell-body > .resizer-x {
+  width: 1px;
+  background: var(--border);
+}
+[data-design="tuxedo"] .ctl-panel {
+  border-top: 1px solid var(--border);
+}
+[data-design="tuxedo"] .side-title,
+[data-design="tuxedo"] .git-section-head,
+[data-design="tuxedo"] .panel-tab {
+  letter-spacing: 0.18em;
+}
+[data-design="tuxedo"] .btn-primary {
+  font-weight: 700;
+}
+[data-design="tuxedo"] .tab.is-active {
+  box-shadow: inset 0 -2px 0 var(--accent) !important;
+}
+
+/* ---------- Kawanan (shell zen) ---------- */
+[data-design="kawanan"] .shell-zen .titlebar {
+  border-bottom: 0;
+}
+[data-design="kawanan"] .shell-zen .shell-body {
+  padding: 0 12px;
+  gap: 12px;
+  background: var(--bg);
+}
+[data-design="kawanan"] .shell-zen .shell-body > .resizer-x {
+  background: transparent;
+  width: 0;
+}
+[data-design="kawanan"] .shell-zen .zen-nav,
+[data-design="kawanan"] .shell-zen .zen-main,
+[data-design="kawanan"] .shell-zen .zen-chat {
+  background: var(--surface-1);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+}
+[data-design="kawanan"] .shell-zen .statusbar {
+  border-top: 0;
+}
+[data-design="kawanan"] .zen-sec-btn,
+[data-design="kawanan"] .dash-head h1,
+[data-design="kawanan"] .welcome h1,
+[data-design="kawanan"] .settings h1,
+[data-design="kawanan"] .card-title {
+  font-family: var(--font-display);
+  letter-spacing: 0.01em;
+}
+[data-design="kawanan"] .zen-sec-btn {
+  text-transform: none;
+  font-size: 12.5px;
+  font-weight: 600;
+}
+[data-design="kawanan"] .omnibar {
+  border-radius: 999px;
+}
+[data-design="kawanan"] .btn {
+  border-radius: 999px;
+  font-weight: 700;
+}
+[data-design="kawanan"] .btn-primary {
+  box-shadow: 0 3px 0 #d9682a;
+}
+[data-design="kawanan"] .tbtn {
+  border-radius: 999px;
+  font-weight: 700;
+}
+[data-design="kawanan"] .tbtn.tone-run {
+  background: var(--accent);
+  color: #fff;
+  box-shadow: 0 3px 0 #d9682a;
+}
+[data-design="kawanan"] .tbtn.tone-run:hover {
+  background: color-mix(in srgb, var(--accent) 90%, white);
+  color: #fff;
+}
+[data-design="kawanan"] .zen-drawer,
+[data-design="kawanan"] .omnibar {
+  margin-left: 16px;
+  margin-right: 16px;
+}
+
+/* ---------- Kartu desain di Pengaturan ---------- */
+.design-group-title {
+  margin: 16px 0 0;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--fg-muted);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.design-card .thumb-penguin {
+  position: absolute;
+  right: 8px;
+  bottom: 6px;
+}
+.design-card .thumb {
+  position: relative;
+}

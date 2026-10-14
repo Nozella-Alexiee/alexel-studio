@@ -2,6 +2,7 @@ import { AlertCircle, AlertTriangle, Cpu, GitBranch, Leaf, Palette, Sparkles, Ar
 import React, { Suspense, lazy, useEffect, useState } from "react";
 import * as A from "../app/actions";
 import { ErrorBoundary } from "../components/ErrorBoundary";
+import { PinguStatus } from "../components/PenguinMascot";
 import { openMenu } from "../components/Overlays";
 import { Resizer, Spinner } from "../components/ui";
 import { DESIGNS, designById } from "../design/designs";
@@ -137,6 +138,7 @@ export function StatusBar({ variant }: { variant: "aurora" | "zen" | "control" }
 
   return (
     <footer className={`statusbar sb-${variant}`} role="contentinfo">
+      <PinguStatus />
       {git?.is_repo && (
         <button className="status-item" onClick={() => (variant === "control" ? A.toggleRight("git") : A.toggleSidebar("git"))} title="Source control">
           <GitBranch size={12} aria-hidden /> {git.branch}

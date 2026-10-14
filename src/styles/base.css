@@ -468,8 +468,3 @@ body.resizing-y * {
   opacity: 0.85;
 }
 
-/* Transisi saat ganti desain (View Transitions API). */
-::view-transition-old(root),
-::view-transition-new(root) {
-  animation-duration: 260ms;
-}

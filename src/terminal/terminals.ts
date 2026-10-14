@@ -88,6 +88,7 @@ function init() {
       rt.term.write(`\r\n\x1b[2m── ${label} · kode ${code ?? "?"} · ${formatDuration(elapsed_ms)} ──\x1b[0m\r\n`);
     }
     patch(key, { status: "exited", exitCode: code, elapsedMs: elapsed_ms, ptyId: null });
+    if (sess?.kind === "run") void import("../components/PenguinMascot").then((m) => m.flashPenguin(code === 0 ? "sukses" : "error", code === 0 ? 6000 : 9000));
     if (sess?.kind === "run" && code !== 0 && code !== 130 && code !== null) {
       toast(`${sess.title} gagal (kode ${code})`, "error", {
         label: "Tanya Claude",

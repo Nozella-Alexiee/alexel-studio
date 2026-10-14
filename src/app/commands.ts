@@ -1,6 +1,6 @@
 // Registry perintah: satu sumber untuk command palette dan shortcut keyboard.
 
-import { DESIGNS } from "../design/designs";
+import { DESIGNS, designById } from "../design/designs";
 import * as docs from "../editor/documents";
 import { getState, setState, activeTab, setLayout } from "../state/store";
 import * as A from "./actions";
@@ -59,7 +59,7 @@ export const COMMANDS: Command[] = [
   { id: "sidebar", label: "Tampilkan/sembunyikan sidebar", group: "Tampilan", keys: "Mod+B", run: () => A.toggleSidebar() },
   { id: "explorer", label: "Explorer", group: "Tampilan", keys: "Mod+Shift+E", run: () => A.toggleSidebar("files") },
   { id: "search", label: "Cari di seluruh project", group: "Tampilan", keys: "Mod+Shift+F", run: () => { setLayout({ sidebar: true, sideView: "search" }); requestAnimationFrame(() => document.getElementById("search-input")?.focus()); } },
-  { id: "git", label: "Source control (Git)", group: "Tampilan", keys: "Ctrl+Shift+G", run: () => (getState().settings.design === "control" ? A.toggleRight("git") : A.toggleSidebar("git")) },
+  { id: "git", label: "Source control (Git)", group: "Tampilan", keys: "Ctrl+Shift+G", run: () => (designById(getState().settings.design).shell === "control" ? A.toggleRight("git") : A.toggleSidebar("git")) },
   { id: "todo", label: "Papan TODO", group: "Tampilan", run: () => A.togglePanel("todo") },
   { id: "panel", label: "Tampilkan/sembunyikan panel bawah", group: "Tampilan", keys: "Mod+J", run: () => A.togglePanel() },
   { id: "terminal", label: "Terminal", group: "Terminal", keys: "Ctrl+`", run: async () => { const s = getState(); if (!s.terminals.length) await openShell(); else A.togglePanel("terminal"); } },

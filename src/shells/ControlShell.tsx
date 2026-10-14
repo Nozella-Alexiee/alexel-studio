@@ -7,6 +7,7 @@ import * as A from "../app/actions";
 import { openPalette } from "../app/commands";
 import { runActiveFile, runTarget } from "../app/run";
 import { openMenu } from "../components/Overlays";
+import { PinguBrand } from "../components/PenguinMascot";
 import { IconButton } from "../components/ui";
 import { BottomPanel } from "../panels/BottomPanel";
 import { getState, setLayout, useLayout, useStore } from "../state/store";
@@ -70,6 +71,7 @@ export default function ControlShell() {
     <div className="shell shell-control">
       <header className="titlebar" data-tauri-drag-region>
         <div className="traffic-space" data-tauri-drag-region />
+        <PinguBrand />
         <RunConfig />
         <div className="ctl-center" data-tauri-drag-region>
           <button className="ctl-project" onClick={() => openPalette("")} title="Cari berkas (⌘P)">

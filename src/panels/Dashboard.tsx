@@ -4,6 +4,7 @@ import { openPalette } from "../app/commands";
 import * as A from "../app/actions";
 import { openShell } from "../app/run";
 import { runTarget } from "../app/run";
+import { PinguHero, moodLine, usePenguinMood, usePenguinVariant } from "../components/PenguinMascot";
 import { Kbd, Spinner } from "../components/ui";
 import { DESIGNS } from "../design/designs";
 import { api, isDemo } from "../lib/ipc";
@@ -16,14 +17,19 @@ import { refreshTodos } from "./todoData";
 function Welcome() {
   const recents = useStore((s) => s.recents);
   const design = useStore((s) => s.settings.design);
+  const penguin = usePenguinVariant();
   return (
     <div className="welcome">
       <div className="welcome-hero">
-        <div className="logo-mark" aria-hidden>
-          N
-        </div>
-        <h1>Nozel Code</h1>
-        <p className="hint">Editor kode ringan untuk Mac, dengan terminal sungguhan dan Claude Code bawaan.</p>
+        {penguin ? (
+          <PinguHero size={150} />
+        ) : (
+          <div className="logo-mark" aria-hidden>
+            N
+          </div>
+        )}
+        <h1>{penguin ? "Halo! Pingu siap ngoding." : "Nozel Code"}</h1>
+        <p className="hint">Editor kode untuk Mac, dengan terminal sungguhan dan Claude Code bawaan.</p>
         <div className="welcome-actions">
           <button className="btn btn-primary" onClick={() => void A.openProjectDialog()}>
             <FolderOpen size={15} /> Buka folder
@@ -87,6 +93,8 @@ export default function Dashboard() {
   const targets = useStore((s) => s.runTargets);
   const todos = useStore((s) => s.todos);
   const [ov, setOv] = useState<ProjectOverview | null>(null);
+  const penguin = usePenguinVariant();
+  const mood = usePenguinMood();
 
   useEffect(() => {
     if (!root) return;
@@ -104,6 +112,15 @@ export default function Dashboard() {
   const tagCount = (t: string) => todos?.filter((x) => x.tag === t).length ?? 0;
   return (
     <div className="dashboard">
+      {penguin && (
+        <section className={`pingu-banner pb-${penguin}`}>
+          <PinguHero size={penguin === "kawanan" ? 150 : 132} />
+          <div>
+            <h2>{mood === "sukses" ? "Mantap, semua beres!" : mood === "error" ? "Ada yang perlu dibenahi" : mood === "sibuk" ? "Pingu lagi kerja…" : "Halo lagi! Pingu siap ngoding."}</h2>
+            <p className="hint">{moodLine(mood)}</p>
+          </div>
+        </section>
+      )}
       <header className="dash-head">
         <div>
           <h1>{basename(root)}</h1>

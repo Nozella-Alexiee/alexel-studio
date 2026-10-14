@@ -5,6 +5,7 @@ import { Columns2, GitBranch, PanelBottom, PanelRight, Play, Search, Sparkles } 
 import * as A from "../app/actions";
 import { openPalette } from "../app/commands";
 import { runActiveFile } from "../app/run";
+import { PinguBrand, PinguPeek } from "../components/PenguinMascot";
 import { IconButton, Kbd, Segmented } from "../components/ui";
 import { BottomPanel } from "../panels/BottomPanel";
 import { setLayout, useLayout, useStore, type SideView } from "../state/store";
@@ -21,6 +22,7 @@ export default function AuroraShell() {
     <div className="shell shell-aurora">
       <header className="titlebar" data-tauri-drag-region>
         <div className="traffic-space" data-tauri-drag-region />
+        <PinguBrand />
         <button className="palette-pill" onClick={() => openPalette("")}>
           <Search size={14} aria-hidden />
           <span>{name ? `Cari di ${name}…` : "Cari berkas, perintah…"}</span>
@@ -75,6 +77,7 @@ export default function AuroraShell() {
               <div className="side-scroll">
                 <SideContent />
               </div>
+              <PinguPeek />
             </aside>
             <SideResizer side="left" />
           </>

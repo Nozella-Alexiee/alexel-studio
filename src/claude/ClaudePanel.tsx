@@ -4,6 +4,7 @@ import { Bot, Check, Copy, CornerDownLeft, FileCode2, Plus, Sparkles, Square, Te
 import { useEffect, useMemo, useRef, useState } from "react";
 import { openClaudeInteractive } from "../app/run";
 import * as docs from "../editor/documents";
+import { PenguinMascot, usePenguinVariant } from "../components/PenguinMascot";
 import { IconButton, Spinner } from "../components/ui";
 import { openExternal } from "../lib/ipc";
 import { activeTab, getState, useStore, type ChatMessage } from "../state/store";
@@ -126,6 +127,7 @@ export default function ClaudePanel() {
   const [includeFile, setIncludeFile] = useState(includeDefault);
   const [useSelection, setUseSelection] = useState(false);
   const list = useRef<HTMLDivElement>(null);
+  const penguin = usePenguinVariant();
 
   useEffect(() => {
     if (!info) void detectClaude();
@@ -177,7 +179,7 @@ export default function ClaudePanel() {
         )}
         {running && (
           <div className="chat-typing">
-            <Spinner size={12} /> Claude sedang bekerja…
+            {penguin ? <PenguinMascot variant={penguin} mood="sibuk" size={22} /> : <Spinner size={12} />} Claude sedang bekerja…
           </div>
         )}
       </div>

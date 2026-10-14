@@ -537,7 +537,7 @@ export function setDesign(id: DesignId) {
 }
 
 export function cycleDesign() {
-  const order: DesignId[] = ["aurora", "zen", "control"];
+  const order: DesignId[] = ["aurora", "zen", "control", "antartika", "tuxedo", "kawanan"];
   const cur = order.indexOf(getState().settings.design);
   setDesign(order[(cur + 1) % order.length]);
 }
@@ -547,11 +547,9 @@ export function updateSettings(patch: Partial<Settings>) {
   const next = { ...prev, ...patch };
   setState({ settings: next });
   if (patch.design !== undefined || patch.accent !== undefined) {
-    // Transisi halus kalau didukung, kecuali mode hemat daya.
-    const run = () => applyDesign(next.design, next.accent);
-    const d = document as Document & { startViewTransition?: (cb: () => void) => void };
-    if (d.startViewTransition && !isSaver() && patch.design !== undefined && patch.design !== prev.design) d.startViewTransition(run);
-    else run();
+    // Diterapkan langsung. (View Transition API tertahan saat jendela tidak dirender,
+    // sehingga desain tidak pernah berganti — jangan dipakai di sini.)
+    applyDesign(next.design, next.accent);
   }
   if (["fontSize", "tabSize", "wordWrap", "minimap", "design"].some((k) => k in patch)) requestAnimationFrame(() => docs.applyEditorSettings());
   persistSettings();

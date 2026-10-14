@@ -2245,3 +2245,10 @@ button.crumb:hover {
   max-width: 100%;
   height: auto;
 }
+
+/* Isi dashboard/sambutan/pengaturan tidak boleh menyusut; kontainernya yang scroll. */
+.dashboard > *,
+.welcome > *,
+.settings > * {
+  flex-shrink: 0;
+}

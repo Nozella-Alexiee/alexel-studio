@@ -77,6 +77,7 @@ function ensureListeners() {
     const ctx = runs.get(run_id);
     runs.delete(run_id);
     if (getState().chatRunning === run_id) setState({ chatRunning: null });
+    if (code === 0) void import("../components/PenguinMascot").then((m) => m.flashPenguin("sukses", 4000));
     if (code === 130) push({ role: "error", text: "Dibatalkan." });
     else if (code !== 0 && ctx && !ctx.text) {
       const hint = /login|auth|credential/i.test(stderr) ? " Coba jalankan `claude login` di terminal." : "";
