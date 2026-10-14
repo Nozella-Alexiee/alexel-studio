@@ -1,0 +1,731 @@
+/* Tata letak per desain. Komponen sama; susunan, kepadatan, dan nuansanya berbeda. */
+
+.shell {
+  height: 100vh;
+  display: grid;
+  grid-template-rows: var(--titlebar-h) minmax(0, 1fr) var(--status-h);
+  background: var(--bg);
+}
+.shell-body {
+  display: grid;
+  min-height: 0;
+  min-width: 0;
+}
+.main {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+}
+.sidebar,
+.right-panel {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+}
+
+/* ---------- Title bar (area seret jendela) ---------- */
+.titlebar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 10px 0 0;
+  min-width: 0;
+  position: relative;
+  z-index: 10;
+}
+.traffic-space {
+  width: 78px;
+  height: 100%;
+  flex: none;
+}
+.titlebar-actions {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  margin-left: auto;
+  flex: none;
+}
+.titlebar .icon-btn {
+  width: 30px;
+  height: 30px;
+}
+
+/* ---------- Status bar ---------- */
+.statusbar {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 0 8px;
+  font-size: 11.5px;
+  color: var(--fg-muted);
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+}
+.status-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  height: 20px;
+  padding: 0 7px;
+  border-radius: 5px;
+  flex: none;
+}
+button.status-item:hover {
+  background: var(--surface-hover);
+  color: var(--fg-strong);
+}
+.sb-dirty {
+  color: var(--git-mod);
+}
+.sb-sync {
+  display: inline-flex;
+  align-items: center;
+}
+.sb-lang {
+  color: var(--accent);
+  font-weight: 600;
+}
+.sb-mem {
+  color: var(--success);
+}
+.sb-claude {
+  color: var(--claude);
+}
+.sb-claude.is-off {
+  color: var(--fg-subtle);
+}
+
+/* ═════════════════════ A · Aurora Glass ═════════════════════ */
+.shell-aurora .titlebar {
+  background: var(--surface-1);
+  border-bottom: 1px solid var(--border);
+}
+.palette-pill {
+  flex: 0 1 420px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 28px;
+  padding: 0 6px 0 10px;
+  border-radius: var(--radius);
+  background: color-mix(in srgb, var(--surface-3) 70%, transparent);
+  border: 1px solid var(--border-strong);
+  color: var(--fg-muted);
+  min-width: 160px;
+  transition: border-color var(--dur), background var(--dur);
+}
+.palette-pill span {
+  flex: 1;
+  text-align: left;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.palette-pill:hover {
+  border-color: var(--accent);
+  color: var(--fg);
+}
+.shell-aurora .sidebar {
+  background: var(--glass);
+  backdrop-filter: blur(24px) saturate(1.4);
+  -webkit-backdrop-filter: blur(24px) saturate(1.4);
+  padding: 12px 8px 0;
+  gap: 10px;
+}
+.shell-aurora .sidebar > .segmented {
+  margin: 0 4px;
+}
+.workspace-card {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px;
+  margin: 0 4px;
+  border-radius: var(--radius-lg);
+  background: var(--surface-3);
+  border: 1px solid var(--border-strong);
+  min-width: 0;
+}
+.ws-icon {
+  width: 30px;
+  height: 30px;
+  border-radius: 9px;
+  background: var(--accent);
+  color: var(--accent-fg);
+  display: grid;
+  place-items: center;
+  font-weight: 700;
+  flex: none;
+}
+.ws-text {
+  min-width: 0;
+}
+.ws-name {
+  display: block;
+  font-weight: 600;
+  color: var(--fg-strong);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 100%;
+  text-align: left;
+}
+.ws-name:hover {
+  color: var(--accent);
+}
+.ws-sub {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  color: var(--fg-muted);
+  white-space: nowrap;
+}
+.shell-aurora .main {
+  background: var(--bg);
+}
+.shell-aurora .editor-groups {
+  padding: 8px 8px 0;
+  gap: 0;
+}
+.shell-aurora .editor-group {
+  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+  overflow: hidden;
+}
+.shell-aurora .tabstrip {
+  background: var(--bg);
+  gap: 2px;
+}
+.shell-aurora .tabs {
+  gap: 3px;
+}
+.shell-aurora .tab {
+  border-radius: 10px 10px 0 0;
+  margin-top: 2px;
+}
+.shell-aurora .tab.is-active {
+  background: var(--ed-bg);
+}
+.shell-aurora .crumbs {
+  border-bottom: 1px solid color-mix(in srgb, var(--border) 60%, transparent);
+}
+.shell-aurora .main > .resizer-y {
+  background: transparent;
+}
+.shell-aurora .dock {
+  margin: 0 10px 10px;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border-strong);
+  background: var(--term-bg);
+  overflow: hidden;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+  flex: none;
+}
+.shell-aurora .dock .panel-head {
+  background: color-mix(in srgb, var(--term-bg) 70%, var(--surface-1));
+}
+.shell-aurora .agent {
+  background: var(--surface-1);
+}
+.agent-tabs {
+  padding: 8px 10px 0;
+  flex: none;
+}
+.agent-tabs .segmented {
+  width: 100%;
+}
+.shell-aurora .statusbar {
+  background: var(--surface-1);
+  border-top: 1px solid var(--border);
+}
+
+/* ═════════════════════ B · Zen Paper ═════════════════════ */
+.shell-zen .titlebar {
+  border-bottom: 1px solid var(--border);
+}
+.zen-crumb {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-width: 0;
+  color: var(--fg-muted);
+  white-space: nowrap;
+  overflow: hidden;
+}
+.zen-crumb b {
+  font-weight: 500;
+  color: var(--fg-strong);
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.zen-slash {
+  color: var(--fg-subtle);
+}
+.zen-live {
+  color: var(--accent);
+}
+.tbtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 30px;
+  padding: 0 11px;
+  border-radius: var(--radius);
+  color: var(--fg-muted);
+  border: 1px solid transparent;
+}
+.tbtn:hover {
+  background: var(--surface-hover);
+  color: var(--fg-strong);
+}
+.tbtn.is-on {
+  background: var(--surface-popover);
+  border-color: var(--border-strong);
+  color: var(--fg-strong);
+}
+.tbtn.tone-run {
+  color: var(--success);
+}
+.zen-nav {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  min-width: 0;
+  overflow: hidden;
+  padding-top: 8px;
+}
+.zen-nav-tabs {
+  display: flex;
+  gap: 2px;
+  padding: 0 10px 6px;
+}
+.zen-nav-tabs button {
+  position: relative;
+  flex: 1;
+  height: 28px;
+  border-radius: var(--radius);
+  color: var(--fg-subtle);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+}
+.zen-nav-tabs button:hover {
+  color: var(--fg);
+}
+.zen-nav-tabs button.is-on {
+  background: var(--surface-popover);
+  color: var(--fg-strong);
+  box-shadow: 0 0 0 1px var(--border);
+}
+.zen-sec {
+  padding: 2px 0 8px;
+}
+.zen-sec-head {
+  display: flex;
+  align-items: center;
+  padding: 0 10px;
+}
+.zen-sec-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: 24px;
+  font-size: 10.5px;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--fg-subtle);
+}
+.zen-sec-btn:hover {
+  color: var(--fg);
+}
+.zen-open,
+.zen-outline {
+  list-style: none;
+  margin: 0;
+  padding: 0 8px;
+}
+.zen-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 28px;
+  padding: 0 4px 0 8px;
+  border-radius: var(--radius);
+  color: var(--fg-muted);
+  cursor: pointer;
+}
+.zen-item:hover {
+  background: var(--surface-hover);
+  color: var(--fg);
+}
+.zen-item.is-on {
+  background: var(--surface-popover);
+  color: var(--fg-strong);
+  box-shadow: inset 0 0 0 1px var(--border);
+}
+.zen-name {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.zen-x {
+  width: 20px;
+  height: 20px;
+  border-radius: 5px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+}
+.zen-item:hover .zen-x,
+.zen-item.is-dirty .zen-x {
+  opacity: 1;
+}
+.zen-item.is-dirty .tab-dot {
+  display: block;
+  background: var(--accent);
+}
+.zen-sym {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  width: 100%;
+  height: 24px;
+  border-radius: var(--radius-sm);
+  color: var(--fg-muted);
+  text-align: left;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 12.5px;
+}
+.zen-sym:hover {
+  background: var(--surface-hover);
+  color: var(--fg);
+}
+.zen-sym.is-on {
+  color: var(--accent);
+}
+.zen-kind {
+  font: 10.5px var(--font-mono);
+  color: var(--fg-subtle);
+  width: 12px;
+  text-align: center;
+  flex: none;
+}
+.zen-main {
+  position: relative;
+  background: var(--ed-bg);
+}
+.zen-column {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  max-width: 980px;
+  margin: 0 auto;
+}
+.shell-zen .editor-group.is-focused::after {
+  box-shadow: inset 0 -2px 0 var(--accent);
+}
+.shell-zen .cm-gutters {
+  padding-left: 18px;
+}
+.shell-zen .tabstrip {
+  border-bottom: 1px solid var(--border);
+}
+.shell-zen .tab.is-active {
+  box-shadow: inset 0 -2px 0 var(--accent);
+}
+.zen-drawer {
+  margin: 0 24px 8px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--term-bg);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  flex: none;
+}
+.shell-zen .main > .resizer-y {
+  background: transparent;
+}
+.omnibar {
+  margin: 0 24px 14px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  height: 44px;
+  padding: 0 10px 0 14px;
+  background: var(--surface-popover);
+  border: 1px solid var(--border-strong);
+  border-radius: 14px;
+  color: var(--fg-subtle);
+  flex: none;
+  box-shadow: 0 6px 20px rgba(61, 61, 58, 0.06);
+  transition: border-color var(--dur), box-shadow var(--dur);
+}
+.omnibar span {
+  flex: 1;
+  text-align: left;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.omnibar:hover {
+  border-color: var(--accent);
+  box-shadow: 0 6px 24px rgba(217, 119, 87, 0.12);
+}
+.zen-chat {
+  background: color-mix(in srgb, var(--surface-popover) 60%, var(--bg));
+}
+.shell-zen .claude-head {
+  height: 48px;
+}
+.shell-zen .statusbar {
+  border-top: 1px solid var(--border);
+}
+
+/* ═════════════════════ C · Control Room ═════════════════════ */
+.shell-control .titlebar {
+  background: var(--surface-1);
+  border-bottom: 1px solid var(--border);
+  gap: 6px;
+}
+.run-config {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  flex: none;
+}
+.run-select {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  height: 28px;
+  padding: 0 10px;
+  margin-right: 4px;
+  border-radius: var(--radius);
+  background: var(--surface-3);
+  border: 1px solid var(--border-strong);
+  color: var(--fg-strong);
+  max-width: 220px;
+}
+.run-select span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.run-select svg:first-child {
+  color: var(--accent);
+}
+.run-config .icon-btn.tone-run {
+  background: color-mix(in srgb, var(--success) 15%, transparent);
+}
+.run-config .icon-btn.tone-danger:not(:disabled) {
+  background: color-mix(in srgb, var(--danger) 14%, transparent);
+}
+.ctl-center {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  min-width: 0;
+}
+.ctl-project {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 26px;
+  padding: 0 12px;
+  border-radius: var(--radius);
+  color: var(--fg-muted);
+  max-width: 100%;
+  overflow: hidden;
+  white-space: nowrap;
+}
+.ctl-project:hover {
+  background: var(--surface-hover);
+  color: var(--fg-strong);
+}
+.ctl-branch {
+  color: var(--success);
+}
+.ctl-problems {
+  height: 22px;
+  padding: 0 8px;
+  border-radius: 5px;
+  background: color-mix(in srgb, var(--danger) 16%, transparent);
+  color: var(--danger);
+  font-size: 11px;
+  font-weight: 600;
+}
+.shell-control .shell-body {
+  padding: 6px;
+  gap: 0;
+}
+.shell-control .shell-body > .resizer-x {
+  background: transparent;
+  width: 6px;
+}
+.shell-control .shell-body > .resizer-x:hover {
+  background: var(--accent-soft);
+}
+.tile {
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+}
+.rail {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 8px 0;
+  margin-right: 6px;
+}
+.rail button {
+  position: relative;
+  width: 34px;
+  height: 34px;
+  border-radius: var(--radius);
+  display: grid;
+  place-items: center;
+  color: var(--fg-subtle);
+}
+.rail button:hover {
+  color: var(--fg-strong);
+  background: var(--surface-hover);
+}
+.rail button.is-on {
+  color: var(--accent);
+  background: var(--accent-softer);
+}
+.rail button.is-on::before {
+  content: "";
+  position: absolute;
+  left: -5px;
+  top: 8px;
+  bottom: 8px;
+  width: 3px;
+  border-radius: 2px;
+  background: var(--accent);
+}
+.rail-count {
+  position: absolute;
+  top: 2px;
+  right: 1px;
+  min-width: 15px;
+  height: 15px;
+  padding: 0 3px;
+  border-radius: 8px;
+  background: var(--accent);
+  color: var(--accent-fg);
+  font-size: 9.5px;
+  font-weight: 700;
+  display: grid;
+  place-items: center;
+}
+.shell-control .sidebar {
+  background: var(--surface-1);
+}
+.ctl-mid {
+  gap: 0;
+}
+.ctl-editors {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+}
+.ctl-editors .editor-groups {
+  flex: 1;
+}
+.shell-control .main > .resizer-y {
+  background: transparent;
+  height: 6px;
+}
+.shell-control .main > .resizer-y:hover {
+  background: var(--accent-soft);
+}
+.ctl-panel {
+  flex: none;
+  background: var(--term-bg);
+}
+.shell-control .tabstrip {
+  border-bottom: 1px solid var(--border);
+  background: var(--surface-1);
+}
+.shell-control .tab {
+  border-right: 1px solid var(--border);
+}
+.shell-control .tab.is-active {
+  background: var(--ed-bg);
+  box-shadow: inset 0 2px 0 var(--accent);
+}
+.shell-control .editor-groups {
+  gap: 0;
+}
+.shell-control .panel-tab {
+  letter-spacing: 0.04em;
+  font-size: 10.5px;
+}
+.shell-control .panel-tab.is-active {
+  color: var(--accent);
+}
+.shell-control .right-panel {
+  background: var(--surface-1);
+}
+.ctl-right-tabs {
+  display: flex;
+  height: 32px;
+  border-bottom: 1px solid var(--border);
+  flex: none;
+}
+.ctl-right-tabs button {
+  flex: 1;
+  font-size: 10.5px;
+  letter-spacing: 0.08em;
+  color: var(--fg-subtle);
+}
+.ctl-right-tabs button.is-on {
+  color: var(--accent);
+  box-shadow: inset 0 -2px 0 var(--accent);
+}
+.shell-control .claude-head {
+  height: 34px;
+}
+.shell-control .statusbar {
+  background: var(--surface-1);
+  border-top: 1px solid var(--border);
+  font-size: 11px;
+}
+.shell-control .side-head {
+  height: 30px;
+  border-bottom: 1px solid var(--border);
+}
+
+/* Layar sempit: sembunyikan bagian sekunder. */
+@media (max-width: 900px) {
+  .palette-pill span {
+    display: none;
+  }
+  .tbtn {
+    padding: 0 8px;
+  }
+  .tbtn svg + * {
+    display: none;
+  }
+  .design-cards {
+    grid-template-columns: 1fr;
+  }
+}

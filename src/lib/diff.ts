@@ -1,0 +1,115 @@
+// Diff baris (algoritma Myers, O(ND)) untuk gutter perubahan git dan ringkasan time-travel.
+
+export type LineChange =
+  | { type: "add"; from: number; to: number } // baris baru [from, to] (1-based, inklusif) di dokumen sekarang
+  | { type: "mod"; from: number; to: number }
+  | { type: "del"; at: number }; // baris dihapus sebelum baris `at` di dokumen sekarang
+
+interface Edit {
+  a: number; // jumlah baris lama yang dihapus
+  b: number; // jumlah baris baru yang ditambah
+  posNew: number; // indeks 0-based di dokumen baru
+}
+
+function myers(a: string[], b: string[]): Edit[] {
+  const n = a.length;
+  const m = b.length;
+  const max = n + m;
+  if (max === 0) return [];
+  // Batas aman: berkas sangat besar dengan perubahan besar → anggap semua baru.
+  if (n * m > 25_000_000 && Math.abs(n - m) > 5000) return [{ a: n, b: m, posNew: 0 }];
+  const v = new Int32Array(2 * max + 2);
+  const trace: Int32Array[] = [];
+  const off = max;
+  let done = false;
+  for (let d = 0; d <= max && !done; d++) {
+    trace.push(v.slice());
+    for (let k = -d; k <= d; k += 2) {
+      let x = k === -d || (k !== d && v[off + k - 1] < v[off + k + 1]) ? v[off + k + 1] : v[off + k - 1] + 1;
+      let y = x - k;
+      while (x < n && y < m && a[x] === b[y]) {
+        x++;
+        y++;
+      }
+      v[off + k] = x;
+      if (x >= n && y >= m) {
+        done = true;
+        break;
+      }
+    }
+    if (d > 4000) return [{ a: n, b: m, posNew: 0 }];
+  }
+  // Backtrack menjadi daftar operasi per baris.
+  const ops: ("=" | "-" | "+")[] = [];
+  let x = n;
+  let y = m;
+  for (let d = trace.length - 1; d >= 0 && (x > 0 || y > 0); d--) {
+    const vv = trace[d];
+    const k = x - y;
+    const prevK = k === -d || (k !== d && vv[off + k - 1] < vv[off + k + 1]) ? k + 1 : k - 1;
+    const prevX = vv[off + prevK];
+    const prevY = prevX - prevK;
+    while (x > prevX && y > prevY) {
+      ops.push("=");
+      x--;
+      y--;
+    }
+    if (d > 0) {
+      if (x === prevX) {
+        ops.push("+");
+        y--;
+      } else {
+        ops.push("-");
+        x--;
+      }
+    }
+  }
+  ops.reverse();
+  const edits: Edit[] = [];
+  let posNew = 0;
+  let cur: Edit | null = null;
+  for (const op of ops) {
+    if (op === "=") {
+      if (cur) edits.push(cur);
+      cur = null;
+      posNew++;
+    } else {
+      if (!cur) cur = { a: 0, b: 0, posNew };
+      if (op === "-") cur.a++;
+      else {
+        cur.b++;
+        posNew++;
+      }
+    }
+  }
+  if (cur) edits.push(cur);
+  return edits;
+}
+
+export function splitLines(s: string): string[] {
+  if (s === "") return [];
+  const lines = s.split(/\r?\n/);
+  if (lines.length > 1 && lines[lines.length - 1] === "") lines.pop();
+  return lines;
+}
+
+/** Perubahan dokumen `next` dibanding `prev`, untuk gutter. */
+export function lineChanges(prev: string, next: string): LineChange[] {
+  const edits = myers(splitLines(prev), splitLines(next));
+  return edits.map((e) => {
+    if (e.b === 0) return { type: "del", at: e.posNew + 1 };
+    const from = e.posNew + 1;
+    const to = e.posNew + e.b;
+    return e.a === 0 ? { type: "add", from, to } : { type: "mod", from, to };
+  });
+}
+
+export function diffStats(prev: string, next: string): { added: number; removed: number } {
+  let added = 0;
+  let removed = 0;
+  for (const e of myers(splitLines(prev), splitLines(next))) {
+    added += e.b;
+    removed += e.a;
+  }
+  return { added, removed };
+}

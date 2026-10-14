@@ -1,0 +1,139 @@
+// Tipe data yang dikirim backend Rust (lihat src-tauri/src/*.rs).
+
+export interface FileEntry {
+  name: string;
+  path: string;
+  is_dir: boolean;
+  is_symlink: boolean;
+  size?: number | null;
+  extension?: string | null;
+}
+
+export interface TextFile {
+  content: string;
+  mtime_ms: number;
+  eol: "lf" | "crlf";
+}
+
+export interface ImageFileData {
+  data_url: string;
+  size_bytes: number;
+  format: string;
+}
+
+export interface Snapshot {
+  id: string;
+  time_ms: number;
+  size: number;
+  lines: number;
+}
+
+export interface SearchMatch {
+  path: string;
+  rel: string;
+  line: number;
+  col: number;
+  len: number;
+  text: string;
+}
+
+export interface SearchResult {
+  matches: SearchMatch[];
+  files_searched: number;
+  truncated: boolean;
+}
+
+export interface TodoItem {
+  path: string;
+  rel: string;
+  line: number;
+  tag: string;
+  text: string;
+}
+
+export interface LangStat {
+  ext: string;
+  files: number;
+  bytes: number;
+}
+
+export interface ProjectOverview {
+  name: string;
+  file_count: number;
+  total_bytes: number;
+  languages: LangStat[];
+  last_modified_ms: number;
+  last_modified_file?: string | null;
+  truncated: boolean;
+}
+
+export interface GitFile {
+  path: string;
+  orig_path?: string | null;
+  xy: string;
+  staged: boolean;
+  unstaged: boolean;
+  untracked: boolean;
+  conflicted: boolean;
+}
+
+export interface GitStatus {
+  is_repo: boolean;
+  root: string;
+  branch: string;
+  upstream?: string | null;
+  ahead: number;
+  behind: number;
+  files: GitFile[];
+}
+
+export interface Commit {
+  sha: string;
+  short: string;
+  subject: string;
+  author: string;
+  time_s: number;
+  refs: string;
+}
+
+export interface Branches {
+  current: string;
+  local: string[];
+}
+
+export interface RunTarget {
+  id: string;
+  label: string;
+  command: string;
+  cwd: string;
+  kind: string;
+  detail: string;
+}
+
+export interface ClaudeInfo {
+  installed: boolean;
+  path?: string | null;
+  version?: string | null;
+  error?: string | null;
+}
+
+export interface Footprint {
+  core_mb: number;
+  cpu_percent: number;
+  uptime_s: number;
+}
+
+export interface PowerStatus {
+  on_battery: boolean;
+  percent?: number | null;
+  charging: boolean;
+  low_power_mode: boolean;
+}
+
+export interface ListeningPort {
+  pid: number;
+  process: string;
+  port: number;
+  address: string;
+  command: string;
+}

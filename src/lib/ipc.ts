@@ -1,0 +1,186 @@
+// Satu-satunya pintu ke backend Rust. Di aplikasi Tauri memanggil `invoke`;
+// saat `npm run dev` dibuka di browser biasa, memakai backend tiruan (mock.ts)
+// supaya UI tetap bisa dicoba. Mode tiruan TIDAK pernah aktif di build produksi.
+
+import type {
+  Branches,
+  ClaudeInfo,
+  Commit,
+  FileEntry,
+  Footprint,
+  GitStatus,
+  ImageFileData,
+  ListeningPort,
+  PowerStatus,
+  ProjectOverview,
+  RunTarget,
+  SearchResult,
+  Snapshot,
+  TextFile,
+  TodoItem,
+} from "./types";
+
+export const isTauri = typeof window !== "undefined" && "__TAURI_INTERNALS__" in window;
+export const isDemo = !isTauri && import.meta.env.DEV;
+
+type Handler = (args: Record<string, unknown>) => unknown | Promise<unknown>;
+type Listener = (payload: any) => void;
+
+let mockHandlers: Record<string, Handler> | null = null;
+const mockListeners = new Map<string, Set<Listener>>();
+
+export function mockEmit(event: string, payload: unknown) {
+  mockListeners.get(event)?.forEach((l) => l(payload));
+}
+
+async function loadMock() {
+  if (!mockHandlers) {
+    const m = await import("./mock");
+    mockHandlers = m.createMockBackend(mockEmit);
+  }
+  return mockHandlers;
+}
+
+export async function call<T>(cmd: string, args: Record<string, unknown> = {}): Promise<T> {
+  if (isTauri) {
+    const { invoke } = await import("@tauri-apps/api/core");
+    return invoke<T>(cmd, args);
+  }
+  if (!isDemo) throw new Error("Backend Nozel tidak tersedia.");
+  const handlers = await loadMock();
+  const h = handlers[cmd];
+  if (!h) throw new Error(`Belum didukung di mode pratinjau browser: ${cmd}`);
+  return (await h(args)) as T;
+}
+
+export async function on<T>(event: string, cb: (payload: T) => void): Promise<() => void> {
+  if (isTauri) {
+    const { listen } = await import("@tauri-apps/api/event");
+    return listen<T>(event, (e) => cb(e.payload));
+  }
+  let set = mockListeners.get(event);
+  if (!set) mockListeners.set(event, (set = new Set()));
+  set.add(cb);
+  return () => set!.delete(cb);
+}
+
+export const errMsg = (e: unknown): string => (e instanceof Error ? e.message : String(e));
+
+export const api = {
+  // Berkas
+  listDir: (dirPath: string) => call<FileEntry[]>("list_dir", { dirPath }),
+  readText: (path: string) => call<TextFile>("read_file_text", { path }),
+  readImage: (path: string) => call<ImageFileData>("read_file_image", { path }),
+  writeText: (path: string, content: string) => call<number>("write_file_text", { path, content }),
+  writeBase64: (path: string, data: string) => call<void>("write_file_base64", { path, data }),
+  mtime: (path: string) => call<number>("file_mtime", { path }),
+  createFile: (path: string) => call<void>("create_file", { path }),
+  createDir: (path: string) => call<void>("create_dir", { path }),
+  trash: (path: string) => call<void>("delete_entry", { path }),
+  rename: (oldPath: string, newPath: string) => call<void>("rename_entry", { oldPath, newPath }),
+  duplicate: (path: string) => call<string>("duplicate_entry", { path }),
+  reveal: (path: string) => call<void>("reveal_in_finder", { path }),
+
+  // Time-travel
+  historyList: (path: string) => call<Snapshot[]>("history_list", { path }),
+  historyRead: (path: string, id: string) => call<string>("history_read", { path, id }),
+
+  // Pencarian
+  listFiles: (root: string) => call<string[]>("list_project_files", { root }),
+  search: (root: string, query: string, o: { isRegex: boolean; caseSensitive: boolean; wholeWord: boolean; include?: string }) =>
+    call<SearchResult>("search_project", { root, query, ...o, include: o.include || null }),
+  replace: (paths: string[], query: string, replacement: string, o: { isRegex: boolean; caseSensitive: boolean; wholeWord: boolean }) =>
+    call<number>("replace_in_files", { paths, query, replacement, ...o }),
+  todos: (root: string) => call<TodoItem[]>("scan_todos", { root }),
+  overview: (root: string) => call<ProjectOverview>("project_overview", { root }),
+
+  // Git
+  gitStatus: (projectDir: string) => call<GitStatus>("git_status", { projectDir }),
+  gitStage: (projectDir: string, paths: string[]) => call<void>("git_stage", { projectDir, paths }),
+  gitUnstage: (projectDir: string, paths: string[]) => call<void>("git_unstage", { projectDir, paths }),
+  gitDiscard: (projectDir: string, paths: string[], untracked: string[]) => call<void>("git_discard", { projectDir, paths, untracked }),
+  gitCommit: (projectDir: string, message: string, amend = false) => call<string>("git_commit", { projectDir, message, amend }),
+  gitPush: (projectDir: string) => call<string>("git_push", { projectDir }),
+  gitPull: (projectDir: string) => call<string>("git_pull", { projectDir }),
+  gitLog: (projectDir: string, limit = 50) => call<Commit[]>("git_log", { projectDir, limit }),
+  gitBranches: (projectDir: string) => call<Branches>("git_branches", { projectDir }),
+  gitCheckout: (projectDir: string, branch: string, create = false) => call<void>("git_checkout", { projectDir, branch, create }),
+  gitInit: (projectDir: string) => call<void>("git_init", { projectDir }),
+  gitHead: (projectDir: string, path: string) => call<string | null>("git_head_content", { projectDir, path }),
+  gitDiff: (projectDir: string, path: string, staged: boolean) => call<string>("git_diff_file", { projectDir, path, staged }),
+  gitAutoCommit: (projectDir: string, path: string, push: boolean) => call<string>("git_auto_commit_file", { projectDir, path, push }),
+
+  // Terminal
+  ptySpawn: (cwd: string, cols: number, rows: number, command?: string) =>
+    call<number>("pty_spawn", { cwd, cols, rows, command: command ?? null }),
+  ptyWrite: (id: number, data: string) => call<void>("pty_write", { id, data }),
+  ptyResize: (id: number, cols: number, rows: number) => call<void>("pty_resize", { id, cols, rows }),
+  ptyKill: (id: number) => call<void>("pty_kill", { id }),
+
+  // Run
+  commandForFile: (filePath: string, projectDir?: string | null) => call<RunTarget>("command_for_file", { filePath, projectDir: projectDir ?? null }),
+  runTargets: (projectDir: string) => call<RunTarget[]>("detect_run_targets", { projectDir }),
+
+  // Claude
+  claudeDetect: () => call<ClaudeInfo>("claude_detect"),
+  claudeRun: (runId: string, projectDir: string, prompt: string, resumeSession?: string | null) =>
+    call<void>("claude_run", { runId, projectDir, prompt, resumeSession: resumeSession ?? null }),
+  claudeCancel: (runId: string) => call<void>("claude_cancel", { runId }),
+
+  // Sistem
+  footprint: () => call<Footprint>("system_footprint"),
+  power: () => call<PowerStatus>("power_status"),
+  ports: () => call<ListeningPort[]>("list_ports"),
+  kill: (pid: number, force = false) => call<void>("kill_process", { pid, force }),
+
+  // Penyimpanan
+  storeLoad: (key: string) => call<string | null>("store_load", { key }),
+  storeSave: (key: string, json: string) => call<void>("store_save", { key, json }),
+
+  // Watcher & pratinjau
+  watch: (root: string, debounceMs: number) => call<void>("watch_project", { root, debounceMs }),
+  unwatch: () => call<void>("unwatch_project"),
+  previewRoot: (root: string | null) => call<void>("preview_set_root", { root }),
+  previewOverride: (path: string, content: string | null) => call<void>("preview_set_override", { path, content }),
+};
+
+// ---------- Plugin: dialog & opener ----------
+
+export async function pickFolder(): Promise<string | null> {
+  if (isTauri) {
+    const { open } = await import("@tauri-apps/plugin-dialog");
+    const r = await open({ directory: true, multiple: false, title: "Pilih folder project" });
+    return typeof r === "string" ? r : null;
+  }
+  return isDemo ? "/Users/demo/nozel-project" : null;
+}
+
+export async function pickSavePath(defaultPath: string, filters?: { name: string; extensions: string[] }[]): Promise<string | null> {
+  if (isTauri) {
+    const { save } = await import("@tauri-apps/plugin-dialog");
+    return (await save({ defaultPath, filters })) ?? null;
+  }
+  return isDemo ? defaultPath : null;
+}
+
+export async function openExternal(url: string): Promise<void> {
+  if (!/^(https?:|mailto:)/i.test(url)) return;
+  if (isTauri) {
+    const { openUrl } = await import("@tauri-apps/plugin-opener");
+    await openUrl(url);
+  } else {
+    window.open(url, "_blank", "noopener");
+  }
+}
+
+/** URL pratinjau untuk berkas lokal (dilayani protokol nozelpreview://). */
+export function previewUrl(path: string): string {
+  const encoded = path.split("/").map(encodeURIComponent).join("/");
+  return `nozelpreview://localhost${encoded}`;
+}
+
+export async function windowApi() {
+  if (!isTauri) return null;
+  const { getCurrentWindow } = await import("@tauri-apps/api/window");
+  return getCurrentWindow();
+}

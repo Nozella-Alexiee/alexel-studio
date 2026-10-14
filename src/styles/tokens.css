@@ -1,0 +1,299 @@
+/* Token desain. Semua warna & ukuran komponen membaca variabel ini,
+   jadi mengganti [data-design] mengubah seluruh tampilan sekaligus. */
+
+:root {
+  --font-ui: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", sans-serif;
+  --font-mono: "SF Mono", ui-monospace, "JetBrains Mono", Menlo, Monaco, monospace;
+  --font-voice: "New York", ui-serif, Georgia, serif;
+  --ui-size: 13px;
+  --ui-small: 11.5px;
+  --radius-sm: 6px;
+  --radius: 8px;
+  --radius-lg: 12px;
+  --row-h: 26px;
+  --tab-h: 34px;
+  --titlebar-h: 44px;
+  --status-h: 26px;
+  --code-line-height: 1.6;
+  --code-pad-y: 8px;
+  --gap: 8px;
+  --ease: cubic-bezier(0.2, 0.7, 0.2, 1);
+  --dur: 140ms;
+  --accent-soft: color-mix(in srgb, var(--accent) 18%, transparent);
+  --accent-softer: color-mix(in srgb, var(--accent) 9%, transparent);
+  --scrim: rgba(5, 7, 12, 0.55);
+  --wavy-danger: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='6' height='3'%3E%3Cpath d='M0 3 L1.5 0 L3 3 L4.5 0 L6 3' stroke='%23ff6b6b' fill='none' stroke-width='0.9'/%3E%3C/svg%3E");
+  --wavy-warning: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='6' height='3'%3E%3Cpath d='M0 3 L1.5 0 L3 3 L4.5 0 L6 3' stroke='%23febc2e' fill='none' stroke-width='0.9'/%3E%3C/svg%3E");
+}
+
+/* ───────────────────────── A · Aurora Glass ───────────────────────── */
+:root,
+[data-design="aurora"] {
+  color-scheme: dark;
+  --accent: #7aa2f7;
+  --accent-fg: #0b0e16;
+  --claude: #d97757;
+  --claude-fg: #1f0f08;
+  --bg: #0e1016;
+  --surface-1: #13151d;
+  --surface-2: #161923;
+  --surface-3: #1d2130;
+  --surface-hover: #1b1f2c;
+  --surface-popover: #1a1e2a;
+  --input-bg: #0e1016;
+  --border: #232736;
+  --border-strong: #2e3446;
+  --fg: #c9d1e0;
+  --fg-strong: #e8ecf6;
+  --fg-muted: #7d869b;
+  --fg-subtle: #5d6680;
+  --success: #5ee0a0;
+  --warning: #febc2e;
+  --danger: #ff6b6b;
+  --git-add: #5ee0a0;
+  --git-mod: #7aa2f7;
+  --git-del: #ff6b6b;
+  --git-untracked: #5ee0a0;
+  --shadow-pop: 0 16px 48px rgba(0, 0, 0, 0.45), 0 2px 8px rgba(0, 0, 0, 0.3);
+  --glass: rgba(19, 21, 29, 0.78);
+
+  --ed-bg: #161923;
+  --ed-fg: #c9d1e0;
+  --ed-gutter-bg: #161923;
+  --ed-gutter-fg: #46506a;
+  --ed-active-line: #1b2030;
+  --ed-selection: rgba(122, 162, 247, 0.26);
+  --ed-match: rgba(122, 162, 247, 0.14);
+  --ed-bracket: rgba(122, 162, 247, 0.22);
+  --minimap-fg: rgba(125, 140, 175, 0.34);
+  --minimap-view: rgba(122, 162, 247, 0.12);
+
+  --syn-keyword: #c792ea;
+  --syn-tag: #ff7aa8;
+  --syn-self: #f78c6c;
+  --syn-string: #a5e075;
+  --syn-regexp: #89ddff;
+  --syn-number: #f78c6c;
+  --syn-atom: #ff9e64;
+  --syn-function: #7aa2f7;
+  --syn-attr: #ffcb6b;
+  --syn-type: #ffcb6b;
+  --syn-namespace: #7dcfff;
+  --syn-constant: #ff9e64;
+  --syn-definition: #c0caf5;
+  --syn-variable: #c9d1e0;
+  --syn-property: #7dcfff;
+  --syn-operator: #89ddff;
+  --syn-punct: #7f89a8;
+  --syn-comment: #5c6480;
+  --syn-heading: #7aa2f7;
+  --syn-link: #7dcfff;
+
+  --term-bg: #0b0d12;
+  --term-fg: #c9d1e0;
+  --ansi-black: #1a1d26;
+  --ansi-red: #ff6b6b;
+  --ansi-green: #5ee0a0;
+  --ansi-yellow: #febc2e;
+  --ansi-blue: #7aa2f7;
+  --ansi-magenta: #c792ea;
+  --ansi-cyan: #89ddff;
+  --ansi-white: #c9d1e0;
+  --ansi-bright-black: #5d6680;
+  --ansi-bright-white: #ffffff;
+  --snap-bg: #0e1016;
+}
+
+/* ───────────────────────── B · Zen Paper ───────────────────────── */
+[data-design="zen"] {
+  color-scheme: light;
+  --font-ui: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", sans-serif;
+  --ui-size: 13.5px;
+  --row-h: 28px;
+  --titlebar-h: 48px;
+  --status-h: 28px;
+  --radius: 10px;
+  --radius-lg: 14px;
+  --code-line-height: 1.85;
+  --code-pad-y: 22px;
+  --scrim: rgba(61, 61, 58, 0.28);
+  --accent: #d97757;
+  --accent-fg: #ffffff;
+  --claude: #d97757;
+  --claude-fg: #ffffff;
+  --bg: #faf9f5;
+  --surface-1: #f6f4ee;
+  --surface-2: #faf9f5;
+  --surface-3: #efece1;
+  --surface-hover: #f1eee3;
+  --surface-popover: #ffffff;
+  --input-bg: #ffffff;
+  --border: #e9e5d9;
+  --border-strong: #dcd8c9;
+  --fg: #3d3d3a;
+  --fg-strong: #1f1f1d;
+  --fg-muted: #7a776c;
+  --fg-subtle: #a8a496;
+  --success: #3b6d11;
+  --warning: #a8670a;
+  --danger: #b5483a;
+  --git-add: #5b7d3a;
+  --git-mod: #2f6fb5;
+  --git-del: #b5483a;
+  --git-untracked: #5b7d3a;
+  --shadow-pop: 0 18px 50px rgba(61, 61, 58, 0.16), 0 2px 8px rgba(61, 61, 58, 0.08);
+  --glass: rgba(250, 249, 245, 0.85);
+  --wavy-danger: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='6' height='3'%3E%3Cpath d='M0 3 L1.5 0 L3 3 L4.5 0 L6 3' stroke='%23d6513f' fill='none' stroke-width='0.9'/%3E%3C/svg%3E");
+
+  --ed-bg: #faf9f5;
+  --ed-fg: #3d3d3a;
+  --ed-gutter-bg: #faf9f5;
+  --ed-gutter-fg: #cfcbbd;
+  --ed-active-line: rgba(217, 119, 87, 0.06);
+  --ed-selection: rgba(217, 119, 87, 0.2);
+  --ed-match: rgba(47, 111, 181, 0.12);
+  --ed-bracket: rgba(217, 119, 87, 0.18);
+  --minimap-fg: rgba(61, 61, 58, 0.18);
+  --minimap-view: rgba(217, 119, 87, 0.1);
+
+  --syn-keyword: #9b4d3a;
+  --syn-tag: #a0522d;
+  --syn-self: #8a5a9e;
+  --syn-string: #5b7d3a;
+  --syn-regexp: #2f8a8a;
+  --syn-number: #b0653a;
+  --syn-atom: #b0653a;
+  --syn-function: #2f6fb5;
+  --syn-attr: #8a6d1f;
+  --syn-type: #8a6d1f;
+  --syn-namespace: #2f8a8a;
+  --syn-constant: #b0653a;
+  --syn-definition: #3d3d3a;
+  --syn-variable: #3d3d3a;
+  --syn-property: #4f6c8f;
+  --syn-operator: #8d8a7e;
+  --syn-punct: #8d8a7e;
+  --syn-comment: #a8a496;
+  --syn-heading: #9b4d3a;
+  --syn-link: #2f6fb5;
+
+  --term-bg: #f3f0e6;
+  --term-fg: #3d3d3a;
+  --ansi-black: #3d3d3a;
+  --ansi-red: #b5483a;
+  --ansi-green: #3b6d11;
+  --ansi-yellow: #a8670a;
+  --ansi-blue: #2f6fb5;
+  --ansi-magenta: #8a5a9e;
+  --ansi-cyan: #2f8a8a;
+  --ansi-white: #7a776c;
+  --ansi-bright-black: #a8a496;
+  --ansi-bright-white: #1f1f1d;
+  --snap-bg: #efece1;
+}
+
+/* ───────────────────────── C · Control Room ───────────────────────── */
+[data-design="control"] {
+  color-scheme: dark;
+  --font-mono: "JetBrains Mono", "SF Mono", ui-monospace, Menlo, monospace;
+  --ui-size: 12.5px;
+  --ui-small: 11px;
+  --row-h: 24px;
+  --tab-h: 32px;
+  --titlebar-h: 42px;
+  --status-h: 24px;
+  --radius: 7px;
+  --radius-lg: 10px;
+  --code-line-height: 1.55;
+  --code-pad-y: 6px;
+  --accent: #8be9fd;
+  --accent-fg: #06141a;
+  --claude: #ff79c6;
+  --claude-fg: #1d0614;
+  --bg: #07090d;
+  --surface-1: #0d121a;
+  --surface-2: #0f141c;
+  --surface-3: #151c28;
+  --surface-hover: #111925;
+  --surface-popover: #121823;
+  --input-bg: #0a0e14;
+  --border: #1b2330;
+  --border-strong: #263041;
+  --fg: #b8c2d4;
+  --fg-strong: #e6edf7;
+  --fg-muted: #6c7a92;
+  --fg-subtle: #4b5871;
+  --success: #50fa7b;
+  --warning: #f1fa8c;
+  --danger: #ff5555;
+  --git-add: #50fa7b;
+  --git-mod: #8be9fd;
+  --git-del: #ff5555;
+  --git-untracked: #50fa7b;
+  --shadow-pop: 0 14px 40px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(139, 233, 253, 0.06);
+  --glass: rgba(13, 18, 26, 0.9);
+
+  --ed-bg: #0f141c;
+  --ed-fg: #d6deeb;
+  --ed-gutter-bg: #0f141c;
+  --ed-gutter-fg: #364257;
+  --ed-active-line: #131b27;
+  --ed-selection: rgba(139, 233, 253, 0.2);
+  --ed-match: rgba(255, 121, 198, 0.16);
+  --ed-bracket: rgba(139, 233, 253, 0.2);
+  --minimap-fg: rgba(130, 150, 185, 0.3);
+  --minimap-view: rgba(139, 233, 253, 0.1);
+
+  --syn-keyword: #ff79c6;
+  --syn-tag: #ff79c6;
+  --syn-self: #bd93f9;
+  --syn-string: #50fa7b;
+  --syn-regexp: #f1fa8c;
+  --syn-number: #ffb86c;
+  --syn-atom: #bd93f9;
+  --syn-function: #8be9fd;
+  --syn-attr: #f1fa8c;
+  --syn-type: #bd93f9;
+  --syn-namespace: #8be9fd;
+  --syn-constant: #ffb86c;
+  --syn-definition: #e6edf7;
+  --syn-variable: #d6deeb;
+  --syn-property: #a4c8ff;
+  --syn-operator: #ff79c6;
+  --syn-punct: #7f8ea8;
+  --syn-comment: #4b5871;
+  --syn-heading: #ff79c6;
+  --syn-link: #8be9fd;
+
+  --term-bg: #0a0e14;
+  --term-fg: #d6deeb;
+  --ansi-black: #21222c;
+  --ansi-red: #ff5555;
+  --ansi-green: #50fa7b;
+  --ansi-yellow: #f1fa8c;
+  --ansi-blue: #6272a4;
+  --ansi-magenta: #ff79c6;
+  --ansi-cyan: #8be9fd;
+  --ansi-white: #d6deeb;
+  --ansi-bright-black: #4b5871;
+  --ansi-bright-white: #ffffff;
+  --snap-bg: #07090d;
+}
+
+/* Hemat daya: tanpa animasi & efek blur. */
+[data-power="saver"] {
+  --dur: 0ms;
+}
+[data-power="saver"] *,
+[data-power="saver"] *::before,
+[data-power="saver"] *::after {
+  animation-duration: 0s !important;
+  transition-duration: 0s !important;
+  backdrop-filter: none !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --dur: 0ms;
+  }
+}
