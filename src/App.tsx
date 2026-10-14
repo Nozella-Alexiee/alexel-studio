@@ -10,6 +10,8 @@ import {
   GitStatus,
   GitPushResult,
   CodeProblem,
+  CodeRunResult,
+  TerminalHistoryEntry,
 } from "./types";
 import {
   openFolderDialog,
@@ -27,12 +29,14 @@ import {
   gitAutoCommitAndPush,
   isImageFile,
   readFileImage,
+  executeCodeRun,
+  executeTerminalCommand,
 } from "./services/tauriService";
 import { TitleBar } from "./components/TitleBar";
 import { ActivityBar, ActivityTab } from "./components/ActivityBar";
 import { FileTree } from "./components/FileTree";
 import { GitBotPanel } from "./components/GitBotPanel";
-import { ProblemsPanel } from "./components/ProblemsPanel";
+import { ProblemsPanel, PanelTab } from "./components/ProblemsPanel";
 import { TabBar } from "./components/TabBar";
 import { EditorArea } from "./components/EditorArea";
 import { StatusBar } from "./components/StatusBar";
@@ -67,6 +71,12 @@ export const App: React.FC = () => {
   const [activeProblems, setActiveProblems] = useState<CodeProblem[]>([]);
   const [isProblemsPanelOpen, setIsProblemsPanelOpen] = useState<boolean>(false);
   const [jumpToLine, setJumpToLine] = useState<{ line: number; col: number; token: number } | undefined>(undefined);
+
+  // Code Runner & Terminal states
+  const [isRunning, setIsRunning] = useState<boolean>(false);
+  const [runResult, setRunResult] = useState<CodeRunResult | null>(null);
+  const [terminalHistory, setTerminalHistory] = useState<TerminalHistoryEntry[]>([]);
+  const [panelTab, setPanelTab] = useState<PanelTab>("problems");
 
   const [unsavedState, setUnsavedState] = useState<UnsavedConfirmState>({
     isOpen: false,
@@ -337,6 +347,61 @@ export const App: React.FC = () => {
           type: "file",
           targetDirPath: demoPath,
         });
+      } else if (view === "html" || view === "web") {
+        setActiveTabId(tab2.id);
+        setIsProblemsPanelOpen(true);
+        setPanelTab("output");
+        setRunResult({
+          success: true,
+          stdout: "🌐 [Web Browser Preview Launched]\n✅ Berhasil dibuka di default web browser macOS (Google Chrome / Safari)!\n📄 Dokumen: index.html\n🔗 URL: file:///Users/demo/nozel-project/index.html\n⚡ Project HTML, CSS, & JavaScript aktif dan siap diuji di browser!\n",
+          stderr: "",
+          exit_code: 0,
+          execution_time_ms: 16,
+          command: 'open "/Users/demo/nozel-project/index.html"',
+        });
+      } else if (view === "run" || view === "output") {
+        setIsProblemsPanelOpen(true);
+        setPanelTab("output");
+        setActiveTabId(tabPhp.id);
+        setRunResult({
+          success: true,
+          stdout: "🚀 [Nozel Code] Microservice running on Apple Silicon M1\n⚡ Status: Online | Timestamp: 2026-10-14 12:00:00 | RAM: 0.42 MB\n✅ Server port 8080 ready to accept client connections.\n",
+          stderr: "",
+          exit_code: 0,
+          execution_time_ms: 38,
+          command: 'php "/Users/demo/nozel-project/src/server.php"',
+        });
+      } else if (view === "terminal") {
+        setIsProblemsPanelOpen(true);
+        setPanelTab("terminal");
+        setTerminalHistory([
+          {
+            id: "1",
+            command: "pwd",
+            timestamp: Date.now() - 5000,
+            result: {
+              success: true,
+              stdout: "/Users/demo/nozel-project\n",
+              stderr: "",
+              exit_code: 0,
+              execution_time_ms: 5,
+              command: "pwd",
+            },
+          },
+          {
+            id: "2",
+            command: "ls -la",
+            timestamp: Date.now() - 2000,
+            result: {
+              success: true,
+              stdout: "total 64\ndrwxr-xr-x   8 mac  staff   256 Oct 14 11:50 .\ndrwxr-xr-x   4 mac  staff   128 Oct 14 11:50 ..\n-rw-r--r--   1 mac  staff  1466 Oct 14 11:50 package.json\ndrwxr-xr-x   6 mac  staff   192 Oct 14 11:50 src\n",
+              stderr: "",
+              exit_code: 0,
+              execution_time_ms: 12,
+              command: "ls -la",
+            },
+          },
+        ]);
       }
     });
   }, []);
@@ -557,6 +622,99 @@ export const App: React.FC = () => {
     }
   };
 
+  // Run active file handler
+  const handleRunActiveFile = async () => {
+    const currentActive = tabs.find((t) => t.id === activeTabId);
+    if (!currentActive) {
+      addToast("info", "Buka file kode terlebih dahulu untuk menjalankannya.");
+      return;
+    }
+
+    if (currentActive.isImage) {
+      addToast("info", "File gambar tidak dapat dieksekusi.");
+      return;
+    }
+
+    if (currentActive.isDirty) {
+      await handleSaveTab(currentActive);
+    }
+
+    setIsRunning(true);
+    setIsProblemsPanelOpen(true);
+    setPanelTab("output");
+
+    try {
+      const result = await executeCodeRun(
+        currentActive.path,
+        projectPath || undefined
+      );
+      setRunResult(result);
+      if (result.success) {
+        setMascotMessage(`Kode ${currentActive.name} berhasil dijalankan! ⚡ (${result.execution_time_ms}ms)`);
+      } else {
+        setMascotMessage(`Eksekusi ${currentActive.name} selesai dengan status exit ${result.exit_code ?? 1}.`);
+      }
+    } catch (err) {
+      const errorMsg = String(err);
+      setRunResult({
+        success: false,
+        stdout: "",
+        stderr: errorMsg,
+        exit_code: 1,
+        execution_time_ms: 0,
+        command: `run "${currentActive.path}"`,
+      });
+      addToast("error", `Gagal mengeksekusi kode: ${errorMsg}`);
+    } finally {
+      setIsRunning(false);
+    }
+  };
+
+  // Terminal interactive command execution handler
+  const handleExecuteTerminalCommand = async (command: string) => {
+    const trimmed = command.trim();
+    if (!trimmed) return;
+
+    if (trimmed === "clear") {
+      setTerminalHistory([]);
+      return;
+    }
+
+    const workingDir = projectPath || "/Users/demo/nozel-project";
+    const entryId = Date.now().toString() + Math.random().toString();
+
+    try {
+      const res = await executeTerminalCommand(trimmed, workingDir);
+      setTerminalHistory((prev) => [
+        ...prev,
+        {
+          id: entryId,
+          command: trimmed,
+          timestamp: Date.now(),
+          result: res,
+        },
+      ]);
+    } catch (err) {
+      const res: CodeRunResult = {
+        success: false,
+        stdout: "",
+        stderr: String(err),
+        exit_code: 1,
+        execution_time_ms: 0,
+        command: trimmed,
+      };
+      setTerminalHistory((prev) => [
+        ...prev,
+        {
+          id: entryId,
+          command: trimmed,
+          timestamp: Date.now(),
+          result: res,
+        },
+      ]);
+    }
+  };
+
   // Close tab with unsaved warning
   const handleCloseTab = (tabId: string, e?: React.MouseEvent) => {
     if (e) e.stopPropagation();
@@ -665,7 +823,10 @@ export const App: React.FC = () => {
     const handleKeyDown = (e: KeyboardEvent) => {
       const isMod = e.metaKey || e.ctrlKey;
 
-      if (isMod && e.key.toLowerCase() === "s") {
+      if ((isMod && e.key.toLowerCase() === "r") || e.key === "F5") {
+        e.preventDefault();
+        handleRunActiveFile();
+      } else if (isMod && e.key.toLowerCase() === "s") {
         e.preventDefault();
         handleSaveTab();
       } else if (isMod && e.key.toLowerCase() === "o") {
@@ -676,12 +837,15 @@ export const App: React.FC = () => {
           e.preventDefault();
           handleCloseTab(activeTabId);
         }
+      } else if (isMod && (e.key.toLowerCase() === "j" || (e.shiftKey && e.key.toLowerCase() === "m"))) {
+        e.preventDefault();
+        setIsProblemsPanelOpen((prev) => !prev);
       }
     };
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [activeTabId, tabs, autoPushEnabled, projectPath]);
+  }, [activeTabId, tabs, autoPushEnabled, projectPath, isRunning]);
 
   const activeTab = tabs.find((t) => t.id === activeTabId);
   const projectName = projectPath ? projectPath.split("/").pop() : undefined;
@@ -701,6 +865,12 @@ export const App: React.FC = () => {
         onOpenFolder={handleOpenFolder}
         isClaudePanelOpen={isClaudePanelOpen}
         onToggleClaudePanel={() => setIsClaudePanelOpen((prev) => !prev)}
+        onToggleProblemsPanel={() =>
+          setIsProblemsPanelOpen((prev) => {
+            if (!prev) setPanelTab("problems");
+            return !prev;
+          })
+        }
         footprint={footprint}
       />
 
@@ -714,7 +884,10 @@ export const App: React.FC = () => {
               setIsClaudePanelOpen((prev) => !prev);
               setMascotMessage("Claude Pro siap membantumu! 🚀");
             } else if (tab === "problems") {
-              setIsProblemsPanelOpen((prev) => !prev);
+              setIsProblemsPanelOpen((prev) => {
+                if (!prev) setPanelTab("problems");
+                return !prev;
+              });
             } else {
               setActivityTab(tab);
             }
@@ -772,6 +945,8 @@ export const App: React.FC = () => {
             activeTabId={activeTabId}
             onSelectTab={(id) => setActiveTabId(id)}
             onCloseTab={handleCloseTab}
+            onRunCode={handleRunActiveFile}
+            isRunning={isRunning}
           />
 
           <EditorArea
@@ -785,6 +960,7 @@ export const App: React.FC = () => {
             onDiagnosticsChange={(probs) => setActiveProblems(probs)}
             jumpToLine={jumpToLine}
             problems={activeProblems}
+            onRunCode={handleRunActiveFile}
           />
 
           {/* Clickable Problems & Syntax Linter Panel */}
@@ -796,6 +972,14 @@ export const App: React.FC = () => {
                 setJumpToLine({ line, col, token: Date.now() });
               }}
               onClose={() => setIsProblemsPanelOpen(false)}
+              runResult={runResult}
+              isRunning={isRunning}
+              onRerun={handleRunActiveFile}
+              onClearOutput={() => setRunResult(null)}
+              terminalHistory={terminalHistory}
+              onExecuteTerminalCommand={handleExecuteTerminalCommand}
+              activeTabOverride={panelTab}
+              onTabChange={(tab) => setPanelTab(tab)}
             />
           )}
         </div>
@@ -825,7 +1009,12 @@ export const App: React.FC = () => {
         onToggleClaude={() => setIsClaudePanelOpen((prev) => !prev)}
         errorCount={errorCount}
         warningCount={warningCount}
-        onToggleProblems={() => setIsProblemsPanelOpen((prev) => !prev)}
+        onToggleProblems={() =>
+          setIsProblemsPanelOpen((prev) => {
+            if (!prev) setPanelTab("problems");
+            return !prev;
+          })
+        }
         gitStatus={gitStatus}
         autoPushEnabled={autoPushEnabled}
         onToggleGit={() => setActivityTab((prev) => (prev === "git" ? "explorer" : "git"))}

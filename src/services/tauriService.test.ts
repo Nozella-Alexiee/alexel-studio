@@ -8,7 +8,10 @@ import {
   getSystemFootprint,
   isImageFile,
   readFileImage,
+  executeCodeRun,
+  executeTerminalCommand,
 } from "./tauriService";
+
 
 describe("tauriService (mock / browser environment fallback)", () => {
   it("lists project directory items", async () => {
@@ -59,4 +62,30 @@ describe("tauriService (mock / browser environment fallback)", () => {
     expect(imgData.data_url).toContain("data:image/svg+xml;base64,");
     expect(imgData.size_bytes).toBeGreaterThan(0);
   });
+
+  it("executes code run with auto-detected PHP runner in mock environment", async () => {
+    const result = await executeCodeRun("/Users/demo/nozel-project/src/server.php");
+    expect(result.success).toBe(true);
+    expect(result.command).toContain("php");
+    expect(result.stdout).toContain("Nozel Code");
+    expect(result.stdout).toContain("RAM");
+    expect(result.exit_code).toBe(0);
+  });
+
+  it("executes code run with Python runner in mock environment", async () => {
+    const result = await executeCodeRun("/Users/demo/nozel-project/src/analyze.py");
+    expect(result.success).toBe(true);
+    expect(result.command).toContain("python3");
+    expect(result.stdout).toContain("M1 Neural Engine");
+    expect(result.exit_code).toBe(0);
+  });
+
+  it("executes terminal command in mock environment", async () => {
+    const result = await executeTerminalCommand("ls -la", "/Users/demo/nozel-project");
+    expect(result.success).toBe(true);
+    expect(result.stdout).toContain("package.json");
+    expect(result.stdout).toContain("src");
+    expect(result.exit_code).toBe(0);
+  });
 });
+

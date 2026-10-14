@@ -59,6 +59,17 @@ pub struct GitPushResult {
     pub pushed_to_remote: bool,
 }
 
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
+pub struct CodeRunResult {
+    pub success: bool,
+    pub stdout: String,
+    pub stderr: String,
+    pub exit_code: Option<i32>,
+    pub execution_time_ms: u64,
+    pub command: String,
+}
+
+
 /// List files and directories inside a target directory.
 /// Excludes heavy directories like .git and node_modules by default to keep Nozel Code fast on 8GB RAM.
 #[tauri::command]
@@ -603,6 +614,226 @@ fn git_auto_commit_and_push(project_dir: String, commit_message: Option<String>)
     })
 }
 
+/// Build an augmented PATH containing Homebrew, Cargo, Node, and user tools on macOS
+fn get_augmented_path() -> String {
+    let home = std::env::var("HOME").unwrap_or_default();
+    let existing = std::env::var("PATH").unwrap_or_default();
+    let common_paths = [
+        "/opt/homebrew/bin",
+        "/opt/homebrew/sbin",
+        "/usr/local/bin",
+        "/usr/bin",
+        "/bin",
+        "/usr/sbin",
+        "/sbin",
+    ];
+    let user_paths = [
+        format!("{}/.cargo/bin", home),
+        format!("{}/.local/bin", home),
+        format!("{}/go/bin", home),
+        format!("{}/.npm-global/bin", home),
+        format!("{}/Library/pnpm", home),
+    ];
+
+    let mut parts: Vec<String> = Vec::new();
+    for p in common_paths {
+        if !parts.contains(&p.to_string()) {
+            parts.push(p.to_string());
+        }
+    }
+    for p in user_paths {
+        if !parts.contains(&p) {
+            parts.push(p);
+        }
+    }
+    if !existing.is_empty() {
+        for p in existing.split(':') {
+            let s = p.to_string();
+            if !parts.contains(&s) {
+                parts.push(s);
+            }
+        }
+    }
+    parts.join(":")
+}
+
+/// Execute active code file with auto-detected interpreter/compiler
+#[tauri::command]
+fn execute_code_run(
+    file_path: String,
+    project_dir: Option<String>,
+    custom_command: Option<String>,
+) -> Result<CodeRunResult, String> {
+    let path = Path::new(&file_path);
+    if !path.exists() {
+        return Err(format!("File does not exist: {}", file_path));
+    }
+
+    let ext = path
+        .extension()
+        .map(|e| e.to_string_lossy().to_lowercase())
+        .unwrap_or_default();
+
+    let cmd_to_run = if let Some(custom) = custom_command.filter(|c| !c.trim().is_empty()) {
+        custom
+    } else {
+        match ext.as_str() {
+            "html" | "htm" => format!("open \"{}\"", file_path),
+            "css" => {
+                let html_in_dir = path.parent().map(|p| p.join("index.html"));
+                let html_in_root = project_dir.as_ref().map(|pd| Path::new(pd).join("index.html"));
+                if let Some(h) = html_in_dir.filter(|p| p.exists()) {
+                    format!("open \"{}\"", h.display())
+                } else if let Some(h) = html_in_root.filter(|p| p.exists()) {
+                    format!("open \"{}\"", h.display())
+                } else {
+                    return Err("File CSS tidak dapat dijalankan standalone. Buka file HTML yang memanggil CSS ini atau jalankan index.html.".to_string());
+                }
+            }
+            "json" => {
+                let fname = path.file_name().and_then(|n| n.to_str()).unwrap_or_default();
+                if fname == "package.json" {
+                    "npm run dev".to_string()
+                } else {
+                    return Err("Runner tidak dikonfigurasi untuk file data .json. Buka file kode atau gunakan tab TERMINAL.".to_string());
+                }
+            }
+            "php" => format!("php \"{}\"", file_path),
+            "py" => format!("python3 \"{}\"", file_path),
+            "js" | "mjs" | "cjs" => format!("node \"{}\"", file_path),
+            "ts" | "tsx" => format!("npx tsx \"{}\"", file_path),
+            "rs" => {
+                let has_cargo = if let Some(ref pd) = project_dir {
+                    Path::new(pd).join("Cargo.toml").exists()
+                } else {
+                    path.parent()
+                        .map(|p| p.join("Cargo.toml").exists())
+                        .unwrap_or(false)
+                };
+                if has_cargo {
+                    "cargo run".to_string()
+                } else {
+                    let temp_bin = std::env::temp_dir().join(format!("nozel_rs_{}", std::process::id()));
+                    format!(
+                        "rustc \"{}\" -o \"{}\" && \"{}\"",
+                        file_path,
+                        temp_bin.display(),
+                        temp_bin.display()
+                    )
+                }
+            }
+            "go" => format!("go run \"{}\"", file_path),
+            "sh" | "zsh" => format!("bash \"{}\"", file_path),
+            "c" => {
+                let temp_bin = std::env::temp_dir().join(format!("nozel_c_{}", std::process::id()));
+                format!(
+                    "clang \"{}\" -o \"{}\" && \"{}\"",
+                    file_path,
+                    temp_bin.display(),
+                    temp_bin.display()
+                )
+            }
+            "cpp" | "cc" | "cxx" => {
+                let temp_bin = std::env::temp_dir().join(format!("nozel_cpp_{}", std::process::id()));
+                format!(
+                    "clang++ \"{}\" -o \"{}\" && \"{}\"",
+                    file_path,
+                    temp_bin.display(),
+                    temp_bin.display()
+                )
+            }
+            _ => {
+                return Err(format!(
+                    "No runner configured for .{} files. Use custom command or the TERMINAL tab.",
+                    ext
+                ));
+            }
+        }
+    };
+
+    let effective_dir = if let Some(ref pd) = project_dir {
+        let p = Path::new(pd);
+        if p.exists() && p.is_dir() {
+            Some(p)
+        } else {
+            path.parent()
+        }
+    } else {
+        path.parent()
+    };
+
+    let start = Instant::now();
+    let mut cmd = Command::new("/bin/zsh");
+    cmd.args(["-l", "-c", &cmd_to_run]);
+    if let Some(dir) = effective_dir {
+        cmd.current_dir(dir);
+    }
+    cmd.env("PATH", get_augmented_path());
+
+    let output = cmd
+        .output()
+        .map_err(|e| format!("Failed to execute command: {}", e))?;
+    let duration = start.elapsed().as_millis() as u64;
+
+    let mut stdout = String::from_utf8_lossy(&output.stdout).to_string();
+    let stderr = String::from_utf8_lossy(&output.stderr).to_string();
+    let exit_code = output.status.code();
+    let success = output.status.success();
+
+    if (ext == "html" || ext == "htm" || ext == "css") && success && stdout.trim().is_empty() {
+        let doc_name = path.file_name().and_then(|n| n.to_str()).unwrap_or("index.html");
+        stdout = format!(
+            "🌐 [Web Browser Preview Launched]\n✅ Berhasil dibuka di default web browser macOS (Google Chrome / Safari)!\n📄 Dokumen: {}\n🔗 File URL: file://{}\n⚡ Project HTML, CSS, & JavaScript aktif dan siap diuji.\n",
+            doc_name,
+            file_path
+        );
+    }
+
+    Ok(CodeRunResult {
+        success,
+        stdout,
+        stderr,
+        exit_code,
+        execution_time_ms: duration,
+        command: cmd_to_run,
+    })
+}
+
+/// Execute interactive/arbitrary shell command in specified working directory
+#[tauri::command]
+fn execute_terminal_command(
+    command: String,
+    working_dir: String,
+) -> Result<CodeRunResult, String> {
+    let start = Instant::now();
+    let p = Path::new(&working_dir);
+    let mut cmd = Command::new("/bin/zsh");
+    cmd.args(["-l", "-c", &command]);
+    if p.exists() && p.is_dir() {
+        cmd.current_dir(p);
+    }
+    cmd.env("PATH", get_augmented_path());
+
+    let output = cmd
+        .output()
+        .map_err(|e| format!("Failed to execute terminal command: {}", e))?;
+    let duration = start.elapsed().as_millis() as u64;
+
+    let stdout = String::from_utf8_lossy(&output.stdout).to_string();
+    let stderr = String::from_utf8_lossy(&output.stderr).to_string();
+    let exit_code = output.status.code();
+    let success = output.status.success();
+
+    Ok(CodeRunResult {
+        success,
+        stdout,
+        stderr,
+        exit_code,
+        execution_time_ms: duration,
+        command,
+    })
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     APP_START_TIME.get_or_init(Instant::now);
@@ -624,11 +855,14 @@ pub fn run() {
             run_claude_cli_print,
             get_system_footprint,
             git_get_status,
-            git_auto_commit_and_push
+            git_auto_commit_and_push,
+            execute_code_run,
+            execute_terminal_command
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }
+
 
 #[cfg(test)]
 mod tests {
@@ -751,4 +985,73 @@ mod tests {
         let _ = fs::remove_file(img_file);
         let _ = fs::remove_dir(temp_dir);
     }
+
+    #[test]
+    fn test_execute_terminal_command_echo() {
+        let temp_dir = std::env::temp_dir();
+        let res = execute_terminal_command(
+            "echo 'Nozel Runner Active'".to_string(),
+            temp_dir.to_string_lossy().to_string(),
+        );
+        assert!(res.is_ok());
+        let run_res = res.unwrap();
+        assert!(run_res.success);
+        assert!(run_res.stdout.contains("Nozel Runner Active"));
+        assert_eq!(run_res.exit_code, Some(0));
+    }
+
+    #[test]
+    fn test_execute_code_run_sh() {
+        let temp_dir = std::env::temp_dir().join("nozel_test_runner_sh");
+        let _ = fs::create_dir_all(&temp_dir);
+        let sh_file = temp_dir.join("test_script.sh");
+        let sh_path = sh_file.to_string_lossy().to_string();
+
+        let _ = fs::write(&sh_file, "echo 'Testing Sh Runner 123'");
+
+        let res = execute_code_run(
+            sh_path.clone(),
+            Some(temp_dir.to_string_lossy().to_string()),
+            None,
+        );
+        assert!(res.is_ok());
+        let run_res = res.unwrap();
+        assert!(run_res.success);
+        assert!(run_res.stdout.contains("Testing Sh Runner 123"));
+        assert_eq!(run_res.exit_code, Some(0));
+
+        let _ = fs::remove_file(sh_file);
+        let _ = fs::remove_dir(temp_dir);
+    }
+
+    #[test]
+    fn test_execute_code_run_nonexistent_file() {
+        let res = execute_code_run(
+            "/path/to/nonexistent/file_xyz.py".to_string(),
+            None,
+            None,
+        );
+        assert!(res.is_err());
+        assert!(res.unwrap_err().contains("File does not exist"));
+    }
+
+    #[test]
+    fn test_execute_code_run_unsupported_extension() {
+        let temp_dir = std::env::temp_dir().join("nozel_test_unsupported");
+        let _ = fs::create_dir_all(&temp_dir);
+        let unknown_file = temp_dir.join("test.xyzunknown");
+        let _ = fs::write(&unknown_file, "content");
+
+        let res = execute_code_run(
+            unknown_file.to_string_lossy().to_string(),
+            None,
+            None,
+        );
+        assert!(res.is_err());
+        assert!(res.unwrap_err().contains("No runner configured for .xyzunknown files"));
+
+        let _ = fs::remove_file(unknown_file);
+        let _ = fs::remove_dir(temp_dir);
+    }
 }
+

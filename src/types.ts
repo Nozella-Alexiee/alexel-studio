@@ -86,3 +86,20 @@ export interface CodeProblem {
   severity: "error" | "warning" | "info";
   source?: string;
 }
+
+export interface CodeRunResult {
+  success: boolean;
+  stdout: string;
+  stderr: string;
+  exit_code: number | null;
+  execution_time_ms: number;
+  command: string;
+}
+
+export interface TerminalHistoryEntry {
+  id: string;
+  command: string;
+  timestamp: number;
+  result?: CodeRunResult;
+}
+

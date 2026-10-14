@@ -13,6 +13,7 @@ import { Cpu, Folder, Sparkles, ChevronRight } from "lucide-react";
 import { FileIcon } from "./FileIcon";
 import { ImageViewer } from "./ImageViewer";
 import { MarkdownViewer } from "./MarkdownViewer";
+import { HtmlViewer } from "./HtmlViewer";
 import { CodeMinimap } from "./CodeMinimap";
 
 interface EditorAreaProps {
@@ -26,6 +27,7 @@ interface EditorAreaProps {
   onDiagnosticsChange?: (problems: CodeProblem[]) => void;
   jumpToLine?: { line: number; col: number; token: number };
   problems?: CodeProblem[];
+  onRunCode?: () => void;
 }
 
 export const EditorArea: React.FC<EditorAreaProps> = ({
@@ -39,12 +41,14 @@ export const EditorArea: React.FC<EditorAreaProps> = ({
   onDiagnosticsChange,
   jumpToLine,
   problems = [],
+  onRunCode,
 }) => {
   const editorContainerRef = useRef<HTMLDivElement>(null);
   const editorViewRef = useRef<EditorView | null>(null);
 
   const [activeProblems, setActiveProblems] = useState<CodeProblem[]>([]);
   const [markdownMode, setMarkdownMode] = useState<"code" | "split" | "preview">("split");
+  const [htmlMode, setHtmlMode] = useState<"code" | "split" | "preview">("split");
 
   const languageCompartmentRef = useRef(new Compartment());
   const themeCompartmentRef = useRef(new Compartment());
@@ -84,10 +88,10 @@ export const EditorArea: React.FC<EditorAreaProps> = ({
 
     const themeExt = getSyntaxTheme(theme);
 
-    // 1. Diagnostics / Real-time Wavy Red Squiggly Error Tracker
-    const linterExt = createCodeLinter(activeTab.name, (diagnostics) => {
-      if (!editorViewRef.current || !onDiagnosticsChangeRef.current) return;
-      const view = editorViewRef.current;
+    // 1. Diagnostics / Real-time Wavy Red Squiggly Error Tracker (50ms typing delay)
+    const linterExt = createCodeLinter(activeTab.name, (diagnostics, linterView) => {
+      const view = linterView || editorViewRef.current;
+      if (!view) return;
       const doc = view.state.doc;
       const parsedProblems: CodeProblem[] = diagnostics.map((d) => {
         const safeFrom = Math.min(Math.max(d.from, 0), doc.length);
@@ -101,7 +105,9 @@ export const EditorArea: React.FC<EditorAreaProps> = ({
         };
       });
       setActiveProblems(parsedProblems);
-      onDiagnosticsChangeRef.current(parsedProblems);
+      if (onDiagnosticsChangeRef.current) {
+        onDiagnosticsChangeRef.current(parsedProblems);
+      }
     });
 
     // 2. Autocomplete & Code Snippets
@@ -243,6 +249,12 @@ export const EditorArea: React.FC<EditorAreaProps> = ({
     activeTab.language === "markdown" ||
     activeTab.language === "Markdown";
 
+  const isHtml =
+    activeTab.name.endsWith(".html") ||
+    activeTab.name.endsWith(".htm") ||
+    activeTab.language === "html" ||
+    activeTab.language === "Html";
+
   const editorNode = (
     <div className="pro-code-wrapper">
       <div className="pro-code-container" ref={editorContainerRef} />
@@ -273,13 +285,21 @@ export const EditorArea: React.FC<EditorAreaProps> = ({
         })}
       </div>
 
-      {/* 2. Editor Layout: Markdown Live Preview or Standard Code Area */}
+      {/* 2. Editor Layout: Markdown Live Preview, HTML5 Live Preview, or Standard Code Area */}
       {isMarkdown ? (
         <MarkdownViewer
           content={activeTab.content}
           mode={markdownMode}
           onModeChange={setMarkdownMode}
           editorElement={editorNode}
+        />
+      ) : isHtml ? (
+        <HtmlViewer
+          content={activeTab.content}
+          mode={htmlMode}
+          onModeChange={setHtmlMode}
+          editorElement={editorNode}
+          onOpenInBrowser={onRunCode}
         />
       ) : (
         editorNode

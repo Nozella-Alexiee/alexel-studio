@@ -1,14 +1,13 @@
 import React from "react";
 import {
-  Folder,
+  Files,
   Search,
   Sparkles,
   GitBranch,
   Settings,
   Sun,
   Moon,
-  AlertTriangle,
-  Hexagon,
+  AlertCircle,
 } from "lucide-react";
 import { ThemeMode } from "../types";
 
@@ -38,97 +37,94 @@ export const ActivityBar: React.FC<ActivityBarProps> = ({
   const totalProblems = errorCount + warningCount;
 
   return (
-    <nav className="app-activitybar" aria-label="Activity Bar">
-      <div className="activitybar-top">
-        {/* Apple Studio Brand Logo */}
-        <div className="cyber-brand-logo" title="Nozel Code // Apple Silicon M1">
-          <div className="hex-outer">
-            <Hexagon size={28} className="hex-svg" />
-            <span className="hex-n">N</span>
-          </div>
-        </div>
-
+    <nav className="vscode-activity-bar" aria-label="Activity Bar">
+      <div className="vscode-activity-top">
         {/* 1. File Explorer */}
         <button
-          className={`cyber-activity-btn btn-explorer ${activeTab === "explorer" ? "active" : ""}`}
+          className={`vscode-activity-icon ${activeTab === "explorer" ? "active" : ""}`}
           onClick={() => onSelectTab("explorer")}
-          title="File Explorer (Cmd+Shift+E)"
+          title="Explorer (⌘⇧E)"
+          aria-label="Explorer"
         >
-          <Folder size={18} strokeWidth={1.8} className="btn-icon-explorer" />
-          {activeTab === "explorer" && <div className="cyber-laser-strip" />}
+          <Files size={22} strokeWidth={1.7} />
         </button>
 
-        {/* 2. Source Control & Git Auto-Bot */}
+        {/* 2. Search */}
         <button
-          className={`cyber-activity-btn btn-git ${activeTab === "git" ? "active" : ""}`}
+          className={`vscode-activity-icon ${activeTab === "search" ? "active" : ""}`}
+          onClick={() => onSelectTab("search")}
+          title="Search (⌘⇧F)"
+          aria-label="Search"
+        >
+          <Search size={22} strokeWidth={1.7} />
+        </button>
+
+        {/* 3. Source Control */}
+        <button
+          className={`vscode-activity-icon ${activeTab === "git" ? "active" : ""}`}
           onClick={() => onSelectTab("git")}
-          title="Git Bot & Source Control (Cmd+Shift+G)"
+          title="Source Control (⌃⇧G)"
+          aria-label="Source Control"
         >
-          <GitBranch size={18} strokeWidth={1.8} className="btn-icon-git" />
-          {activeTab === "git" && <div className="cyber-laser-strip" />}
+          <GitBranch size={22} strokeWidth={1.7} />
         </button>
 
-        {/* 3. Problems & Linter Panel */}
+        {/* 4. Problems & Error Diagnostics (Live Real-time Counter Badge) */}
         <button
-          className={`cyber-activity-btn btn-problems ${activeTab === "problems" ? "active" : ""}`}
+          className={`vscode-activity-icon ${activeTab === "problems" ? "active" : ""}`}
           onClick={() => onSelectTab("problems")}
-          title={`Code Problems & Diagnostics (${totalProblems} issues)`}
+          title={`Problems & Syntax Linter (⌘⇧M) — ${errorCount} errors, ${warningCount} warnings`}
+          aria-label="Problems Panel"
         >
-          <AlertTriangle size={18} strokeWidth={1.8} className="btn-icon-problems" />
+          <AlertCircle size={22} strokeWidth={1.7} />
           {totalProblems > 0 && (
-            <span className="activity-badge" title={`${errorCount} errors, ${warningCount} warnings`}>
+            <span
+              className="vscode-badge-counter"
+              title={`${errorCount} error(s), ${warningCount} warning(s)`}
+            >
               {totalProblems > 99 ? "99+" : totalProblems}
             </span>
           )}
-          {activeTab === "problems" && <div className="cyber-laser-strip" />}
-        </button>
-
-        {/* 4. Search */}
-        <button
-          className={`cyber-activity-btn btn-search ${activeTab === "search" ? "active" : ""}`}
-          onClick={() => onSelectTab("search")}
-          title="Search in Files (Cmd+Shift+F)"
-        >
-          <Search size={18} strokeWidth={1.8} className="btn-icon-search" />
-          {activeTab === "search" && <div className="cyber-laser-strip" />}
         </button>
 
         {/* 5. Claude Companion Pill */}
         <button
-          className={`cyber-claude-pill ${isClaudeOpen ? "active-open" : ""}`}
+          className={`vscode-claude-btn ${isClaudeOpen ? "active" : ""}`}
           onClick={onToggleClaude}
-          title="Claude Companion Drawer (Claude Code Pro CLI)"
+          title="Claude Pro Companion CLI"
+          aria-label="Claude AI"
         >
-          <Sparkles size={14} className="claude-quantum-icon" />
-          <span className="claude-pill-text">AI</span>
+          <Sparkles size={16} />
         </button>
       </div>
 
-      <div className="activitybar-bottom">
+      <div className="vscode-activity-bottom">
         {/* Theme Switcher */}
         <button
-          className="cyber-activity-btn btn-theme"
+          className="vscode-activity-icon"
           onClick={onToggleTheme}
-          title={`Switch Theme (${theme === "dark" ? "Apple Studio Pro Light" : "Apple Studio Pro Dark"})`}
+          title={`Toggle Color Theme (${theme === "dark" ? "VS Code Light" : "VS Code Dark+"})`}
+          aria-label="Switch Theme"
         >
           {theme === "dark" ? (
-            <Sun size={17} className="btn-icon-sun" />
+            <Sun size={20} strokeWidth={1.7} />
           ) : (
-            <Moon size={17} className="btn-icon-moon" />
+            <Moon size={20} strokeWidth={1.7} />
           )}
         </button>
 
         {/* Settings */}
         <button
-          className={`cyber-activity-btn btn-settings ${activeTab === "settings" ? "active" : ""}`}
+          className={`vscode-activity-icon ${activeTab === "settings" ? "active" : ""}`}
           onClick={() => onSelectTab("settings")}
-          title="Settings (Cmd+,)"
+          title="Settings (⌘,)"
+          aria-label="Settings"
         >
-          <Settings size={17} className="btn-icon-settings" />
-          {activeTab === "settings" && <div className="cyber-laser-strip" />}
+          <Settings size={20} strokeWidth={1.7} />
         </button>
       </div>
     </nav>
   );
 };
+
 export default ActivityBar;

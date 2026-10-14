@@ -1,6 +1,7 @@
 import { invoke } from "@tauri-apps/api/core";
 import { open } from "@tauri-apps/plugin-dialog";
-import { ClaudeCliInfo, FileEntry, SystemFootprint, GitStatus, GitPushResult, ImageFileData } from "../types";
+import { ClaudeCliInfo, FileEntry, SystemFootprint, GitStatus, GitPushResult, ImageFileData, CodeRunResult } from "../types";
+
 
 export const isImageFile = (filename: string): boolean => {
   const ext = filename.split(".").pop()?.toLowerCase() || "";
@@ -430,3 +431,195 @@ export async function gitAutoCommitAndPush(
     pushed_to_remote: true,
   };
 }
+
+export async function executeCodeRun(
+  filePath: string,
+  projectDir?: string,
+  customCommand?: string
+): Promise<CodeRunResult> {
+  if (isTauriEnvironment()) {
+    return await invoke<CodeRunResult>("execute_code_run", {
+      filePath,
+      projectDir: projectDir || null,
+      customCommand: customCommand || null,
+    });
+  }
+
+  // Browser preview mode simulated execution
+  await new Promise((resolve) => setTimeout(resolve, 240));
+  const ext = filePath.split(".").pop()?.toLowerCase() || "";
+  const fileName = filePath.split("/").pop() || "script";
+
+  if (ext === "html" || ext === "htm") {
+    return {
+      success: true,
+      stdout: `🌐 [Web Browser Preview Launched]\n✅ Berhasil dibuka di default web browser macOS (Google Chrome / Safari)!\n📄 Dokumen: ${fileName}\n🔗 URL: file://${filePath}\n⚡ Project HTML, CSS, & JavaScript aktif dan siap diuji di browser!\n`,
+      stderr: "",
+      exit_code: 0,
+      execution_time_ms: 18,
+      command: `open "${filePath}"`,
+    };
+  } else if (ext === "css") {
+    return {
+      success: true,
+      stdout: `🌐 [Web Browser Preview Linked]\n✅ Membuka index.html yang menghubungkan stylesheet ${fileName} ke default browser macOS!\n🔗 URL: file://${filePath.replace(/\/[^/]+\.css$/, "/index.html")}\n`,
+      stderr: "",
+      exit_code: 0,
+      execution_time_ms: 22,
+      command: `open "${filePath.replace(/\/[^/]+\.css$/, "/index.html")}"`,
+    };
+  } else if (ext === "php") {
+    return {
+      success: true,
+      stdout: `🚀 [Nozel Code] Microservice running on Apple Silicon M1\n⚡ Status: Online | Timestamp: ${new Date().toISOString().replace("T", " ").slice(0, 19)} | RAM: 0.42 MB\n✅ Server port 8080 ready to accept client connections.\n`,
+      stderr: "",
+      exit_code: 0,
+      execution_time_ms: 38,
+      command: `php "${filePath}"`,
+    };
+  } else if (ext === "py") {
+    return {
+      success: true,
+      stdout: "M1 Neural Engine Telemetry active: 38MB RAM\n",
+      stderr: "",
+      exit_code: 0,
+      execution_time_ms: 45,
+      command: `python3 "${filePath}"`,
+    };
+  } else if (ext === "rs") {
+    return {
+      success: true,
+      stdout: "Nozel Core Rust Engine initialized with 38MB RAM footprint.\n",
+      stderr: "",
+      exit_code: 0,
+      execution_time_ms: 120,
+      command: "cargo run",
+    };
+  } else if (ext === "js" || ext === "ts" || ext === "tsx") {
+    return {
+      success: true,
+      stdout: `[Nozel Node Runtime] Executed ${fileName} successfully.\n`,
+      stderr: "",
+      exit_code: 0,
+      execution_time_ms: 52,
+      command: `node "${filePath}"`,
+    };
+  } else if (ext === "sh" || ext === "zsh") {
+    return {
+      success: true,
+      stdout: `[Bash Runner] Executed ${fileName}\n`,
+      stderr: "",
+      exit_code: 0,
+      execution_time_ms: 25,
+      command: `bash "${filePath}"`,
+    };
+  }
+
+  return {
+    success: true,
+    stdout: `[Simulated Run] Finished executing ${fileName}\n`,
+    stderr: "",
+    exit_code: 0,
+    execution_time_ms: 30,
+    command: `run "${filePath}"`,
+  };
+}
+
+export async function executeTerminalCommand(
+  command: string,
+  workingDir: string
+): Promise<CodeRunResult> {
+  if (isTauriEnvironment()) {
+    return await invoke<CodeRunResult>("execute_terminal_command", {
+      command,
+      workingDir,
+    });
+  }
+
+  // Browser preview mode simulated terminal execution
+  await new Promise((resolve) => setTimeout(resolve, 150));
+  const trimmed = command.trim();
+
+  if (trimmed === "ls" || trimmed === "ls -la") {
+    return {
+      success: true,
+      stdout: `total 64\ndrwxr-xr-x   8 mac  staff   256 Oct 14 11:50 .\ndrwxr-xr-x   4 mac  staff   128 Oct 14 11:50 ..\n-rw-r--r--   1 mac  staff  1466 Oct 14 11:50 package.json\ndrwxr-xr-x   6 mac  staff   192 Oct 14 11:50 src\ndrwxr-xr-x   4 mac  staff   128 Oct 14 11:50 src-tauri\n`,
+      stderr: "",
+      exit_code: 0,
+      execution_time_ms: 14,
+      command,
+    };
+  } else if (trimmed === "pwd") {
+    return {
+      success: true,
+      stdout: `${workingDir}\n`,
+      stderr: "",
+      exit_code: 0,
+      execution_time_ms: 6,
+      command,
+    };
+  } else if (trimmed.startsWith("echo ")) {
+    return {
+      success: true,
+      stdout: `${trimmed.slice(5).replace(/^["']|["']$/g, "")}\n`,
+      stderr: "",
+      exit_code: 0,
+      execution_time_ms: 5,
+      command,
+    };
+  }
+
+  return {
+    success: true,
+    stdout: `[Terminal] Command completed: ${command}\n`,
+    stderr: "",
+    exit_code: 0,
+    execution_time_ms: 22,
+    command,
+  };
+}
+
+export async function startWindowDragging(): Promise<void> {
+  if (isTauriEnvironment()) {
+    try {
+      const { getCurrentWindow } = await import("@tauri-apps/api/window");
+      await getCurrentWindow().startDragging();
+    } catch (err) {
+      console.warn("Failed to start window dragging:", err);
+    }
+  }
+}
+
+export async function toggleWindowMaximize(): Promise<void> {
+  if (isTauriEnvironment()) {
+    try {
+      const { getCurrentWindow } = await import("@tauri-apps/api/window");
+      await getCurrentWindow().toggleMaximize();
+    } catch (err) {
+      console.warn("Failed to toggle window maximize:", err);
+    }
+  }
+}
+
+export async function closeWindow(): Promise<void> {
+  if (isTauriEnvironment()) {
+    try {
+      const { getCurrentWindow } = await import("@tauri-apps/api/window");
+      await getCurrentWindow().close();
+    } catch (err) {
+      console.warn("Failed to close window:", err);
+    }
+  }
+}
+
+export async function minimizeWindow(): Promise<void> {
+  if (isTauriEnvironment()) {
+    try {
+      const { getCurrentWindow } = await import("@tauri-apps/api/window");
+      await getCurrentWindow().minimize();
+    } catch (err) {
+      console.warn("Failed to minimize window:", err);
+    }
+  }
+}
+
