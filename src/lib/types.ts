@@ -1,4 +1,4 @@
-// Tipe data yang dikirim backend Rust (lihat src-tauri/src/*.rs).
+// Tipe data yang dikirim main process (lihat electron/*.ts).
 
 export interface FileEntry {
   name: string;
@@ -118,7 +118,9 @@ export interface ClaudeInfo {
 }
 
 export interface Footprint {
+  /** Total RAM semua proses Nozel (main + renderer + GPU + helper), dalam MB. */
   core_mb: number;
+  processes?: number;
   cpu_percent: number;
   uptime_s: number;
 }

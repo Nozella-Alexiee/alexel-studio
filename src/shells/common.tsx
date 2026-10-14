@@ -188,7 +188,7 @@ export function StatusBar({ variant }: { variant: "aurora" | "zen" | "control" }
         </>
       )}
       {fp && (
-        <span className="status-item sb-mem" title={`Proses inti Nozel: ${fp.core_mb} MB RAM, CPU ${fp.cpu_percent}%. Proses WebKit dihitung terpisah oleh macOS.${isSaver() ? " (hemat daya)" : ""}`}>
+        <span className="status-item sb-mem" title={`RAM total Nozel ${fp.core_mb} MB${fp.processes ? ` di ${fp.processes} proses` : ""}, CPU ${fp.cpu_percent}%.${isSaver() ? " (hemat daya)" : ""}`}>
           <Cpu size={12} aria-hidden /> {Math.round(fp.core_mb)} MB{!zen && ` · ${fp.cpu_percent}%`}
         </span>
       )}

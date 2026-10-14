@@ -20,8 +20,8 @@ export default function AuroraShell() {
 
   return (
     <div className="shell shell-aurora">
-      <header className="titlebar" data-tauri-drag-region>
-        <div className="traffic-space" data-tauri-drag-region />
+      <header className="titlebar">
+        <div className="traffic-space" />
         <PinguBrand />
         <button className="palette-pill" onClick={() => openPalette("")}>
           <Search size={14} aria-hidden />

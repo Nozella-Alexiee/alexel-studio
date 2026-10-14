@@ -115,10 +115,10 @@ export default function ZenShell() {
 
   return (
     <div className="shell shell-zen">
-      <header className="titlebar" data-tauri-drag-region>
-        <div className="traffic-space" data-tauri-drag-region />
+      <header className="titlebar">
+        <div className="traffic-space" />
         <PinguBrand />
-        <div className="zen-crumb" data-tauri-drag-region>
+        <div className="zen-crumb">
           {root && <span className="zen-root">{root.split("/").pop()}</span>}
           {rel && (
             <>

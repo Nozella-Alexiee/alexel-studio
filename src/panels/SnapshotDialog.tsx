@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import { IconButton, Segmented } from "../components/ui";
 import * as docs from "../editor/documents";
 import { renderSnapshot, type SnapshotOptions } from "../editor/snapshot";
-import { api, errMsg, pickSavePath } from "../lib/ipc";
+import { api, call, errMsg, isNative, pickSavePath } from "../lib/ipc";
 import { basename, dirname, join } from "../lib/paths";
 import { activeTab, getState, setState, toast, useStore } from "../state/store";
 
@@ -43,8 +43,11 @@ export function SnapshotDialog() {
     const c = canvasRef.current;
     if (!c) return;
     try {
-      const blob: Blob = await new Promise((res, rej) => c.toBlob((b) => (b ? res(b) : rej(new Error("Gagal membuat gambar"))), "image/png"));
-      await navigator.clipboard.write([new ClipboardItem({ "image/png": blob })]);
+      if (isNative) await call("clipboard_write_image", { dataUrl: c.toDataURL("image/png") });
+      else {
+        const blob: Blob = await new Promise((res, rej) => c.toBlob((b) => (b ? res(b) : rej(new Error("Gagal membuat gambar"))), "image/png"));
+        await navigator.clipboard.write([new ClipboardItem({ "image/png": blob })]);
+      }
       toast("Gambar disalin ke clipboard", "success");
     } catch (e) {
       toast(`Tidak bisa menyalin gambar: ${errMsg(e)}. Coba Simpan PNG.`, "error");

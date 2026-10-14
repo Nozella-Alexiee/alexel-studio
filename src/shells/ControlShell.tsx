@@ -69,11 +69,11 @@ export default function ControlShell() {
 
   return (
     <div className="shell shell-control">
-      <header className="titlebar" data-tauri-drag-region>
-        <div className="traffic-space" data-tauri-drag-region />
+      <header className="titlebar">
+        <div className="traffic-space" />
         <PinguBrand />
         <RunConfig />
-        <div className="ctl-center" data-tauri-drag-region>
+        <div className="ctl-center">
           <button className="ctl-project" onClick={() => openPalette("")} title="Cari berkas (⌘P)">
             <Search size={12} aria-hidden /> {root ? root.split("/").pop() : "Nozel Code"}
             {git?.is_repo && <span className="ctl-branch">· {git.branch}</span>}

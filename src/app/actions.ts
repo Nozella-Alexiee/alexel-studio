@@ -4,7 +4,7 @@
 import { applyDesign, type DesignId } from "../design/designs";
 import * as docs from "../editor/documents";
 import { languageFor } from "../editor/languages";
-import { api, errMsg, isDemo, pickFolder } from "../lib/ipc";
+import { api, errMsg, isDemo, pickFolder, setTrafficLights, setWindowTitle } from "../lib/ipc";
 import { basename, dirname, isImagePath, isInside, join, relative, validateName } from "../lib/paths";
 import {
   DEFAULT_LAYOUTS,
@@ -61,8 +61,7 @@ export async function openProject(root: string, opts: { restoreTabs?: { groups: 
   void refreshGit();
   void refreshRunTargets();
   void import("../panels/todoData").then((m) => m.refreshTodos());
-  const win = await import("../lib/ipc").then((m) => m.windowApi());
-  void win?.setTitle(`${basename(root)} — Nozel Code`).catch(() => {});
+  void setWindowTitle(`${basename(root)} — Nozel Code`);
   if (opts.restoreTabs) {
     for (let g = 0; g < opts.restoreTabs.groups.length && g < 2; g++) {
       const grp = opts.restoreTabs.groups[g];
@@ -550,9 +549,18 @@ export function updateSettings(patch: Partial<Settings>) {
     // Diterapkan langsung. (View Transition API tertahan saat jendela tidak dirender,
     // sehingga desain tidak pernah berganti — jangan dipakai di sini.)
     applyDesign(next.design, next.accent);
+    syncTrafficLights();
   }
   if (["fontSize", "tabSize", "wordWrap", "minimap", "design"].some((k) => k in patch)) requestAnimationFrame(() => docs.applyEditorSettings());
   persistSettings();
+}
+
+/** Posisikan tombol jendela macOS di tengah title bar desain aktif. */
+export function syncTrafficLights() {
+  requestAnimationFrame(() => {
+    const h = parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--titlebar-h")) || 44;
+    void setTrafficLights((h - 14) / 2);
+  });
 }
 
 export function resetLayout() {

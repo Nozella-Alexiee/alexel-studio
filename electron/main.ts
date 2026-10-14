@@ -1,0 +1,239 @@
+// Nozel Code — main process Electron.
+// Keamanan: contextIsolation + sandbox, tanpa nodeIntegration, CSP ketat, navigasi & popup diblok,
+// semua command lewat satu pintu IPC dengan whitelist (lihat commands.ts).
+
+import { app, BrowserWindow, ipcMain, Menu, net, protocol, session, shell, type MenuItemConstructorOptions } from "electron";
+import fs from "node:fs";
+import path from "node:path";
+import { pathToFileURL } from "node:url";
+import { killAllClaude } from "./claude";
+import { buildCommands } from "./commands";
+import { resolvePreview } from "./preview";
+import { killAllPtys } from "./pty";
+import { migrateFromTauri } from "./store";
+import { warmPath, type Ctx } from "./util";
+import { unwatch } from "./watcher";
+
+const DEV_URL = process.env.VITE_DEV_SERVER_URL;
+const APP_ORIGIN = "app://nozel";
+const RENDERER_DIR = path.join(__dirname, "..", "dist");
+
+const CSP = [
+  "default-src 'self'",
+  "script-src 'self'",
+  "style-src 'self' 'unsafe-inline'",
+  "img-src 'self' data: blob: nozelpreview:",
+  "font-src 'self' data:",
+  "connect-src 'self'",
+  "frame-src nozelpreview:",
+  "worker-src 'self' blob:",
+  "object-src 'none'",
+  "base-uri 'self'",
+].join("; ");
+
+protocol.registerSchemesAsPrivileged([
+  { scheme: "app", privileges: { standard: true, secure: true, supportFetchAPI: true, codeCache: true } },
+  { scheme: "nozelpreview", privileges: { standard: true, secure: true, supportFetchAPI: true, stream: true } },
+]);
+
+if (!app.requestSingleInstanceLock()) app.quit();
+
+let win: BrowserWindow | null = null;
+let allowClose = false;
+let quitting = false;
+const pendingOpen: string[] = [];
+
+const ctx: Ctx = {
+  userData: app.getPath("userData"),
+  emit: (event, payload) => {
+    if (win && !win.isDestroyed()) win.webContents.send("nozel:event", event, payload);
+  },
+  trash: (p) => shell.trashItem(p),
+  reveal: (p) => shell.showItemInFolder(p),
+};
+
+const commands = buildCommands(ctx, {
+  confirmClose: (w) => {
+    allowClose = true;
+    w.close();
+  },
+});
+
+function isTrustedSender(url: string) {
+  return url.startsWith(APP_ORIGIN + "/") || (!!DEV_URL && url.startsWith(DEV_URL));
+}
+
+ipcMain.handle("nozel:invoke", async (e, cmd: string, args: Record<string, unknown>) => {
+  if (!e.senderFrame || !isTrustedSender(e.senderFrame.url)) return { ok: false, error: "Pengirim tidak dipercaya." };
+  const h = commands[cmd];
+  if (!h) return { ok: false, error: `Command tidak dikenal: ${cmd}` };
+  try {
+    const value = await h(args ?? {}, BrowserWindow.fromWebContents(e.sender));
+    return { ok: true, value: value === undefined ? null : value };
+  } catch (err) {
+    return { ok: false, error: err instanceof Error ? err.message : String(err) };
+  }
+});
+
+function serveApp() {
+  protocol.handle("app", async (req) => {
+    const { pathname } = new URL(req.url);
+    let file = path.normalize(path.join(RENDERER_DIR, decodeURIComponent(pathname)));
+    if (!file.startsWith(RENDERER_DIR)) return new Response("Forbidden", { status: 403 });
+    if (!fs.existsSync(file) || fs.statSync(file).isDirectory()) file = path.join(RENDERER_DIR, "index.html");
+    const res = await net.fetch(pathToFileURL(file).toString());
+    const headers = new Headers(res.headers);
+    if (file.endsWith(".html")) headers.set("Content-Security-Policy", CSP);
+    return new Response(res.body, { status: res.status, headers });
+  });
+  protocol.handle("nozelpreview", (req) => {
+    const r = resolvePreview(new URL(req.url).pathname);
+    return new Response(typeof r.body === "string" ? r.body : new Uint8Array(r.body), {
+      status: r.status,
+      headers: {
+        "Content-Type": r.mime,
+        "Cache-Control": "no-store",
+        "Content-Security-Policy": "default-src * data: blob: 'unsafe-inline' 'unsafe-eval'",
+      },
+    });
+  });
+}
+
+function buildMenu() {
+  const isMac = process.platform === "darwin";
+  // Sengaja tanpa akselerator yang bentrok dengan shortcut editor (⌘W, ⌘R, ⌘N, ⌘O…).
+  const template: MenuItemConstructorOptions[] = [
+    ...(isMac
+      ? [
+          {
+            label: "Nozel Code",
+            submenu: [{ role: "about" }, { type: "separator" }, { role: "hide" }, { role: "hideOthers" }, { role: "unhide" }, { type: "separator" }, { role: "quit" }],
+          } as MenuItemConstructorOptions,
+        ]
+      : []),
+    {
+      label: "Edit",
+      submenu: [{ role: "undo" }, { role: "redo" }, { type: "separator" }, { role: "cut" }, { role: "copy" }, { role: "paste" }, { role: "pasteAndMatchStyle" }, { role: "selectAll" }],
+    },
+    {
+      label: "Tampilan",
+      submenu: [{ role: "togglefullscreen" }, ...(DEV_URL ? ([{ role: "toggleDevTools" }] as MenuItemConstructorOptions[]) : [])],
+    },
+    { label: "Jendela", submenu: [{ role: "minimize" }, { role: "zoom" }, ...(isMac ? ([{ type: "separator" }, { role: "front" }] as MenuItemConstructorOptions[]) : [])] },
+  ];
+  Menu.setApplicationMenu(Menu.buildFromTemplate(template));
+}
+
+function createWindow() {
+  allowClose = false;
+  win = new BrowserWindow({
+    width: 1280,
+    height: 800,
+    minWidth: 760,
+    minHeight: 520,
+    show: false,
+    title: "Nozel Code",
+    backgroundColor: "#0e1016",
+    titleBarStyle: process.platform === "darwin" ? "hidden" : "default",
+    trafficLightPosition: { x: 16, y: 16 },
+    webPreferences: {
+      preload: path.join(__dirname, "preload.cjs"),
+      contextIsolation: true,
+      sandbox: true,
+      nodeIntegration: false,
+      webviewTag: false,
+      spellcheck: false,
+    },
+  });
+
+  const wc = win.webContents;
+  wc.setWindowOpenHandler(({ url }) => {
+    if (/^https?:/i.test(url)) void shell.openExternal(url);
+    return { action: "deny" };
+  });
+  wc.on("will-navigate", (e, url) => {
+    if (!isTrustedSender(url)) {
+      e.preventDefault();
+      if (/^https?:/i.test(url)) void shell.openExternal(url);
+    }
+  });
+  wc.on("render-process-gone", () => {
+    allowClose = true;
+  });
+  win.once("ready-to-show", () => win?.show());
+  win.on("close", (e) => {
+    if (allowClose) return;
+    // Renderer yang memutuskan: tanya simpan berkas & hentikan proses dulu.
+    e.preventDefault();
+    ctx.emit("window-close-requested", {});
+  });
+  win.on("closed", () => {
+    win = null;
+    if (quitting || process.platform !== "darwin") app.quit();
+  });
+  wc.once("did-finish-load", () => {
+    for (const p of pendingOpen.splice(0)) ctx.emit("open-path", { path: p });
+  });
+
+  if (DEV_URL) void win.loadURL(DEV_URL);
+  else void win.loadURL(`${APP_ORIGIN}/index.html`);
+  if (process.env.NOZEL_SMOKE) runSmoke(win, process.env.NOZEL_SMOKE);
+}
+
+/** Uji otomatis (hanya bila env NOZEL_SMOKE berisi path skrip): jalankan skrip di renderer,
+ *  cetak hasilnya, simpan screenshot, lalu keluar. Tidak aktif dalam pemakaian normal. */
+function runSmoke(w: BrowserWindow, scriptPath: string) {
+  w.webContents.once("did-finish-load", async () => {
+    try {
+      const code = fs.readFileSync(scriptPath, "utf8");
+      const result = await w.webContents.executeJavaScript(`(async () => { ${code} })()`, true);
+      process.stdout.write(`SMOKE_RESULT ${JSON.stringify(result)}\n`);
+      const shots = process.env.NOZEL_SMOKE_SHOT;
+      if (shots) fs.writeFileSync(shots, (await w.webContents.capturePage()).toPNG());
+    } catch (e) {
+      process.stdout.write(`SMOKE_ERROR ${(e as Error).message}\n`);
+    }
+    allowClose = true;
+    app.exit(0);
+  });
+}
+
+app.on("open-file", (e, p) => {
+  e.preventDefault();
+  if (win && !win.webContents.isLoading()) ctx.emit("open-path", { path: p });
+  else pendingOpen.push(p);
+});
+
+app.on("second-instance", (_e, argv) => {
+  if (win) {
+    if (win.isMinimized()) win.restore();
+    win.focus();
+    const p = argv.slice(1).find((a) => !a.startsWith("-") && fs.existsSync(a));
+    if (p) ctx.emit("open-path", { path: path.resolve(p) });
+  }
+});
+
+app.on("before-quit", () => {
+  quitting = true;
+});
+
+app.on("will-quit", () => {
+  killAllPtys();
+  killAllClaude();
+  void unwatch();
+});
+
+app.on("activate", () => {
+  if (!win) createWindow();
+});
+
+app.whenReady().then(() => {
+  warmPath();
+  migrateFromTauri(ctx);
+  session.defaultSession.setPermissionRequestHandler((_wc, permission, cb) => cb(permission === "clipboard-sanitized-write"));
+  serveApp();
+  buildMenu();
+  const cliPath = process.argv.slice(DEV_URL ? 2 : 1).find((a) => !a.startsWith("-") && fs.existsSync(a));
+  if (cliPath) pendingOpen.push(path.resolve(cliPath));
+  createWindow();
+});

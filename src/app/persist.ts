@@ -75,6 +75,7 @@ export async function restoreAll() {
   }
   setState({ settings, layouts, recents });
   applyDesign(settings.design, settings.accent);
+  void import("./actions").then((m) => m.syncTrafficLights());
 
   if (session?.root) {
     const { openProject } = await import("./actions");

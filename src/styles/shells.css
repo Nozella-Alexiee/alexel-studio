@@ -729,3 +729,22 @@ button.status-item:hover {
     grid-template-columns: 1fr;
   }
 }
+
+/* Area seret jendela (Electron). Elemen interaktif di title bar dikecualikan;
+   overlay juga no-drag supaya klik di atas title bar tetap sampai ke dialog. */
+.titlebar {
+  -webkit-app-region: drag;
+  app-region: drag;
+}
+.titlebar button,
+.titlebar input,
+.titlebar a,
+.titlebar [role="button"],
+.titlebar [role="tab"],
+.scrim,
+.ctx-menu,
+.toasts,
+.resizer {
+  -webkit-app-region: no-drag;
+  app-region: no-drag;
+}

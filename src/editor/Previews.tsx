@@ -5,7 +5,7 @@ import DOMPurify from "dompurify";
 import { marked } from "marked";
 import { Minus, Plus, RotateCcw, Maximize2, ExternalLink, RefreshCw } from "lucide-react";
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { api, isTauri, openExternal, previewUrl } from "../lib/ipc";
+import { api, isNative, openExternal, previewUrl } from "../lib/ipc";
 import { dirname, isInside, join } from "../lib/paths";
 import { formatBytes } from "../lib/format";
 import { getState } from "../state/store";
@@ -43,7 +43,7 @@ export function MarkdownPreview({ path }: { path: string }) {
     const clean = DOMPurify.sanitize(raw, { USE_PROFILES: { html: true }, FORBID_TAGS: ["style", "form", "input", "button"], FORBID_ATTR: ["style"] });
     // Gambar relatif → dilayani protokol pratinjau (hanya di dalam project).
     const root = getState().root;
-    if (!isTauri || !root) return clean;
+    if (!isNative || !root) return clean;
     const base = dirname(path);
     return clean.replace(/<img([^>]*?)src="(?!https?:|data:)([^"]+)"/g, (_m, pre, src) => {
       const abs = src.startsWith("/") ? src : join(base, src);
@@ -76,7 +76,7 @@ export function HtmlPreview({ path }: { path: string }) {
 
   // Isi yang belum disimpan dikirim ke backend supaya protokol pratinjau memakainya.
   useEffect(() => {
-    if (!isTauri) return;
+    if (!isNative) return;
     void api.previewOverride(path, text).then(() => setNonce((n) => n + 1));
   }, [path, text]);
   useEffect(() => () => void api.previewOverride(path, null).catch(() => {}), [path]);
@@ -92,7 +92,7 @@ export function HtmlPreview({ path }: { path: string }) {
           <ExternalLink size={13} />
         </IconButton>
       </div>
-      {isTauri ? (
+      {isNative ? (
         <iframe key={nonce} ref={frame} title="Pratinjau HTML" src={`${previewUrl(path)}?v=${nonce}`} sandbox="allow-scripts allow-forms" />
       ) : (
         <iframe title="Pratinjau HTML" srcDoc={text} sandbox="allow-scripts" />

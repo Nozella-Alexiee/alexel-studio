@@ -1,5 +1,5 @@
-// Satu-satunya pintu ke backend Rust. Di aplikasi Tauri memanggil `invoke`;
-// saat `npm run dev` dibuka di browser biasa, memakai backend tiruan (mock.ts)
+// Satu-satunya pintu ke backend (main process Electron, lewat preload `window.nozel`).
+// Saat `npm run dev` dibuka di browser biasa, memakai backend tiruan (mock.ts)
 // supaya UI tetap bisa dicoba. Mode tiruan TIDAK pernah aktif di build produksi.
 
 import type {
@@ -20,8 +20,19 @@ import type {
   TodoItem,
 } from "./types";
 
-export const isTauri = typeof window !== "undefined" && "__TAURI_INTERNALS__" in window;
-export const isDemo = !isTauri && import.meta.env.DEV;
+interface NozelBridge {
+  platform: string;
+  invoke: (cmd: string, args?: Record<string, unknown>) => Promise<unknown>;
+  on: (event: string, cb: (payload: unknown) => void) => () => void;
+  pathForFile: (file: File) => string;
+}
+
+export const bridge: NozelBridge | null = typeof window !== "undefined" ? ((window as unknown as { nozel?: NozelBridge }).nozel ?? null) : null;
+/** Berjalan di aplikasi desktop (Electron). */
+export const isNative = !!bridge;
+/** Nama lama, dipertahankan untuk kode yang sudah ada. */
+export const isTauri = isNative;
+export const isDemo = !isNative && import.meta.env.DEV;
 
 type Handler = (args: Record<string, unknown>) => unknown | Promise<unknown>;
 type Listener = (payload: any) => void;
@@ -42,10 +53,7 @@ async function loadMock() {
 }
 
 export async function call<T>(cmd: string, args: Record<string, unknown> = {}): Promise<T> {
-  if (isTauri) {
-    const { invoke } = await import("@tauri-apps/api/core");
-    return invoke<T>(cmd, args);
-  }
+  if (bridge) return (await bridge.invoke(cmd, args)) as T;
   if (!isDemo) throw new Error("Backend Nozel tidak tersedia.");
   const handlers = await loadMock();
   const h = handlers[cmd];
@@ -54,10 +62,7 @@ export async function call<T>(cmd: string, args: Record<string, unknown> = {}): 
 }
 
 export async function on<T>(event: string, cb: (payload: T) => void): Promise<() => void> {
-  if (isTauri) {
-    const { listen } = await import("@tauri-apps/api/event");
-    return listen<T>(event, (e) => cb(e.payload));
-  }
+  if (bridge) return bridge.on(event, (p) => cb(p as T));
   let set = mockListeners.get(event);
   if (!set) mockListeners.set(event, (set = new Set()));
   set.add(cb);
@@ -144,43 +149,31 @@ export const api = {
   previewOverride: (path: string, content: string | null) => call<void>("preview_set_override", { path, content }),
 };
 
-// ---------- Plugin: dialog & opener ----------
+// ---------- Dialog, browser, jendela ----------
 
 export async function pickFolder(): Promise<string | null> {
-  if (isTauri) {
-    const { open } = await import("@tauri-apps/plugin-dialog");
-    const r = await open({ directory: true, multiple: false, title: "Pilih folder project" });
-    return typeof r === "string" ? r : null;
-  }
+  if (bridge) return call<string | null>("dialog_open_folder");
   return isDemo ? "/Users/demo/nozel-project" : null;
 }
 
 export async function pickSavePath(defaultPath: string, filters?: { name: string; extensions: string[] }[]): Promise<string | null> {
-  if (isTauri) {
-    const { save } = await import("@tauri-apps/plugin-dialog");
-    return (await save({ defaultPath, filters })) ?? null;
-  }
+  if (bridge) return call<string | null>("dialog_save", { defaultPath, filters: filters ?? [] });
   return isDemo ? defaultPath : null;
 }
 
 export async function openExternal(url: string): Promise<void> {
   if (!/^(https?:|mailto:)/i.test(url)) return;
-  if (isTauri) {
-    const { openUrl } = await import("@tauri-apps/plugin-opener");
-    await openUrl(url);
-  } else {
-    window.open(url, "_blank", "noopener");
-  }
+  if (bridge) await call("open_external", { url });
+  else window.open(url, "_blank", "noopener");
 }
 
 /** URL pratinjau untuk berkas lokal (dilayani protokol nozelpreview://). */
 export function previewUrl(path: string): string {
   const encoded = path.split("/").map(encodeURIComponent).join("/");
-  return `nozelpreview://localhost${encoded}`;
+  return `nozelpreview://localhost${encoded.startsWith("/") ? encoded : "/" + encoded}`;
 }
 
-export async function windowApi() {
-  if (!isTauri) return null;
-  const { getCurrentWindow } = await import("@tauri-apps/api/window");
-  return getCurrentWindow();
-}
+export const setWindowTitle = (title: string) => (bridge ? call("window_set_title", { title }).catch(() => {}) : Promise.resolve());
+export const setTrafficLights = (y: number) => (bridge ? call("window_set_traffic_lights", { y }).catch(() => {}) : Promise.resolve());
+export const confirmWindowClose = () => (bridge ? call("window_close_confirmed") : Promise.resolve());
+export const pathForFile = (f: File): string | null => (bridge ? bridge.pathForFile(f) : null);

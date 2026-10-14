@@ -200,7 +200,7 @@ export function PinguBrand() {
   const mood = usePenguinMood();
   if (!v) return null;
   return (
-    <div className="pingu-brand" data-tauri-drag-region>
+    <div className="pingu-brand">
       <PenguinMascot variant={v} mood={mood} size={22} />
       <span>{v === "tuxedo" ? "NOZEL" : v === "kawanan" ? "nozel" : "Nozel"}</span>
     </div>

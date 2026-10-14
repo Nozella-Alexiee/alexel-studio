@@ -6,7 +6,7 @@ import { detectClaude } from "./claude/claude";
 import { ErrorBoundary } from "./components/ErrorBoundary";
 import { designById } from "./design/designs";
 import { ContextMenuHost, DialogHost, Toasts } from "./components/Overlays";
-import { api, isDemo, on, windowApi } from "./lib/ipc";
+import { api, call, confirmWindowClose, isDemo, on, pathForFile } from "./lib/ipc";
 import { CommandPalette } from "./panels/CommandPalette";
 import { ask, getState, isSaver, setState, useStore } from "./state/store";
 
@@ -71,42 +71,57 @@ function useBackgroundTasks() {
     });
 
     // Jangan kehilangan editan saat jendela ditutup (⌘Q / tombol merah).
-    let offClose: (() => void) | null = null;
-    void windowApi().then(async (win) => {
-      if (!win) return;
-      offClose = await win.onCloseRequested(async (e) => {
-        const dirty = Object.values(getState().tabs).filter((t) => t.dirty);
-        const running = getState().terminals.filter((t) => t.status === "running" && t.kind !== "shell");
-        if (!dirty.length && !running.length) return;
-        e.preventDefault();
-        if (dirty.length) {
-          const ok = await A.closeAllTabs();
-          if (!ok) return;
+    // Main process menahan penutupan dan bertanya ke sini dulu.
+    let closing = false;
+    offs.push(
+      on("window-close-requested", async () => {
+        if (closing) return;
+        closing = true;
+        try {
+          const dirty = Object.values(getState().tabs).filter((t) => t.dirty);
+          const running = getState().terminals.filter((t) => t.status === "running" && t.kind !== "shell");
+          if (dirty.length && !(await A.closeAllTabs())) return;
+          if (running.length) {
+            const r = await ask({ kind: "confirm", title: `${running.length} proses masih berjalan`, message: running.map((t) => t.title).join(", ") + " akan dihentikan.", okLabel: "Hentikan & keluar", danger: true });
+            if (r !== true) return;
+          }
+          await confirmWindowClose();
+        } finally {
+          closing = false;
         }
-        if (running.length) {
-          const r = await ask({ kind: "confirm", title: `${running.length} proses masih berjalan`, message: running.map((t) => t.title).join(", ") + " akan dihentikan.", okLabel: "Hentikan & keluar", danger: true });
-          if (r !== true) return;
+      })
+    );
+    // Dibuka dari Finder ("Open With"), dock, atau baris perintah.
+    offs.push(
+      on<{ path: string }>("open-path", async ({ path }) => {
+        if (await call<boolean>("path_is_dir", { path }).catch(() => false)) await A.openProject(path);
+        else await A.openFile(path);
+      })
+    );
+
+    // Seret folder/berkas dari Finder ke jendela (tree internal memakai tipe data lain).
+    const onDragOver = (e: DragEvent) => {
+      if (e.dataTransfer?.types.includes("Files")) e.preventDefault();
+    };
+    const onDrop = async (e: DragEvent) => {
+      if (!e.dataTransfer?.types.includes("Files")) return;
+      e.preventDefault();
+      for (const f of [...(e.dataTransfer.files ?? [])]) {
+        const p = pathForFile(f);
+        if (!p) continue;
+        if (await call<boolean>("path_is_dir", { path: p }).catch(() => false)) {
+          await A.openProject(p);
+          break;
         }
-        await win.destroy();
-      });
-      // Seret folder/berkas dari Finder ke jendela.
-      const wv = await import("@tauri-apps/api/webview").then((m) => m.getCurrentWebview());
-      const offDrop = await wv.onDragDropEvent(async (ev) => {
-        if (ev.payload.type !== "drop") return;
-        for (const p of ev.payload.paths) {
-          const entries = await api.listDir(p).then(() => true).catch(() => false);
-          if (entries) {
-            await A.openProject(p);
-            break;
-          } else await A.openFile(p);
-        }
-      });
-      const prev = offClose;
-      offClose = () => {
-        prev?.();
-        offDrop();
-      };
-    });
+        await A.openFile(p);
+      }
+    };
+    window.addEventListener("dragover", onDragOver);
+    window.addEventListener("drop", onDrop);
+    const offClose = () => {
+      window.removeEventListener("dragover", onDragOver);
+      window.removeEventListener("drop", onDrop);
+    };
 
     return () => {
       window.removeEventListener("keydown", handleGlobalKey, true);
@@ -114,7 +129,7 @@ function useBackgroundTasks() {
       offs.forEach((o) => void o.then((f) => f()));
       clearTimeout(powerTimer);
       unsub();
-      offClose?.();
+      offClose();
     };
   }, []);
 }
