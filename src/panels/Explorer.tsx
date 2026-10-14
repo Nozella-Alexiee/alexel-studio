@@ -1,7 +1,7 @@
-import { ChevronRight, FilePlus2, FolderOpen, FolderPlus, ListCollapse, RefreshCw, Folder } from "lucide-react";
+import { ChevronRight, FilePlus2, FolderOpen, FolderPlus, ListCollapse, RefreshCw } from "lucide-react";
 import React, { useCallback, useMemo, useRef, useState } from "react";
 import * as A from "../app/actions";
-import { FileIcon } from "../components/FileIcon";
+import { FileIcon, FolderIcon } from "../components/FileIcon";
 import { openMenu } from "../components/Overlays";
 import { Empty, IconButton } from "../components/ui";
 import { basename, dirname } from "../lib/paths";
@@ -104,7 +104,7 @@ function TreeRow({ row, active, focused, onFocusRow }: { row: Row; active: boole
       }}
     >
       {entry.is_dir ? <ChevronRight size={13} className={`tree-chev ${open ? "is-open" : ""}`} aria-hidden /> : <span className="tree-chev-space" />}
-      {entry.is_dir ? open ? <FolderOpen size={15} className="tree-folder" aria-hidden /> : <Folder size={15} className="tree-folder" aria-hidden /> : <FileIcon filename={entry.name} size={15} />}
+      {entry.is_dir ? <FolderIcon name={entry.name} open={open} /> : <FileIcon filename={entry.name} size={15} />}
       <span className="tree-name">{entry.name}</span>
       {errors > 0 && <span className="tree-badge tone-danger-fg">{errors}</span>}
       {mark && (

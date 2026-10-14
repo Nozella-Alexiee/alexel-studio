@@ -1,7 +1,7 @@
 // Desain B — Zen Paper: terang hangat, tanpa activity bar & tab bar. Navigator di kiri
 // (berkas terbuka, ringkasan simbol, tree), satu kolom fokus, omnibar di bawah.
 
-import { ChevronDown, ChevronRight, Files, GitBranch, Play, Search, Sparkles, TerminalSquare, X, Focus, ListTodo } from "lucide-react";
+import { ChevronDown, ChevronRight, Files, GitBranch, Play, Puzzle, Search, Sparkles, TerminalSquare, X, Focus, ListTodo } from "lucide-react";
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import * as A from "../app/actions";
 import { openPalette } from "../app/commands";
@@ -155,6 +155,7 @@ export default function ZenShell() {
                     ["search", <Search size={14} />, "Cari"],
                     ["git", <GitBranch size={14} />, "Git"],
                     ["todo", <ListTodo size={14} />, "TODO"],
+                    ["ext", <Puzzle size={14} />, "Ekstensi"],
                   ] as const
                 ).map(([id, icon, label]) => (
                   <button key={id} role="tab" aria-selected={l.sideView === id} className={l.sideView === id ? "is-on" : ""} onClick={() => setLayout({ sideView: id })} title={label} aria-label={label}>

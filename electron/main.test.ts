@@ -255,3 +255,21 @@ describe("lsp framing", async () => {
     expect(second.rest.length).toBe(0);
   });
 });
+
+describe("extensions: aset ikon", () => {
+  it("hanya svg/png di dalam folder ekstensi", async () => {
+    const { extAsset } = await import("./extensions");
+    const ud = fs.mkdtempSync(path.join(os.tmpdir(), "nozel-ext-"));
+    const dir = path.join(ud, "extensions", "a.icons", "icons");
+    fs.mkdirSync(dir, { recursive: true });
+    fs.writeFileSync(path.join(dir, "ts.svg"), "<svg/>");
+    fs.writeFileSync(path.join(ud, "secret.svg"), "<svg/>");
+    const ctx = { userData: ud, emit: () => {}, trash: async () => {}, reveal: () => {} };
+    expect(extAsset(ctx, "/a.icons/icons/ts.svg").status).toBe(200);
+    expect(extAsset(ctx, "/a.icons/icons/ts.svg").mime).toBe("image/svg+xml");
+    expect(extAsset(ctx, "/a.icons/../../secret.svg").status).toBe(403);
+    expect(extAsset(ctx, "/a.icons/%2e%2e/%2e%2e/secret.svg").status).toBe(403);
+    expect(extAsset(ctx, "/a.icons/nozel-manifest.json").status).toBe(403);
+    expect(extAsset(ctx, "/a.icons/icons/none.svg").status).toBe(404);
+  });
+});

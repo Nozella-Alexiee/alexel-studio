@@ -16,6 +16,7 @@ import { activeTab, isSaver, setLayout, setState, useLayout, useSaver, useStore 
 const SearchPanel = lazy(() => import("../panels/SearchPanel"));
 const GitPanel = lazy(() => import("../panels/GitPanel"));
 const ClaudePanel = lazy(() => import("../claude/ClaudePanel"));
+const ExtensionsPanel = lazy(() => import("../panels/ExtensionsPanel"));
 const TodoSide = lazy(() => import("../panels/BottomPanels").then((m) => ({ default: m.TodoPanel })));
 
 export const Loading = () => (
@@ -60,6 +61,7 @@ export function SideContent() {
       {layout.sideView === "search" && <SearchPanel />}
       {layout.sideView === "git" && <GitPanel />}
       {layout.sideView === "todo" && <TodoSide />}
+      {layout.sideView === "ext" && <ExtensionsPanel />}
     </Suspense>
     </ErrorBoundary>
   );

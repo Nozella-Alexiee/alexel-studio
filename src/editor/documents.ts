@@ -255,6 +255,22 @@ async function loadLanguage(doc: Doc) {
   }
 }
 
+/**
+ * Deteksi ulang bahasa semua dokumen terbuka (mis. setelah ekstensi grammar dimuat atau dipasang,
+ * karena tab yang dipulihkan saat start dibuka sebelum daftar ekstensi siap).
+ */
+export function redetectLanguages() {
+  for (const doc of docs.values()) {
+    const info = languageFor(basename(doc.path));
+    if (info.id === doc.langId && info.name === doc.langName) continue;
+    doc.langId = info.id;
+    doc.langName = info.name;
+    const tab = getState().tabs[doc.path];
+    if (tab) setState((s) => ({ tabs: { ...s.tabs, [doc.path]: { ...tab, lang: info.name } } }));
+    void loadLanguage(doc);
+  }
+}
+
 async function loadHead(doc: Doc) {
   const root = getState().root;
   if (!root || !getState().git?.is_repo || !isInside(root, doc.path)) {

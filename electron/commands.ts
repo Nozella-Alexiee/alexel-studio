@@ -4,6 +4,7 @@
 import { app, BrowserWindow, clipboard, ClipboardItem, dialog, powerMonitor, shell } from "electron";
 import fs from "node:fs";
 import * as claude from "./claude";
+import * as X from "./extensions";
 import * as F from "./fsOps";
 import * as G from "./git";
 import * as H from "./history";
@@ -75,6 +76,13 @@ export function buildCommands(ctx: Ctx, hooks: { confirmClose: (win: BrowserWind
     claude_detect: () => claude.claudeDetect(),
     claude_run: (a) => claude.claudeRun(ctx, a.runId, a.projectDir, a.prompt, a.resumeSession),
     claude_cancel: (a) => claude.claudeCancel(a.runId),
+
+    // Ekstensi (Open VSX, data saja)
+    ext_search: (a) => X.extSearch(String(a.query ?? ""), a.category ?? null),
+    ext_install: (a) => X.extInstall(ctx, a.namespace, a.name),
+    ext_list: () => X.extList(ctx),
+    ext_remove: (a) => X.extRemove(ctx, a.id),
+    ext_read_file: (a) => X.extReadFile(ctx, a.id, a.path),
 
     // Language server
     lsp_status: () => lsp.serverStatus(),

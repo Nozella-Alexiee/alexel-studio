@@ -7,7 +7,7 @@ import type { DesignId } from "../design/designs";
 import type { ClaudeInfo, FileEntry, GitStatus, PowerStatus, RunTarget, TodoItem } from "../lib/types";
 
 export type PanelId = "terminal" | "problems" | "ports" | "todo" | "history";
-export type SideView = "files" | "search" | "git" | "todo";
+export type SideView = "files" | "search" | "git" | "todo" | "ext";
 export type RightView = "claude" | "git";
 export type PreviewMode = "code" | "split" | "preview";
 
@@ -25,6 +25,10 @@ export interface Settings {
   terminalFontSize: number;
   autoSave: "off" | "delay";
   confirmDelete: boolean;
+  /** Tema warna dari ekstensi Open VSX, diterapkan di atas desain aktif. */
+  extTheme: { ext: string; path: string; label: string; uiTheme: string } | null;
+  /** Tema ikon berkas dari ekstensi Open VSX (mis. Material Icon Theme). */
+  iconTheme: { ext: string; path: string; label: string } | null;
 }
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -41,6 +45,8 @@ export const DEFAULT_SETTINGS: Settings = {
   terminalFontSize: 12,
   autoSave: "off",
   confirmDelete: true,
+  extTheme: null,
+  iconTheme: null,
 };
 
 export interface Layout {

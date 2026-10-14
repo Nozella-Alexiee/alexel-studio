@@ -1,7 +1,7 @@
 // Desain C — Control Room: padat ala IDE. Toolbar run dengan pilihan target Smart Run,
 // rail ikon, sidebar, split editor, panel bawah ter-dock, panel Git/Claude di kanan.
 
-import { ChevronDown, Columns2, Files, GitBranch, ListTodo, Play, Search, Settings, Sparkles, Square, Network, TerminalSquare } from "lucide-react";
+import { ChevronDown, Columns2, Files, GitBranch, ListTodo, Play, Puzzle, Search, Settings, Sparkles, Square, Network, TerminalSquare } from "lucide-react";
 import { useState, type ReactNode } from "react";
 import * as A from "../app/actions";
 import { openPalette } from "../app/commands";
@@ -63,6 +63,7 @@ export default function ControlShell() {
     ["search", <Search size={19} />, "Cari (⌘⇧F)", () => A.toggleSidebar("search"), l.sidebar && l.sideView === "search"],
     ["git", <GitBranch size={19} />, "Source control (⌃⇧G)", () => A.toggleRight("git"), l.right && l.rightView === "git", git?.files.length || undefined],
     ["todo", <ListTodo size={19} />, "TODO", () => A.toggleSidebar("todo"), l.sidebar && l.sideView === "todo"],
+    ["ext", <Puzzle size={19} />, "Ekstensi", () => A.toggleSidebar("ext"), l.sidebar && l.sideView === "ext"],
     ["ports", <Network size={19} />, "Port & proses", () => A.togglePanel("ports"), l.panel && l.panelTab === "ports"],
     ["claude", <Sparkles size={19} />, "Claude (⌘⌥B)", () => A.toggleRight("claude"), l.right && l.rightView === "claude"],
   ];

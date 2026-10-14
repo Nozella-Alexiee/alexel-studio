@@ -9,6 +9,7 @@ import { pathToFileURL } from "node:url";
 import { killAllClaude } from "./claude";
 import { killAllLsp } from "./lsp";
 import { buildCommands } from "./commands";
+import { extAsset } from "./extensions";
 import { resolvePreview } from "./preview";
 import { killAllPtys } from "./pty";
 import { migrateFromTauri } from "./store";
@@ -21,9 +22,9 @@ const RENDERER_DIR = path.join(__dirname, "..", "dist");
 
 const CSP = [
   "default-src 'self'",
-  "script-src 'self'",
+  "script-src 'self' 'wasm-unsafe-eval'",
   "style-src 'self' 'unsafe-inline'",
-  "img-src 'self' data: blob: nozelpreview:",
+  "img-src 'self' data: blob: nozelpreview: nozelext: https://open-vsx.org",
   "font-src 'self' data:",
   "connect-src 'self'",
   "frame-src nozelpreview:",
@@ -32,9 +33,13 @@ const CSP = [
   "base-uri 'self'",
 ].join("; ");
 
+// Folder data terpisah (dipakai uji otomatis supaya tidak menyentuh data asli).
+if (process.env.NOZEL_USER_DATA) app.setPath("userData", process.env.NOZEL_USER_DATA);
+
 protocol.registerSchemesAsPrivileged([
   { scheme: "app", privileges: { standard: true, secure: true, supportFetchAPI: true, codeCache: true } },
   { scheme: "nozelpreview", privileges: { standard: true, secure: true, supportFetchAPI: true, stream: true } },
+  { scheme: "nozelext", privileges: { standard: true, secure: true } },
 ]);
 
 if (!app.requestSingleInstanceLock()) app.quit();
@@ -86,6 +91,16 @@ function serveApp() {
     const headers = new Headers(res.headers);
     if (file.endsWith(".html")) headers.set("Content-Security-Policy", CSP);
     return new Response(res.body, { status: res.status, headers });
+  });
+  // Ikon dari tema ikon ekstensi (gambar statis saja; dipakai lewat <img>, jadi SVG tidak bisa menjalankan skrip).
+  protocol.handle("nozelext", (req) => {
+    const u = new URL(req.url);
+    if (u.host !== "icons") return new Response("Forbidden", { status: 403 });
+    const r = extAsset(ctx, u.pathname);
+    return new Response(typeof r.body === "string" ? r.body : new Uint8Array(r.body), {
+      status: r.status,
+      headers: { "Content-Type": r.mime, "Cache-Control": "max-age=31536000, immutable", "X-Content-Type-Options": "nosniff" },
+    });
   });
   protocol.handle("nozelpreview", (req) => {
     const r = resolvePreview(new URL(req.url).pathname);

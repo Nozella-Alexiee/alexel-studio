@@ -552,6 +552,8 @@ export function updateSettings(patch: Partial<Settings>) {
     applyDesign(next.design, next.accent);
     syncTrafficLights();
   }
+  if (patch.design !== undefined || "extTheme" in patch) void import("../extensions/registry").then((m) => m.applySavedTheme());
+  if ("iconTheme" in patch) void import("../extensions/registry").then((m) => m.applySavedIconTheme());
   if (["fontSize", "tabSize", "wordWrap", "minimap", "design"].some((k) => k in patch)) requestAnimationFrame(() => docs.applyEditorSettings());
   persistSettings();
 }

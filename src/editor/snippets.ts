@@ -3,6 +3,7 @@
 
 import { completeFromList, snippetCompletion, type Completion } from "@codemirror/autocomplete";
 import { EditorState, type Extension } from "@codemirror/state";
+import { extSnippetsFor } from "../extensions/registry";
 
 const JS_TS_SNIPPETS: Completion[] = [
   // React Snippets
@@ -237,9 +238,15 @@ export function snippetsFor(langId: string): Completion[] {
   return BY_LANG[langId] ?? [];
 }
 
+/** Snippet bawaan + snippet dari ekstensi. Daftar dibaca saat completion diminta, jadi
+ *  ekstensi yang baru dipasang langsung berlaku tanpa membuka ulang berkas. */
 export function snippetExtension(langId: string): Extension {
-  const list = snippetsFor(langId);
-  if (!list.length) return [];
-  const source = completeFromList(list);
+  let cached: { list: Completion[]; source: ReturnType<typeof completeFromList> } | null = null;
+  const source = (ctx: Parameters<ReturnType<typeof completeFromList>>[0]) => {
+    const list = [...snippetsFor(langId), ...extSnippetsFor(langId)];
+    if (!list.length) return null;
+    if (!cached || cached.list.length !== list.length) cached = { list, source: completeFromList(list) };
+    return cached.source(ctx);
+  };
   return EditorState.languageData.of(() => [{ autocomplete: source }]);
 }

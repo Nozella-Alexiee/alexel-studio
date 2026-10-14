@@ -1,4 +1,6 @@
 import React from "react";
+import { Folder, FolderOpen } from "lucide-react";
+import { useIconUrl } from "../extensions/icons";
 
 interface FileIconProps {
   filename?: string;
@@ -7,7 +9,22 @@ interface FileIconProps {
   className?: string;
 }
 
-export const FileIcon: React.FC<FileIconProps> = ({
+/** Ikon berkas: dari tema ikon ekstensi bila aktif, selain itu ikon bawaan Nozel. */
+export const FileIcon: React.FC<FileIconProps> = (props) => {
+  const url = useIconUrl(props.filename ?? "", "file");
+  const size = props.size ?? 14;
+  if (url) return <img src={url} width={size} height={size} alt="" draggable={false} className={`file-icon-img ${props.className ?? ""}`} />;
+  return <BuiltinFileIcon {...props} />;
+};
+
+/** Ikon folder: dari tema ikon ekstensi bila aktif (mis. folder "src" khusus), selain itu ikon Nozel. */
+export function FolderIcon({ name, open, size = 15 }: { name: string; open: boolean; size?: number }) {
+  const url = useIconUrl(name, "folder", open);
+  if (url) return <img src={url} width={size} height={size} alt="" draggable={false} className="file-icon-img" />;
+  return open ? <FolderOpen size={size} className="tree-folder" aria-hidden /> : <Folder size={size} className="tree-folder" aria-hidden />;
+}
+
+const BuiltinFileIcon: React.FC<FileIconProps> = ({
   filename = "",
   extension,
   size = 14,

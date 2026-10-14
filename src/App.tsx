@@ -23,7 +23,7 @@ function useBackgroundTasks() {
     // StrictMode menjalankan effect dua kali di dev; pemulihan sesi cukup sekali.
     if (!booted) {
       booted = true;
-      void restoreAll();
+      void restoreAll().then(() => import("./extensions/registry").then((m) => m.loadExtensions()));
       void detectClaude();
       // Muat semua shell di latar supaya ganti desain pertama kali tidak berkedip.
       setTimeout(() => {
