@@ -1,83 +1,74 @@
-# Nozel Code: Claude Code Integration & Benchmark Guide
+# Nozel Code: integrasi Claude Code & cara mengukur performa
 
-Dokumen ini menjelaskan arsitektur integrasi **Claude Code (Subscription Pro/Max)**, mekanisme persetujuan pengguna (user consent), serta metodologi pengukuran performa benchmark Nozel Code vs VS Code pada MacBook Air M1 (8 GB RAM).
+## 1. Claude Code lewat CLI resmi (bukan API key)
+
+- **Pakai langganan yang sudah ada.** Pengguna Claude Pro/Team/Max memakai CLI resmi `claude`,
+  tanpa biaya token per panggilan.
+- **Tidak ada API key di aplikasi.** Login ditangani CLI (`claude login`). Nozel tidak pernah
+  meminta, menyimpan, atau mengirim kredensial.
+- **Pencarian CLI**: PATH dari login shell, `~/.claude/local`, `~/.local/bin`, lalu CLI yang
+  dibundel aplikasi desktop Claude.
+- **Cara menjalankan**: `claude -p --output-format stream-json --verbose` dengan prompt lewat
+  stdin (tidak muncul di daftar proses). Percakapan lanjutan memakai `--resume`.
+- **Selalu terlihat dulu**: panel Claude menampilkan isi yang akan dikirim (berkas aktif atau
+  seleksi saja) sebelum terkirim. Tidak ada pengiriman berkas di latar belakang.
+
+Menghubungkan:
+
+```bash
+npm install -g @anthropic-ai/claude-code
+```
+
+```bash
+claude login
+```
+
+Setelah itu buka Nozel; status bar menampilkan **Claude** dan panel Claude berstatus *terhubung*.
 
 ---
 
-## 1. Integrasi Claude Code Premium (Bukan Claude API Token)
+## 2. Cara mengukur performa
 
-### Mengapa Claude Code CLI, Bukan Claude API Key?
-- **Model Langganan Tetap**: Pengguna yang berlangganan **Claude Pro / Claude Team / Claude Max** sudah memiliki akses ke CLI resmi Anthropic (`@anthropic-ai/claude-code`) tanpa harus membayar biaya token per panggilan (pay-per-token API).
-- **Keamanan Zero Key-Leak**: Nozel Code **tidak pernah** meminta, menyimpan, atau menanam API key di frontend maupun source code aplikasi. Autentikasi ditangani secara terisolasi oleh CLI resmi melalui `claude login` di browser/terminal sistem macOS pengguna.
-- **Agentic Interactive Session**: Claude Code CLI dapat melakukan penelusuran kode, eksekusi perintah lokal, dan perbaikan multi-file secara interaktif di terminal native macOS.
+### Hasil ukur Nozel Code 0.2.0 (Electron 44, MacBook Air M1, arm64)
 
-### Fitur Unik yang Tidak Ada di VS Code (Bawaan)
-1. **Claude Code CLI Bridge Terpadu**: Deteksi otomatis path binary `claude` pada macOS (`/opt/homebrew/bin/claude`, `/usr/local/bin/claude`, dll.) beserta status login akun Claude Pro.
-2. **One-Click Native Terminal Launcher**: Membuka Apple Terminal (atau iTerm) langsung di working directory proyek aktif dengan konteks file yang sedang dibuka via AppleScript.
-3. **Transparent Payload & Action Preview**: Sebelum mengirimkan prompt atau konteks file ke `claude`, pengguna dapat meninjau isi teks persis yang akan diproses.
-4. **Mandatory User Consent Gate**: Checkbox persetujuan eksplisit wajib dicentang sebelum kueri non-interaktif dijalankan. Nozel Code tidak pernah mengirim file latar belakang secara otomatis.
-5. **Live Footprint Monitor**: Status bar menampilkan konsumsi RAM aktual Nozel Code vs baseline VS Code secara live.
+| Ukuran | Hasil |
+|---|---|
+| `.dmg` | 123 MB |
+| `Nozel Code.app` | 283 MB |
+| RAM, project terbuka (4 proses Electron) | ~420 MB |
+| RAM + language server TypeScript (seluruh pohon proses) | ~490 MB |
 
-### Cara Menghubungkan Claude Code
-1. Pasang CLI resmi Anthropic di terminal macOS:
-   ```bash
-   npm install -g @anthropic-ai/claude-code
-   ```
-2. Autentikasi dengan akun Claude Pro/Team Anda:
-   ```bash
-   claude login
-   ```
-3. Buka Nozel Code, klik ikon **Sparkle** di pojok kanan atas atau klik status bar di bawah. Indikator akan langsung menunjukkan status **"Claude Code: CLI Connected (Pro)"**.
+Angka RAM naik saat tsserver menganalisis project besar atau saat beberapa language server
+aktif bersamaan. Sebagai pembanding, versi Tauri sebelumnya ~40 MB, tetapi tanpa LSP dan
+ekstensi.
+
+### RAM (RSS seluruh pohon proses)
+
+```bash
+pgrep -f "Nozel Code.app" | xargs ps -o rss= -p | awk '{s+=$1} END {printf "%.0f MB\n", s/1024}'
+```
+
+Untuk VS Code, ganti pola dengan `"Visual Studio Code.app"`. Bandingkan di mesin yang sama
+dan dengan project yang sama terbuka.
+
+Di dalam aplikasi, status bar menampilkan RAM proses Electron (dari `app.getAppMetrics()`);
+language server tidak termasuk di angka itu.
+
+### CPU saat idle
+
+```bash
+top -l 5 -stats pid,command,cpu | grep -i nozel
+```
+
+### Ukuran paket
+
+```bash
+du -sh "release/mac-arm64/Nozel Code.app" release/*.dmg
+```
 
 ---
 
-## 2. Metodologi Pengukuran Kinerja (Benchmark)
+## 3. Rencana
 
-Sasaran Nozel Code adalah penggunaan sumber daya minimal 40% lebih rendah daripada VS Code pada MacBook Air M1 8 GB RAM.
-
-### Cara Mengukur Parameter Kinerja di macOS
-
-#### A. Pengukuran Penggunaan RAM (Resident Set Size / RSS)
-Dapatkan Process ID (PID) aplikasi dan jalankan perintah:
-```bash
-# Untuk Nozel Code:
-pgrep -f nozel-code | xargs -I {} ps -o pid,rss,command -p {}
-
-# Untuk VS Code (seluruh tree proses Electron + Helper):
-pgrep -f "Visual Studio Code" | xargs -I {} ps -o rss= -p {} | awk '{sum+=$1} END {print sum/1024 " MB"}'
-```
-*Hasil Uji Nyata (MacBook Air M1, macOS Sequoia/Sonoma)*:
-- **Nozel Code**: ~38 MB (proses native Tauri webview + Rust binary)
-- **VS Code**: ~620 MB - 750 MB (Electron runtime + Renderer + Utility Process + TS Server)
-- **Penghematan Aktual**: **~94% lebih hemat RAM** (jauh melampaui target awal 40%).
-
-#### B. Pengukuran CPU Saat Idle
-Jalankan sampling `top` selama 5 detik saat kedua aplikasi dalam kondisi terbuka tanpa interaksi:
-```bash
-top -pid $(pgrep -f nozel-code | head -n 1) -l 5 -stats cpu
-```
-- **Nozel Code**: 0.0% – 0.1% CPU saat idle.
-- **VS Code**: 0.4% – 1.8% CPU (disebabkan oleh telemetry, extension host heartbeats, dan Electron event loop).
-
-#### C. Pengukuran Cold Startup Time
-Gunakan utilitas `time` atau buka via command line:
-```bash
-# Mengukur waktu buka Nozel Code:
-time ./src-tauri/target/debug/nozel-code --benchmark-exit
-```
-- **Nozel Code**: < 600 ms cold start.
-- **VS Code**: 2.8 s – 4.2 s cold start pada MacBook Air M1.
-
-#### D. Ukuran Binary / Bundle Aplikasi
-```bash
-ls -lh src-tauri/target/debug/nozel-code
-```
-- **Nozel Code Debug Binary**: ~31 MB (Release binary dengan LTO + strip: ~9 MB).
-- **VS Code App Bundle (`/Applications/Visual Studio Code.app`)**: ~350 MB - 500 MB.
-
----
-
-## 3. Rencana Pengembangan Selanjutnya (Roadmap)
-- [ ] Integrasi socket lokal / IPC bidirectional ke background agent Claude Code jika Anthropic merilis daemon mode resmi.
-- [ ] Side-by-side diff preview panel sebelum perubahan yang disarankan AI disimpan ke file proyek.
-- [ ] Deteksi konfigurasi `.claude/` atau custom rules per proyek secara otomatis.
+- [ ] Pratinjau diff berdampingan sebelum perubahan dari Claude disimpan.
+- [ ] Membaca konfigurasi `.claude/` per project secara otomatis.

@@ -1,109 +1,116 @@
-# Nozel Code ⚡
+# Nozel Code 🐧
 
-> **Editor kode desktop modern, ultra-ringan, dan cepat untuk macOS Apple Silicon (MacBook Air M1 8 GB RAM) dengan pendamping bawaan resmi Claude Code CLI (Claude Pro/Max).**
-
----
-
-## 🚀 Mengapa Nozel Code?
-
-Sebagian besar editor modern seperti VS Code berbasis Electron dan memakan RAM ratusan megabyte bahkan saat tidak digunakan. **Nozel Code** dibangun khusus untuk efisiensi maksimal:
-
-- **Tauri 2 + Rust**: Core native ultra-ringan dengan memori dasar hanya **~38 MB RAM** (vs ~650 MB di VS Code, **~94% lebih hemat**).
-- **CodeMirror 6**: Syntax highlighting instan, minim memory footprint, tanpa beratnya engine Monaco.
-- **Mac-Native Aesthetic**: Header modern bergaya macOS dengan spacing traffic light, dark/light theme, dan tipografi Apple SF Mono.
-- **Official Claude Code CLI Bridge**: Terhubung langsung ke Claude Code CLI langganan **Claude Pro/Max** tanpa biaya token API per-call dan tanpa risiko bocornya API key.
-- **Strict Privacy & User Consent**: Menampilkan transparansi penuh payload sebelum kueri dijalankan. Tanpa telemetri tersembunyi.
+> Editor kode desktop buatan sendiri ala VS Code, dengan identitas pinguin (maskot **Pingu**),
+> 6 desain yang bisa diganti kapan saja, autocomplete beneran lewat LSP, ekstensi dari Open VSX,
+> dan Claude Code bawaan lewat CLI resmi (langganan Pro/Max, tanpa API key).
 
 ---
 
-## 🛠️ Persyaratan Sistem
+## Isi singkat
 
-- macOS 12+ (Apple Silicon M1/M2/M3/M4 disarankan)
-- Node.js 18+ & npm 9+
-- Rust Toolchain (`curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh`)
-- *(Opsional untuk AI)* Claude Code CLI: `npm install -g @anthropic-ai/claude-code`
+| | |
+|---|---|
+| **Platform** | Electron 44 (macOS arm64; Windows lewat `npm run dist:win`) |
+| **Editor** | CodeMirror 6, state per tab (undo, kursor, fold tetap saat pindah tab), split editor |
+| **Desain** | Klasik: Aurora Glass, Zen, Control · Pinguin: Antartika, Tuxedo, Kawanan |
+| **Autocomplete** | LSP: TypeScript/JavaScript (dibundel), Python, PHP, Rust, Go, C/C++, CSS bila server terpasang |
+| **Ekstensi** | Open VSX: tema warna, tema ikon berkas, snippet, grammar TextMate. Kode JS ekstensi tidak dijalankan |
+| **Terminal** | PTY asli (node-pty): `vim`, `htop`, `npm run dev` jalan normal |
+| **Claude** | Claude Code CLI resmi, isi yang dikirim ditampilkan dulu sebelum terkirim |
+
+### Angka jujur (diukur di MacBook Air M1)
+
+| | Nozel Code 0.2.0 (Electron) | Catatan |
+|---|---|---|
+| Ukuran `.dmg` | 123 MB | arm64 |
+| Ukuran app | 283 MB | sebagian besar framework Electron |
+| RAM, project terbuka | ~420 MB | 4 proses Electron |
+| RAM + language server TS | ~490 MB | naik lagi saat tsserver menganalisis project besar |
+
+Versi Tauri lama jauh lebih kecil (~40 MB RAM), tapi tidak punya LSP, ekstensi, dan tampilan
+yang konsisten lintas OS. Pilihan pindah ke Electron diambil dengan sadar: **fitur nomor satu**.
 
 ---
 
-## 💻 Panduan Menjalankan & Mengembangkan
+## Fitur
 
-### 1. Instalasi Dependensi
+**Desain & Pingu**
+- 6 desain, masing-masing dengan tata letak sendiri (bukan hanya warna). Ganti di Pengaturan atau `Ctrl+⌘T`.
+- Desain pinguin punya maskot Pingu: ekspresi di status bar (santai, sibuk, error, sukses), tips, dan empty state.
+- Tema warna dari ekstensi bisa ditimpa di atas desain mana saja. Tata letak dan Pingu tetap.
+
+**Editor**
+- Quick Open fuzzy (`⌘P`), palette perintah (`⌘K` / `⌘⇧P`), simbol di berkas (`⌘⇧O`), pergi ke baris (`Ctrl+G`).
+- Split editor (`⌘\`), minimap, git gutter, word wrap, preview Markdown/HTML terisolasi.
+- Autocomplete, hover, go-to-definition (⌘klik), dan error asli dari language server di panel Masalah.
+
+**Fitur yang tidak ada di VS Code / VSCodium**
+- **Mode hemat baterai**: otomatis aktif saat di baterai, memperlambat proses latar.
+- **Time-travel per berkas** (`⌘⇧H`): setiap simpan tercatat, bisa dibandingkan dan dipulihkan.
+- **Port & proses manager**: lihat siapa yang memakai port, hentikan dengan satu klik.
+- **Claude jelaskan error**: kirim error dari terminal/Masalah ke Claude.
+- **Smart Run** (`⌘R` / `F5`): deteksi otomatis cara menjalankan berkas/project (npm, cargo, python, go, php, make, docker compose...).
+- **Papan TODO project**: semua `TODO`/`FIXME` dalam satu papan.
+- **Snapshot kode jadi gambar** (`⌘⇧2`).
+- **Dashboard project**: ringkasan bahasa, git, TODO, dan skrip.
+
+**Git**: status, stage/unstage, commit, push/pull, branch, diff per berkas, penanda konflik.
+
+**Ekstensi** (`⌘⇧X`)
+- Cari & pasang dari [Open VSX](https://open-vsx.org). Checksum sha256 diverifikasi.
+- Yang didukung: tema warna, tema ikon berkas (mis. Material Icon Theme), snippet, dan grammar
+  TextMate (mis. Svelte, Astro, Prisma). Grammar bawaan VS Code yang dibutuhkan (JS/TS/CSS/HTML)
+  dipasang otomatis dari namespace resmi `vscode`.
+- **Tidak didukung**: ekstensi yang memakai API VS Code (GitLens, Copilot, debugger, dsb.) dan tema ikon berbasis font.
+
+---
+
+## Keamanan
+
+- `contextIsolation`, `sandbox`, tanpa `nodeIntegration`. Renderer hanya bisa memanggil command lewat satu pintu IPC dengan whitelist.
+- CSP ketat; navigasi dan popup diblok, tautan dibuka di browser.
+- Preview HTML disajikan dari protokol terpisah (`nozelpreview://`), hanya bisa membaca folder project.
+- Ikon ekstensi disajikan dari `nozelext://`, hanya svg/png di dalam folder ekstensi.
+- Hapus berkas = pindah ke Trash. Isi yang dikirim ke Claude selalu ditampilkan dulu.
+
+---
+
+## Pengembangan
+
+Kebutuhan: macOS 12+, Node.js 20+. Opsional: [Claude Code CLI](https://docs.claude.com/en/docs/claude-code), language server tambahan (`pyright`, `intelephense`, `rust-analyzer`, `gopls`, `clangd`).
+
 ```bash
-# Clone atau buka direktori proyek
-cd nozel-code
-
-# Instal dependensi frontend
 npm install
 ```
 
-### 2. Menjalankan Pengujian (Test Suite)
-Proyek ini dilengkapi dengan unit test otomatis di Rust (backend) dan Vitest (frontend):
 ```bash
-# Menjalankan seluruh pengujian (Rust + TypeScript):
-npm run test:all
-
-# Atau jalankan masing-masing:
-npm run test              # Vitest frontend tests
-cargo test --manifest-path src-tauri/Cargo.toml  # Rust backend tests
+npm run app
 ```
 
-### 3. Menjalankan Aplikasi
 ```bash
-# Mode Web Preview (Cepat untuk pengujian antarmuka di browser):
-npm run dev
-
-# Mode Desktop Desktop Native macOS (Tauri dev mode):
-npm run tauri dev
+npm test
 ```
 
-### 4. Membangun Paket Aplikasi macOS (Production Bundle)
 ```bash
-# Membangun file .app dan .dmg untuk macOS:
-npm run tauri build
+npm run dist
 ```
-Hasil paket aplikasi akan berada di `src-tauri/target/release/bundle/macos/`.
 
----
+| Skrip | Fungsi |
+|---|---|
+| `npm run app` | Electron mode dev (Vite + rebuild main process otomatis) |
+| `npm run dev` | Mode demo di browser (backend tiruan, untuk mengutak-atik UI) |
+| `npm test` | Vitest: frontend + main process |
+| `npm run build` | Typecheck + build renderer & main process |
+| `npm run dist` | Paket `.dmg` di folder `release/` |
 
-## 📋 Fitur yang Tersedia (MVP)
+Struktur:
 
-1. **Antarmuka & Pengalaman Pengguna (Mac-First UX)**:
-   - Modern traffic lights window styling dengan frame header elegan.
-   - Sidebar file tree collapsible dengan icon spesifik untuk tiap tipe file.
-   - Tab editor dengan indikator perubahan yang belum disimpan (`●`).
-   - Breadcrumb file path dan status bar informatif (baris, kolom, bahasa, encoding).
-   - Saklar tema Dark Mode & Light Mode instan.
-
-2. **Manajemen Berkas & Operasi File**:
-   - Pemilih folder proyek asli macOS (`@tauri-apps/plugin-dialog`).
-   - Buka, ubah, dan simpan file (`Cmd+S`).
-   - Buat file baru (`New File`) dan folder baru (`New Folder`).
-   - Hapus berkas dengan konfirmasi.
-   - Peringatan konfirmasi sebelum menutup berkas yang memiliki perubahan belum tersimpan (`Save`, `Don't Save`, `Cancel`).
-
-3. **Editor Kode (CodeMirror 6)**:
-   - Nomor baris (line numbers), code folding, dan bracket matching.
-   - Pencarian kode bawaan (`Cmd+F`).
-   - Deteksi otomatis sintaks untuk:
-     - JavaScript (`.js`, `.jsx`)
-     - TypeScript (`.ts`, `.tsx`)
-     - JSON (`.json`)
-     - HTML (`.html`)
-     - CSS (`.css`, `.scss`)
-     - Markdown (`.md`)
-     - Python (`.py`)
-     - Rust (`.rs`)
-     - Plain text fallback.
-
-4. **Claude Code Companion Hub ("Hal yang Tidak Ada di VS Code")**:
-   - Deteksi real-time status instalasi CLI `claude` pada sistem macOS.
-   - Menghubungkan akun Claude Pro/Max melalui CLI resmi tanpa menanam API key.
-   - Satu klik untuk membuka Terminal macOS interaktif langsung di working directory proyek.
-   - Fitur Quick Query dengan peninjauan payload transparan & persetujuan wajib (consent gate).
-   - Widget monitor RAM real-time yang membandingkan konsumsi memori Nozel Code vs VS Code.
-
----
-
-## 📊 Detail Benchmark & Arsitektur Claude
-Silakan baca dokumentasi lengkap di:
-- [docs/CLAUDE_INTEGRATION_AND_BENCHMARKS.md](docs/CLAUDE_INTEGRATION_AND_BENCHMARKS.md)
+```
+electron/        main process: fs, git, pty, search, lsp, extensions, claude, watcher, preview
+src/app/         aksi, perintah, persistensi sesi
+src/editor/      CodeMirror: dokumen, bahasa, LSP, minimap, git gutter, snippet
+src/extensions/  tema warna, tema ikon, grammar TextMate, registry ekstensi
+src/shells/      tata letak per desain (Aurora, Zen, Control)
+src/panels/      Explorer, Git, Cari, TODO, Ekstensi, Terminal, Dashboard, Pengaturan
+src/design/      daftar desain + token warna (src/styles/tokens.css)
+```
