@@ -368,6 +368,7 @@ footer a { color: var(--ink-2); }
   .shot { padding: 26px 0 0 26px; max-height: 360px; }
   .os-grid { grid-template-columns: minmax(0, 1fr); }
 }
+@media (max-width: 900px) { .nav-links { display: none; } }
 @media (max-width: 760px) {
   .nav-links, .nav .seg.lang-top { display: none; }
   .dl-grid, .dl-notes { grid-template-columns: minmax(0, 1fr); }
@@ -488,7 +489,7 @@ main, footer, .nav { position: relative; z-index: 1; }
 
 /* Tulisan raksasa di bawah */
 .wordmark { padding-block: 40px 0; overflow: hidden; text-align: center; }
-.wordmark h2 { font: 800 clamp(56px, 15vw, 220px)/.85 var(--f-display); letter-spacing: -0.05em; background: linear-gradient(180deg, var(--ink) 30%, color-mix(in srgb, var(--ink) 5%, transparent)); -webkit-background-clip: text; background-clip: text; color: transparent; white-space: nowrap; }
+.wordmark h2 { font: 800 clamp(56px, 15vw, 220px)/.85 var(--f-display); letter-spacing: -0.035em; background: linear-gradient(180deg, var(--ink) 30%, color-mix(in srgb, var(--ink) 5%, transparent)); -webkit-background-clip: text; background-clip: text; color: transparent; white-space: nowrap; }
 .wordmark h2 .ch { display: inline-block; transform: translateY(60%); opacity: .001; transition: transform 1s cubic-bezier(.2,.7,.2,1), opacity .8s ease; transition-delay: calc(var(--i) * 40ms); }
 .wordmark.in h2 .ch { transform: none; opacity: 1; }
 @media (max-width: 1020px) { .live { padding: 22px; } .dbg-mock { grid-template-columns: minmax(0, 1fr); } .dbg-side { display: none; } }
@@ -549,7 +550,7 @@ html.js .demo-wrap.enter { animation: fly-in 1.4s cubic-bezier(.16,.8,.2,1) .25s
   transform: translate(-50%, -50%) scale(var(--fit, 1)) translate3d(var(--cx, 0px), var(--cy, 0px), var(--cz, 0px)) rotateX(var(--crx, 0deg)) rotateY(var(--cry, 0deg));
   transition: transform 1.1s cubic-bezier(.2,.7,.15,1);
 }
-.sw {
+.stw {
   position: absolute; inset: 0; background: var(--panel); color: var(--panel-ink); border-radius: 16px; overflow: hidden;
   box-shadow: 0 60px 120px -40px rgba(0,0,0,.55), 0 0 0 1px rgba(255,255,255,.07) inset;
   font: 12.5px/1.45 var(--f-body); display: flex; flex-direction: column;
@@ -569,7 +570,7 @@ html.js .demo-wrap.enter { animation: fly-in 1.4s cubic-bezier(.16,.8,.2,1) .25s
 .sw-review span { flex: 1; color: var(--panel-ink-2); font-weight: 500; }
 .sw-review i { font-style: normal; padding: 5px 9px; border-radius: 7px; border: 1px solid var(--panel-line); }
 .sw-review i:first-of-type { background: var(--claude); color: #fff; border-color: transparent; }
-.sw[data-scene="3"] .sw-review { height: 38px; }
+.stw[data-scene="3"] .sw-review { height: 38px; }
 .sw-code { flex: 1; overflow: hidden; padding: 12px 0; font: 12.5px/1.7 var(--f-mono); }
 .sw-code .ln { transition: background .4s ease, opacity .4s ease, max-height .5s ease; max-height: 2em; }
 .sw-code .ln.add { background: rgba(46,160,67,.16); box-shadow: inset 2px 0 0 var(--ok); }
@@ -587,13 +588,13 @@ html.js .demo-wrap.enter { animation: fly-in 1.4s cubic-bezier(.16,.8,.2,1) .25s
 @keyframes press { 40% { transform: scale(.86); box-shadow: 0 0 0 4px rgba(86,211,100,.3); } }
 .sw-status { height: 22px; flex: none; display: flex; gap: 14px; align-items: center; padding: 0 10px; font-size: 11px; color: var(--panel-ink-2); border-top: 1px solid var(--panel-line); background: #0b0e13; }
 .sw-status .dbg { display: none; color: #fff; background: #c2410c; padding: 0 8px; height: 100%; align-items: center; margin-left: -10px; }
-.sw[data-scene="5"] .sw-status .dbg { display: flex; }
+.stw[data-scene="5"] .sw-status .dbg { display: flex; }
 .sw-agent { --a: var(--claude); border-left: 1px solid var(--panel-line); background: #0d1016; display: flex; flex-direction: column; min-width: 0; position: relative; }
 .sw-ahead { height: 40px; flex: none; display: flex; align-items: center; gap: 8px; padding: 0 12px; border-bottom: 1px solid var(--panel-line); }
 .sw-ahead .k { width: 20px; height: 20px; border-radius: 6px; display: grid; place-items: center; color: #fff; font-size: 11px; background: var(--a); transition: background .4s ease; }
 .sw-pick { font: 600 13px/1 var(--f-body); }
 .sw-menu { position: absolute; top: 44px; left: 10px; right: 10px; background: #161b24; border: 1px solid #2c3445; border-radius: 10px; padding: 5px; box-shadow: 0 20px 40px -10px rgba(0,0,0,.6); opacity: 0; transform: translateY(-6px) scale(.98); transition: opacity .35s ease, transform .35s ease; z-index: 3; }
-.sw[data-scene="0"] .sw-menu { opacity: 1; transform: none; }
+.stw[data-scene="0"] .sw-menu { opacity: 1; transform: none; }
 .sw-menu div { display: flex; align-items: center; gap: 9px; padding: 8px; border-radius: 7px; font-size: 12.5px; transition: background .25s ease; }
 .sw-menu div b { width: 20px; height: 20px; border-radius: 6px; display: grid; place-items: center; color: #fff; font-size: 11px; }
 .sw-menu div small { margin-left: auto; color: var(--panel-ink-2); font-size: 11px; }
@@ -615,7 +616,7 @@ html.js .demo-wrap.enter { animation: fly-in 1.4s cubic-bezier(.16,.8,.2,1) .25s
 /* Lapisan yang "keluar" dari jendela (kedalaman 3D) */
 .sw-pop { position: absolute; z-index: 4; transform-style: preserve-3d; transition: opacity .5s ease, transform .9s cubic-bezier(.2,.7,.15,1); opacity: 0; pointer-events: none; }
 .sw-perm { right: 18px; top: 150px; width: 330px; transform: translateZ(0) translateY(20px); }
-.sw[data-scene="2"] ~ .sw-perm, .sw-cam[data-scene="2"] .sw-perm { opacity: 1; transform: translateZ(110px); }
+.stw[data-scene="2"] ~ .sw-perm, .sw-cam[data-scene="2"] .sw-perm { opacity: 1; transform: translateZ(110px); }
 .sw-perm .card3d { background: #121722; border: 1px solid color-mix(in srgb, var(--claude) 55%, #2c3445); border-radius: 12px; padding: 12px; color: var(--panel-ink); box-shadow: 0 40px 80px -20px rgba(0,0,0,.7), 0 0 0 4px color-mix(in srgb, var(--claude) 16%, transparent); font: 12px/1.45 var(--f-body); }
 .sw-perm h5 { margin: 0 0 8px; font: 600 13px/1.2 var(--f-body); }
 .sw-perm .diff { font: 11px/1.6 var(--f-mono); border-radius: 7px; background: #0a0d12; overflow: hidden; }
@@ -799,7 +800,7 @@ html.js .demo-wrap.enter { animation: fly-in 1.4s cubic-bezier(.16,.8,.2,1) .25s
         </div>
         <div class="story-stage" id="story-stage" aria-hidden="true">
           <div class="sw-cam" id="sw-cam" data-scene="0">
-            <div class="sw" id="sw" data-scene="0">
+            <div class="stw" id="sw" data-scene="0">
               <div class="sw-title"><span class="lights"><i></i><i></i><i></i></span><span class="sw-search">coffee-shop</span></div>
               <div class="sw-body">
                 <div class="sw-act"><span class="on"></span><span></span><span></span><span></span><span></span></div>
