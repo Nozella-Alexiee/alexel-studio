@@ -17,6 +17,12 @@ for your approval.
 - **You approve every change.** Edits and shell commands appear as cards with the exact diff or
   command. Allow once, allow for the session, or decline and tell the agent what to do instead.
   Pick the model, effort and permission mode per conversation; resume earlier conversations.
+- **Checkpoints and review.** Every message is a checkpoint: restore your files to how they were
+  before it with one click. Changed parts light up in the editor so you can accept or reject
+  each one.
+- **AI where you work.** Write a commit message from the staged diff (✨ in Source Control), fix a
+  problem from the Problems panel or with `⌘.` / `Ctrl+.`, and add `@problems`, `@terminal`,
+  `@git-diff` or `@open-editors` to a message for context.
 - **Debugger.** Breakpoints, variables, watch expressions, call stack and a debug console for
   JavaScript/TypeScript (js-debug), Python (debugpy), C/C++/Rust (lldb-dap) and Go (Delve).
   Reads `.vscode/launch.json`.
@@ -46,6 +52,9 @@ Get the latest installer from the [Releases](../../releases/latest) page:
 | Debian, Ubuntu | `Alexel-Studio-linux-amd64.deb` |
 | Fedora, openSUSE | `Alexel-Studio-linux-x86_64.rpm` |
 | Any Linux | `Alexel-Studio-linux-x86_64.AppImage` |
+
+32-bit Windows (x86) isn't supported: Electron no longer ships 32-bit Windows builds, and
+Windows 11 is 64-bit only.
 
 Builds are not code-signed with a paid certificate yet:
 

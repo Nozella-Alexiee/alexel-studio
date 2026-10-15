@@ -499,6 +499,169 @@ main, footer, .nav { position: relative; z-index: 1; }
   .mx-bar i { width: 100% !important; }
   .gal-track { animation: none; overflow-x: auto; max-width: 100%; }
 }
+
+/* ---------- Hero 3D: partikel, kemiringan ikut kursor, kilau, masuk dari kedalaman ---------- */
+.stars { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 0; pointer-events: none; opacity: .9; }
+.demo-wrap { transform-style: preserve-3d; }
+.demo {
+  transform: rotateX(calc(var(--tilt, 8deg) + var(--mx, 0deg))) rotateY(var(--my, 0deg)) scale(var(--sc, .96));
+  transition: transform .45s cubic-bezier(.2,.7,.2,1);
+  will-change: transform;
+}
+.demo::after {
+  content: ""; position: absolute; inset: 0; pointer-events: none; border-radius: inherit; z-index: 5;
+  background: radial-gradient(600px circle at var(--gx, 50%) var(--gy, 0%), rgba(255,255,255,.09), transparent 55%);
+  opacity: var(--glare, 0); transition: opacity .4s ease;
+}
+html.js .demo-wrap.enter { animation: fly-in 1.4s cubic-bezier(.16,.8,.2,1) .25s both; }
+@keyframes fly-in {
+  from { opacity: 0; transform: translateY(90px) rotateX(32deg) scale(.86); filter: blur(6px); }
+  60% { filter: blur(0); }
+  to { opacity: 1; transform: none; filter: none; }
+}
+.demo-shadow { position: absolute; left: 8%; right: 8%; bottom: -40px; height: 80px; border-radius: 50%; background: radial-gradient(closest-side, color-mix(in srgb, var(--accent) 35%, transparent), transparent); filter: blur(20px); z-index: -1; opacity: .7; transform: translateX(calc(var(--my, 0deg) * -4)); }
+
+/* ---------- Cerita gulir: jendela aplikasi menempel & berganti adegan ---------- */
+.story { position: relative; height: 640vh; margin-top: 40px; }
+.story-pin { position: sticky; top: 0; height: 100vh; height: 100svh; display: flex; align-items: center; overflow: hidden; }
+.story-bg { position: absolute; inset: 0; z-index: 0; pointer-events: none; background: radial-gradient(60% 50% at var(--sbx, 70%) 50%, color-mix(in srgb, var(--sc1, var(--claude)) 18%, transparent), transparent 70%); transition: background 1s ease; }
+.story-pin > .wrap { flex: none; }
+.story-grid { position: relative; z-index: 1; display: grid; grid-template-columns: minmax(0, 310px) minmax(0, 1fr); gap: 32px; align-items: center; }
+.story-copy { position: relative; z-index: 3; }
+.story-kicker { font: 600 12px/1 var(--f-mono); letter-spacing: .12em; text-transform: uppercase; color: var(--accent); }
+.story-head { font: 800 clamp(30px, 3.6vw, 46px)/1.02 var(--f-display); letter-spacing: -.02em; margin: 14px 0 26px; }
+.story-steps { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; counter-reset: s; }
+.story-steps li { position: relative; padding-left: 18px; }
+.story-steps li::before { content: ""; position: absolute; left: 0; top: 10px; bottom: 10px; width: 3px; border-radius: 3px; background: var(--line); overflow: hidden; }
+.story-steps li::after { content: ""; position: absolute; left: 0; top: 10px; width: 3px; height: calc((100% - 20px) * var(--fill, 0)); border-radius: 3px; background: var(--accent); }
+.story-steps button { all: unset; cursor: pointer; display: flex; gap: 12px; align-items: baseline; padding: 8px 0; font: 600 18px/1.25 var(--f-display); color: var(--ink-3); transition: color .3s ease; }
+.story-steps button b { font: 600 11px/1 var(--f-mono); color: var(--ink-3); }
+.story-steps li.on button { color: var(--ink); }
+.story-steps li.on button b { color: var(--accent); }
+.story-steps button:focus-visible { outline: 2px solid var(--accent); outline-offset: 4px; border-radius: 6px; }
+.story-steps p { margin: 0 0 6px 30px; color: var(--ink-2); font-size: 15px; line-height: 1.55; max-height: 0; opacity: 0; overflow: hidden; transition: max-height .5s ease, opacity .4s ease; }
+.story-steps li.on p { max-height: 140px; opacity: 1; }
+
+.story-stage { position: relative; height: min(76vh, 640px); perspective: 2000px; perspective-origin: 50% 40%; }
+.sw-cam {
+  position: absolute; left: 50%; top: 50%; width: 920px; height: 560px;
+  transform-style: preserve-3d;
+  transform: translate(-50%, -50%) scale(var(--fit, 1)) translate3d(var(--cx, 0px), var(--cy, 0px), var(--cz, 0px)) rotateX(var(--crx, 0deg)) rotateY(var(--cry, 0deg));
+  transition: transform 1.1s cubic-bezier(.2,.7,.15,1);
+}
+.sw {
+  position: absolute; inset: 0; background: var(--panel); color: var(--panel-ink); border-radius: 16px; overflow: hidden;
+  box-shadow: 0 60px 120px -40px rgba(0,0,0,.55), 0 0 0 1px rgba(255,255,255,.07) inset;
+  font: 12.5px/1.45 var(--f-body); display: flex; flex-direction: column;
+}
+.sw-title { height: 36px; flex: none; display: flex; align-items: center; padding: 0 12px; background: #0b0e13; border-bottom: 1px solid var(--panel-line); }
+.sw-title .sw-search { margin: 0 auto; width: 300px; height: 22px; border-radius: 6px; background: var(--panel-2); border: 1px solid var(--panel-line); display: grid; place-items: center; font-size: 11.5px; color: var(--panel-ink-2); }
+.sw-body { flex: 1; display: grid; grid-template-columns: 40px minmax(0, 1fr) 310px; min-height: 0; }
+.sw-act { background: #0b0e13; border-right: 1px solid var(--panel-line); display: flex; flex-direction: column; align-items: center; gap: 14px; padding-top: 12px; }
+.sw-act span { width: 16px; height: 16px; border-radius: 5px; background: var(--panel-ink-2); opacity: .28; }
+.sw-act span.on { opacity: .9; background: var(--panel-ink); }
+.sw-editor { display: flex; flex-direction: column; min-width: 0; background: #12161d; position: relative; }
+.sw-tabs { height: 34px; flex: none; display: flex; background: #0d1016; border-bottom: 1px solid var(--panel-line); }
+.sw-tabs span { padding: 0 14px; display: flex; align-items: center; gap: 7px; border-right: 1px solid var(--panel-line); font-size: 12px; background: #12161d; box-shadow: inset 0 1px 0 #6b97ff; }
+.sw-tabs span i { font: 700 8.5px/1 var(--f-mono); width: 16px; height: 16px; border-radius: 3px; display: grid; place-items: center; background: #f7df1e; color: #000; font-style: normal; }
+.sw-review { height: 0; overflow: hidden; display: flex; align-items: center; gap: 10px; padding: 0 12px; background: color-mix(in srgb, var(--claude) 12%, #161a22); font: 600 12px/1 var(--f-body); transition: height .45s ease; }
+.sw-review em { font-style: normal; color: var(--claude); }
+.sw-review span { flex: 1; color: var(--panel-ink-2); font-weight: 500; }
+.sw-review i { font-style: normal; padding: 5px 9px; border-radius: 7px; border: 1px solid var(--panel-line); }
+.sw-review i:first-of-type { background: var(--claude); color: #fff; border-color: transparent; }
+.sw[data-scene="3"] .sw-review { height: 38px; }
+.sw-code { flex: 1; overflow: hidden; padding: 12px 0; font: 12.5px/1.7 var(--f-mono); }
+.sw-code .ln { transition: background .4s ease, opacity .4s ease, max-height .5s ease; max-height: 2em; }
+.sw-code .ln.add { background: rgba(46,160,67,.16); box-shadow: inset 2px 0 0 var(--ok); }
+.sw-code .ln.del { background: rgba(248,81,73,.14); box-shadow: inset 2px 0 0 #f85149; color: #c9a3a3; }
+.sw-code .ln.gone { max-height: 0; opacity: 0; }
+.sw-code .ln.cur { background: rgba(227,179,65,.18); box-shadow: inset 2px 0 0 #e3b341; }
+.sw-code .ln > span { white-space: pre; }
+.sw-code .ln .bp { position: absolute; margin-left: 4px; margin-top: 6px; width: 9px; height: 9px; border-radius: 50%; background: #f85149; box-shadow: 0 0 0 3px rgba(248,81,73,.25); }
+.sw-code .ln b { position: relative; }
+.sw-code .chips { display: inline-flex; gap: 5px; margin-left: 14px; vertical-align: 1px; }
+.sw-code .chips i { font: 700 10px/1 var(--f-body); font-style: normal; padding: 4px 8px; border-radius: 999px; }
+.sw-code .chips i.ok { background: rgba(46,160,67,.22); color: #56d364; }
+.sw-code .chips i.no { background: rgba(248,81,73,.2); color: #ff7b72; }
+.sw-code .chips i.press { animation: press .5s ease; }
+@keyframes press { 40% { transform: scale(.86); box-shadow: 0 0 0 4px rgba(86,211,100,.3); } }
+.sw-status { height: 22px; flex: none; display: flex; gap: 14px; align-items: center; padding: 0 10px; font-size: 11px; color: var(--panel-ink-2); border-top: 1px solid var(--panel-line); background: #0b0e13; }
+.sw-status .dbg { display: none; color: #fff; background: #c2410c; padding: 0 8px; height: 100%; align-items: center; margin-left: -10px; }
+.sw[data-scene="5"] .sw-status .dbg { display: flex; }
+.sw-agent { --a: var(--claude); border-left: 1px solid var(--panel-line); background: #0d1016; display: flex; flex-direction: column; min-width: 0; position: relative; }
+.sw-ahead { height: 40px; flex: none; display: flex; align-items: center; gap: 8px; padding: 0 12px; border-bottom: 1px solid var(--panel-line); }
+.sw-ahead .k { width: 20px; height: 20px; border-radius: 6px; display: grid; place-items: center; color: #fff; font-size: 11px; background: var(--a); transition: background .4s ease; }
+.sw-pick { font: 600 13px/1 var(--f-body); }
+.sw-menu { position: absolute; top: 44px; left: 10px; right: 10px; background: #161b24; border: 1px solid #2c3445; border-radius: 10px; padding: 5px; box-shadow: 0 20px 40px -10px rgba(0,0,0,.6); opacity: 0; transform: translateY(-6px) scale(.98); transition: opacity .35s ease, transform .35s ease; z-index: 3; }
+.sw[data-scene="0"] .sw-menu { opacity: 1; transform: none; }
+.sw-menu div { display: flex; align-items: center; gap: 9px; padding: 8px; border-radius: 7px; font-size: 12.5px; transition: background .25s ease; }
+.sw-menu div b { width: 20px; height: 20px; border-radius: 6px; display: grid; place-items: center; color: #fff; font-size: 11px; }
+.sw-menu div small { margin-left: auto; color: var(--panel-ink-2); font-size: 11px; }
+.sw-menu div.on { background: #243049; }
+.sw-chat { flex: 1; overflow: hidden; padding: 12px; display: flex; flex-direction: column; gap: 9px; }
+.sw-chat .u { align-self: flex-end; max-width: 94%; background: #1a2440; border: 1px solid #2b3b66; border-radius: 12px 12px 4px 12px; padding: 8px 11px; }
+.sw-chat .u .rs { display: block; margin-top: 6px; font-size: 11px; color: #8fb3ff; }
+.sw-chat .u .rs.press { color: #fff; text-decoration: underline; }
+.sw-chat .t { display: flex; gap: 7px; font-size: 11.5px; color: var(--panel-ink-2); border: 1px solid var(--panel-line); border-radius: 7px; padding: 5px 8px; }
+.sw-chat .t s { margin-left: auto; text-decoration: none; color: #56d364; }
+.sw-chat .a { color: var(--panel-ink); }
+.sw-chat .ch { border: 1px solid color-mix(in srgb, var(--ok) 40%, var(--panel-line)); background: rgba(46,160,67,.06); border-radius: 9px; padding: 8px 10px; font-size: 11.5px; }
+.sw-chat .ch b { display: block; margin-bottom: 4px; }
+.sw-chat .ch span { color: #8fb3ff; font-family: var(--f-mono); }
+.sw-chat .pill { display: inline-block; padding: 1px 6px; border-radius: 6px; background: #22304c; color: #a9c1ff; font-family: var(--f-mono); font-size: 11px; }
+.sw-comp { flex: none; margin: 10px; border: 1px solid var(--panel-line); border-radius: 10px; padding: 8px 10px; background: #12161d; color: var(--panel-ink-2); min-height: 52px; }
+.sw-comp .typing::after { content: "▍"; animation: blink 1s steps(2) infinite; color: var(--panel-ink); }
+
+/* Lapisan yang "keluar" dari jendela (kedalaman 3D) */
+.sw-pop { position: absolute; z-index: 4; transform-style: preserve-3d; transition: opacity .5s ease, transform .9s cubic-bezier(.2,.7,.15,1); opacity: 0; pointer-events: none; }
+.sw-perm { right: 18px; top: 150px; width: 330px; transform: translateZ(0) translateY(20px); }
+.sw[data-scene="2"] ~ .sw-perm, .sw-cam[data-scene="2"] .sw-perm { opacity: 1; transform: translateZ(110px); }
+.sw-perm .card3d { background: #121722; border: 1px solid color-mix(in srgb, var(--claude) 55%, #2c3445); border-radius: 12px; padding: 12px; color: var(--panel-ink); box-shadow: 0 40px 80px -20px rgba(0,0,0,.7), 0 0 0 4px color-mix(in srgb, var(--claude) 16%, transparent); font: 12px/1.45 var(--f-body); }
+.sw-perm h5 { margin: 0 0 8px; font: 600 13px/1.2 var(--f-body); }
+.sw-perm .diff { font: 11px/1.6 var(--f-mono); border-radius: 7px; background: #0a0d12; overflow: hidden; }
+.sw-perm .diff div { white-space: pre; padding: 0 8px; }
+.sw-perm .diff .p { background: rgba(46,160,67,.2); } .sw-perm .diff .m { background: rgba(248,81,73,.18); }
+.sw-perm .act { display: flex; gap: 6px; margin-top: 10px; }
+.sw-perm .act i { font-style: normal; font-size: 11.5px; padding: 6px 10px; border-radius: 7px; border: 1px solid #2c3445; background: #1a1f29; }
+.sw-perm .act i.go { background: var(--claude); color: #fff; border-color: transparent; }
+.sw-perm .act i.go.press { animation: press .5s ease; }
+.sw-perm .ok { display: none; color: #56d364; font-weight: 600; margin-top: 10px; }
+.sw-perm.allowed .act { display: none; }
+.sw-perm.allowed .ok { display: block; }
+.sw-vars { left: 220px; top: 110px; width: 300px; transform: translateZ(0) translateY(20px); }
+.sw-cam[data-scene="5"] .sw-vars { opacity: 1; transform: translateZ(130px) translateX(330px); }
+.sw-vars .card3d { background: #121722; border: 1px solid #2c3445; border-radius: 12px; padding: 12px; color: var(--panel-ink); box-shadow: 0 40px 80px -20px rgba(0,0,0,.7); font: 12px/1.5 var(--f-mono); }
+.sw-vars h6 { margin: 0 0 6px; font: 600 10.5px/1 var(--f-body); letter-spacing: .08em; text-transform: uppercase; color: var(--panel-ink-2); }
+.sw-vars .v { display: flex; justify-content: space-between; gap: 10px; transition: background .3s ease; border-radius: 4px; padding: 0 4px; }
+.sw-vars .v span:last-child { color: #b5cea8; }
+.sw-vars .v.new { background: rgba(227,179,65,.18); }
+.sw-toast { left: 50%; bottom: 40px; transform: translateX(-50%) translateZ(0) translateY(16px); }
+.sw-cam[data-scene="4"] .sw-toast.on { opacity: 1; transform: translateX(-50%) translateZ(90px); }
+.sw-toast .card3d { background: #1f2633; color: var(--panel-ink); border: 1px solid #2f3848; border-radius: 10px; padding: 10px 14px; font: 600 12.5px/1 var(--f-body); white-space: nowrap; box-shadow: 0 30px 60px -20px rgba(0,0,0,.7); }
+.sw-toast .card3d::before { content: "↺ "; color: #56d364; }
+
+@media (max-width: 900px) {
+  .story { height: 620vh; }
+  .story-grid { grid-template-columns: minmax(0, 1fr); gap: 14px; align-content: center; height: 100%; padding-block: 64px 16px; }
+  .story-head { display: none; }
+  .story-steps { flex-direction: row; gap: 6px; flex-wrap: wrap; }
+  .story-steps li { padding: 0; flex: 1 1 0; min-width: 0; }
+  .story-steps li::before, .story-steps li::after { top: auto; bottom: 0; left: 0; height: 3px; width: 100%; }
+  .story-steps li::after { width: calc(100% * var(--fill, 0)); height: 3px; }
+  .story-steps button { display: block; width: 100%; padding: 0 0 8px; position: relative; }
+  .story-steps button > span { position: absolute; left: 0; top: 0; opacity: 0; pointer-events: none; }
+  .story-steps p { display: none; }
+  .story-copy { position: relative; }
+  .story-now { display: block !important; margin-top: 14px; min-height: 104px; }
+  .story-now strong { display: block; font: 700 22px/1.15 var(--f-display); margin-bottom: 6px; }
+  .story-now span { color: var(--ink-2); font-size: 14.5px; line-height: 1.5; }
+  .story-stage { height: 52vh; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .sw-cam, .sw-pop, .sw-code .ln, .story-steps p, .sw-menu { transition: none !important; }
+  html.js .demo-wrap.enter { animation: none; }
+  .stars { display: none; }
+}
 </style>
 </head>
 <body>
@@ -551,7 +714,7 @@ main, footer, .nav { position: relative; z-index: 1; }
           </a>
           <a class="btn ghost" href="#download" data-en="Other platforms" data-id="Platform lain">Other platforms</a>
         </div>
-        <p class="cta-note" id="hero-note">Apple Silicon · 0.3.0 · free</p>
+        <p class="cta-note" id="hero-note">Apple Silicon · 0.4.0 · free</p>
         <div class="stats" aria-label="Ringkasan">
           <div class="stat"><b data-count="5">5</b><span data-en="AI agents" data-id="agen AI">AI agents</span></div>
           <div class="stat"><b data-count="3">3</b><span data-en="platforms" data-id="platform">platforms</span></div>
@@ -610,6 +773,63 @@ main, footer, .nav { position: relative; z-index: 1; }
   </section>
 
   <div class="marquee" aria-label="Shortcut"><div class="marquee-track" id="marquee"></div></div>
+
+  <section class="story" id="story" aria-labelledby="story-head">
+    <div class="story-pin">
+      <div class="story-bg" id="story-bg" aria-hidden="true"></div>
+      <div class="wrap story-grid">
+        <div class="story-copy">
+          <span class="story-kicker" data-en="How it works" data-id="Cara kerjanya">How it works</span>
+          <h2 class="story-head" id="story-head" data-en="From prompt to commit, you stay in charge." data-id="Dari perintah sampai commit, kamu yang pegang kendali.">From prompt to commit, you stay in charge.</h2>
+          <ol class="story-steps" id="story-steps">
+            <li><button type="button"><b>01</b><span data-en="Pick your agent" data-id="Pilih agenmu">Pick your agent</span></button>
+              <p data-en="Claude Code, Codex, Gemini, Antigravity or any ACP agent. Switch any time from the panel header." data-id="Claude Code, Codex, Gemini, Antigravity, atau agen ACP apa pun. Ganti kapan saja dari kepala panel.">Claude Code, Codex, Gemini, Antigravity or any ACP agent. Switch any time from the panel header.</p></li>
+            <li><button type="button"><b>02</b><span data-en="Ask in plain words" data-id="Minta dengan bahasa biasa">Ask in plain words</span></button>
+              <p data-en="Mention files with @, or add @problems and @terminal for context. The agent reads your project and plans the change." data-id="Sebut berkas dengan @, atau tambahkan @problems dan @terminal sebagai konteks. Agen membaca project-mu lalu merencanakan perubahannya.">Mention files with @, or add @problems and @terminal for context. The agent reads your project and plans the change.</p></li>
+            <li><button type="button"><b>03</b><span data-en="Approve the diff" data-id="Setujui diff-nya">Approve the diff</span></button>
+              <p data-en="Every edit and command waits for you as a card with the exact diff. Allow once, for the session, or say no." data-id="Setiap edit dan perintah menunggumu sebagai kartu berisi diff yang persis. Izinkan sekali, selama sesi, atau tolak.">Every edit and command waits for you as a card with the exact diff. Allow once, for the session, or say no.</p></li>
+            <li><button type="button"><b>04</b><span data-en="Review each part" data-id="Tinjau tiap bagian">Review each part</span></button>
+              <p data-en="Changed parts light up right in the editor. Keep one, revert another, then carry on typing." data-id="Bagian yang berubah menyala langsung di editor. Pertahankan satu, kembalikan yang lain, lalu lanjut mengetik.">Changed parts light up right in the editor. Keep one, revert another, then carry on typing.</p></li>
+            <li><button type="button"><b>05</b><span data-en="Rewind anytime" data-id="Mundur kapan saja">Rewind anytime</span></button>
+              <p data-en="Every message is a checkpoint. One click puts your files back the way they were before it." data-id="Setiap pesan adalah checkpoint. Sekali klik, berkasmu kembali seperti sebelum pesan itu.">Every message is a checkpoint. One click puts your files back the way they were before it.</p></li>
+            <li><button type="button"><b>06</b><span data-en="Debug it" data-id="Debug langsung">Debug it</span></button>
+              <p data-en="Set a breakpoint, press F5, and step through line by line with variables and the call stack." data-id="Pasang breakpoint, tekan F5, lalu jalankan baris demi baris sambil melihat variabel dan call stack.">Set a breakpoint, press F5, and step through line by line with variables and the call stack.</p></li>
+          </ol>
+          <div class="story-now" id="story-now" hidden aria-live="polite"><strong></strong><span></span></div>
+        </div>
+        <div class="story-stage" id="story-stage" aria-hidden="true">
+          <div class="sw-cam" id="sw-cam" data-scene="0">
+            <div class="sw" id="sw" data-scene="0">
+              <div class="sw-title"><span class="lights"><i></i><i></i><i></i></span><span class="sw-search">coffee-shop</span></div>
+              <div class="sw-body">
+                <div class="sw-act"><span class="on"></span><span></span><span></span><span></span><span></span></div>
+                <div class="sw-editor">
+                  <div class="sw-tabs"><span><i>JS</i>cart.js</span></div>
+                  <div class="sw-review"><em data-en="Agent changes" data-id="Perubahan agen">Agent changes</em><span id="sw-parts">2 changed parts</span><i data-en="Accept all" data-id="Terima semua">Accept all</i><i data-en="Reject all" data-id="Tolak semua">Reject all</i></div>
+                  <div class="sw-code" id="sw-code"></div>
+                  <div class="sw-status"><span class="dbg">● Debug</span><span>main</span><span>Ln 8, Col 3</span><span style="margin-left:auto">JavaScript</span></div>
+                </div>
+                <div class="sw-agent" id="sw-agent">
+                  <div class="sw-ahead"><span class="k" id="sw-k">✳</span><span class="sw-pick" id="sw-pick">Claude Code ⌄</span></div>
+                  <div class="sw-menu" id="sw-menu"></div>
+                  <div class="sw-chat" id="sw-chat"></div>
+                  <div class="sw-comp" id="sw-comp"></div>
+                </div>
+              </div>
+            </div>
+            <div class="sw-pop sw-perm" id="sw-perm"><div class="card3d">
+              <h5 data-en="Edit cart.js?" data-id="Edit cart.js?">Edit cart.js?</h5>
+              <div class="diff"><div class="m">-  const tax = Math.round(sub * 0.11);</div><div class="p">+  const discount = sub &gt; 100000 ? sub * 0.1 : 0;</div><div class="p">+  const tax = Math.round((sub - discount) * 0.11);</div><div class="m">-  return sub + tax;</div><div class="p">+  return sub - discount + tax;</div></div>
+              <div class="act"><i class="go" data-en="Allow" data-id="Izinkan">Allow</i><i data-en="Allow for session" data-id="Izinkan selama sesi">Allow for session</i><i data-en="Decline" data-id="Tolak">Decline</i></div>
+              <div class="ok" data-en="✓ Allowed" data-id="✓ Diizinkan">✓ Allowed</div>
+            </div></div>
+            <div class="sw-pop sw-vars" id="sw-vars"><div class="card3d"><h6 data-en="Variables" data-id="Variabel">Variables</h6><div id="sw-varlist"></div></div></div>
+            <div class="sw-pop sw-toast" id="sw-toast"><div class="card3d" data-en="1 file restored to before this message" data-id="1 berkas dipulihkan ke sebelum pesan ini">1 file restored to before this message</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
 
   <section class="stack" id="features">
     <div class="wrap">
@@ -804,7 +1024,7 @@ main, footer, .nav { position: relative; z-index: 1; }
 (() => {
   // Ganti dengan nama akun GitHub saat repo dipublikasikan.
   const REPO = "https://github.com/Nozella-Alexiee/alexel-studio";
-  const VERSION = "0.3.0";
+  const VERSION = "0.4.0";
   const html = document.documentElement;
   html.classList.add("js");
   const store = {
@@ -837,6 +1057,8 @@ main, footer, .nav { position: relative; z-index: 1; }
   const MAC = { Mod: "⌘", Shift: "⇧", Alt: "⌥", Ctrl: "⌃", Escape: "⎋", Tab: "⇥" };
   function keyText(keys) {
     if (os === "mac") return keys.split("+").map((k) => MAC[k] ?? k).join("");
+    // Ctrl+Esc membuka menu Start di Windows; panel agen memakai Ctrl+Alt+I di Windows/Linux.
+    if (keys === "Mod+Escape") return "Ctrl+Alt+I";
     const parts = keys.split("+");
     const out = [];
     if (parts.includes("Mod") || parts.includes("Ctrl")) out.push("Ctrl");
@@ -856,6 +1078,7 @@ main, footer, .nav { position: relative; z-index: 1; }
     ["Mod+Shift+F", "Search the project", "Cari di project"],
     ["Mod+B", "Toggle sidebar", "Buka/tutup sidebar"],
     ["Mod+K", "Inline AI edit", "Edit AI di tempat"],
+    ["Mod+.", "Fix with AI", "Perbaiki dengan AI"],
   ];
   const OS_NAME = { mac: "macOS", win: "Windows", linux: "Linux" };
 
@@ -900,7 +1123,7 @@ main, footer, .nav { position: relative; z-index: 1; }
   }
 
   document.querySelectorAll("[data-os]").forEach((b) => b.addEventListener("click", () => { os = b.dataset.os; store.set("as.os", os); paintKeys(); }));
-  document.querySelectorAll("[data-lang]").forEach((b) => b.addEventListener("click", () => { lang = b.dataset.lang; store.set("as.lang", lang); paintAll(); demo.play(); }));
+  document.querySelectorAll("[data-lang]").forEach((b) => b.addEventListener("click", () => { lang = b.dataset.lang; store.set("as.lang", lang); paintAll(); demo.play(); document.dispatchEvent(new Event("as:lang")); }));
   document.getElementById("copy-deb").addEventListener("click", async (e) => {
     const btn = e.currentTarget;
     const text = document.getElementById("deb-cmd").textContent;
@@ -1315,6 +1538,249 @@ main, footer, .nav { position: relative; z-index: 1; }
   wmh.innerHTML = [...wmh.textContent].map((c, i) => (c === " " ? " " : `<span class="ch" style="--i:${i}">${c}</span>`)).join("");
   seen(wm, (vis) => vis && wm.classList.add("in"));
   if (reduce) wm.classList.add("in");
+
+
+  // ---------- Hero 3D: partikel, kemiringan ikut kursor, kilau ----------
+  (() => {
+    const hero = document.querySelector(".hero");
+    const wrap = document.getElementById("demo-wrap");
+    const demo = document.getElementById("demo");
+    if (!hero || !wrap || !demo) return;
+    const shadow = document.createElement("div");
+    shadow.className = "demo-shadow";
+    shadow.setAttribute("aria-hidden", "true");
+    wrap.prepend(shadow);
+    if (!reduce) wrap.classList.add("enter");
+
+    const canvas = document.createElement("canvas");
+    canvas.className = "stars";
+    canvas.setAttribute("aria-hidden", "true");
+    hero.prepend(canvas);
+    const g = canvas.getContext("2d");
+    let W = 0, H = 0, dpr = 1, pts = [], mx = 0, my = 0, tx = 0, ty = 0, visible = true, raf = 0;
+    const color = () => getComputedStyle(document.documentElement).getPropertyValue("--accent").trim() || "#6b97ff";
+    let col = color();
+    function size() {
+      dpr = Math.min(2, devicePixelRatio || 1);
+      W = hero.clientWidth; H = Math.min(hero.clientHeight, 1200);
+      canvas.width = W * dpr; canvas.height = H * dpr;
+      canvas.style.height = H + "px";
+      const n = Math.round(Math.min(110, (W * H) / 14000));
+      pts = Array.from({ length: n }, () => ({ x: Math.random() * W, y: Math.random() * H, z: 0.25 + Math.random() * 0.75, vx: (Math.random() - 0.5) * 0.18, vy: (Math.random() - 0.5) * 0.18 }));
+      col = color();
+    }
+    function frame() {
+      raf = 0;
+      if (!visible || document.hidden) return;
+      tx += (mx - tx) * 0.06; ty += (my - ty) * 0.06;
+      g.setTransform(dpr, 0, 0, dpr, 0, 0);
+      g.clearRect(0, 0, W, H);
+      const P = pts.map((p) => {
+        p.x += p.vx * p.z; p.y += p.vy * p.z;
+        if (p.x < -20) p.x = W + 20; if (p.x > W + 20) p.x = -20;
+        if (p.y < -20) p.y = H + 20; if (p.y > H + 20) p.y = -20;
+        return { x: p.x + tx * 26 * p.z, y: p.y + ty * 18 * p.z, z: p.z };
+      });
+      g.strokeStyle = col; g.fillStyle = col;
+      for (let i = 0; i < P.length; i++) {
+        for (let j = i + 1; j < P.length; j++) {
+          const dx = P[i].x - P[j].x, dy = P[i].y - P[j].y, d = dx * dx + dy * dy;
+          if (d < 12000) { g.globalAlpha = (1 - d / 12000) * 0.16 * Math.min(P[i].z, P[j].z); g.beginPath(); g.moveTo(P[i].x, P[i].y); g.lineTo(P[j].x, P[j].y); g.stroke(); }
+        }
+      }
+      for (const p of P) { g.globalAlpha = 0.25 + p.z * 0.45; g.beginPath(); g.arc(p.x, p.y, 0.6 + p.z * 1.6, 0, Math.PI * 2); g.fill(); }
+      g.globalAlpha = 1;
+      raf = requestAnimationFrame(frame);
+    }
+    const kick = () => { if (!raf && !reduce) raf = requestAnimationFrame(frame); };
+    if (!reduce) {
+      size(); kick();
+      addEventListener("resize", () => { size(); kick(); }, { passive: true });
+      new IntersectionObserver(([e]) => { visible = e.isIntersecting; kick(); }).observe(hero);
+      document.addEventListener("visibilitychange", kick);
+      matchMedia("(prefers-color-scheme: dark)").addEventListener?.("change", () => (col = color()));
+    }
+
+    // Jendela demo miring mengikuti kursor, dengan kilau cahaya.
+    if (!reduce && matchMedia("(pointer: fine)").matches) {
+      hero.addEventListener("pointermove", (e) => {
+        const r = demo.getBoundingClientRect();
+        const nx = Math.max(-1, Math.min(1, (e.clientX - (r.left + r.width / 2)) / (r.width / 2)));
+        const ny = Math.max(-1, Math.min(1, (e.clientY - (r.top + r.height / 2)) / (r.height / 1.2)));
+        mx = nx; my = ny;
+        demo.style.setProperty("--my", `${nx * 5}deg`);
+        demo.style.setProperty("--mx", `${-ny * 3.5}deg`);
+        demo.style.setProperty("--gx", `${((e.clientX - r.left) / r.width) * 100}%`);
+        demo.style.setProperty("--gy", `${((e.clientY - r.top) / r.height) * 100}%`);
+        demo.style.setProperty("--glare", "1");
+        kick();
+      }, { passive: true });
+      hero.addEventListener("pointerleave", () => {
+        mx = my = 0;
+        demo.style.setProperty("--my", "0deg");
+        demo.style.setProperty("--mx", "0deg");
+        demo.style.setProperty("--glare", "0");
+      });
+    }
+  })();
+
+  // ---------- Cerita gulir ----------
+  (() => {
+    const story = document.getElementById("story");
+    if (!story) return;
+    const cam = document.getElementById("sw-cam");
+    const sw = document.getElementById("sw");
+    const stage = document.getElementById("story-stage");
+    const codeEl = document.getElementById("sw-code");
+    const chatEl = document.getElementById("sw-chat");
+    const compEl = document.getElementById("sw-comp");
+    const menuEl = document.getElementById("sw-menu");
+    const pickEl = document.getElementById("sw-pick");
+    const kEl = document.getElementById("sw-k");
+    const perm = document.getElementById("sw-perm");
+    const toast = document.getElementById("sw-toast");
+    const varsEl = document.getElementById("sw-varlist");
+    const partsEl = document.getElementById("sw-parts");
+    const bg = document.getElementById("story-bg");
+    const steps = [...document.querySelectorAll("#story-steps li")];
+    const N = steps.length;
+    const T = (en, id) => (lang === "id" ? id : en);
+
+    const AG = [
+      { name: "Claude Code", k: "✳", c: "var(--claude)", v: "Anthropic" },
+      { name: "Codex", k: "◎", c: "var(--codex)", v: "OpenAI" },
+      { name: "Gemini", k: "✦", c: "var(--gemini)", v: "Google" },
+      { name: "Antigravity", k: "▲", c: "var(--agy)", v: "Google" },
+    ];
+    const BASE = ["// Coffee shop cart.", "export function subtotal(items) {", "  return items.reduce((s, i) => s + i.price * i.qty, 0);", "}", "", "export function total(items) {", "  const sub = subtotal(items);", "  const tax = Math.round(sub * 0.11);", "  return sub + tax;", "}"];
+    const NEW = ["// Coffee shop cart.", "export function subtotal(items) {", "  return items.reduce((s, i) => s + i.price * i.qty, 0);", "}", "", "export function total(items) {", "  const sub = subtotal(items);", "  const discount = sub > 100000 ? sub * 0.1 : 0;", "  const tax = Math.round((sub - discount) * 0.11);", "  return sub - discount + tax;", "}"];
+    const PROMPT = () => T("Give orders over 100k a 10% discount before tax @cart.js", "Beri diskon 10% untuk pesanan di atas 100rb sebelum pajak @cart.js");
+    // Kamera per adegan: geser x/y/z (px), putar X/Y (derajat).
+    const CAM = [[30, 0, -60, 8, -14], [0, 0, -20, 4, -6], [-40, 10, 30, 6, 12], [60, 0, 30, 6, -10], [0, 0, -10, 10, 7], [0, 0, 10, 3, -4]];
+    const TINT = [["var(--claude)", "80%"], ["var(--accent)", "75%"], ["var(--claude)", "85%"], ["var(--codex)", "40%"], ["var(--agy)", "60%"], ["#e3b341", "50%"]];
+
+    const line = (t, n, cls = "", extra = "") => `<div class="ln ${cls}"><b>${n ?? ""}${extra}</b><span>${hl(t) || " "}</span></div>`;
+    const chips = (pressed) => `<span class="chips"><i class="ok${pressed ? " press" : ""}">${T("Accept", "Terima")}</i><i class="no">${T("Reject", "Tolak")}</i></span>`;
+    function code(scene, p) {
+      if (scene <= 1 || (scene === 2 && p < 0.72) || (scene === 4 && p >= 0.5)) {
+        return BASE.map((t, i) => line(t, i + 1, scene === 4 && p >= 0.5 && i === 7 ? "add" : "")).join("");
+      }
+      if (scene === 2) return NEW.map((t, i) => line(t, i + 1, i >= 7 && i <= 9 ? "add" : "")).join("");
+      if (scene === 3) {
+        const a1 = p >= 0.4, a2 = p >= 0.75;
+        const out = [];
+        NEW.forEach((t, i) => {
+          if (i === 7 && !a1) out.push(`<div class="ln del"><b></b><span>${hl(BASE[7])}</span>${chips(p > 0.32)}</div>`);
+          if (i === 9 && !a2) out.push(`<div class="ln del"><b></b><span>${hl(BASE[8])}</span>${chips(p > 0.67)}</div>`);
+          const changed = (i === 7 || i === 8) ? !a1 : i === 9 ? !a2 : false;
+          out.push(line(t, i + 1, changed ? "add" : ""));
+        });
+        return out.join("");
+      }
+      if (scene === 4) return NEW.map((t, i) => line(t, i + 1, i >= 7 && i <= 9 ? (p > 0.42 ? "add gone" : "") : "")).join("");
+      // Debug: berhenti di breakpoint baris 8, lalu melangkah.
+      const cur = p < 0.34 ? 7 : p < 0.67 ? 8 : 9;
+      return BASE.map((t, i) => line(t, i + 1, i + 1 === cur ? "cur" : "", i === 7 ? '<span class="bp"></span>' : "")).join("");
+    }
+    function chat(scene, p) {
+      const typed = PROMPT();
+      if (scene === 0) return [`<div class="a" style="color:var(--panel-ink-2)">${T("Ask anything about this project. You approve every change.", "Tanya apa saja tentang project ini. Kamu yang menyetujui setiap perubahan.")}</div>`, ""];
+      const user = (restore) => `<div class="u">${esc(typed).replace(/@cart\.js/, '<span class="pill">@cart.js</span>')}${restore ? `<span class="rs${restore === 2 ? " press" : ""}">↺ ${T("Restore files to before this message", "Pulihkan berkas ke sebelum pesan ini")}</span>` : ""}</div>`;
+      if (scene === 1) {
+        if (p < 0.55) {
+          const n = Math.round((p / 0.5) * typed.length);
+          return ["", `<span class="typing">${esc(typed.slice(0, n))}</span>`];
+        }
+        const parts = [user(0)];
+        if (p > 0.65) parts.push(`<div class="t">${T("Reading", "Membaca")} cart.js<s>✓</s></div>`);
+        if (p > 0.75) {
+          const msg = T("I'll apply the discount before tax and keep rounding as it is.", "Diskon kuterapkan sebelum pajak, pembulatannya tetap.");
+          parts.push(`<div class="a">${esc(msg.slice(0, Math.round(((p - 0.75) / 0.22) * msg.length)))}</div>`);
+        }
+        return [parts.join(""), ""];
+      }
+      const done = `<div class="t">${T("Reading", "Membaca")} cart.js<s>✓</s></div><div class="a">${esc(T("I'll apply the discount before tax and keep rounding as it is.", "Diskon kuterapkan sebelum pajak, pembulatannya tetap."))}</div>`;
+      if (scene === 2) return [user(0) + done + (p > 0.72 ? `<div class="t">${T("Editing", "Mengedit")} cart.js<s>✓</s></div>` : ""), ""];
+      const card = `<div class="ch"><b>${T("1 file changed by the agent", "1 berkas diubah agen")}</b><span>cart.js</span></div>`;
+      if (scene === 3) return [user(1) + done + card, ""];
+      if (scene === 4) return [user(p > 0.36 ? 2 : 1) + done + card, ""];
+      return [`<div class="t">● ${T("Paused at breakpoint", "Berhenti di breakpoint")} · cart.js:8</div>`, ""];
+    }
+    function vars(p) {
+      const v = [["items", "Array(3)"], ["sub", "120000"]];
+      if (p >= 0.34) v.push(["tax", "13200"]);
+      if (p >= 0.67) v.push(["return", "133200"]);
+      return v.map(([k, val], i) => `<div class="v${i === v.length - 1 && p > 0.1 ? " new" : ""}"><span>${k}</span><span>${val}</span></div>`).join("");
+    }
+
+    let last = "";
+    let fit = 1;
+    function resize() {
+      const w = stage.clientWidth, h = stage.clientHeight;
+      fit = Math.min(w / 950, h / 600, 1.1);
+      cam.style.setProperty("--fit", String(fit));
+    }
+    function paint() {
+      const r = story.getBoundingClientRect();
+      const total = Math.max(1, r.height - innerHeight);
+      const prog = Math.min(0.9999, Math.max(0, -r.top / total));
+      const scene = Math.min(N - 1, Math.floor(prog * N));
+      const p = prog * N - scene;
+      const now = document.getElementById("story-now");
+      if (now.dataset.scene !== `${scene}${lang}`) {
+        now.dataset.scene = `${scene}${lang}`;
+        now.querySelector("strong").textContent = steps[scene].querySelector("button > span").textContent;
+        now.querySelector("span").textContent = steps[scene].querySelector("p").textContent;
+      }
+      steps.forEach((li, i) => {
+        li.classList.toggle("on", i === scene);
+        li.style.setProperty("--fill", String(i < scene ? 1 : i === scene ? p : 0));
+      });
+      const hi = scene === 0 ? [1, 2, 3, 0][Math.min(3, Math.floor(p * 4))] : 0;
+      const key = `${scene}|${scene === 0 ? hi : Math.round(p * 40)}|${lang}`;
+      if (key === last) return;
+      last = key;
+      sw.dataset.scene = cam.dataset.scene = String(scene);
+      const [cx, cy, cz, crx, cry] = CAM[scene];
+      const narrow = innerWidth <= 900;
+      // Layar sempit: perbesar dan arahkan ke bagian yang sedang diceritakan (panel agen / editor).
+      const FOCUS = [-300, -300, -300, 130, -300, 130];
+      cam.style.setProperty("--fit", String(narrow ? fit * 1.55 : fit));
+      cam.style.setProperty("--cx", `${narrow ? FOCUS[scene] : cx}px`);
+      cam.style.setProperty("--cy", `${cy}px`);
+      cam.style.setProperty("--cz", `${cz}px`);
+      cam.style.setProperty("--crx", `${crx}deg`);
+      cam.style.setProperty("--cry", `${narrow ? cry * 0.5 : cry}deg`);
+      bg.style.setProperty("--sc1", TINT[scene][0]);
+      bg.style.setProperty("--sbx", TINT[scene][1]);
+      const a = AG[hi];
+      pickEl.textContent = `${a.name} ⌄`;
+      kEl.textContent = a.k;
+      kEl.style.background = a.c;
+      menuEl.innerHTML = AG.map((x, i) => `<div class="${i === hi ? "on" : ""}"><b style="background:${x.c}">${x.k}</b>${x.name}<small>${x.v}</small></div>`).join("");
+      codeEl.innerHTML = code(scene, p);
+      const [c, comp] = chat(scene, p);
+      chatEl.innerHTML = c;
+      compEl.innerHTML = comp || `<span>${T("Ask Claude, @ for files, / for commands", "Tanya Claude, @ untuk berkas, / untuk perintah")}</span>`;
+      perm.classList.toggle("allowed", scene === 2 && p > 0.66);
+      perm.querySelector(".go").classList.toggle("press", scene === 2 && p > 0.58);
+      toast.classList.toggle("on", scene === 4 && p > 0.5);
+      varsEl.innerHTML = scene === 5 ? vars(p) : "";
+      const left = scene === 3 ? (p < 0.4 ? 2 : p < 0.75 ? 1 : 0) : 2;
+      partsEl.textContent = left ? T(`${left} changed part${left > 1 ? "s" : ""}`, `${left} bagian berubah`) : T("All changes kept", "Semua perubahan dipertahankan");
+    }
+    let ticking = false;
+    const onScroll = () => { if (!ticking) { ticking = true; requestAnimationFrame(() => { ticking = false; paint(); }); } };
+    addEventListener("scroll", onScroll, { passive: true });
+    addEventListener("resize", () => { resize(); last = ""; paint(); }, { passive: true });
+    steps.forEach((li, i) => li.querySelector("button").addEventListener("click", () => {
+      const total = story.offsetHeight - innerHeight;
+      scrollTo({ top: story.offsetTop + ((i + 0.3) / N) * total, behavior: reduce ? "auto" : "smooth" });
+    }));
+    document.addEventListener("as:lang", () => { last = ""; paint(); });
+    resize();
+    paint();
+  })();
 
   // Muncul saat digulir: hanya elemen di bawah layar yang menunggu; yang sudah terlihat tetap utuh.
   if ("IntersectionObserver" in window && !reduce) {

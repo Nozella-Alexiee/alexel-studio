@@ -18,6 +18,12 @@ menunggu persetujuanmu.
   atau perintah yang persis. Izinkan sekali, izinkan selama sesi, atau tolak dan beri tahu agen
   apa yang sebaiknya dilakukan. Pilih model, effort, dan mode izin per percakapan; lanjutkan
   percakapan lama dari riwayat.
+- **Checkpoint dan tinjauan.** Setiap pesan adalah checkpoint: sekali klik, berkas kembali seperti
+  sebelum pesan itu. Bagian yang diubah agen menyala di editor, jadi kamu bisa menerima atau
+  menolak tiap bagian.
+- **AI di tempat kamu bekerja.** Tulis pesan commit dari diff yang di-stage (✨ di Source Control),
+  perbaiki masalah dari panel Masalah atau dengan `⌘.` / `Ctrl+.`, dan tambahkan `@problems`,
+  `@terminal`, `@git-diff`, atau `@open-editors` ke pesan sebagai konteks.
 - **Debugger.** Breakpoint, variabel, watch, call stack, dan Debug Console untuk
   JavaScript/TypeScript (js-debug), Python (debugpy), C/C++/Rust (lldb-dap), dan Go (Delve).
   Membaca `.vscode/launch.json`.
@@ -43,6 +49,9 @@ Ambil installer terbaru di halaman [Releases](../../releases/latest):
 | Debian, Ubuntu | `Alexel-Studio-linux-amd64.deb` |
 | Fedora, openSUSE | `Alexel-Studio-linux-x86_64.rpm` |
 | Linux apa saja | `Alexel-Studio-linux-x86_64.AppImage` |
+
+Windows 32-bit (x86) tidak didukung: Electron sudah tidak membuat build Windows 32-bit, dan
+Windows 11 hanya tersedia dalam versi 64-bit.
 
 Build belum ditandatangani dengan sertifikat berbayar:
 
