@@ -19,3 +19,25 @@ describe("perubahan minimal", () => {
     expect(minimalChange("abc", "")).toEqual({ from: 0, to: 3, insert: "" });
   });
 });
+
+describe("path lintas OS", () => {
+  it("Windows: drive, beda huruf besar/kecil, dirname akar", async () => {
+    const P = await import("../lib/paths");
+    expect(P.dirname("C:/proj")).toBe("C:/");
+    expect(P.isInside("C:/Users/A/proj", "c:/users/a/proj/src/x.ts")).toBe(true);
+    expect(P.relative("C:/Users/A/proj", "C:/Users/A/proj/src/x.ts")).toBe("src/x.ts");
+    expect(P.isInside("/home/a/proj", "/home/a/Proj/x")).toBe(false);
+    expect(P.shortenHome("C:/Users/Ana/proj")).toBe("~/proj");
+    expect(P.shortenHome("/home/ana/proj")).toBe("~/proj");
+    expect(P.validateName("a:b.txt")).toBeTruthy();
+    expect(P.validateName("CON.txt")).toBeTruthy();
+    expect(P.validateName("main.ts")).toBeNull();
+  });
+  it("URI berkas LSP untuk Windows & POSIX", async () => {
+    const { fileUri, uriToPath } = await import("../editor/lsp");
+    expect(fileUri("C:/a b/x.ts")).toBe("file:///C:/a%20b/x.ts");
+    expect(uriToPath("file:///c%3A/a%20b/x.ts")).toBe("C:/a b/x.ts");
+    expect(fileUri("/Users/a/x.ts")).toBe("file:///Users/a/x.ts");
+    expect(uriToPath("file:///Users/a/x.ts")).toBe("/Users/a/x.ts");
+  });
+});

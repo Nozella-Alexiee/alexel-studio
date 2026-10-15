@@ -5,7 +5,7 @@
 import { spawn, type ChildProcess } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
-import { augmentedPath, childEnv, isWin, type Ctx } from "./util";
+import { childEnv, findExecutable, killTree, spawnable, type Ctx } from "./util";
 
 export interface ServerDef {
   id: string;
@@ -25,19 +25,11 @@ export const SERVERS: ServerDef[] = [
   { id: "php", name: "PHP (Intelephense)", langs: ["php"], bin: "intelephense", args: ["--stdio"], install: "npm install -g intelephense" },
   { id: "rust", name: "Rust (rust-analyzer)", langs: ["rs"], bin: "rust-analyzer", args: [], install: "rustup component add rust-analyzer" },
   { id: "go", name: "Go (gopls)", langs: ["go"], bin: "gopls", args: [], install: "go install golang.org/x/tools/gopls@latest" },
-  { id: "c", name: "C/C++ (clangd)", langs: ["c", "cpp"], bin: "clangd", args: [], install: "xcode-select --install" },
+  { id: "c", name: "C/C++ (clangd)", langs: ["c", "cpp"], bin: "clangd", args: [], install: process.platform === "darwin" ? "xcode-select --install" : process.platform === "win32" ? "winget install LLVM.LLVM" : "sudo apt install clangd (atau dnf/pacman)" },
   { id: "css", name: "CSS/HTML/JSON (vscode-langservers)", langs: ["css"], bin: "vscode-css-language-server", args: ["--stdio"], install: "npm install -g vscode-langservers-extracted" },
 ];
 
-function whichBin(bin: string): string | null {
-  for (const dir of augmentedPath().split(isWin ? ";" : ":")) {
-    for (const ext of isWin ? [".cmd", ".exe", ""] : [""]) {
-      const p = path.join(dir, bin + ext);
-      if (fs.existsSync(p)) return p;
-    }
-  }
-  return null;
-}
+const whichBin = (bin: string) => findExecutable(bin);
 
 /** Path modul yang dibundel; di aplikasi terpaket, modul ada di app.asar.unpacked. */
 function bundledPath(rel: string): string {
@@ -100,7 +92,8 @@ export function lspStart(ctx: Ctx, serverId: string, root: string): { key: strin
     cmd = p;
     args = def.args ?? [];
   }
-  const proc = spawn(cmd, args, { cwd: fs.existsSync(root) ? root : undefined, env, stdio: ["pipe", "pipe", "pipe"], windowsHide: true });
+  const sp = spawnable(cmd, args);
+  const proc = spawn(sp.cmd, sp.args, { cwd: fs.existsSync(root) ? root : undefined, env, stdio: ["pipe", "pipe", "pipe"], windowsHide: true, windowsVerbatimArguments: sp.verbatim });
   const r: Running = { key, proc, buf: Buffer.alloc(0) };
   running.set(key, r);
   proc.stdout?.on("data", (chunk: Buffer) => {
@@ -130,10 +123,10 @@ export function lspStop(key: string) {
   const r = running.get(key);
   if (!r) return;
   running.delete(key);
-  r.proc.kill();
+  killTree(r.proc);
 }
 
 export function killAllLsp() {
-  for (const r of running.values()) r.proc.kill();
+  for (const r of running.values()) killTree(r.proc);
   running.clear();
 }

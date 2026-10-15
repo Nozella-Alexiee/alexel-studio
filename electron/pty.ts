@@ -4,7 +4,8 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import type { IPty } from "node-pty";
-import { childEnv, isWin, type Ctx } from "./util";
+import { spawn } from "node:child_process";
+import { childEnv, findExecutable, isWin, posixShell, type Ctx } from "./util";
 
 interface Session {
   pty: IPty;
@@ -32,16 +33,25 @@ function loadPty(): typeof import("node-pty") {
   return ptyMod;
 }
 
+/** Windows: PowerShell 7 (pwsh) bila ada, kalau tidak Windows PowerShell. Lainnya: shell pengguna. */
 export function defaultShell(): string {
-  if (isWin) return process.env.COMSPEC?.toLowerCase().includes("powershell") ? process.env.COMSPEC : "powershell.exe";
-  const s = process.env.SHELL;
-  return s && fs.existsSync(s) ? s : "/bin/zsh";
+  if (isWin) return findExecutable("pwsh") ?? "powershell.exe";
+  return posixShell();
+}
+
+/** Argumen shell. Windows: output UTF-8, dan Run memakai ExecutionPolicy Bypass (shim npm .ps1). */
+function shellArgs(command?: string | null): string[] {
+  if (isWin) {
+    const utf8 = "[Console]::OutputEncoding=[Text.Encoding]::UTF8";
+    return command?.trim() ? ["-NoLogo", "-ExecutionPolicy", "Bypass", "-Command", `${utf8}; ${command}`] : ["-NoLogo", "-NoExit", "-Command", utf8];
+  }
+  return command?.trim() ? ["-l", "-c", command] : ["-l"];
 }
 
 export function ptySpawn(ctx: Ctx, cwd: string, cols: number, rows: number, command?: string | null): number {
   const pty = loadPty();
   const shell = defaultShell();
-  const args = isWin ? (command ? ["-NoLogo", "-Command", command] : ["-NoLogo"]) : command?.trim() ? ["-l", "-c", command] : ["-l"];
+  const args = shellArgs(command);
   const dir = cwd && fs.existsSync(cwd) && fs.statSync(cwd).isDirectory() ? cwd : os.homedir();
   const env = childEnv({ TERM: "xterm-256color", COLORTERM: "truecolor", TERM_PROGRAM: "NozelCode", ...(process.env.LANG ? {} : { LANG: "en_US.UTF-8" }) }) as Record<string, string>;
   const p = pty.spawn(shell, args, { name: "xterm-256color", cols: Math.max(10, cols), rows: Math.max(2, rows), cwd: dir, env });
@@ -84,9 +94,13 @@ export function ptyKill(id: number) {
   const s = sessions.get(id);
   if (!s) return;
   const pid = s.pty.pid;
+  if (isWin) {
+    // Windows tidak punya sinyal/grup proses: hentikan seluruh pohon proses.
+    spawn("taskkill", ["/pid", String(pid), "/T", "/F"], { windowsHide: true, stdio: "ignore" }).on("error", () => {});
+    return;
+  }
   try {
-    if (!isWin) process.kill(-pid, "SIGHUP");
-    else s.pty.kill();
+    process.kill(-pid, "SIGHUP");
   } catch {
     try {
       s.pty.kill();
@@ -97,7 +111,7 @@ export function ptyKill(id: number) {
   setTimeout(() => {
     if (sessions.has(id)) {
       try {
-        if (!isWin) process.kill(-pid, "SIGKILL");
+        process.kill(-pid, "SIGKILL");
         s.pty.kill("SIGKILL");
       } catch {
         /* sudah mati */

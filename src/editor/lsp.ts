@@ -7,7 +7,7 @@ import type { Text } from "@codemirror/state";
 import { EditorView } from "@codemirror/view";
 import DOMPurify from "dompurify";
 import { call, isNative, on } from "../lib/ipc";
-import { extname } from "../lib/paths";
+import { extname, isInside } from "../lib/paths";
 import { getState, setState, type Problem } from "../state/store";
 
 export interface ServerStatus {
@@ -26,8 +26,18 @@ export function serverStatus(refresh = false): Promise<ServerStatus[]> {
   return statusCache;
 }
 
-export const fileUri = (path: string) => "file://" + path.split("/").map(encodeURIComponent).join("/");
-export const uriToPath = (uri: string) => decodeURIComponent(uri.replace(/^file:\/\//, ""));
+/** "/a/b.ts" → "file:///a/b.ts"; "C:/a/b.ts" → "file:///C:/a/b.ts" (titik dua drive tidak di-encode). */
+export const fileUri = (path: string) => {
+  const drive = /^[A-Za-z]:\//.test(path);
+  const segs = path.split("/").map((seg, i) => (drive && i === 0 ? seg : encodeURIComponent(seg)));
+  return "file://" + (drive ? "/" : "") + segs.join("/");
+};
+/** Kebalikan fileUri; server sering mengirim "file:///c%3A/..." untuk Windows. */
+export const uriToPath = (uri: string) => {
+  const p = decodeURIComponent(uri.replace(/^file:\/\//, ""));
+  const m = /^\/([A-Za-z]):\//.exec(p);
+  return m ? m[1].toUpperCase() + p.slice(2) : p;
+};
 
 export function languageIdFor(path: string, langId: string): string {
   const ext = extname(path);
@@ -180,7 +190,7 @@ const cmdClickDefinition = EditorView.domEventHandlers({
 /** Ekstensi LSP untuk satu dokumen, atau null kalau tidak ada server yang tersedia. */
 export async function lspFor(path: string, langId: string) {
   const root = getState().root;
-  if (!isNative || !root || !path.startsWith(root + "/")) return null;
+  if (!isNative || !root || !isInside(root, path) || path === root) return null;
   const st = (await serverStatus()).find((s) => s.available && s.langs.includes(langId));
   if (!st) return null;
   const client = await getClient(st.id, root);

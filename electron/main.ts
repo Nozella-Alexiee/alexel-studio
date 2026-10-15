@@ -50,10 +50,28 @@ let allowClose = false;
 let quitting = false;
 const pendingOpen: string[] = [];
 
+/**
+ * Windows: semua path yang dikirim ke renderer memakai satu bentuk ("C:/Users/x/a.ts") supaya
+ * perbandingan path di UI sederhana. Isi berkas & output perintah tidak pernah diubah.
+ */
+const CONTENT_KEYS = new Set(["content", "text", "line", "data", "diff", "stdout", "stderr", "message", "result", "body", "command", "before", "after", "error"]);
+const CONTENT_CMDS = new Set(["read_file_text", "history_read", "ext_read_file", "git_head", "git_diff_file", "claude_inline"]);
+function toUiPaths(v: unknown, key = ""): unknown {
+  if (process.platform !== "win32" || CONTENT_KEYS.has(key)) return v;
+  if (typeof v === "string") return /^([A-Za-z]:\\|\\\\)/.test(v) && !/[\r\n]/.test(v) ? v.replace(/\\/g, "/").replace(/^[a-z]:/, (d) => d.toUpperCase()) : v;
+  if (Array.isArray(v)) return v.map((x) => toUiPaths(x));
+  if (v && typeof v === "object" && Object.getPrototypeOf(v) === Object.prototype) {
+    const out: Record<string, unknown> = {};
+    for (const [k, x] of Object.entries(v)) out[k] = toUiPaths(x, k);
+    return out;
+  }
+  return v;
+}
+
 const ctx: Ctx = {
   userData: app.getPath("userData"),
   emit: (event, payload) => {
-    if (win && !win.isDestroyed()) win.webContents.send("nozel:event", event, payload);
+    if (win && !win.isDestroyed()) win.webContents.send("nozel:event", event, event === "pty-data" || event === "claude-event" || event === "lsp-message" ? payload : toUiPaths(payload));
   },
   trash: (p) => shell.trashItem(p),
   reveal: (p) => shell.showItemInFolder(p),
@@ -122,7 +140,7 @@ ipcMain.handle("nozel:invoke", async (e, cmd: string, args: Record<string, unkno
   if (!h) return { ok: false, error: `Command tidak dikenal: ${cmd}` };
   try {
     const value = await h(args ?? {}, BrowserWindow.fromWebContents(e.sender));
-    return { ok: true, value: value === undefined ? null : value };
+    return { ok: true, value: value === undefined ? null : CONTENT_CMDS.has(cmd) ? value : toUiPaths(value) };
   } catch (err) {
     return { ok: false, error: err instanceof Error ? err.message : String(err) };
   }
@@ -186,7 +204,8 @@ function buildMenu() {
     },
     { label: "Jendela", submenu: [{ role: "minimize" }, { role: "zoom" }, ...(isMac ? ([{ type: "separator" }, { role: "front" }] as MenuItemConstructorOptions[]) : [])] },
   ];
-  Menu.setApplicationMenu(Menu.buildFromTemplate(template));
+  // Windows/Linux: tanpa menu bar (shortcut ditangani renderer); macOS butuh menu aplikasi.
+  Menu.setApplicationMenu(isMac ? Menu.buildFromTemplate(template) : null);
 }
 
 function createWindow() {
@@ -199,8 +218,11 @@ function createWindow() {
     show: false,
     title: "Nozel Code",
     backgroundColor: "#0e1016",
-    titleBarStyle: process.platform === "darwin" ? "hidden" : "default",
+    // Semua OS memakai title bar Nozel sendiri. macOS: lampu lalu lintas; Windows/Linux:
+    // tombol jendela OS ditumpangkan (overlay) di kanan title bar, warnanya mengikuti desain.
+    titleBarStyle: "hidden",
     trafficLightPosition: { x: 16, y: 16 },
+    ...(process.platform !== "darwin" ? { titleBarOverlay: { color: "#0b1220", symbolColor: "#d6e2f5", height: 44 } } : {}),
     webPreferences: {
       preload: path.join(__dirname, "preload.cjs"),
       contextIsolation: true,

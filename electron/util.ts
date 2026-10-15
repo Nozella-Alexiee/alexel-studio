@@ -2,6 +2,7 @@
 // dengan batas waktu, dan env git yang tidak pernah menunggu input.
 
 import { spawn, spawnSync, type SpawnOptions } from "node:child_process";
+import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 
@@ -10,10 +11,17 @@ export const isWin = process.platform === "win32";
 
 let cachedPath: string | null = null;
 
+/** Shell POSIX pengguna: $SHELL, lalu zsh (macOS) / bash / sh yang benar-benar ada. */
+export function posixShell(): string {
+  const cands = [process.env.SHELL, isMac ? "/bin/zsh" : "", "/bin/bash", "/usr/bin/bash", "/bin/sh"];
+  for (const c of cands) if (c && fs.existsSync(c)) return c;
+  return "/bin/sh";
+}
+
 /** PATH dari shell login+interaktif pengguna (nvm, pyenv, volta ikut), dengan batas 4 detik. */
 function shellPath(): string {
-  if (isWin) return process.env.PATH ?? "";
-  const shell = process.env.SHELL || "/bin/zsh";
+  if (isWin) return process.env.PATH ?? process.env.Path ?? "";
+  const shell = posixShell();
   try {
     const r = spawnSync(shell, ["-ilc", 'printf "__NOZEL_PATH__%s__END__" "$PATH"'], { encoding: "utf8", timeout: 4000, stdio: ["ignore", "pipe", "ignore"] });
     const m = /__NOZEL_PATH__(.*)__END__/s.exec(r.stdout ?? "");
@@ -53,13 +61,30 @@ export function augmentedPath(): string {
       `${home}/.volta/bin`,
       `${home}/.pyenv/shims`,
       "/usr/local/go/bin",
+      "/home/linuxbrew/.linuxbrew/bin",
+      `${home}/.local/share/pnpm`,
+      "/snap/bin",
       "/usr/bin",
       "/bin",
       "/usr/sbin",
       "/sbin",
     ].forEach(push);
+  } else {
+    const appData = process.env.APPDATA ?? path.join(home, "AppData", "Roaming");
+    const local = process.env.LOCALAPPDATA ?? path.join(home, "AppData", "Local");
+    [
+      path.join(appData, "npm"),
+      path.join(home, ".local", "bin"),
+      path.join(home, ".cargo", "bin"),
+      path.join(home, "scoop", "shims"),
+      path.join(home, "go", "bin"),
+      path.join(local, "Programs", "Microsoft VS Code", "bin"),
+      path.join(local, "pnpm"),
+      "C:\\Program Files\\nodejs",
+      "C:\\Program Files\\Git\\cmd",
+    ].forEach(push);
   }
-  (process.env.PATH ?? "").split(sep).forEach(push);
+  (process.env.PATH ?? process.env.Path ?? "").split(sep).forEach(push);
   cachedPath = parts.join(sep);
   return cachedPath;
 }
@@ -69,7 +94,68 @@ export function warmPath() {
 }
 
 export function childEnv(extra: Record<string, string> = {}): NodeJS.ProcessEnv {
-  return { ...process.env, PATH: augmentedPath(), ...extra };
+  const env: NodeJS.ProcessEnv = { ...process.env };
+  // Windows: "Path" dan "PATH" bisa sama-sama ada; sisakan satu.
+  for (const k of Object.keys(env)) if (k.toUpperCase() === "PATH") delete env[k];
+  // AppImage menyuntikkan variabel yang tidak boleh bocor ke program pengguna.
+  for (const k of ["APPIMAGE", "APPDIR", "OWD", "ARGV0", "LD_LIBRARY_PATH", "ELECTRON_RUN_AS_NODE"]) delete env[k];
+  return { ...env, PATH: augmentedPath(), ...extra };
+}
+
+/**
+ * Cari program di PATH (augmented). Di Windows mencoba ekstensi PATHEXT, mendahulukan .exe
+ * lalu .cmd; tanpa ekstensi tidak dipakai (bisa mengenai skrip sh milik npm).
+ */
+export function findExecutable(name: string, extraDirs: string[] = []): string | null {
+  const dirs = [...extraDirs, ...augmentedPath().split(isWin ? ";" : ":")];
+  const exts = isWin ? [".exe", ".cmd", ".bat", ".com"] : [""];
+  for (const d of dirs) {
+    for (const ext of exts) {
+      const p = path.join(d, name + ext);
+      try {
+        if (fs.statSync(p).isFile()) {
+          if (!isWin) fs.accessSync(p, fs.constants.X_OK);
+          return p;
+        }
+      } catch {
+        /* lanjut */
+      }
+    }
+  }
+  return null;
+}
+
+/**
+ * Quote argumen untuk cmd.exe /c. Hanya dipakai untuk shim .cmd dengan argumen sederhana
+ * (flag seperti --stdio); data panjang (prompt) selalu lewat stdin, bukan argumen.
+ */
+function cmdQuote(s: string): string {
+  if (/^[\w.:\\/=-]+$/.test(s)) return s;
+  return `"${s.replace(/"/g, '""')}"`;
+}
+
+/**
+ * Program + argumen yang aman untuk `spawn` tanpa `shell:true`. Shim .cmd/.bat di Windows tidak
+ * boleh di-spawn langsung (Node menolak, EINVAL), jadi dijalankan lewat `cmd.exe /d /s /c`.
+ */
+export function spawnable(file: string, args: string[]): { cmd: string; args: string[]; verbatim: boolean } {
+  if (isWin && /\.(cmd|bat)$/i.test(file)) {
+    const line = [file, ...args].map(cmdQuote).join(" ");
+    return { cmd: process.env.ComSpec || "cmd.exe", args: ["/d", "/s", "/c", `"${line}"`], verbatim: true };
+  }
+  return { cmd: file, args, verbatim: false };
+}
+
+/** Hentikan proses beserta anak-anaknya (Windows: taskkill /T; lainnya: sinyal biasa). */
+export function killTree(child: { pid?: number; kill: (sig?: NodeJS.Signals) => boolean }, signal: NodeJS.Signals = "SIGTERM") {
+  if (isWin && child.pid) {
+    spawn("taskkill", ["/pid", String(child.pid), "/T", "/F"], { windowsHide: true, stdio: "ignore" }).on("error", () => {});
+  } else child.kill(signal);
+}
+
+/** Quote untuk PowerShell: '...' dengan ' digandakan. */
+export function psQuote(s: string): string {
+  return `'${s.replace(/'/g, "''")}'`;
 }
 
 /** Quote satu argumen untuk shell POSIX: 'a'\''b'. */
@@ -91,10 +177,11 @@ export interface Captured {
 export function runCapture(cmd: string, args: string[], opts: { cwd?: string; timeoutMs?: number; env?: NodeJS.ProcessEnv; input?: string } = {}): Promise<Captured> {
   return new Promise((resolve, reject) => {
     const start = Date.now();
-    const spawnOpts: SpawnOptions = { cwd: opts.cwd, env: opts.env ?? childEnv(), stdio: [opts.input !== undefined ? "pipe" : "ignore", "pipe", "pipe"], windowsHide: true };
+    const sp = spawnable(cmd, args);
+    const spawnOpts: SpawnOptions = { cwd: opts.cwd, env: opts.env ?? childEnv(), stdio: [opts.input !== undefined ? "pipe" : "ignore", "pipe", "pipe"], windowsHide: true, windowsVerbatimArguments: sp.verbatim };
     let child;
     try {
-      child = spawn(cmd, args, spawnOpts);
+      child = spawn(sp.cmd, sp.args, spawnOpts);
     } catch (e) {
       return reject(new Error(`Gagal menjalankan ${cmd}: ${(e as Error).message}`));
     }

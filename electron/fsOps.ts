@@ -35,7 +35,7 @@ export async function listDir(dir: string): Promise<FileEntry[]> {
   }
   const out: FileEntry[] = [];
   for (const d of dirents) {
-    if (d.name === ".DS_Store" || d.name === ".git") continue;
+    if (d.name === ".DS_Store" || d.name === ".git" || d.name === "Thumbs.db" || d.name === "desktop.ini") continue;
     const p = path.join(dir, d.name);
     const isSymlink = d.isSymbolicLink();
     let isDir = d.isDirectory();
@@ -123,10 +123,33 @@ export async function writeAtomic(p: string, data: string | Buffer) {
   }
   if (mode !== null) await fsp.chmod(tmp, mode).catch(() => {});
   try {
-    await fsp.rename(tmp, target);
+    await renameRetry(tmp, target);
   } catch (e) {
+    // Windows: berkas dikunci antivirus/indexer/OneDrive terus-menerus → tulis langsung saja.
+    if (process.platform === "win32") {
+      try {
+        await fsp.writeFile(target, data);
+        await fsp.rm(tmp, { force: true });
+        return;
+      } catch {
+        /* jatuh ke error di bawah */
+      }
+    }
     await fsp.rm(tmp, { force: true });
     throw new Error(`Gagal menyimpan berkas: ${(e as Error).message}`);
+  }
+}
+
+/** rename dengan coba ulang singkat untuk EPERM/EBUSY/EACCES sesaat di Windows. */
+async function renameRetry(from: string, to: string) {
+  for (let i = 0; ; i++) {
+    try {
+      return await fsp.rename(from, to);
+    } catch (e) {
+      const code = (e as NodeJS.ErrnoException).code;
+      if (process.platform !== "win32" || i >= 8 || !["EPERM", "EBUSY", "EACCES"].includes(code ?? "")) throw e;
+      await new Promise((r) => setTimeout(r, 60 * (i + 1)));
+    }
   }
 }
 
@@ -156,9 +179,14 @@ export async function createDir(p: string) {
 export async function renameEntry(from: string, to: string) {
   ensureCleanPath(to);
   if (!fs.existsSync(from)) throw new Error("Berkas asal tidak ada.");
-  const sameCi = from.toLowerCase() === to.toLowerCase();
-  if (fs.existsSync(to) && !sameCi) throw new Error("Sudah ada berkas dengan nama tujuan.");
-  await fsp.rename(from, to);
+  if (fs.existsSync(to)) {
+    // Ganti huruf besar/kecil saja (readme.md → README.md) hanya boleh bila tujuan = berkas yang sama
+    // (filesystem tidak peka huruf). Di Linux keduanya bisa berkas berbeda → jangan ditimpa.
+    const a = fs.statSync(from);
+    const b = fs.statSync(to);
+    if (a.ino !== b.ino || a.dev !== b.dev) throw new Error("Sudah ada berkas dengan nama tujuan.");
+  }
+  await renameRetry(from, to);
 }
 
 export async function duplicateEntry(p: string): Promise<string> {

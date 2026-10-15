@@ -4,7 +4,24 @@
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { shellQuote } from "./util";
+import { findExecutable, isWin, psQuote, shellQuote } from "./util";
+
+/** Quote untuk shell terminal: PowerShell di Windows, POSIX di macOS/Linux. */
+const sq = (s: string) => (isWin ? psQuote(s) : shellQuote(s));
+/** Jalankan B hanya bila A berhasil; `&&` tidak ada di Windows PowerShell 5.1. */
+const andThen = (a: string, b: string) => (isWin ? `${a}; if ($?) { ${b} }` : `${a} && ${b}`);
+/** Menjalankan program dari path (PowerShell butuh operator &). */
+const exec = (p: string) => (isWin ? `& ${p}` : p);
+
+let pyCache: string | null = null;
+/** Python 3: `py -3` (Windows launcher) / `python3` / `python`. */
+function python(): string {
+  if (pyCache) return pyCache;
+  if (isWin) pyCache = findExecutable("py") ? "py -3" : "python";
+  else pyCache = findExecutable("python3") ? "python3" : "python";
+  return pyCache;
+}
+const cc = (cxx: boolean) => (findExecutable(cxx ? "clang++" : "clang") ? (cxx ? "clang++" : "clang") : findExecutable(cxx ? "g++" : "gcc") ? (cxx ? "g++" : "gcc") : cxx ? "clang++" : "clang");
 
 export interface RunTarget {
   id: string;
@@ -15,7 +32,7 @@ export interface RunTarget {
   detail: string;
 }
 
-const tempBin = (stem: string) => path.join(os.tmpdir(), `nozel-run-${stem.replace(/[^A-Za-z0-9_]/g, "")}-${process.pid}`);
+const tempBin = (stem: string) => path.join(os.tmpdir(), `nozel-run-${stem.replace(/[^A-Za-z0-9_]/g, "")}-${process.pid}${isWin ? ".exe" : ""}`);
 
 function findUp(start: string, name: string, stop: string): string | null {
   let cur = start;
@@ -41,14 +58,14 @@ export function commandForFile(file: string, project?: string | null): RunTarget
   const ext = path.extname(file).slice(1).toLowerCase();
   const name = path.basename(file);
   const stem = path.basename(file, path.extname(file));
-  const q = shellQuote(file);
+  const q = sq(file);
   const dir = path.dirname(file);
   const root = project || dir;
   let cwd = dir;
   let command: string;
   switch (ext) {
     case "py":
-      command = `python3 ${q}`;
+      command = `${python()} ${q}`;
       break;
     case "js":
     case "mjs":
@@ -103,29 +120,29 @@ export function commandForFile(file: string, project?: string | null): RunTarget
         const relToCargo = path.relative(cargo, file).split(path.sep).join("/");
         const bin = /^src\/bin\/([^/]+)\.rs$/.exec(relToCargo)?.[1] ?? /^src\/bin\/([^/]+)\/main\.rs$/.exec(relToCargo)?.[1];
         const example = /^examples\/([^/]+)\.rs$/.exec(relToCargo)?.[1];
-        command = bin ? `cargo run --bin ${shellQuote(bin)}` : example ? `cargo run --example ${shellQuote(example)}` : "cargo run";
+        command = bin ? `cargo run --bin ${sq(bin)}` : example ? `cargo run --example ${sq(example)}` : "cargo run";
       } else {
-        const b = shellQuote(tempBin(stem));
-        command = `rustc --edition 2021 ${q} -o ${b} && ${b}`;
+        const b = sq(tempBin(stem));
+        command = andThen(`rustc --edition 2021 ${q} -o ${b}`, exec(b));
       }
       break;
     }
     case "c": {
-      const b = shellQuote(tempBin(stem));
-      command = `clang -std=c17 -Wall ${q} -o ${b} && ${b}`;
+      const b = sq(tempBin(stem));
+      command = andThen(`${cc(false)} -std=c17 -Wall ${q} -o ${b}`, exec(b));
       break;
     }
     case "cpp":
     case "cc":
     case "cxx": {
-      const b = shellQuote(tempBin(stem));
-      command = `clang++ -std=c++20 -Wall ${q} -o ${b} && ${b}`;
+      const b = sq(tempBin(stem));
+      command = andThen(`${cc(true)} -std=c++20 -Wall ${q} -o ${b}`, exec(b));
       break;
     }
     case "html":
     case "htm":
     case "svg":
-      command = process.platform === "win32" ? `start "" ${q}` : `open ${q}`;
+      command = isWin ? `Start-Process ${q}` : process.platform === "darwin" ? `open ${q}` : `xdg-open ${q}`;
       break;
     default:
       if (name === "Makefile") command = "make";
@@ -153,7 +170,7 @@ export function detectTargets(root: string): RunTarget[] {
     const pm = packageManager(root);
     const rank = (n: string) => ({ dev: 0, start: 1, build: 2, test: 3 })[n as "dev"] ?? 9;
     for (const n of Object.keys(scripts).sort((a, b) => rank(a) - rank(b) || a.localeCompare(b))) {
-      const cmd = pm === "npm" ? (n === "start" || n === "test" ? `npm ${shellQuote(n)}` : `npm run ${shellQuote(n)}`) : `${pm} run ${shellQuote(n)}`;
+      const cmd = pm === "npm" ? (n === "start" || n === "test" ? `npm ${sq(n)}` : `npm run ${sq(n)}`) : `${pm} run ${sq(n)}`;
       out.push(target("npm", `${pm} ${n}`, cmd, root, String(scripts[n] ?? "")));
     }
   }
@@ -166,25 +183,25 @@ export function detectTargets(root: string): RunTarget[] {
     for (const m of mk.matchAll(/^([A-Za-z0-9][A-Za-z0-9_.-]*)\s*:(?!=)/gm)) {
       if (!seen.has(m[1]) && seen.size < 20) {
         seen.add(m[1]);
-        out.push(target("make", `make ${m[1]}`, `make ${shellQuote(m[1])}`, root, "Makefile"));
+        out.push(target("make", `make ${m[1]}`, `make ${sq(m[1])}`, root, "Makefile"));
       }
     }
   } catch {
     /* tidak ada Makefile */
   }
   const composer = readJson(path.join(root, "composer.json"))?.scripts as Record<string, unknown> | undefined;
-  if (composer) for (const n of Object.keys(composer)) out.push(target("composer", `composer ${n}`, `composer run-script ${shellQuote(n)}`, root, "composer.json"));
+  if (composer) for (const n of Object.keys(composer)) out.push(target("composer", `composer ${n}`, `composer run-script ${sq(n)}`, root, "composer.json"));
   if (fs.existsSync(path.join(root, "artisan"))) out.push(target("php", "php artisan serve", "php artisan serve", root, "Laravel"));
-  if (fs.existsSync(path.join(root, "manage.py"))) out.push(target("python", "django runserver", "python3 manage.py runserver", root, "manage.py"));
-  for (const f of ["main.py", "app.py"]) if (fs.existsSync(path.join(root, f))) out.push(target("python", `python ${f}`, `python3 ${f}`, root, f));
-  if (fs.existsSync(path.join(root, "pyproject.toml")) && fs.existsSync(path.join(root, "tests"))) out.push(target("python", "pytest", "python3 -m pytest", root, "pyproject.toml"));
+  if (fs.existsSync(path.join(root, "manage.py"))) out.push(target("python", "django runserver", `${python()} manage.py runserver`, root, "manage.py"));
+  for (const f of ["main.py", "app.py"]) if (fs.existsSync(path.join(root, f))) out.push(target("python", `python ${f}`, `${python()} ${f}`, root, f));
+  if (fs.existsSync(path.join(root, "pyproject.toml")) && fs.existsSync(path.join(root, "tests"))) out.push(target("python", "pytest", `${python()} -m pytest`, root, "pyproject.toml"));
   if (fs.existsSync(path.join(root, "go.mod"))) {
     out.push(target("go", "go run .", "go run .", root, "go.mod"));
     out.push(target("go", "go test ./...", "go test ./...", root, "go.mod"));
   }
   for (const f of ["deno.json", "deno.jsonc"]) {
     const tasks = readJson(path.join(root, f))?.tasks as Record<string, unknown> | undefined;
-    if (tasks) for (const n of Object.keys(tasks)) out.push(target("deno", `deno task ${n}`, `deno task ${shellQuote(n)}`, root, f));
+    if (tasks) for (const n of Object.keys(tasks)) out.push(target("deno", `deno task ${n}`, `deno task ${sq(n)}`, root, f));
   }
   for (const f of ["docker-compose.yml", "docker-compose.yaml", "compose.yml", "compose.yaml"]) {
     if (fs.existsSync(path.join(root, f))) {

@@ -20,5 +20,9 @@ contextBridge.exposeInMainWorld("nozel", {
     return () => ipcRenderer.removeListener("nozel:event", listener);
   },
   /** Path asli berkas yang di-drop dari Finder. */
-  pathForFile: (file: File) => webUtils.getPathForFile(file),
+  pathForFile: (file: File) => {
+    const p = webUtils.getPathForFile(file);
+    // Bentuk path sama dengan yang dikirim main process (lihat toUiPaths).
+    return process.platform === "win32" ? p.replace(/\\/g, "/").replace(/^[a-z]:/, (d) => d.toUpperCase()) : p;
+  },
 });

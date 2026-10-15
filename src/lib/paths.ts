@@ -1,4 +1,8 @@
-// Helper path POSIX (macOS). Tidak bergantung pada Node.
+// Helper path untuk renderer. Semua path dari main process memakai "/" (Windows: "C:/Users/x").
+// Path Windows dibandingkan tanpa membedakan huruf besar/kecil.
+
+const isDrive = (p: string) => /^[A-Za-z]:\//.test(p);
+const fold = (p: string, root: string) => (isDrive(root) ? p.toLowerCase() : p);
 
 export function basename(p: string): string {
   const s = p.replace(/\/+$/, "");
@@ -10,7 +14,8 @@ export function dirname(p: string): string {
   const s = p.replace(/\/+$/, "");
   const i = s.lastIndexOf("/");
   if (i <= 0) return "/";
-  return s.slice(0, i);
+  const d = s.slice(0, i);
+  return /^[A-Za-z]:$/.test(d) ? d + "/" : d;
 }
 
 export function join(...parts: string[]): string {
@@ -27,13 +32,14 @@ export function extname(p: string): string {
 export function relative(root: string, p: string): string {
   if (!root) return p;
   const r = root.replace(/\/+$/, "");
-  if (p === r) return "";
-  return p.startsWith(r + "/") ? p.slice(r.length + 1) : p;
+  if (fold(p, r) === fold(r, r)) return "";
+  return fold(p, r).startsWith(fold(r, r) + "/") ? p.slice(r.length + 1) : p;
 }
 
 export function isInside(root: string, p: string): boolean {
+  if (!root) return false;
   const r = root.replace(/\/+$/, "");
-  return p === r || p.startsWith(r + "/");
+  return fold(p, r) === fold(r, r) || fold(p, r).startsWith(fold(r, r) + "/");
 }
 
 /** Validasi nama berkas/folder baru dari input pengguna. */
@@ -42,6 +48,10 @@ export function validateName(name: string): string | null {
   if (!n) return "Nama tidak boleh kosong.";
   if (n === "." || n === "..") return "Nama tidak valid.";
   if (n.includes("/")) return "Nama tidak boleh berisi '/'. Buat folder dulu.";
+  // Karakter & nama yang tidak sah di Windows: dicegah di semua OS supaya repo tetap bisa di-clone di mana saja.
+  if (/[\\<>:"|?*]/.test(n)) return 'Nama tidak boleh berisi \\ < > : " | ? *';
+  if (/^(con|prn|aux|nul|com\d|lpt\d)(\..*)?$/i.test(n)) return "Nama itu dicadangkan Windows.";
+  if (/[. ]$/.test(n)) return "Nama tidak boleh diakhiri titik atau spasi.";
   if (n.includes("\0")) return "Nama tidak valid.";
   if (n.length > 255) return "Nama terlalu panjang.";
   return null;
@@ -54,5 +64,5 @@ export function isImagePath(p: string): boolean {
 
 export function shortenHome(p: string, home?: string): string {
   if (home && p.startsWith(home)) return "~" + p.slice(home.length);
-  return p.replace(/^\/Users\/[^/]+/, "~");
+  return p.replace(/^(\/Users\/[^/]+|\/home\/[^/]+|[A-Za-z]:\/Users\/[^/]+)/i, "~");
 }

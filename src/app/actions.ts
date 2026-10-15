@@ -23,6 +23,7 @@ import {
   type Tab,
 } from "../state/store";
 import { persistSession, persistSettings } from "./persist";
+import { isMac, setTitlebarOverlay } from "../lib/ipc";
 
 export const SETTINGS_TAB = "nozel:settings";
 
@@ -630,10 +631,22 @@ export function updateSettings(patch: Partial<Settings>) {
 }
 
 /** Posisikan tombol jendela macOS di tengah title bar desain aktif. */
+/** Hex #rrggbb dari warna CSS terhitung (rgb()/rgba()). */
+function toHex(css: string): string {
+  const m = /rgba?\((\d+),\s*(\d+),\s*(\d+)/.exec(css);
+  return m ? "#" + [m[1], m[2], m[3]].map((x) => Number(x).toString(16).padStart(2, "0")).join("") : css.trim();
+}
+
+/** Selaraskan tombol jendela OS dengan title bar desain aktif (posisi di macOS, warna di Windows/Linux). */
 export function syncTrafficLights() {
   requestAnimationFrame(() => {
-    const h = parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--titlebar-h")) || 44;
-    void setTrafficLights((h - 14) / 2);
+    const css = getComputedStyle(document.documentElement);
+    const h = parseFloat(css.getPropertyValue("--titlebar-h")) || 44;
+    if (isMac) return void setTrafficLights((h - 14) / 2);
+    const bar = document.querySelector(".titlebar");
+    const bg = bar ? getComputedStyle(bar).backgroundColor : "";
+    const color = bg && !/rgba\(\d+,\s*\d+,\s*\d+,\s*0\)|transparent/.test(bg) ? toHex(bg) : toHex(css.getPropertyValue("--bg"));
+    void setTitlebarOverlay({ height: h, color, symbolColor: toHex(css.getPropertyValue("--fg")) });
   });
 }
 

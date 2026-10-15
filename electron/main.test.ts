@@ -171,7 +171,7 @@ describe("runner", () => {
     const f = path.join(d, "a $(touch x) 'b'.py");
     fs.writeFileSync(f, "print(1)");
     const t = commandForFile(f);
-    expect(t.command.startsWith("python3 '")).toBe(true);
+    expect(t.command).toMatch(/^(py -3|python3?) '/);
     expect(t.command).toContain("'\\''b'\\''");
   });
   it("Rust memakai cargo, --bin untuk src/bin", () => {
@@ -271,5 +271,18 @@ describe("extensions: aset ikon", () => {
     expect(extAsset(ctx, "/a.icons/%2e%2e/%2e%2e/secret.svg").status).toBe(403);
     expect(extAsset(ctx, "/a.icons/nozel-manifest.json").status).toBe(403);
     expect(extAsset(ctx, "/a.icons/icons/none.svg").status).toBe(404);
+  });
+});
+
+describe("system: port lintas OS", () => {
+  it("netstat Windows (bahasa apa pun) dan ss Linux", async () => {
+    const { parseNetstat, parseSs } = await import("./system");
+    const ns = parseNetstat("  Proto  Alamat Lokal   Alamat Asing  Status\r\n  TCP    0.0.0.0:3000   0.0.0.0:0     ABHÖREN   4321\r\n  TCP    127.0.0.1:5000  127.0.0.1:62000  HERGESTELLT  99\r\n  TCP    [::]:8080      [::]:0        LISTENING  77\r\n");
+    expect(ns.map((p) => [p.port, p.pid])).toEqual([[3000, 4321], [8080, 77]]);
+    const ss = parseSs('LISTEN 0 511 127.0.0.1:5173 0.0.0.0:* users:(("node",pid=1234,fd=21))\nLISTEN 0 128 [::]:22 [::]:* users:(("sshd",pid=1,fd=4))\n');
+    expect(ss).toEqual([
+      { pid: 1, process: "sshd", port: 22, address: "::", command: "" },
+      { pid: 1234, process: "node", port: 5173, address: "127.0.0.1", command: "" },
+    ]);
   });
 });

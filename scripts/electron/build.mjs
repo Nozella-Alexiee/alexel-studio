@@ -1,4 +1,5 @@
 // Bundel main process & preload Electron dengan esbuild ke dist-electron/.
+import { pathToFileURL } from "node:url";
 import { build, context } from "esbuild";
 
 const shared = {
@@ -34,4 +35,5 @@ export async function watchAll(onRebuild) {
   return ctxs;
 }
 
-if (import.meta.url === `file://${process.argv[1]}`) await buildAll();
+// pathToFileURL: benar di Windows (file:///C:/...) dan untuk path berisi spasi.
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) await buildAll();

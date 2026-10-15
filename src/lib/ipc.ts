@@ -183,5 +183,6 @@ export function previewUrl(path: string): string {
 
 export const setWindowTitle = (title: string) => (bridge ? call("window_set_title", { title }).catch(() => {}) : Promise.resolve());
 export const setTrafficLights = (y: number) => (bridge ? call("window_set_traffic_lights", { y }).catch(() => {}) : Promise.resolve());
+export const setTitlebarOverlay = (o: { height: number; color: string; symbolColor: string }) => (bridge ? call("window_set_titlebar_overlay", o).catch(() => {}) : Promise.resolve());
 export const confirmWindowClose = () => (bridge ? call("window_close_confirmed") : Promise.resolve());
 export const pathForFile = (f: File): string | null => (bridge ? bridge.pathForFile(f) : null);

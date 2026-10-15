@@ -6,19 +6,20 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import readline from "node:readline";
-import { augmentedPath, childEnv, isWin, runCapture, type Ctx } from "./util";
+import { childEnv, findExecutable, killTree, runCapture, spawnable, type Ctx } from "./util";
 
 const MAX_PROMPT_BYTES = 400 * 1024;
 const runs = new Map<string, ChildProcess>();
 
 export function findClaude(): string | null {
-  const exe = isWin ? "claude.cmd" : "claude";
-  for (const dir of augmentedPath().split(isWin ? ";" : ":")) {
-    const p = path.join(dir, exe);
-    if (fs.existsSync(p)) return p;
-  }
-  for (const p of [path.join(os.homedir(), ".claude/local/claude"), path.join(os.homedir(), ".local/bin/claude")]) if (fs.existsSync(p)) return p;
-  return bundledWithDesktop();
+  // Penginstal native menaruh claude(.exe) di ~/.local/bin; npm memasang shim claude(.cmd).
+  const home = os.homedir();
+  return findExecutable("claude", [path.join(home, ".local", "bin"), path.join(home, ".claude", "local")]) ?? bundledWithDesktop();
+}
+
+function spawnCli(cli: string, args: string[], cwd: string) {
+  const sp = spawnable(cli, args);
+  return spawn(sp.cmd, sp.args, { cwd, env: childEnv(), stdio: ["pipe", "pipe", "pipe"], windowsHide: true, windowsVerbatimArguments: sp.verbatim });
 }
 
 /** Claude Code yang dibundel aplikasi Claude desktop (macOS); pilih versi terbaru. */
@@ -63,7 +64,7 @@ export function claudeRun(ctx: Ctx, runId: string, projectDir: string, prompt: s
   const args = ["-p", "--output-format", "stream-json", "--verbose", "--permission-mode", mode === "edit" ? "acceptEdits" : "plan"];
   if (resume && /^[A-Za-z0-9-]+$/.test(resume)) args.push("--resume", resume);
   const cwd = projectDir && fs.existsSync(projectDir) ? projectDir : os.homedir();
-  const child = spawn(cli, args, { cwd, env: childEnv(), stdio: ["pipe", "pipe", "pipe"], windowsHide: true });
+  const child = spawnCli(cli, args, cwd);
   runs.set(runId, child);
   child.stdin?.end(prompt);
   let stderr = "";
@@ -101,11 +102,11 @@ export function claudeOnce(runId: string, projectDir: string, prompt: string, mo
   const args = ["-p", "--output-format", "json", "--permission-mode", "plan", "--max-turns", "3"];
   if (model === "fast") args.push("--model", "sonnet", "--effort", "low");
   return new Promise((resolve, reject) => {
-    const child = spawn(cli, args, { cwd, env: childEnv(), stdio: ["pipe", "pipe", "pipe"], windowsHide: true });
+    const child = spawnCli(cli, args, cwd);
     runs.set(runId, child);
     let out = "";
     let err = "";
-    const timer = setTimeout(() => child.kill("SIGTERM"), 180_000);
+    const timer = setTimeout(() => killTree(child), 180_000);
     child.stdout?.on("data", (b: Buffer) => (out += b.toString("utf8")));
     child.stderr?.on("data", (b: Buffer) => {
       if (err.length < 8000) err += b.toString("utf8");
@@ -132,10 +133,11 @@ export function claudeOnce(runId: string, projectDir: string, prompt: string, mo
 }
 
 export function claudeCancel(runId: string) {
-  runs.get(runId)?.kill("SIGTERM");
+  const c = runs.get(runId);
+  if (c) killTree(c);
 }
 
 export function killAllClaude() {
-  for (const c of runs.values()) c.kill("SIGTERM");
+  for (const c of runs.values()) killTree(c);
   runs.clear();
 }

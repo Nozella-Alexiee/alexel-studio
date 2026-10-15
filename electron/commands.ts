@@ -130,6 +130,17 @@ export function buildCommands(ctx: Ctx, hooks: { confirmClose: (win: BrowserWind
     window_set_traffic_lights: (a, win) => {
       if (process.platform === "darwin" && win && typeof a.y === "number") win.setWindowButtonPosition({ x: 16, y: Math.max(6, Math.round(a.y)) });
     },
+    /** Windows/Linux: warna & tinggi tombol jendela OS di title bar, mengikuti desain aktif. */
+    window_set_titlebar_overlay: (a, win) => {
+      if (process.platform === "darwin" || !win) return null;
+      const ok = (c: unknown) => typeof c === "string" && /^#[0-9a-f]{6}$/i.test(c);
+      try {
+        win.setTitleBarOverlay({ ...(ok(a.color) ? { color: a.color as string } : {}), ...(ok(a.symbolColor) ? { symbolColor: a.symbolColor as string } : {}), ...(typeof a.height === "number" ? { height: Math.round(a.height) } : {}) });
+      } catch {
+        /* overlay tidak didukung (mis. beberapa window manager Linux) */
+      }
+      return null;
+    },
     /** Potong/salin/tempel/pilih semua pada elemen yang sedang fokus (dipakai menu klik kanan editor). */
     edit_action: (a, win) => {
       const wc = win?.webContents;

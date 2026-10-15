@@ -1,6 +1,7 @@
 // Info sistem: baterai (mode hemat), port yang listen, menghentikan proses.
 
-import { isMac, isWin, runCapture } from "./util";
+import fs from "node:fs";
+import { findExecutable, isMac, isWin, runCapture } from "./util";
 
 export interface PowerStatus {
   on_battery: boolean;
@@ -20,7 +21,24 @@ export function parsePmset(batt: string): PowerStatus {
   };
 }
 
+/** Linux: baca /sys/class/power_supply/BAT*. */
+function linuxBattery(isOnBattery?: boolean): PowerStatus {
+  try {
+    const dir = "/sys/class/power_supply";
+    const bat = fs.readdirSync(dir).find((d) => d.startsWith("BAT"));
+    if (bat) {
+      const percent = Number(fs.readFileSync(`${dir}/${bat}/capacity`, "utf8").trim());
+      const status = fs.readFileSync(`${dir}/${bat}/status`, "utf8").trim();
+      return { on_battery: status === "Discharging", percent: Number.isFinite(percent) ? percent : null, charging: status === "Charging", low_power_mode: false };
+    }
+  } catch {
+    /* tidak ada baterai */
+  }
+  return { on_battery: !!isOnBattery, percent: null, charging: false, low_power_mode: false };
+}
+
 export async function powerStatus(isOnBattery?: boolean): Promise<PowerStatus> {
+  if (process.platform === "linux") return linuxBattery(isOnBattery);
   if (!isMac) return { on_battery: !!isOnBattery, percent: null, charging: false, low_power_mode: false };
   const r = await runCapture("pmset", ["-g", "batt"], { timeoutMs: 3000 });
   const st = parsePmset(r.stdout);
@@ -58,18 +76,64 @@ export function parseLsof(out: string): ListeningPort[] {
   return [...res.values()].sort((a, b) => a.port - b.port || a.pid - b.pid);
 }
 
-export async function listPorts(): Promise<ListeningPort[]> {
-  if (isWin) {
-    const r = await runCapture("netstat", ["-ano", "-p", "TCP"], { timeoutMs: 6000 });
-    return r.stdout
-      .split("\n")
-      .filter((l) => /LISTENING/.test(l))
-      .map((l) => l.trim().split(/\s+/))
-      .map((f) => ({ pid: Number(f[4]), process: "", port: Number(f[1].split(":").pop()), address: f[1].replace(/:\d+$/, ""), command: "" }))
-      .filter((p) => p.pid !== process.pid);
+/** Parse `netstat -ano -p TCP`. Baris listen dikenali dari alamat asing 0.0.0.0:0 / [::]:0 (tidak bergantung bahasa Windows). */
+export function parseNetstat(out: string): ListeningPort[] {
+  const res = new Map<string, ListeningPort>();
+  for (const line of out.split(/\r?\n/)) {
+    const f = line.trim().split(/\s+/);
+    if (f.length < 5 || !/^TCP/i.test(f[0]) || !/^(0\.0\.0\.0|\[::\]):0$/.test(f[2])) continue;
+    const port = Number(f[1].split(":").pop());
+    const pid = Number(f[f.length - 1]);
+    if (!Number.isInteger(port) || !pid) continue;
+    res.set(`${port}-${pid}`, { pid, process: "", port, address: f[1].replace(/:\d+$/, "").replace(/^\[|\]$/g, ""), command: "" });
   }
-  const r = await runCapture("lsof", ["-nP", "-iTCP", "-sTCP:LISTEN", "-Fpcn"], { timeoutMs: 6000 });
-  const ports = parseLsof(r.stdout).filter((p) => p.pid !== process.pid);
+  return [...res.values()].sort((a, b) => a.port - b.port);
+}
+
+/** Parse `ss -Htlnp` (Linux tanpa lsof). */
+export function parseSs(out: string): ListeningPort[] {
+  const res = new Map<string, ListeningPort>();
+  for (const line of out.split("\n")) {
+    const f = line.trim().split(/\s+/);
+    if (f.length < 5) continue;
+    const local = f[3];
+    const i = local.lastIndexOf(":");
+    const port = Number(local.slice(i + 1));
+    const m = /\("([^"]+)",pid=(\d+)/.exec(line);
+    if (!Number.isInteger(port) || !m) continue;
+    const pid = Number(m[2]);
+    res.set(`${port}-${pid}`, { pid, process: m[1], port, address: local.slice(0, i).replace(/^\[|\]$/g, "").replace(/%.*$/, ""), command: "" });
+  }
+  return [...res.values()].sort((a, b) => a.port - b.port);
+}
+
+async function windowsPorts(): Promise<ListeningPort[]> {
+  const ps = 'Get-NetTCPConnection -State Listen -ErrorAction SilentlyContinue | ForEach-Object { $p = Get-Process -Id $_.OwningProcess -ErrorAction SilentlyContinue; [pscustomobject]@{a=[string]$_.LocalAddress;port=[int]$_.LocalPort;pid=[int]$_.OwningProcess;name=[string]$p.ProcessName;cmd=[string]$p.Path} } | ConvertTo-Json -Compress';
+  const r = await runCapture("powershell.exe", ["-NoProfile", "-NonInteractive", "-Command", ps], { timeoutMs: 8000 }).catch(() => null);
+  if (r?.success && r.stdout.trim()) {
+    const j = JSON.parse(r.stdout) as { a: string; port: number; pid: number; name: string; cmd: string } | { a: string; port: number; pid: number; name: string; cmd: string }[];
+    const seen = new Set<string>();
+    return (Array.isArray(j) ? j : [j])
+      .filter((x) => !seen.has(`${x.port}-${x.pid}`) && seen.add(`${x.port}-${x.pid}`))
+      .map((x) => ({ pid: x.pid, process: x.name ?? "", port: x.port, address: x.a, command: x.cmd ?? "" }))
+      .sort((a, b) => a.port - b.port);
+  }
+  const n = await runCapture("netstat", ["-ano", "-p", "TCP"], { timeoutMs: 6000 });
+  return parseNetstat(n.stdout);
+}
+
+export async function listPorts(): Promise<ListeningPort[]> {
+  if (isWin) return (await windowsPorts()).filter((p) => p.pid !== process.pid);
+  let ports: ListeningPort[];
+  if (!isMac && !findExecutable("lsof")) {
+    const r = await runCapture("ss", ["-Htlnp"], { timeoutMs: 6000 });
+    if (!r.success) throw new Error("Perintah `ss` atau `lsof` tidak tersedia. Pasang paket iproute2 atau lsof.");
+    ports = parseSs(r.stdout);
+  } else {
+    const r = await runCapture("lsof", ["-nP", "-iTCP", "-sTCP:LISTEN", "-Fpcn"], { timeoutMs: 6000 });
+    ports = parseLsof(r.stdout);
+  }
+  ports = ports.filter((p) => p.pid !== process.pid);
   await Promise.all(
     ports.map(async (p) => {
       const c = await runCapture("ps", ["-o", "command=", "-p", String(p.pid)], { timeoutMs: 2000 }).catch(() => null);
@@ -81,6 +145,10 @@ export async function listPorts(): Promise<ListeningPort[]> {
 
 export function killProcess(pid: number, force: boolean, ownPids: number[] = []) {
   if (pid <= 1 || pid === process.pid || ownPids.includes(pid)) throw new Error("Proses ini tidak boleh dihentikan.");
+  if (isWin) {
+    void runCapture("taskkill", ["/pid", String(pid), "/T", ...(force ? ["/F"] : [])], { timeoutMs: 5000 });
+    return;
+  }
   try {
     process.kill(pid, force ? "SIGKILL" : "SIGTERM");
   } catch (e) {
