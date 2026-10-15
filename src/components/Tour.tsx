@@ -7,6 +7,7 @@ import { prettyKeys } from "../app/commands";
 import { useStore } from "../state/store";
 import { PenguinMascot, usePenguinVariant } from "./PenguinMascot";
 import { CrabMascot } from "./CrabMascot";
+import { tl } from "../i18n";
 
 const DONE_KEY = "nozel.tourDone";
 
@@ -17,10 +18,10 @@ interface Step {
 }
 
 const STEPS: Step[] = [
-  { target: ".sidebar, .zen-nav", title: "Seret berkas ke editor", body: () => "Tarik berkas dari Explorer ke editor untuk membukanya. Lepas di tepi kanan editor untuk membuka berdampingan." },
-  { target: ".tabstrip", title: "Tab bisa digeser", body: () => `Seret tab untuk mengurutkan, atau ke tepi kanan editor untuk membelah. Tab yang tertutup bisa dibuka lagi dengan ${prettyKeys("Mod+Shift+T")}.` },
+  { target: ".sidebar, .zen-nav", title: tl("Seret berkas ke editor"), body: () => "Tarik berkas dari Explorer ke editor untuk membukanya. Lepas di tepi kanan editor untuk membuka berdampingan." },
+  { target: ".tabstrip", title: tl("Tab bisa digeser"), body: () => `Seret tab untuk mengurutkan, atau ke tepi kanan editor untuk membelah. Tab yang tertutup bisa dibuka lagi dengan ${prettyKeys("Mod+Shift+T")}.` },
   { target: ".cm-editor", title: `Seleksi kode, lalu ${prettyKeys("Mod+K")}`, body: () => "Claude mengubah kode langsung di tempat. Setiap perubahan tampil hijau/merah dan bisa diterima atau ditolak satu per satu. Klik kanan untuk aksi lainnya." },
-  { target: ".nozi-status, .sb-claude, .statusbar", title: "Nozi & Kepi ikut bereaksi", body: () => "Nozi senang saat simpan, run, dan commit berhasil, dan ikut panik saat ada error. Kepi menemani Claude. Klik mereka untuk menyapa." },
+  { target: ".nozi-status, .sb-claude, .statusbar", title: tl("Nozi & Kepi ikut bereaksi"), body: () => "Nozi senang saat simpan, run, dan commit berhasil, dan ikut panik saat ada error. Kepi menemani Claude. Klik mereka untuk menyapa." },
 ];
 
 const useTour = create<{ step: number }>(() => ({ step: -1 }));
@@ -135,10 +136,10 @@ export function TourHost() {
           ))}
           <span className="spacer" />
           <button className="btn btn-sm" onClick={end}>
-            Lewati
+            {tl("Lewati")}
           </button>
           <button className="btn btn-sm btn-primary" onClick={next} autoFocus>
-            {step >= STEPS.length - 1 ? "Selesai" : "Berikutnya"}
+            {step >= STEPS.length - 1 ? tl("Selesai") : "Berikutnya"}
           </button>
         </div>
       </div>

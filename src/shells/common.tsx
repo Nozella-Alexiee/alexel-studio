@@ -15,6 +15,7 @@ import { api } from "../lib/ipc";
 import type { Footprint } from "../lib/types";
 import { FileTree, ExplorerHeader } from "../panels/Explorer";
 import { activeTab, isSaver, setLayout, setState, useLayout, useSaver, useStore } from "../state/store";
+import { tl } from "../i18n";
 
 const SearchPanel = lazy(() => import("../panels/SearchPanel"));
 const GitPanel = lazy(() => import("../panels/GitPanel"));
@@ -43,7 +44,7 @@ export function EditorGroups({ tabs = true, breadcrumb = true }: { tabs?: boolea
           {g === 1 && <Resizer axis="x" value={split} min={20} max={80} onChange={(v) => setSplit(v)} className="group-resizer" />}
           <div className={`editor-group ${count > 1 && focused === g ? "is-focused" : ""}`} onMouseDown={() => focused !== g && setState({ focusedGroup: g })}>
             {tabs && <TabStrip group={g} extra={<EditorActions group={g} />} />}
-            <ErrorBoundary label="Editor mengalami error">
+            <ErrorBoundary label={tl("Editor mengalami error")}>
               <EditorBody group={g} breadcrumb={breadcrumb} />
             </ErrorBoundary>
           </div>
@@ -119,8 +120,8 @@ export function openProjectMenu(e: React.MouseEvent) {
   openMenu(e, [
     ...others.map((r) => ({ label: r.split("/").pop() ?? r, keys: r.replace(/^\/Users\/[^/]+/, "~").split("/").slice(0, -1).join("/"), run: () => void A.openProject(r) })),
     ...(others.length ? [{ label: "", separator: true }] : []),
-    { label: "Buka folder…", keys: "Mod+O", run: () => void A.openProjectDialog() },
-    ...(root ? [{ label: "Tutup folder", run: () => void A.closeProject() }] : []),
+    { label: tl("Buka folder…"), keys: "Mod+O", run: () => void A.openProjectDialog() },
+    ...(root ? [{ label: tl("Tutup folder"), run: () => void A.closeProject() }] : []),
   ]);
 }
 
@@ -129,7 +130,7 @@ export function DesignButton({ compact }: { compact?: boolean }) {
   return (
     <button
       className="status-item"
-      title="Ganti desain"
+      title={tl("Ganti desain")}
       onClick={(e) =>
         openMenu(
           e,
@@ -210,7 +211,7 @@ export function StatusBar({ variant }: { variant: "aurora" | "zen" | "control" |
           )}
         </button>
       )}
-      <button className={`status-item ${errors ? "tone-danger-fg" : ""}`} onClick={() => A.togglePanel("problems")} title="Masalah">
+      <button className={`status-item ${errors ? "tone-danger-fg" : ""}`} onClick={() => A.togglePanel("problems")} title={tl("Masalah")}>
         <AlertCircle size={12} aria-hidden /> {errors}
         {!zen && (
           <>
@@ -219,13 +220,13 @@ export function StatusBar({ variant }: { variant: "aurora" | "zen" | "control" |
         )}
       </button>
       {running > 0 && (
-        <button className="status-item tone-run" onClick={() => A.togglePanel("terminal")} title="Proses berjalan">
+        <button className="status-item tone-run" onClick={() => A.togglePanel("terminal")} title={tl("Proses berjalan")}>
           <Play size={11} aria-hidden /> {running} berjalan
         </button>
       )}
       <span className="spacer" />
       {saver && (
-        <button className="status-item tone-success-fg" onClick={() => A.openSettings()} title="Mode hemat daya aktif">
+        <button className="status-item tone-success-fg" onClick={() => A.openSettings()} title={tl("Mode hemat daya aktif")}>
           <Leaf size={12} aria-hidden /> {zen ? "" : "Hemat daya"}
         </button>
       )}
@@ -238,17 +239,17 @@ export function StatusBar({ variant }: { variant: "aurora" | "zen" | "control" |
           {!zen && (
             <button
               className="status-item"
-              title="Ukuran indentasi"
+              title={tl("Ukuran indentasi")}
               onClick={(e) => openMenu(e, [2, 4, 8].map((n) => ({ label: `${n === tabSize ? "✓ " : ""}Spasi: ${n}`, run: () => A.updateSettings({ tabSize: n }) })))}
             >
               Spasi: {tabSize}
             </button>
           )}
-          {!zen && <span className="status-item" title="Encoding berkas">UTF-8</span>}
+          {!zen && <span className="status-item" title={tl("Encoding berkas")}>UTF-8</span>}
           {!zen && doc && (
             <button
               className="status-item"
-              title="Akhir baris"
+              title={tl("Akhir baris")}
               onClick={(e) =>
                 openMenu(e, [
                   { label: `${doc.eol === "lf" ? "✓ " : ""}LF (macOS, Linux)`, run: () => docs.setDocEol(tab.id, "lf") },
@@ -265,7 +266,7 @@ export function StatusBar({ variant }: { variant: "aurora" | "zen" | "control" |
             onClick={(e) => openMenu(e, LANG_CHOICES.map(([label, ext]) => ({ label, run: () => docs.setDocLanguage(tab.id, ext) })))}
           >
             {tab.lang}
-            {doc?.lspName && <span className="sb-lsp" aria-label="Server bahasa aktif" />}
+            {doc?.lspName && <span className="sb-lsp" aria-label={tl("Server bahasa aktif")} />}
           </button>
         </>
       )}

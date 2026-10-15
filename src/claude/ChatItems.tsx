@@ -12,6 +12,7 @@ import { openExternal } from "../lib/ipc";
 import { basename, relative } from "../lib/paths";
 import { getState, type ChatMessage } from "../state/store";
 import { answerPermission, applyCodeToActive, proposedEdit, toolTarget } from "./claude";
+import { tl } from "../i18n";
 
 function CodeBlock({ lang, code }: { lang: string; code: string }) {
   const [copied, setCopied] = useState(false);
@@ -21,7 +22,7 @@ function CodeBlock({ lang, code }: { lang: string; code: string }) {
         <span>{lang || "kode"}</span>
         <span className="spacer" />
         <IconButton
-          label="Salin"
+          label={tl("Salin")}
           onClick={() => {
             void navigator.clipboard.writeText(code);
             setCopied(true);
@@ -30,10 +31,10 @@ function CodeBlock({ lang, code }: { lang: string; code: string }) {
         >
           {copied ? <Check size={12} /> : <Copy size={12} />}
         </IconButton>
-        <IconButton label="Sisipkan di kursor" onClick={() => docs.insertAtCursor(getState().focusedGroup, code)}>
+        <IconButton label={tl("Sisipkan di kursor")} onClick={() => docs.insertAtCursor(getState().focusedGroup, code)}>
           <TextCursorInput size={12} />
         </IconButton>
-        <IconButton label="Ganti isi berkas aktif (dibandingkan dulu)" onClick={() => void applyCodeToActive(code)}>
+        <IconButton label={tl("Ganti isi berkas aktif (dibandingkan dulu)")} onClick={() => void applyCodeToActive(code)}>
           <FileCode2 size={12} />
         </IconButton>
       </div>
@@ -116,7 +117,7 @@ function useProposed(toolName: string, input: Record<string, unknown>, active: b
 
 function openDiff(p: { path: string; before: string; after: string }, title: string, onAccept?: () => void) {
   void import("../panels/compare").then((m) =>
-    m.openCompare({ title, filename: basename(p.path), leftLabel: "Sekarang", rightLabel: "Usulan Claude", left: p.before, right: p.after, acceptLabel: onAccept ? "Izinkan" : undefined, onAccept })
+    m.openCompare({ title, filename: basename(p.path), leftLabel: "Sekarang", rightLabel: "Usulan Claude", left: p.before, right: p.after, acceptLabel: onAccept ? tl("Izinkan") : undefined, onAccept })
   );
 }
 
@@ -133,7 +134,7 @@ function ToolCard({ m }: { m: ChatMessage }) {
   const [open, setOpen] = useState(false);
   const proposed = useProposed(t.name, t.input, open && isEdit(t.name));
   const status =
-    t.status === "running" ? <Loader2 size={12} className="spin" aria-label="berjalan" /> : t.status === "ok" ? <Check size={12} aria-label="selesai" /> : t.status === "denied" ? <X size={12} aria-label="ditolak" /> : <AlertCircle size={12} aria-label="gagal" />;
+    t.status === "running" ? <Loader2 size={12} className="spin" aria-label="berjalan" /> : t.status === "ok" ? <Check size={12} aria-label="selesai" /> : t.status === "denied" ? <X size={12} aria-label={tl("ditolak")} /> : <AlertCircle size={12} aria-label="gagal" />;
   const icon = t.name === "Bash" ? <TerminalSquare size={12} aria-hidden /> : isEdit(t.name) ? <FileDiff size={12} aria-hidden /> : <Wrench size={12} aria-hidden />;
   const file = typeof t.input.file_path === "string" ? (t.input.file_path as string) : null;
   return (
@@ -201,15 +202,15 @@ function AskQuestions({ m }: { m: ChatMessage }) {
               </button>
             );
           })}
-          <input className="input" placeholder="Jawaban lain…" value={other[q.question] ?? ""} onChange={(e) => setOther((s) => ({ ...s, [q.question]: e.target.value }))} aria-label={`Jawaban lain untuk: ${q.question}`} />
+          <input className="input" placeholder={tl("Jawaban lain…")} value={other[q.question] ?? ""} onChange={(e) => setOther((s) => ({ ...s, [q.question]: e.target.value }))} aria-label={`Jawaban lain untuk: ${q.question}`} />
         </fieldset>
       ))}
       <div className="perm-actions">
         <button className="btn btn-claude btn-sm" disabled={!done} onClick={submit}>
-          Kirim jawaban
+          {tl("Kirim jawaban")}
         </button>
         <button className="btn btn-sm" onClick={() => void answerPermission(m.id, "deny", { reason: "Pengguna memilih tidak menjawab." })}>
-          Lewati
+          {tl("Lewati")}
         </button>
       </div>
     </div>
@@ -226,7 +227,7 @@ function PermissionCard({ m }: { m: ChatMessage }) {
   const target = toolTarget(p.toolName, p.input);
   const canAlways = Array.isArray(p.suggestions) && p.suggestions.length > 0;
   const done =
-    p.state === "allowed" ? "Diizinkan" : p.state === "always" ? "Diizinkan selama sesi ini" : p.state === "denied" ? `Ditolak${p.reason ? `: ${p.reason}` : ""}` : p.state === "expired" ? "Kedaluwarsa" : null;
+    p.state === "allowed" ? tl("Diizinkan") : p.state === "always" ? tl("Diizinkan selama sesi ini") : p.state === "denied" ? `Ditolak${p.reason ? `: ${p.reason}` : ""}` : p.state === "expired" ? tl("Kedaluwarsa") : null;
 
   if (p.toolName === "ExitPlanMode")
     return (
@@ -240,13 +241,13 @@ function PermissionCard({ m }: { m: ChatMessage }) {
         {pending ? (
           <div className="perm-actions">
             <button className="btn btn-claude btn-sm" onClick={() => void answerPermission(m.id, "allow", { mode: "acceptEdits" })}>
-              Setujui, edit otomatis
+              {tl("Setujui, edit otomatis")}
             </button>
             <button className="btn btn-sm" onClick={() => void answerPermission(m.id, "allow", { mode: "default" })}>
-              Setujui, tanya tiap edit
+              {tl("Setujui, tanya tiap edit")}
             </button>
             <button className="btn btn-sm" onClick={() => setDenying(true)}>
-              Terus merencanakan
+              {tl("Terus merencanakan")}
             </button>
           </div>
         ) : (
@@ -262,7 +263,7 @@ function PermissionCard({ m }: { m: ChatMessage }) {
         <div className="chat-perm-head">
           <Info size={14} aria-hidden /> Claude bertanya
         </div>
-        {pending ? <AskQuestions m={m} /> : <div className="chat-perm-done">{p.state === "allowed" ? "Terjawab" : done}</div>}
+        {pending ? <AskQuestions m={m} /> : <div className="chat-perm-done">{p.state === "allowed" ? tl("Terjawab") : done}</div>}
       </div>
     );
 
@@ -272,11 +273,11 @@ function PermissionCard({ m }: { m: ChatMessage }) {
         <ShieldAlert size={14} aria-hidden />
         <span>
           {p.toolName === "Bash"
-            ? "Jalankan perintah?"
+            ? tl("Jalankan perintah?")
             : p.toolName === "ApplyPatch"
-              ? `Ubah ${Array.isArray(p.input.changes) && p.input.changes.length > 1 ? `${p.input.changes.length} berkas` : target ? relative(root, String(p.input.file_path ?? target)) : "berkas"}?`
+              ? `Ubah ${Array.isArray(p.input.changes) && p.input.changes.length > 1 ? `${p.input.changes.length} berkas` : target ? relative(root, String(p.input.file_path ?? target)) : tl("berkas")}?`
               : isEdit(p.toolName)
-                ? `${p.toolName === "Write" ? "Tulis" : "Edit"} ${target ? relative(root, String(p.input.file_path ?? target)) : "berkas"}?`
+                ? `${p.toolName === "Write" ? "Tulis" : "Edit"} ${target ? relative(root, String(p.input.file_path ?? target)) : tl("berkas")}?`
                 : `Izinkan ${m.text}?`}
         </span>
       </div>
@@ -292,7 +293,7 @@ function PermissionCard({ m }: { m: ChatMessage }) {
         <>
           <DiffView before={proposed.before} after={proposed.after} />
           <button className="link-btn" onClick={() => openDiff(proposed, `Usulan Claude untuk ${basename(proposed.path)}`, pending ? () => void answerPermission(m.id, "allow") : undefined)}>
-            Buka diff lengkap
+            {tl("Buka diff lengkap")}
           </button>
         </>
       )}
@@ -302,15 +303,15 @@ function PermissionCard({ m }: { m: ChatMessage }) {
         <>
           <div className="perm-actions">
             <button className="btn btn-claude btn-sm" onClick={() => void answerPermission(m.id, "allow")} autoFocus>
-              Izinkan
+              {tl("Izinkan")}
             </button>
             {canAlways && (
-              <button className="btn btn-sm" onClick={() => void answerPermission(m.id, "always")} title="Jangan tanya lagi untuk jenis ini sampai percakapan selesai">
-                Izinkan selama sesi
+              <button className="btn btn-sm" onClick={() => void answerPermission(m.id, "always")} title={tl("Jangan tanya lagi untuk jenis ini sampai percakapan selesai")}>
+                {tl("Izinkan selama sesi")}
               </button>
             )}
             <button className="btn btn-sm btn-ghost-danger" onClick={() => setDenying((v) => !v)}>
-              Tolak
+              {tl("Tolak")}
             </button>
           </div>
           {denying && <DenyBox reason={reason} setReason={setReason} onSend={() => void answerPermission(m.id, "deny", { reason })} />}
@@ -334,7 +335,7 @@ function DenyBox({ reason, setReason, onSend }: { reason: string; setReason: (v:
       <input
         className="input"
         autoFocus
-        placeholder="Beri tahu agen apa yang sebaiknya dilakukan (opsional)"
+        placeholder={tl("Beri tahu agen apa yang sebaiknya dilakukan (opsional)")}
         value={reason}
         onChange={(e) => setReason(e.target.value)}
         onKeyDown={(e) => {
@@ -343,10 +344,10 @@ function DenyBox({ reason, setReason, onSend }: { reason: string; setReason: (v:
             onSend();
           }
         }}
-        aria-label="Alasan menolak"
+        aria-label={tl("Alasan menolak")}
       />
       <button className="btn btn-sm" type="submit">
-        Kirim
+        {tl("Kirim")}
       </button>
     </form>
   );
@@ -366,7 +367,7 @@ function TodoCard({ m }: { m: ChatMessage }) {
   return (
     <div className="chat-todo">
       <div className="chat-todo-head">
-        <ListChecks size={13} aria-hidden /> Rencana kerja <span className="hint">{done}/{todos.length}</span>
+        <ListChecks size={13} aria-hidden /> {tl("Rencana kerja")} <span className="hint">{done}/{todos.length}</span>
       </div>
       <ul>
         {todos.map((t, i) => (

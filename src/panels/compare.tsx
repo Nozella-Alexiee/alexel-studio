@@ -14,6 +14,7 @@ import { basename } from "../lib/paths";
 import { diffStats } from "../lib/diff";
 import { getState, setState, useStore, type CompareRequest } from "../state/store";
 import { IconButton } from "../components/ui";
+import { tl } from "../i18n";
 
 export function openCompare(req: CompareRequest) {
   setState({ compare: req });
@@ -93,7 +94,7 @@ export function CompareModal() {
               {req.acceptLabel ?? "Terapkan"}
             </button>
           )}
-          <IconButton label="Tutup" onClick={close}>
+          <IconButton label={tl("Tutup")} onClick={close}>
             <X size={15} />
           </IconButton>
         </div>

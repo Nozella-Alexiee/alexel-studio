@@ -9,6 +9,7 @@ import { useDebug, type Var } from "../debug/state";
 import { prettyKeys } from "../lib/keys";
 import { basename, relative } from "../lib/paths";
 import { useStore } from "../state/store";
+import { tl } from "../i18n";
 
 function Section({ title, children, actions, defaultOpen = true }: { title: string; children: React.ReactNode; actions?: React.ReactNode; defaultOpen?: boolean }) {
   const [open, setOpen] = useState(defaultOpen);
@@ -88,7 +89,7 @@ export default function RunView() {
                   <button className="btn btn-primary btn-sm" onClick={() => void startDebug(choices[sel])}>
                     <Play size={12} /> Mulai debug
                   </button>
-                  <select className="input select" value={sel} onChange={(e) => setSel(Number(e.target.value))} aria-label="Konfigurasi debug">
+                  <select className="input select" value={sel} onChange={(e) => setSel(Number(e.target.value))} aria-label={tl("Konfigurasi debug")}>
                     {choices.map((c, i) => (
                       <option key={i} value={i}>
                         {c.name}
@@ -97,23 +98,23 @@ export default function RunView() {
                   </select>
                 </div>
                 <p className="hint small">
-                  {prettyKeys("F5")} mulai · {prettyKeys("F9")} breakpoint · klik di kiri nomor baris untuk menaruh breakpoint.
+                  {tl("{f5} mulai · {f9} breakpoint · klik di kiri nomor baris untuk menaruh breakpoint.", { f5: prettyKeys("F5"), f9: prettyKeys("F9") })}
                 </p>
               </>
             ) : (
-              <p className="hint">Buka berkas JavaScript, TypeScript, Python, C/C++, atau Go untuk debug, atau tambahkan .vscode/launch.json.</p>
+              <p className="hint">{tl("Buka berkas JavaScript, TypeScript, Python, C/C++, atau Go untuk debug, atau tambahkan .vscode/launch.json.")}</p>
             )}
             <button className="btn btn-sm" onClick={() => void runActiveFile()}>
-              Jalankan tanpa debug
+              {tl("Jalankan tanpa debug")}
             </button>
           </div>
         )}
 
         {active && (
           <>
-            <Section title="Variabel">
+            <Section title={tl("Variabel")}>
               {status !== "paused" ? (
-                <p className="hint pad-x">{status === "starting" ? "Memulai…" : "Program berjalan. Variabel tampil saat berhenti di breakpoint."}</p>
+                <p className="hint pad-x">{status === "starting" ? "Memulai…" : tl("Program berjalan. Variabel tampil saat berhenti di breakpoint.")}</p>
               ) : (
                 scopes.map((sc) => (
                   <div key={sc.ref}>
@@ -123,7 +124,7 @@ export default function RunView() {
                     ))}
                     {!vars[sc.ref] && (
                       <button className="link-btn pad-x" onClick={() => void loadVars(sc.ref)}>
-                        Muat
+                        {tl("Muat")}
                       </button>
                     )}
                   </div>
@@ -135,7 +136,7 @@ export default function RunView() {
                 <div key={i} className="dbg-watch">
                   <span className="dbg-var-name">{w.expr}</span>
                   <span className={`dbg-var-value ${w.error ? "tone-danger-fg" : ""}`}>{w.value ?? "—"}</span>
-                  <IconButton label="Hapus" onClick={() => removeWatch(i)}>
+                  <IconButton label={tl("Hapus")} onClick={() => removeWatch(i)}>
                     <X size={11} />
                   </IconButton>
                 </div>
@@ -149,11 +150,11 @@ export default function RunView() {
                 }}
               >
                 <Plus size={12} aria-hidden />
-                <input className="input" placeholder="Tambah ekspresi" value={newWatch} onChange={(e) => setNewWatch(e.target.value)} aria-label="Ekspresi watch" />
+                <input className="input" placeholder={tl("Tambah ekspresi")} value={newWatch} onChange={(e) => setNewWatch(e.target.value)} aria-label={tl("Ekspresi watch")} />
               </form>
             </Section>
-            <Section title="Call stack">
-              {frames.length === 0 && <p className="hint pad-x">{status === "paused" ? "Tidak ada frame." : "Berjalan…"}</p>}
+            <Section title={tl("Call stack")}>
+              {frames.length === 0 && <p className="hint pad-x">{status === "paused" ? tl("Tidak ada frame.") : tl("Berjalan…")}</p>}
               {frames.map((f) => (
                 <button key={f.id} className={`dbg-frame ${f.id === frameId ? "is-on" : ""}`} onClick={() => void selectFrame(f)} disabled={!f.path}>
                   <span className="dbg-frame-name">{f.name}</span>
@@ -168,7 +169,7 @@ export default function RunView() {
           title="Breakpoint"
           actions={
             bpList.length > 0 && (
-              <IconButton label="Hapus semua breakpoint" onClick={removeAllBreakpoints}>
+              <IconButton label={tl("Hapus semua breakpoint")} onClick={removeAllBreakpoints}>
                 <Trash2 size={12} />
               </IconButton>
             )
@@ -183,7 +184,7 @@ export default function RunView() {
                 <span className="hint">:{b.line}</span>
                 {root && <span className="dbg-bp-dir">{relative(root, b.path).split("/").slice(0, -1).join("/")}</span>}
               </button>
-              <IconButton label="Hapus breakpoint" onClick={() => setBreakpoints(b.path, (useDebug.getState().breakpoints[b.path] ?? []).filter((x) => x.line !== b.line))}>
+              <IconButton label={tl("Hapus breakpoint")} onClick={() => setBreakpoints(b.path, (useDebug.getState().breakpoints[b.path] ?? []).filter((x) => x.line !== b.line))}>
                 <X size={11} />
               </IconButton>
             </div>

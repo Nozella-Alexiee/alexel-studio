@@ -3,6 +3,7 @@
 // Claude Code (stream-json), Codex (app-server JSON-RPC), Gemini & agen lain (ACP).
 
 import type { ClaudePermMode } from "../lib/types";
+import { tl } from "../i18n";
 
 export type AgentId = "claude" | "codex" | "gemini" | "antigravity" | "acp";
 
@@ -32,21 +33,21 @@ export interface AgentInfo {
 }
 
 export const CLAUDE_MODES: { id: ClaudePermMode; label: string; hint: string }[] = [
-  { id: "default", label: "Tanya dulu", hint: "Agen meminta izin di panel sebelum mengedit berkas atau menjalankan perintah." },
-  { id: "acceptEdits", label: "Edit otomatis", hint: "Edit berkas langsung diterapkan. Perintah shell tetap ditanyakan dulu." },
-  { id: "plan", label: "Rencana", hint: "Agen hanya membaca dan menyusun rencana, tanpa mengubah apa pun." },
+  { id: "default", label: tl("Tanya dulu"), hint: tl("Agen meminta izin di panel sebelum mengedit berkas atau menjalankan perintah.") },
+  { id: "acceptEdits", label: tl("Edit otomatis"), hint: tl("Edit berkas langsung diterapkan. Perintah shell tetap ditanyakan dulu.") },
+  { id: "plan", label: tl("Rencana"), hint: tl("Agen hanya membaca dan menyusun rencana, tanpa mengubah apa pun.") },
 ];
 
 export const CODEX_MODES: AgentMode[] = [
-  { id: "untrusted", label: "Tanya dulu", hint: "Codex meminta izin sebelum menjalankan perintah atau mengubah berkas." },
-  { id: "on-request", label: "Otomatis di folder ini", hint: "Codex boleh mengedit dan menjalankan perintah di folder project; di luar itu tetap bertanya." },
-  { id: "read-only", label: "Hanya baca", hint: "Codex hanya membaca dan menjawab, tanpa mengubah apa pun." },
+  { id: "untrusted", label: tl("Tanya dulu"), hint: tl("Codex meminta izin sebelum menjalankan perintah atau mengubah berkas.") },
+  { id: "on-request", label: tl("Otomatis di folder ini"), hint: tl("Codex boleh mengedit dan menjalankan perintah di folder project; di luar itu tetap bertanya.") },
+  { id: "read-only", label: tl("Hanya baca"), hint: tl("Codex hanya membaca dan menjawab, tanpa mengubah apa pun.") },
 ];
 
 export const ANTIGRAVITY_MODES: AgentMode[] = [
-  { id: "accept-edits", label: "Edit otomatis", hint: "Antigravity boleh mengedit berkas. Mode headless tidak bisa bertanya; aksi lain yang butuh izin ditolak." },
-  { id: "plan", label: "Rencana", hint: "Antigravity hanya membaca dan menyusun rencana." },
-  { id: "strict", label: "Ketat", hint: "Semua aksi yang butuh izin ditolak otomatis." },
+  { id: "accept-edits", label: tl("Edit otomatis"), hint: tl("Antigravity boleh mengedit berkas. Mode headless tidak bisa bertanya; aksi lain yang butuh izin ditolak.") },
+  { id: "plan", label: tl("Rencana"), hint: tl("Antigravity hanya membaca dan menyusun rencana.") },
+  { id: "strict", label: tl("Ketat"), hint: tl("Semua aksi yang butuh izin ditolak otomatis.") },
 ];
 
 export const AGENTS: AgentInfo[] = [
@@ -56,7 +57,7 @@ export const AGENTS: AgentInfo[] = [
     short: "Claude",
     vendor: "Anthropic",
     openVsx: { namespace: "anthropic", name: "claude-code" },
-    description: "Agen coding dari Anthropic. Masuk dengan akun Claude Pro atau Max.",
+    description: tl("Agen coding dari Anthropic. Masuk dengan akun Claude Pro atau Max."),
     caps: { models: true, effort: true, modes: CLAUDE_MODES, history: true, images: true },
   },
   {
@@ -65,7 +66,7 @@ export const AGENTS: AgentInfo[] = [
     short: "Codex",
     vendor: "OpenAI",
     openVsx: { namespace: "openai", name: "chatgpt" },
-    description: "Agen coding dari OpenAI. Masuk dengan akun ChatGPT atau API key OpenAI.",
+    description: tl("Agen coding dari OpenAI. Masuk dengan akun ChatGPT atau API key OpenAI."),
     caps: { models: true, effort: true, modes: CODEX_MODES, history: true, images: true },
   },
   {
@@ -73,7 +74,7 @@ export const AGENTS: AgentInfo[] = [
     name: "Gemini",
     short: "Gemini",
     vendor: "Google",
-    description: "Agen coding dari Google (Gemini CLI). Masuk dengan akun Google atau API key Gemini.",
+    description: tl("Agen coding dari Google (Gemini CLI). Masuk dengan akun Google atau API key Gemini."),
     caps: { models: true, effort: false, modes: [], history: false, images: true },
   },
   {
@@ -81,15 +82,15 @@ export const AGENTS: AgentInfo[] = [
     name: "Antigravity",
     short: "Antigravity",
     vendor: "Google",
-    description: "Agen dari Google Antigravity (CLI agy). Bisa memakai model Gemini, Claude, dan GPT-OSS.",
+    description: tl("Agen dari Google Antigravity (CLI agy). Bisa memakai model Gemini, Claude, dan GPT-OSS."),
     caps: { models: true, effort: true, modes: ANTIGRAVITY_MODES, history: false, images: false },
   },
   {
     id: "acp",
-    name: "Agen ACP",
+    name: tl("Agen ACP"),
     short: "ACP",
     vendor: "Agent Client Protocol",
-    description: "Agen lain yang mendukung Agent Client Protocol. Atur perintahnya di Pengaturan.",
+    description: tl("Agen lain yang mendukung Agent Client Protocol. Atur perintahnya di Pengaturan."),
     caps: { models: true, effort: false, modes: [], history: false, images: false },
   },
 ];

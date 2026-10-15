@@ -1,4 +1,5 @@
 import { Component, type ReactNode } from "react";
+import { tl } from "../i18n";
 
 /** Jaring pengaman: error tak terduga di satu bagian UI tidak membuat layar hitam. */
 export class ErrorBoundary extends Component<{ children: ReactNode; label?: string; onReset?: () => void }, { error: Error | null }> {
@@ -26,7 +27,7 @@ export class ErrorBoundary extends Component<{ children: ReactNode; label?: stri
               this.setState({ error: null });
             }}
           >
-            Coba lagi
+            {tl("Coba lagi")}
           </button>
         </div>
       </div>

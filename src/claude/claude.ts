@@ -8,6 +8,7 @@ import { basename, relative } from "../lib/paths";
 import type { ClaudeContent, ClaudePermMode } from "../lib/types";
 import { agentInfo, type AgentId } from "../agents/registry";
 import { activeTab, ask, getState, newChatKey, setLayout, setState, toast, type ChatMessage, type ChatTool, type Problem } from "../state/store";
+import { tl } from "../i18n";
 
 let listening = false;
 let msgId = 0;
@@ -356,7 +357,7 @@ const LOGIN_ARGS: Record<AgentId, string> = { claude: "auth login", codex: "logi
 export async function loginClaude() {
   const agent = agentNow();
   if (agent === "gemini" || agent === "acp") {
-    toast("Browser akan terbuka untuk masuk. Selesaikan di sana lalu kembali ke sini.", "info");
+    toast(tl("Browser akan terbuka untuk masuk. Selesaikan di sana lalu kembali ke sini."), "info");
     try {
       const how = await api.agentLogin(agent, agent === "acp" ? { command: getState().settings.acpCommand } : undefined);
       toast(`Berhasil masuk (${how}).`, "success");
@@ -370,7 +371,7 @@ export async function loginClaude() {
   if (!info?.path) return toast(`${agentInfo(agent).name} belum terpasang.`);
   const { runInTerminal, shellExe } = await import("../app/run");
   await runInTerminal(`${shellExe(info.path)} ${LOGIN_ARGS[agent]}`.trim(), `Masuk ke ${agentInfo(agent).short}`);
-  toast("Ikuti langkah masuk di terminal. Setelah selesai, klik Periksa ulang.", "info");
+  toast(tl("Ikuti langkah masuk di terminal. Setelah selesai, klik Periksa ulang."), "info");
 }
 
 export async function installClaude() {
@@ -445,11 +446,11 @@ export async function ensureConsent(): Promise<boolean> {
   if (getState().settings.claudeConsent) return true;
   const ok = await ask({
     kind: "confirm",
-    title: "Pakai agen AI di Alexel Studio?",
+    title: tl("Pakai agen AI di Alexel Studio?"),
     message:
       "Pesanmu, berkas yang kamu lampirkan, dan berkas yang dibaca agen dikirim ke penyedia agen yang kamu pilih (mis. Anthropic, OpenAI, Google) dengan akunmu sendiri. " +
       "Di mode Tanya dulu, agen meminta izin di panel ini sebelum mengubah berkas atau menjalankan perintah. Persetujuan ini cukup sekali.",
-    okLabel: "Setuju",
+    okLabel: tl("Setuju"),
   });
   if (ok !== true) return false;
   const { updateSettings } = await import("../app/actions");
@@ -486,7 +487,7 @@ export async function sendToClaude(prompt: string, o: SendOptions = {}): Promise
       title: `Kirim ke ${name}?`,
       message: summary ? `Ikut dikirim: ${summary}. Isi lengkapnya ada di bawah.` : "Hanya pesanmu yang dikirim.",
       detail: payload,
-      okLabel: "Kirim",
+      okLabel: tl("Kirim"),
     });
     if (ok !== true) return false;
   }
@@ -703,7 +704,7 @@ export async function explainTerminal(key: string) {
   const { recentOutput } = await import("../terminal/terminals");
   const sess = getState().terminals.find((t) => t.key === key);
   const out = recentOutput(key, 6000);
-  if (!out) return toast("Belum ada output untuk dijelaskan.");
+  if (!out) return toast(tl("Belum ada output untuk dijelaskan."));
   await sendToClaude("Jelaskan error di output terminal ini dan cara memperbaikinya.", {
     extraContext: {
       label: `Output terminal${sess?.command ? ` dari \`${sess.command}\`` : ""}${sess?.exitCode != null ? ` (kode keluar ${sess.exitCode})` : ""}`,
@@ -722,7 +723,7 @@ export function explainSelection() {
 /** Ganti seluruh isi berkas aktif dengan kode dari jawaban Claude (dibandingkan dulu). */
 export async function applyCodeToActive(code: string) {
   const tab = activeTab();
-  if (!tab || tab.kind !== "text") return toast("Buka berkas tujuan dulu.");
+  if (!tab || tab.kind !== "text") return toast(tl("Buka berkas tujuan dulu."));
   const { openCompare } = await import("../panels/compare");
   openCompare({
     title: `Terapkan kode Claude ke ${basename(tab.id)}?`,

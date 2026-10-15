@@ -9,6 +9,7 @@ import { activeTab, confirmDialog, getState, setLayout, toast } from "../state/s
 import { DapClient } from "./client";
 import { setBpsEffect, setDebugLineEffect } from "./editor";
 import { consoleLine, dbg, isDebugging, setDbg, type Breakpoint, type Frame } from "./state";
+import { tl } from "../i18n";
 
 export interface LaunchConfig {
   name: string;
@@ -122,10 +123,10 @@ async function ensureAdapter(kind: Kind): Promise<boolean> {
   const st = await api.dapStatus(kind);
   if (st.available) return true;
   if (kind === "node" && st.installable) {
-    if (!(await confirmDialog("Pasang debugger JavaScript?", "Alexel Studio akan mengunduh js-debug resmi dari GitHub Microsoft (sekitar 1,2 MB, checksum diperiksa). Cukup sekali.", "Pasang"))) return false;
+    if (!(await confirmDialog(tl("Pasang debugger JavaScript?"), "Alexel Studio akan mengunduh js-debug resmi dari GitHub Microsoft (sekitar 1,2 MB, checksum diperiksa). Cukup sekali.", "Pasang"))) return false;
     try {
       await api.dapInstallJsDebug();
-      toast("Debugger JavaScript terpasang.", "success");
+      toast(tl("Debugger JavaScript terpasang."), "success");
       return true;
     } catch (e) {
       toast(errMsg(e), "error");
@@ -152,7 +153,7 @@ export async function startDebug(config?: LaunchConfig) {
     return;
   }
   let cfg = config ?? (await launchJsonConfigs())[0] ?? autoConfig();
-  if (!cfg) return toast("Buka berkas JavaScript, TypeScript, Python, C/C++, atau Go, atau tambahkan .vscode/launch.json.");
+  if (!cfg) return toast(tl("Buka berkas JavaScript, TypeScript, Python, C/C++, atau Go, atau tambahkan .vscode/launch.json."));
   const kind = kindOf(cfg.type);
   if (!kind) return toast(`Tipe debug "${cfg.type}" belum didukung.`);
   if (!(await ensureAdapter(kind))) return;

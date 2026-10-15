@@ -14,6 +14,7 @@ import { BottomPanel } from "../panels/BottomPanel";
 import { getState, setLayout, useLayout, useStore } from "../state/store";
 import { EditorGroups, RightContent, SideContent, SideResizer, StatusBar, openProjectMenu } from "./common";
 import { prettyKeys } from "../lib/keys";
+import { tl } from "../i18n";
 
 function RunConfig() {
   const targets = useStore((s) => s.runTargets);
@@ -37,7 +38,7 @@ function RunConfig() {
             ...targets.map((t) => ({ label: `${sel === t.id ? "✓ " : ""}${t.label}`, keys: t.kind, run: () => setSel(t.id) })),
           ])
         }
-        aria-label="Pilih target run"
+        aria-label={tl("Pilih target run")}
       >
         <TerminalSquare size={13} aria-hidden />
         <span>{label}</span>
@@ -46,7 +47,7 @@ function RunConfig() {
       <IconButton label={`Jalankan ${label}`} keys={current ? undefined : "Mod+R"} tone="run" onClick={run}>
         <Play size={14} />
       </IconButton>
-      <IconButton label="Hentikan semua run" tone="danger" onClick={() => void stop()} disabled={!runningCount}>
+      <IconButton label={tl("Hentikan semua run")} tone="danger" onClick={() => void stop()} disabled={!runningCount}>
         <Square size={12} />
       </IconButton>
     </div>
@@ -77,12 +78,12 @@ export default function ControlShell() {
         <NoziBrand />
         <RunConfig />
         <div className="ctl-center">
-          <button className="ctl-project" onClick={openProjectMenu} title="Ganti project" aria-haspopup="menu">
+          <button className="ctl-project" onClick={openProjectMenu} title={tl("Ganti project")} aria-haspopup="menu">
             <FolderOpen size={12} aria-hidden /> {root ? root.split("/").pop() : "Buka project"}
             {git?.is_repo && <span className="ctl-branch">· {git.branch}</span>}
           </button>
-          <button className="ctl-search" onClick={() => openPalette("")} title={`Cari berkas (${prettyKeys("Mod+P")})`} aria-label="Cari berkas">
-            <Search size={12} aria-hidden /> <span>Cari berkas</span> <kbd>{prettyKeys("Mod+P")}</kbd>
+          <button className="ctl-search" onClick={() => openPalette("")} title={`Cari berkas (${prettyKeys("Mod+P")})`} aria-label={tl("Cari berkas")}>
+            <Search size={12} aria-hidden /> <span>{tl("Cari berkas")}</span> <kbd>{prettyKeys("Mod+P")}</kbd>
           </button>
         </div>
         <div className="titlebar-actions">
@@ -91,17 +92,17 @@ export default function ControlShell() {
               {problems} error
             </button>
           )}
-          <IconButton label="Belah editor" keys="Mod+\" active={split} onClick={A.splitEditor}>
+          <IconButton label={tl("Belah editor")} keys="Mod+\" active={split} onClick={A.splitEditor}>
             <Columns2 size={15} />
           </IconButton>
-          <IconButton label="Pengaturan" keys="Mod+," onClick={() => A.openSettings()}>
+          <IconButton label={tl("Pengaturan")} keys="Mod+," onClick={() => A.openSettings()}>
             <Settings size={15} />
           </IconButton>
         </div>
       </header>
 
       <div className="shell-body" style={{ gridTemplateColumns: `46px ${l.sidebar ? `${l.sidebarW}px 1px` : ""} minmax(0,1fr) ${l.right ? `1px ${l.rightW}px` : ""}` }}>
-        <nav className="rail tile" aria-label="Navigasi">
+        <nav className="rail tile" aria-label={tl("Navigasi")}>
           {rail.map(([id, icon, label, run, on, count]) => (
             <button key={id} className={on ? "is-on" : ""} onClick={run} title={label} aria-label={label} aria-pressed={on}>
               {icon}
@@ -112,7 +113,7 @@ export default function ControlShell() {
           <button onClick={() => A.togglePanel("terminal")} title={`Terminal (${prettyKeys("Ctrl+`")})`} aria-label="Terminal" className={l.panel && l.panelTab === "terminal" ? "is-on" : ""}>
             <TerminalSquare size={19} />
           </button>
-          <button onClick={() => A.openSettings()} title={`Pengaturan (${prettyKeys("Mod+,")})`} aria-label="Pengaturan">
+          <button onClick={() => A.openSettings()} title={`Pengaturan (${prettyKeys("Mod+,")})`} aria-label={tl("Pengaturan")}>
             <Settings size={19} />
           </button>
         </nav>
@@ -143,7 +144,7 @@ export default function ControlShell() {
         {l.right && (
           <>
             <SideResizer side="right" />
-            <aside className="right-panel tile" aria-label="Panel kanan">
+            <aside className="right-panel tile" aria-label={tl("Panel kanan")}>
               <div className="ctl-right-tabs" role="tablist">
                 <button role="tab" aria-selected={l.rightView === "git"} className={l.rightView === "git" ? "is-on" : ""} onClick={() => setLayout({ rightView: "git" })}>
                   GIT

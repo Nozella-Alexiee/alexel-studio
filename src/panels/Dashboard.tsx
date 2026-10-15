@@ -14,6 +14,7 @@ import { formatBytes, timeAgo } from "../lib/format";
 import type { FoundProject, ProjectOverview } from "../lib/types";
 import { setLayout, useStore } from "../state/store";
 import { refreshTodos } from "./todoData";
+import { tl } from "../i18n";
 
 function ProjectPicker() {
   const recents = useStore((s) => s.recents);
@@ -39,7 +40,7 @@ function ProjectPicker() {
     <section className="card project-card">
       <div className="project-head">
         <h2 className="card-title">Project</h2>
-        <input className="input project-filter" placeholder="Cari project…" value={q} onChange={(e) => setQ(e.target.value)} aria-label="Cari project" autoFocus />
+        <input className="input project-filter" placeholder={tl("Cari project…")} value={q} onChange={(e) => setQ(e.target.value)} aria-label={tl("Cari project")} autoFocus />
       </div>
       {found === null && !recents.length ? (
         <div className="pad">
@@ -55,7 +56,7 @@ function ProjectPicker() {
                 <FolderOpen size={15} aria-hidden className="project-ico" />
                 <span className="project-name">{r.name}</span>
                 {r.kind && <span className="project-kind">{r.kind}</span>}
-                {r.recent && <span className="project-kind is-recent">terakhir</span>}
+                {r.recent && <span className="project-kind is-recent">{tl("terakhir")}</span>}
                 <span className="project-path">{shortenHome(dirname(r.path))}</span>
                 {r.mtimeMs > 0 && <span className="project-time">{timeAgo(r.mtimeMs)}</span>}
               </button>
@@ -77,23 +78,23 @@ export function Welcome() {
         {penguin ? <NoziHero size={76} /> : <img className="welcome-logo" src="./icon.png" alt="" aria-hidden onError={(e) => (e.currentTarget.style.display = "none")} />}
         <div>
           <h1>Alexel Studio</h1>
-          <p className="hint">Editor kode open source untuk macOS, Windows, dan Linux.</p>
+          <p className="hint">{tl("Editor kode open source untuk macOS, Windows, dan Linux.")}</p>
         </div>
       </header>
-      {isDemo && <p className="hint small">Mode pratinjau browser: backend tiruan. Buka lewat aplikasi Alexel Studio untuk berkas sungguhan.</p>}
+      {isDemo && <p className="hint small">{tl("Mode pratinjau browser: backend tiruan. Buka lewat aplikasi Alexel Studio untuk berkas sungguhan.")}</p>}
       <div className="welcome-cols">
         <div className="welcome-col">
           <section>
-            <h2 className="welcome-h">Mulai</h2>
+            <h2 className="welcome-h">{tl("Mulai")}</h2>
             <ul className="welcome-links">
               <li>
                 <button onClick={() => void A.newFile(null)}>
-                  <FilePlus2 size={15} aria-hidden /> Berkas baru… <Kbd keys="Mod+N" />
+                  <FilePlus2 size={15} aria-hidden /> {tl("Berkas baru…")} <Kbd keys="Mod+N" />
                 </button>
               </li>
               <li>
                 <button onClick={() => void A.openProjectDialog()}>
-                  <FolderOpen size={15} aria-hidden /> Buka folder… <Kbd keys="Mod+O" />
+                  <FolderOpen size={15} aria-hidden /> {tl("Buka folder…")} <Kbd keys="Mod+O" />
                 </button>
               </li>
               <li>
@@ -103,7 +104,7 @@ export function Welcome() {
               </li>
               <li>
                 <button onClick={() => void openShell()}>
-                  <TerminalSquare size={15} aria-hidden /> Buka terminal <Kbd keys="Ctrl+`" />
+                  <TerminalSquare size={15} aria-hidden /> {tl("Buka terminal")} <Kbd keys="Ctrl+`" />
                 </button>
               </li>
             </ul>
@@ -112,35 +113,35 @@ export function Welcome() {
         </div>
         <div className="welcome-col">
           <section>
-            <h2 className="welcome-h">Panduan</h2>
+            <h2 className="welcome-h">{tl("Panduan")}</h2>
             <div className="walk">
               <button className="walk-card" onClick={() => setLayout({ right: true, rightView: "claude" })}>
                 <CrabMascot size={26} />
                 <span>
-                  <strong>Kerja bareng agen AI</strong>
-                  <span className="hint">Pakai Claude Code, Codex, Gemini, atau agen lain dari panel di kanan. Kamu menyetujui setiap perubahan.</span>
+                  <strong>{tl("Kerja bareng agen AI")}</strong>
+                  <span className="hint">{tl("Pakai Claude Code, Codex, Gemini, atau agen lain dari panel di kanan. Kamu menyetujui setiap perubahan.")}</span>
                 </span>
               </button>
               <button className="walk-card" onClick={() => openPalette(">")}>
                 <Command size={22} aria-hidden />
                 <span>
-                  <strong>Semua perintah di satu tempat</strong>
+                  <strong>{tl("Semua perintah di satu tempat")}</strong>
                   <span className="hint">
-                    Tekan <Kbd keys="Mod+Shift+P" /> untuk palette perintah, <Kbd keys="Mod+P" /> untuk membuka berkas.
+                    {tl("Tekan")} <Kbd keys="Mod+Shift+P" /> {tl("untuk palette perintah,")} <Kbd keys="Mod+P" /> {tl("untuk membuka berkas.")}
                   </span>
                 </span>
               </button>
               <button className="walk-card" onClick={() => A.toggleSidebar("ext")}>
                 <Puzzle size={22} aria-hidden />
                 <span>
-                  <strong>Tema & ikon dari Open VSX</strong>
-                  <span className="hint">Pasang tema warna, tema ikon, snippet, dan bahasa yang biasa kamu pakai di VS Code.</span>
+                  <strong>{tl("Tema & ikon dari Open VSX")}</strong>
+                  <span className="hint">{tl("Pasang tema warna, tema ikon, snippet, dan bahasa yang biasa kamu pakai di VS Code.")}</span>
                 </span>
               </button>
             </div>
           </section>
           <section>
-            <h2 className="welcome-h">Desain</h2>
+            <h2 className="welcome-h">{tl("Desain")}</h2>
             <div className="design-mini">
               {DESIGNS.map((d) => (
                 <button key={d.id} className={`design-mini-item ${d.id === design ? "is-on" : ""}`} onClick={() => A.setDesign(d.id)} aria-pressed={d.id === design}>
@@ -200,7 +201,7 @@ export default function Dashboard() {
         </div>
         <div className="dash-quick">
           <button className="btn" onClick={() => openPalette("")}>
-            <Files size={14} /> Buka berkas <Kbd keys="Mod+P" />
+            <Files size={14} /> {tl("Buka berkas")} <Kbd keys="Mod+P" />
           </button>
           <button className="btn" onClick={() => setLayout({ sidebar: true, sideView: "search" })}>
             <Search size={14} /> Cari
@@ -215,12 +216,12 @@ export default function Dashboard() {
         <div className="tile">
           <Files size={16} aria-hidden />
           <div className="tile-num">{ov ? ov.file_count.toLocaleString("id-ID") + (ov.truncated ? "+" : "") : "…"}</div>
-          <div className="tile-label">berkas</div>
+          <div className="tile-label">{tl("berkas")}</div>
         </div>
         <div className="tile">
           <HardDrive size={16} aria-hidden />
           <div className="tile-num">{ov ? formatBytes(ov.total_bytes) : "…"}</div>
-          <div className="tile-label">ukuran kode</div>
+          <div className="tile-label">{tl("ukuran kode")}</div>
         </div>
         <div className="tile">
           <Clock size={16} aria-hidden />
@@ -236,8 +237,8 @@ export default function Dashboard() {
 
       {ov && ov.languages.length > 0 && (
         <section className="card">
-          <h2 className="card-title">Komposisi</h2>
-          <div className="lang-bar" role="img" aria-label="Komposisi bahasa">
+          <h2 className="card-title">{tl("Komposisi")}</h2>
+          <div className="lang-bar" role="img" aria-label={tl("Komposisi bahasa")}>
             {ov.languages.map((l, i) => (
               <span key={l.ext} className={`lang-seg c${i % 8}`} style={{ width: `${(l.bytes / totalLang) * 100}%` }} title={`.${l.ext} · ${formatBytes(l.bytes)}`} />
             ))}
@@ -268,7 +269,7 @@ export default function Dashboard() {
               ))}
             </div>
           ) : (
-            <p className="hint">Tidak ada script terdeteksi. Alexel Studio membaca package.json, Cargo.toml, Makefile, composer.json, go.mod, dan lainnya.</p>
+            <p className="hint">{tl("Tidak ada script terdeteksi. Alexel Studio membaca package.json, Cargo.toml, Makefile, composer.json, go.mod, dan lainnya.")}</p>
           )}
         </section>
         <section className="card">
@@ -294,11 +295,11 @@ export default function Dashboard() {
                 ))}
               </ul>
               <button className="btn btn-ghost btn-sm" onClick={() => A.togglePanel("todo")}>
-                Lihat papan TODO
+                {tl("Lihat papan TODO")}
               </button>
             </>
           ) : (
-            <p className="hint">Bersih. Tidak ada TODO atau FIXME.</p>
+            <p className="hint">{tl("Bersih. Tidak ada TODO atau FIXME.")}</p>
           )}
         </section>
       </div>

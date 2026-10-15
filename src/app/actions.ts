@@ -25,6 +25,7 @@ import {
 } from "../state/store";
 import { persistSession, persistSettings } from "./persist";
 import { isMac, setTitlebarOverlay } from "../lib/ipc";
+import { tl } from "../i18n";
 
 export const SETTINGS_TAB = "nozel:settings";
 
@@ -203,7 +204,7 @@ async function createTab(path: string, opts: { quiet?: boolean; preview?: Tab["p
 
 export function openSettings(group = getState().focusedGroup, section?: string) {
   if (!getState().tabs[SETTINGS_TAB]) {
-    setState((s) => ({ tabs: { ...s.tabs, [SETTINGS_TAB]: { id: SETTINGS_TAB, name: "Pengaturan", kind: "settings", dirty: false, lang: "", preview: "code" } } }));
+    setState((s) => ({ tabs: { ...s.tabs, [SETTINGS_TAB]: { id: SETTINGS_TAB, name: tl("Pengaturan"), kind: "settings", dirty: false, lang: "", preview: "code" } } }));
   }
   addTabToGroup(SETTINGS_TAB, ensureGroup(group));
   if (section) setTimeout(() => document.getElementById(`set-${section}`)?.scrollIntoView({ block: "start" }), 150);
@@ -218,7 +219,7 @@ export function showWelcome(group = getState().focusedGroup) {
     return;
   }
   if (!getState().tabs[WELCOME_TAB]) {
-    setState((s) => ({ tabs: { ...s.tabs, [WELCOME_TAB]: { id: WELCOME_TAB, name: "Selamat datang", kind: "welcome", dirty: false, lang: "", preview: "code" } } }));
+    setState((s) => ({ tabs: { ...s.tabs, [WELCOME_TAB]: { id: WELCOME_TAB, name: tl("Selamat datang"), kind: "welcome", dirty: false, lang: "", preview: "code" } } }));
   }
   addTabToGroup(WELCOME_TAB, ensureGroup(group));
 }
@@ -226,7 +227,7 @@ export function showWelcome(group = getState().focusedGroup) {
 /** Buka settings.json di editor; perubahan diterapkan saat disimpan. */
 export async function openSettingsJson() {
   const p = await api.settingsPath().catch(() => null);
-  if (!p) return toast("settings.json tidak ditemukan.", "error");
+  if (!p) return toast(tl("settings.json tidak ditemukan."), "error");
   persistSettings();
   await new Promise((r) => setTimeout(r, 400));
   await openFile(p);
@@ -278,10 +279,10 @@ export async function closeTab(id: string, g = getState().focusedGroup): Promise
     const choice = await ask({
       kind: "choice",
       title: `Simpan perubahan di ${tab.name}?`,
-      message: "Kalau tidak disimpan, perubahanmu akan hilang.",
+      message: tl("Kalau tidak disimpan, perubahanmu akan hilang."),
       choices: [
-        { id: "save", label: "Simpan" },
-        { id: "discard", label: "Jangan simpan", danger: true },
+        { id: "save", label: tl("Simpan") },
+        { id: "discard", label: tl("Jangan simpan"), danger: true },
       ],
     });
     if (choice === "save") {
@@ -306,7 +307,7 @@ export async function reopenClosedTab() {
     if (getState().tabs[path]) continue;
     if (await openFile(path, { quiet: true })) return;
   }
-  toast("Tidak ada tab tertutup untuk dibuka lagi.");
+  toast(tl("Tidak ada tab tertutup untuk dibuka lagi."));
 }
 
 /**
@@ -351,8 +352,8 @@ export async function closeAllTabs(): Promise<boolean> {
       title: dirty.length === 1 ? `Simpan perubahan di ${dirty[0].name}?` : `Simpan perubahan di ${dirty.length} berkas?`,
       message: dirty.map((t) => t.name).join(", "),
       choices: [
-        { id: "save", label: "Simpan semua" },
-        { id: "discard", label: "Jangan simpan", danger: true },
+        { id: "save", label: tl("Simpan semua") },
+        { id: "discard", label: tl("Jangan simpan"), danger: true },
       ],
     });
     if (choice === "save") {
@@ -385,7 +386,7 @@ export function splitEditor() {
     persistSession();
     return;
   }
-  if (!active) return toast("Buka berkas dulu untuk membelah editor.");
+  if (!active) return toast(tl("Buka berkas dulu untuk membelah editor."));
   setState({ groups: [s.groups[0], { tabs: [active], active }], focusedGroup: 1 });
   persistSession();
 }
@@ -437,8 +438,8 @@ function targetDir(path?: string | null): string | null {
 
 export async function newFile(inPath?: string | null) {
   const dir = targetDir(inPath);
-  if (!dir) return toast("Buka folder project dulu.");
-  const name = await promptDialog("Berkas baru", { message: `Di ${relative(getState().root ?? "", dir) || "akar project"}`, placeholder: "nama-berkas.ts", validate: validateName, okLabel: "Buat" });
+  if (!dir) return toast(tl("Buka folder project dulu."));
+  const name = await promptDialog(tl("Berkas baru"), { message: `Di ${relative(getState().root ?? "", dir) || "akar project"}`, placeholder: "nama-berkas.ts", validate: validateName, okLabel: tl("Buat") });
   if (!name) return;
   const path = join(dir, name.trim());
   try {
@@ -452,8 +453,8 @@ export async function newFile(inPath?: string | null) {
 
 export async function newFolder(inPath?: string | null) {
   const dir = targetDir(inPath);
-  if (!dir) return toast("Buka folder project dulu.");
-  const name = await promptDialog("Folder baru", { placeholder: "nama-folder", validate: validateName, okLabel: "Buat" });
+  if (!dir) return toast(tl("Buka folder project dulu."));
+  const name = await promptDialog(tl("Folder baru"), { placeholder: "nama-folder", validate: validateName, okLabel: tl("Buat") });
   if (!name) return;
   try {
     await api.createDir(join(dir, name.trim()));
@@ -483,7 +484,7 @@ function retargetTabs(oldPath: string, newPath: string) {
 
 export async function renamePath(path: string) {
   const old = basename(path);
-  const name = await promptDialog("Ganti nama", { defaultValue: old, validate: validateName, okLabel: "Ganti" });
+  const name = await promptDialog(tl("Ganti nama"), { defaultValue: old, validate: validateName, okLabel: tl("Ganti") });
   if (!name || name === old) return;
   const np = join(dirname(path), name.trim());
   try {
@@ -524,7 +525,7 @@ export async function deletePath(path: string) {
       "success",
       token
         ? {
-            label: "Urungkan",
+            label: tl("Urungkan"),
             run: async () => {
               try {
                 await api.restoreDeleted(token, path);
@@ -555,7 +556,7 @@ export async function duplicatePath(path: string) {
 export async function copyPath(path: string, rel = false) {
   const root = getState().root;
   await navigator.clipboard.writeText(rel && root ? relative(root, path) : path).catch(() => {});
-  toast("Path disalin");
+  toast(tl("Path disalin"));
 }
 
 // ---------------- Git & data project ----------------
@@ -616,7 +617,7 @@ export async function onFsChanged(paths: string[], git: boolean) {
   for (const p of paths) {
     if (!getState().tabs[p] || getState().tabs[p].kind !== "text") continue;
     const r = await docs.externalChange(p);
-    if (r === "conflict") toast(`${basename(p)} berubah di disk saat ada editan yang belum disimpan.`, "error", { label: "Bandingkan", run: () => void import("./conflicts").then((m) => m.resolveConflict(p)) });
+    if (r === "conflict") toast(`${basename(p)} berubah di disk saat ada editan yang belum disimpan.`, "error", { label: tl("Bandingkan"), run: () => void import("./conflicts").then((m) => m.resolveConflict(p)) });
     if (r === "missing") toast(`${basename(p)} dihapus dari luar Alexel Studio.`, "info");
   }
   if (git || paths.length) {
@@ -720,10 +721,10 @@ export const demoMode = isDemo;
 
 /** Clone repositori Git: minta URL, pilih folder induk, lalu buka hasilnya. */
 export async function cloneRepo() {
-  const url = await promptDialog("Clone repositori Git", {
-    message: "Tempel URL repositori (https:// atau git@…). Kamu akan memilih folder tujuan setelah ini.",
+  const url = await promptDialog(tl("Clone repositori Git"), {
+    message: tl("Tempel URL repositori (https:// atau git@…). Kamu akan memilih folder tujuan setelah ini."),
     placeholder: "https://github.com/user/repo.git",
-    okLabel: "Pilih folder…",
+    okLabel: tl("Pilih folder…"),
     validate: (v) => (/^(https:\/\/|ssh:\/\/|git@[\w.-]+:|file:\/\/)\S+$/.test(v.trim()) ? null : "Pakai URL https://… atau git@host:user/repo.git"),
   });
   if (!url) return;
@@ -747,9 +748,9 @@ export async function showAbout() {
   await ask({
     kind: "confirm",
     title: "Alexel Studio",
-    message: "Editor kode gratis dan open source untuk macOS, Windows, dan Linux, dengan terminal, server bahasa, debugger, dan agen AI pilihanmu. Lisensi MIT.",
+    message: tl("Editor kode gratis dan open source untuk macOS, Windows, dan Linux, dengan terminal, server bahasa, debugger, dan agen AI pilihanmu. Lisensi MIT."),
     detail: info ? `Versi ${info.version}\nElectron ${info.electron}${info.chrome ? `\nChromium ${info.chrome}` : ""}${info.node ? `\nNode ${info.node}` : ""}\n${info.platform} ${info.arch ?? ""}` : undefined,
-    okLabel: "Tutup",
+    okLabel: tl("Tutup"),
     cancelLabel: "",
   });
 }
@@ -784,10 +785,10 @@ export async function checkForUpdates(manual = false) {
   try {
     const r = await api.checkUpdate();
     if (!r.repo) {
-      if (manual) toast("Pemeriksaan pembaruan belum tersedia di build ini.", "info");
+      if (manual) toast(tl("Pemeriksaan pembaruan belum tersedia di build ini."), "info");
       return;
     }
-    if (r.newer && r.latest && r.url) toast(`Alexel Studio ${r.latest} sudah tersedia (kamu memakai ${r.current}).`, "info", { label: "Lihat", run: () => void openExternal(r.url!) });
+    if (r.newer && r.latest && r.url) toast(`Alexel Studio ${r.latest} sudah tersedia (kamu memakai ${r.current}).`, "info", { label: tl("Lihat"), run: () => void openExternal(r.url!) });
     else if (manual) toast(`Kamu sudah memakai versi terbaru (${r.current}).`, "success");
   } catch (e) {
     if (manual) toast(`Gagal memeriksa pembaruan: ${errMsg(e)}`, "error");
@@ -797,7 +798,7 @@ export async function checkForUpdates(manual = false) {
 /** Buka halaman issue GitHub untuk melaporkan masalah (dengan info versi & OS). */
 export async function reportIssue() {
   const repo = await api.appRepo().catch(() => null);
-  if (!repo) return toast("Alamat repositori belum diatur di build ini.", "info");
+  if (!repo) return toast(tl("Alamat repositori belum diatur di build ini."), "info");
   const info = await api.appInfo().catch(() => null);
   const body = encodeURIComponent(`**Versi:** ${info?.version ?? "?"}\n**OS:** ${info?.platform ?? "?"} ${info?.arch ?? ""}\n\n**Yang terjadi:**\n\n**Yang diharapkan:**\n\n**Langkah:**\n1. `);
   void openExternal(`https://github.com/${repo}/issues/new?body=${body}`);

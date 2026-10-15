@@ -13,6 +13,7 @@ import type { Snapshot } from "../lib/types";
 import { activeTab, setState, toast, useStore } from "../state/store";
 import { openCompare } from "./compare";
 import { prettyKeys } from "../lib/keys";
+import { tl } from "../i18n";
 
 export default function HistoryPanel() {
   const historyFor = useStore((s) => s.historyFor);
@@ -46,13 +47,13 @@ export default function HistoryPanel() {
   const current = path ? docs.currentText(path) ?? "" : "";
   const stats = useMemo(() => (content !== null ? diffStats(content, current) : null), [content, current]);
 
-  if (!path) return <Empty icon={<History size={22} />} title="Buka berkas dulu">Setiap kali kamu menyimpan, Alexel Studio menyimpan salinannya. Di sini kamu bisa kembali ke versi mana pun.</Empty>;
+  if (!path) return <Empty icon={<History size={22} />} title={tl("Buka berkas dulu")}>{tl("Setiap kali kamu menyimpan, Alexel Studio menyimpan salinannya. Di sini kamu bisa kembali ke versi mana pun.")}</Empty>;
   if (snaps === null) return <div className="pad"><Spinner /></div>;
   if (!snaps.length) return <Empty icon={<History size={22} />} title={`Belum ada riwayat untuk ${basename(path)}`}>Simpan berkas ini ({prettyKeys("Mod+S")}) dan versinya mulai tercatat.</Empty>;
 
   const restore = () => {
     if (content === null || !snap) return;
-    if (!docs.getDoc(path)) return toast("Buka berkasnya dulu untuk memulihkan.", "error");
+    if (!docs.getDoc(path)) return toast(tl("Buka berkasnya dulu untuk memulihkan."), "error");
     docs.setDocumentText(path, content);
     toast(`Dipulihkan ke versi ${clockTime(snap.time_ms)}. Simpan untuk menetapkan, atau ${prettyKeys("Mod+Z")} untuk batal.`, "success");
   };
@@ -64,22 +65,22 @@ export default function HistoryPanel() {
         <span className="hint">{snaps.length} versi tersimpan</span>
         {historyFor && (
           <button className="btn btn-sm btn-ghost" onClick={() => setState({ historyFor: null })}>
-            Ikuti berkas aktif
+            {tl("Ikuti berkas aktif")}
           </button>
         )}
       </div>
       <div className="history-slider">
-        <span className="hint">Lama</span>
+        <span className="hint">{tl("Lama")}</span>
         <input
           type="range"
           min={0}
           max={snaps.length - 1}
           value={snaps.length - 1 - idx}
           onChange={(e) => setIdx(snaps.length - 1 - Number(e.target.value))}
-          aria-label="Pilih versi"
+          aria-label={tl("Pilih versi")}
           aria-valuetext={snap ? `${timeAgo(snap.time_ms)}, ${clockTime(snap.time_ms)}` : undefined}
         />
-        <span className="hint">Baru</span>
+        <span className="hint">{tl("Baru")}</span>
       </div>
       {snap && (
         <div className="history-info">
@@ -99,7 +100,7 @@ export default function HistoryPanel() {
           </div>
           <span className="spacer" />
           <IconButton
-            label="Bandingkan dengan sekarang"
+            label={tl("Bandingkan dengan sekarang")}
             onClick={() =>
               content !== null &&
               openCompare({ title: `${basename(path)}: versi ${clockTime(snap.time_ms)}`, filename: basename(path), leftLabel: `Versi ${clockTime(snap.time_ms)}`, rightLabel: "Sekarang", left: content, right: current, acceptLabel: "Pulihkan versi ini", onAccept: restore })

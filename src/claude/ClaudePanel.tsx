@@ -11,11 +11,12 @@ import { agentNow, detectAgent, installClaude, installCommand, loginClaude, newC
 import { AGENTS, agentInfo } from "../agents/registry";
 import { openMenu } from "../components/Overlays";
 import { Composer } from "./Composer";
+import { tl } from "../i18n";
 
 const QUICK = [
-  { label: "Jelaskan berkas ini", prompt: "Jelaskan apa yang dilakukan berkas ini secara singkat." },
-  { label: "Cari bug", prompt: "Periksa berkas ini dan sebutkan bug atau risiko yang nyata. Beri perbaikannya." },
-  { label: "Tulis test", prompt: "Tulis unit test untuk berkas ini memakai framework test yang dipakai project." },
+  { label: tl("Jelaskan berkas ini"), prompt: "Jelaskan apa yang dilakukan berkas ini secara singkat." },
+  { label: tl("Cari bug"), prompt: "Periksa berkas ini dan sebutkan bug atau risiko yang nyata. Beri perbaikannya." },
+  { label: tl("Tulis test"), prompt: "Tulis unit test untuk berkas ini memakai framework test yang dipakai project." },
 ];
 
 function ago(ms: number): string {
@@ -44,16 +45,16 @@ function SessionHistory({ onClose }: { onClose: () => void }) {
   return (
     <div className="claude-history">
       <div className="claude-history-head">
-        <IconButton label="Kembali ke percakapan" onClick={onClose}>
+        <IconButton label={tl("Kembali ke percakapan")} onClick={onClose}>
           <ArrowLeft size={14} />
         </IconButton>
-        <strong>Riwayat percakapan</strong>
+        <strong>{tl("Riwayat percakapan")}</strong>
       </div>
-      <input className="input" placeholder="Cari percakapan…" value={q} onChange={(e) => setQ(e.target.value)} aria-label="Cari percakapan" autoFocus />
+      <input className="input" placeholder={tl("Cari percakapan…")} value={q} onChange={(e) => setQ(e.target.value)} aria-label={tl("Cari percakapan")} autoFocus />
       {err && <p className="tone-danger-fg">{err}</p>}
-      {!root && <p className="hint">Buka folder project untuk melihat percakapan Claude Code di folder itu.</p>}
-      {list && root && !shown.length && <p className="hint">Belum ada percakapan di folder ini.</p>}
-      {!list && root && !err && <p className="hint">Memuat…</p>}
+      {!root && <p className="hint">{tl("Buka folder project untuk melihat percakapan Claude Code di folder itu.")}</p>}
+      {list && root && !shown.length && <p className="hint">{tl("Belum ada percakapan di folder ini.")}</p>}
+      {!list && root && !err && <p className="hint">{tl("Memuat…")}</p>}
       <ul className="claude-history-list">
         {shown.map((s) => (
           <li key={s.id}>
@@ -88,7 +89,7 @@ function Setup() {
         <h3>Pasang {a.name}</h3>
         <p>{a.description}</p>
         {agent === "acp" ? (
-          <p className="hint">Isi perintah agen ACP di Pengaturan → Agen AI.</p>
+          <p className="hint">{tl("Isi perintah agen ACP di Pengaturan → Agen AI.")}</p>
         ) : (
           <button className="btn btn-claude btn-sm" onClick={() => void import("../app/actions").then((m) => m.toggleSidebar("ext"))}>
             <Puzzle size={13} /> Pasang dari Ekstensi
@@ -96,7 +97,7 @@ function Setup() {
         )}
         {agent === "claude" && (
           <>
-            <p className="hint small">Atau pasang lewat terminal:</p>
+            <p className="hint small">{tl("Atau pasang lewat terminal:")}</p>
             <pre className="claude-setup-cmd">{installCommand()}</pre>
             <button className="btn btn-sm" onClick={() => void installClaude()}>
               <TerminalSquare size={13} /> Pasang di terminal
@@ -182,7 +183,7 @@ export default function ClaudePanel() {
   return (
     <section className="claude-panel" aria-label={`Agen AI: ${agentInfo(agent).name}`}>
       <header className="claude-head">
-        <button className="claude-kepi" onClick={() => flashKepi("melambai", 2400)} aria-label="Sapa Kepi" title="Kepi, teman Claude Code">
+        <button className="claude-kepi" onClick={() => flashKepi("melambai", 2400)} aria-label={tl("Sapa Kepi")} title={tl("Kepi, teman Claude Code")}>
           <Kepi size={22} />
         </button>
         <AgentPicker />
@@ -191,17 +192,17 @@ export default function ClaudePanel() {
         </span>
         <span className="spacer" />
         {agentInfo(agent).caps.history && (
-          <IconButton label="Riwayat percakapan" onClick={() => setShowHistory((v) => !v)} active={showHistory}>
+          <IconButton label={tl("Riwayat percakapan")} onClick={() => setShowHistory((v) => !v)} active={showHistory}>
             <History size={14} />
           </IconButton>
         )}
         {agent === "claude" && (
-          <IconButton label="Buka Claude Code di terminal" onClick={() => void openClaudeInteractive()}>
+          <IconButton label={tl("Buka Claude Code di terminal")} onClick={() => void openClaudeInteractive()}>
             <TerminalSquare size={14} />
           </IconButton>
         )}
         <IconButton
-          label="Percakapan baru"
+          label={tl("Percakapan baru")}
           onClick={() => {
             setShowHistory(false);
             newConversation();
@@ -228,7 +229,7 @@ export default function ClaudePanel() {
           {chat.length === 0 ? (
             <div className="claude-empty">
               <CrabMascot mood="melambai" size={54} />
-              <p>Tanya apa saja tentang project ini, minta Claude mengubah kode, atau menjalankan perintah. Kamu yang menyetujui setiap perubahan.</p>
+              <p>{tl("Tanya apa saja tentang project ini, minta Claude mengubah kode, atau menjalankan perintah. Kamu yang menyetujui setiap perubahan.")}</p>
               <div className="claude-quick">
                 {QUICK.map((q) => (
                   <button key={q.label} className="chip" onClick={() => void sendToClaude(q.prompt, { includeFile: true })} disabled={!hasText || !!running}>

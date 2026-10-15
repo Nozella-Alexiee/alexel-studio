@@ -15,6 +15,7 @@ import { basename } from "../lib/paths";
 import { BottomPanel } from "../panels/BottomPanel";
 import { setLayout, useLayout, useStore } from "../state/store";
 import { EditorGroups, RightContent, SideContent, SideResizer, StatusBar } from "./common";
+import { tl } from "../i18n";
 
 export default function StudioShell() {
   const l = useLayout();
@@ -45,10 +46,10 @@ export default function StudioShell() {
           <IconButton label="Sidebar" keys="Mod+B" active={l.sidebar} onClick={() => A.toggleSidebar()}>
             <PanelLeft size={15} />
           </IconButton>
-          <IconButton label="Panel bawah" keys="Mod+J" active={l.panel} onClick={() => A.togglePanel()}>
+          <IconButton label={tl("Panel bawah")} keys="Mod+J" active={l.panel} onClick={() => A.togglePanel()}>
             <PanelBottom size={15} />
           </IconButton>
-          <IconButton label="Agen AI (sidebar kanan)" keys="Mod+Alt+B" active={l.right} onClick={() => A.toggleRight("claude")}>
+          <IconButton label={tl("Agen AI (sidebar kanan)")} keys="Mod+Alt+B" active={l.right} onClick={() => A.toggleRight("claude")}>
             <PanelRight size={15} />
           </IconButton>
         </div>
@@ -62,23 +63,23 @@ export default function StudioShell() {
               {count ? <span className="ab-count">{count > 99 ? "99+" : count}</span> : null}
             </button>
           ))}
-          <button className={l.right && l.rightView === "claude" ? "is-on" : ""} onClick={() => A.toggleRight("claude")} title={`Agen AI (${prettyKeys("Mod+Escape")})`} aria-label="Agen AI" aria-pressed={l.right}>
+          <button className={l.right && l.rightView === "claude" ? "is-on" : ""} onClick={() => A.toggleRight("claude")} title={`Agen AI (${prettyKeys("Mod+Escape")})`} aria-label={tl("Agen AI")} aria-pressed={l.right}>
             <Kepi size={22} />
           </button>
           <span className="spacer" />
           <button
             onClick={(e) =>
               openMenu(e, [
-                { label: "Palette perintah", keys: "Mod+Shift+P", run: () => openPalette(">") },
-                { label: "Pengaturan", keys: "Mod+,", run: () => A.openSettings() },
-                { label: "Shortcut keyboard", run: () => A.openSettings(undefined, "keys") },
-                { label: "Ganti desain", keys: "Ctrl+Mod+T", run: A.cycleDesign },
+                { label: tl("Palette perintah"), keys: "Mod+Shift+P", run: () => openPalette(">") },
+                { label: tl("Pengaturan"), keys: "Mod+,", run: () => A.openSettings() },
+                { label: tl("Shortcut keyboard"), run: () => A.openSettings(undefined, "keys") },
+                { label: tl("Ganti desain"), keys: "Ctrl+Mod+T", run: A.cycleDesign },
                 { label: "", separator: true },
-                { label: root ? "Ganti project…" : "Buka folder…", run: () => void A.openProjectDialog() },
+                { label: root ? "Ganti project…" : tl("Buka folder…"), run: () => void A.openProjectDialog() },
               ])
             }
-            title="Kelola"
-            aria-label="Kelola"
+            title={tl("Kelola")}
+            aria-label={tl("Kelola")}
             aria-haspopup="menu"
           >
             <Settings size={22} strokeWidth={1.6} />
@@ -111,7 +112,7 @@ export default function StudioShell() {
         {l.right && (
           <>
             <SideResizer side="right" />
-            <aside className="right-panel st-right" aria-label="Sidebar kanan">
+            <aside className="right-panel st-right" aria-label={tl("Sidebar kanan")}>
               {l.rightView !== "claude" && (
                 <div className="ctl-right-tabs" role="tablist">
                   <button role="tab" aria-selected={false} onClick={() => setLayout({ rightView: "claude" })}>

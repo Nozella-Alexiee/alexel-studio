@@ -11,6 +11,7 @@ import { relative } from "../lib/paths";
 import type { ListeningPort, TodoItem } from "../lib/types";
 import { confirmDialog, isSaver, toast, useStore } from "../state/store";
 import { refreshTodos } from "./todoData";
+import { tl } from "../i18n";
 
 // ---------------- Masalah ----------------
 
@@ -18,7 +19,7 @@ export function ProblemsPanel() {
   const problems = useStore((s) => s.problems);
   const root = useStore((s) => s.root) ?? "";
   const files = Object.entries(problems).filter(([, l]) => l.length);
-  if (!files.length) return <Empty icon={<Zap size={22} />} title="Tidak ada masalah">Error sintaks dari berkas yang terbuka akan muncul di sini.</Empty>;
+  if (!files.length) return <Empty icon={<Zap size={22} />} title={tl("Tidak ada masalah")}>{tl("Error sintaks dari berkas yang terbuka akan muncul di sini.")}</Empty>;
   return (
     <div className="problems">
       {files.map(([path, list]) => (
@@ -31,13 +32,13 @@ export function ProblemsPanel() {
           {list.map((p, i) => (
             <div key={i} className={`prob-row sev-${p.severity}`}>
               <button className="prob-main" onClick={() => void A.openFile(path, { line: p.line, col: p.col })}>
-                {p.severity === "error" ? <AlertCircle size={14} aria-label="Error" /> : p.severity === "warning" ? <AlertTriangle size={14} aria-label="Peringatan" /> : <Info size={14} aria-label="Info" />}
+                {p.severity === "error" ? <AlertCircle size={14} aria-label="Error" /> : p.severity === "warning" ? <AlertTriangle size={14} aria-label={tl("Peringatan")} /> : <Info size={14} aria-label="Info" />}
                 <span className="prob-msg">{p.message}</span>
                 <span className="prob-loc">
                   {p.source} · {p.line}:{p.col}
                 </span>
               </button>
-              <button className="btn btn-sm btn-ghost prob-ask" onClick={() => void import("../claude/claude").then((m) => m.explainProblem(path, p))} title="Minta agen AI menjelaskan dan memperbaiki">
+              <button className="btn btn-sm btn-ghost prob-ask" onClick={() => void import("../claude/claude").then((m) => m.explainProblem(path, p))} title={tl("Minta agen AI menjelaskan dan memperbaiki")}>
                 <CrabMascot size={14} /> Jelaskan
               </button>
             </div>
@@ -74,7 +75,7 @@ export function PortsPanel() {
   }, []);
 
   const stop = async (p: ListeningPort, force = false) => {
-    if (!(await confirmDialog(`Hentikan ${p.process} (port ${p.port})?`, p.command || `PID ${p.pid}`, force ? "Paksa berhenti" : "Hentikan", true))) return;
+    if (!(await confirmDialog(`Hentikan ${p.process} (port ${p.port})?`, p.command || `PID ${p.pid}`, force ? "Paksa berhenti" : tl("Hentikan"), true))) return;
     try {
       await api.kill(p.pid, force);
       toast(`Proses ${p.pid} dihentikan`, "success");
@@ -87,8 +88,8 @@ export function PortsPanel() {
   return (
     <div className="ports">
       <div className="panel-toolbar">
-        <span className="hint">Server yang sedang mendengarkan port TCP milikmu.</span>
-        <IconButton label="Muat ulang" onClick={() => void load()}>
+        <span className="hint">{tl("Server yang sedang mendengarkan port TCP milikmu.")}</span>
+        <IconButton label={tl("Muat ulang")} onClick={() => void load()}>
           {busy ? <Spinner size={12} /> : <RefreshCw size={13} />}
         </IconButton>
       </div>
@@ -97,18 +98,18 @@ export function PortsPanel() {
           <Spinner />
         </div>
       ) : loadErr ? (
-        <Empty title="Daftar port tidak bisa dibaca">{loadErr}</Empty>
+        <Empty title={tl("Daftar port tidak bisa dibaca")}>{loadErr}</Empty>
       ) : ports.length === 0 ? (
-        <Empty title="Tidak ada port terbuka">Jalankan dev server (mis. npm run dev), lalu muncul di sini.</Empty>
+        <Empty title={tl("Tidak ada port terbuka")}>Jalankan dev server (mis. npm run dev), lalu muncul di sini.</Empty>
       ) : (
         <table className="ports-table">
           <thead>
             <tr>
               <th>Port</th>
-              <th>Proses</th>
-              <th>Alamat</th>
-              <th>Perintah</th>
-              <th aria-label="Aksi" />
+              <th>{tl("Proses")}</th>
+              <th>{tl("Alamat")}</th>
+              <th>{tl("Perintah")}</th>
+              <th aria-label={tl("Aksi")} />
             </tr>
           </thead>
           <tbody>
@@ -126,7 +127,7 @@ export function PortsPanel() {
                   <IconButton label={`Buka http://localhost:${p.port}`} onClick={() => void openExternal(`http://localhost:${p.port}`)}>
                     <ExternalLink size={13} />
                   </IconButton>
-                  <IconButton label="Hentikan" tone="danger" onClick={() => void stop(p)}>
+                  <IconButton label={tl("Hentikan")} tone="danger" onClick={() => void stop(p)}>
                     <Square size={12} />
                   </IconButton>
                 </td>
@@ -155,9 +156,9 @@ export function TodoPanel() {
     for (const t of todos ?? []) (m[t.tag] ??= []).push(t);
     return TAGS.filter((t) => m[t]?.length).map((t) => [t, m[t]] as const);
   }, [todos]);
-  if (!root) return <Empty title="Buka folder dulu" />;
+  if (!root) return <Empty title={tl("Buka folder dulu")} />;
   if (todos === null) return <div className="pad"><Spinner /></div>;
-  if (!todos.length) return <Empty title="Tidak ada TODO">Tulis komentar seperti <code>// TODO: rapikan</code> atau <code># FIXME</code> dan muncul di sini.</Empty>;
+  if (!todos.length) return <Empty title={tl("Tidak ada TODO")}>{tl("Tulis komentar seperti")} <code>// TODO: rapikan</code> {tl("atau")} <code># FIXME</code> {tl("dan muncul di sini.")}</Empty>;
   const Card = ({ t }: { t: TodoItem }) => (
     <button className="todo-card" onClick={() => void A.openFile(t.path, { line: t.line })}>
       <span className="todo-text">{t.text || <em className="hint">(tanpa keterangan)</em>}</span>
@@ -170,8 +171,8 @@ export function TodoPanel() {
     <div className="todos">
       <div className="panel-toolbar">
         <span className="hint">{todos.length} catatan di project</span>
-        <Segmented label="Tampilan" value={view} onChange={setView} options={[{ id: "board", label: "Papan" }, { id: "list", label: "Daftar" }]} />
-        <IconButton label="Pindai ulang" onClick={() => void refreshTodos()}>
+        <Segmented label={tl("Tampilan")} value={view} onChange={setView} options={[{ id: "board", label: tl("Papan") }, { id: "list", label: tl("Daftar") }]} />
+        <IconButton label={tl("Pindai ulang")} onClick={() => void refreshTodos()}>
           <RefreshCw size={13} />
         </IconButton>
       </div>

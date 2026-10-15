@@ -6,6 +6,7 @@ import { useEffect, useRef, useState } from "react";
 import { MENUS, resolveItems, runMenuCommand, type ResolvedItem } from "../app/menus";
 import { isMac } from "../lib/ipc";
 import { prettyKeys } from "../lib/keys";
+import { tl } from "../i18n";
 
 function Items({ items, onDone }: { items: ResolvedItem[]; onDone: () => void }) {
   const [sub, setSub] = useState<number | null>(null);
@@ -73,7 +74,7 @@ export function MenuBar() {
   }, [open]);
   if (isMac) return null;
   return (
-    <div className="menubar" ref={bar} role="menubar" aria-label="Menu aplikasi">
+    <div className="menubar" ref={bar} role="menubar" aria-label={tl("Menu aplikasi")}>
       {MENUS.map((m, i) => (
         <div key={m.label} className="mb-top">
           <button

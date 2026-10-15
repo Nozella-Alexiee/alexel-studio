@@ -6,6 +6,7 @@ import { designById } from "../design/designs";
 import { Kepi } from "./CrabMascot";
 import { getState, setState, toast, useStore } from "../state/store";
 import { prettyKeys, fileManagerName } from "../lib/keys";
+import { tl } from "../i18n";
 
 export type PenguinVariant = "antartika" | "tuxedo" | "kawanan";
 export type PenguinMood = "idle" | "sibuk" | "error" | "sukses" | "jempol" | "hati" | "semangat";
@@ -243,7 +244,7 @@ export function NoziStatus() {
         flashPenguin("hati", 2600);
         toast(`Nozi: ${nextTip()}`);
       }}
-      title="Klik untuk mengelus Nozi dan dapat tips"
+      title={tl("Klik untuk mengelus Nozi dan dapat tips")}
     >
       <PenguinMascot variant={v} mood={mood} size={15} />
       Nozi {MOOD_LABEL[mood]}
@@ -291,15 +292,15 @@ export function NoziPeek() {
     <div className={`nozi-peek ${bubble ? "has-bubble" : ""}`} onMouseEnter={() => setBubble(true)} onMouseLeave={() => setBubble(false)}>
       {bubble && (
         <>
-          <button className="nozi-bubble" onClick={() => nextTip()} title="Tips berikutnya">
+          <button className="nozi-bubble" onClick={() => nextTip()} title={tl("Tips berikutnya")}>
             {mood === "idle" ? tip : moodLine(mood)}
           </button>
-          <button className="nozi-peek-x" aria-label="Sembunyikan Nozi" title="Sembunyikan Nozi (bisa dimunculkan lagi di Pengaturan)" onClick={hide}>
+          <button className="nozi-peek-x" aria-label={tl("Sembunyikan Nozi")} title={tl("Sembunyikan Nozi (bisa dimunculkan lagi di Pengaturan)")} onClick={hide}>
             ×
           </button>
         </>
       )}
-      <button className="nozi-peek-body" onClick={() => flashPenguin("hati", 2600)} aria-label="Elus Nozi" title="Elus Nozi">
+      <button className="nozi-peek-body" onClick={() => flashPenguin("hati", 2600)} aria-label={tl("Elus Nozi")} title={tl("Elus Nozi")}>
         <PenguinMascot variant={v} mood={mood} size={44} />
       </button>
     </div>
@@ -324,9 +325,9 @@ export function NoziHero({ size = 200 }: { size?: number }) {
   if (v === "kawanan") {
     return (
       <div className="nozi-hero nozi-flock" aria-hidden={false}>
-        <PenguinMascot variant={v} mood="idle" size={Math.round(size * 0.45)} title="Nozi teman" />
+        <PenguinMascot variant={v} mood="idle" size={Math.round(size * 0.45)} title={tl("Nozi teman")} />
         <PenguinMascot variant={v} mood={mood} size={size} />
-        <PenguinMascot variant={v} mood="sukses" size={Math.round(size * 0.55)} title="Nozi teman" />
+        <PenguinMascot variant={v} mood="sukses" size={Math.round(size * 0.55)} title={tl("Nozi teman")} />
       </div>
     );
   }

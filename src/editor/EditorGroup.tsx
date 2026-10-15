@@ -9,6 +9,7 @@ import { relative } from "../lib/paths";
 import { setState, useStore, type Tab } from "../state/store";
 import { CodeEditor } from "./CodeEditor";
 import { HtmlPreview, ImageViewer, MarkdownPreview } from "./Previews";
+import { tl } from "../i18n";
 
 const SettingsView = lazy(() => import("../panels/SettingsView"));
 const Dashboard = lazy(() => import("../panels/Dashboard"));
@@ -22,18 +23,18 @@ function TabItem({ tab, group, active, drop }: { tab: Tab; group: number; active
   const errors = useStore((s) => s.problems[tab.id]?.filter((p) => p.severity === "error").length ?? 0);
   const onMenu = (e: React.MouseEvent) =>
     openMenu(e, [
-      { label: "Tutup", keys: "Mod+W", run: () => void A.closeTab(tab.id, group) },
-      { label: "Tutup tab lain", run: () => void A.closeOtherTabs(tab.id, group) },
-      { label: "Tutup semua", run: () => void A.closeAllTabs() },
+      { label: tl("Tutup"), keys: "Mod+W", run: () => void A.closeTab(tab.id, group) },
+      { label: tl("Tutup tab lain"), run: () => void A.closeOtherTabs(tab.id, group) },
+      { label: tl("Tutup semua"), run: () => void A.closeAllTabs() },
       { separator: true, label: "" },
       ...(tab.kind === "text" || tab.kind === "image"
         ? [
-            { label: "Salin path", run: () => void A.copyPath(tab.id) },
-            { label: "Salin path relatif", run: () => void A.copyPath(tab.id, true) },
-            { label: "Tampilkan di Explorer", run: () => void A.revealInTree(tab.id) },
-            { label: "Time-travel berkas ini", disabled: tab.kind !== "text", run: () => { setState({ historyFor: tab.id }); A.togglePanel("history"); } },
+            { label: tl("Salin path"), run: () => void A.copyPath(tab.id) },
+            { label: tl("Salin path relatif"), run: () => void A.copyPath(tab.id, true) },
+            { label: tl("Tampilkan di Explorer"), run: () => void A.revealInTree(tab.id) },
+            { label: tl("Time-travel berkas ini"), disabled: tab.kind !== "text", run: () => { setState({ historyFor: tab.id }); A.togglePanel("history"); } },
             { separator: true, label: "" },
-            { label: "Belah ke kanan", keys: "Mod+\\", run: () => { A.activateTab(tab.id, group); A.splitEditor(); } },
+            { label: tl("Belah ke kanan"), keys: "Mod+\\", run: () => { A.activateTab(tab.id, group); A.splitEditor(); } },
           ]
         : []),
     ]);
@@ -148,7 +149,7 @@ export function TabStrip({ group, extra }: { group: number; extra?: React.ReactN
       <div
         className="tabs"
         role="tablist"
-        aria-label="Berkas terbuka"
+        aria-label={tl("Berkas terbuka")}
         ref={ref}
         onScroll={measure}
         onDragOver={onTabsDragOver}
@@ -168,7 +169,7 @@ export function Breadcrumb({ path }: { path: string }) {
   const parts = rel.split("/");
   const rootName = root.split("/").pop();
   return (
-    <nav className="crumbs" aria-label="Lokasi berkas">
+    <nav className="crumbs" aria-label={tl("Lokasi berkas")}>
       {root && path.startsWith(root) && (
         <>
           <span className="crumb">{rootName}</span>
@@ -192,13 +193,13 @@ export function PreviewToggle({ tab }: { tab: Tab }) {
   if (tab.kind !== "text" || !/\.(md|markdown|mdx|html?)$/i.test(tab.id)) return null;
   return (
     <Segmented
-      label="Mode pratinjau"
+      label={tl("Mode pratinjau")}
       value={tab.preview}
       onChange={(v) => A.setTabPreview(tab.id, v)}
       options={[
-        { id: "code", label: <Code2 size={13} />, title: "Kode saja" },
-        { id: "split", label: <Columns2 size={13} />, title: "Kode + pratinjau" },
-        { id: "preview", label: <Eye size={13} />, title: "Pratinjau saja" },
+        { id: "code", label: <Code2 size={13} />, title: tl("Kode saja") },
+        { id: "split", label: <Columns2 size={13} />, title: tl("Kode + pratinjau") },
+        { id: "preview", label: <Eye size={13} />, title: tl("Pratinjau saja") },
       ]}
     />
   );
@@ -212,11 +213,11 @@ export function EditorActions({ group }: { group: number }) {
     <>
       {tab && <PreviewToggle tab={tab} />}
       {tab?.kind === "text" && (
-        <IconButton label="Jalankan berkas" keys="Mod+R" onClick={() => void runActiveFile()} tone="run">
+        <IconButton label={tl("Jalankan berkas")} keys="Mod+R" onClick={() => void runActiveFile()} tone="run">
           <Play size={14} />
         </IconButton>
       )}
-      <IconButton label={split ? "Gabung editor" : "Belah editor"} keys="Mod+\" onClick={A.splitEditor} active={split}>
+      <IconButton label={split ? "Gabung editor" : tl("Belah editor")} keys="Mod+\" onClick={A.splitEditor} active={split}>
         <Columns2 size={14} />
       </IconButton>
     </>
@@ -229,10 +230,10 @@ function ConflictBar({ tab }: { tab: Tab }) {
     <div className="banner banner-warning" role="alert">
       <AlertTriangle size={14} aria-hidden />
       {tab.missing ? (
-        <span>Berkas ini sudah tidak ada di disk. Simpan untuk membuatnya lagi.</span>
+        <span>{tl("Berkas ini sudah tidak ada di disk. Simpan untuk membuatnya lagi.")}</span>
       ) : (
         <>
-          <span>Berkas berubah di disk dan kamu punya editan yang belum disimpan.</span>
+          <span>{tl("Berkas berubah di disk dan kamu punya editan yang belum disimpan.")}</span>
           <button className="btn btn-sm" onClick={() => void import("../app/conflicts").then((m) => m.resolveConflict(tab.id))}>
             Selesaikan
           </button>
@@ -276,11 +277,11 @@ function useDropZone(group: number) {
   };
   const overlay = zone ? (
     <div className="drop-overlay" aria-hidden>
-      <div className={`drop-zone is-here ${zone === "here" ? "is-hot" : ""}`}>Buka di sini</div>
+      <div className={`drop-zone is-here ${zone === "here" ? "is-hot" : ""}`}>{tl("Buka di sini")}</div>
       {group === 0 && (
         <div className={`drop-zone is-right ${zone === "right" ? "is-hot" : ""}`}>
           <Columns2 size={22} />
-          Belah ke kanan
+          {tl("Belah ke kanan")}
         </div>
       )}
     </div>

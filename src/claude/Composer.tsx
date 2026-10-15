@@ -36,6 +36,7 @@ import {
 } from "./claude";
 import { EFFORTS, effortLabel, modelChoices } from "./options";
 import { agentInfo } from "../agents/registry";
+import { tl } from "../i18n";
 
 interface Img {
   media_type: string;
@@ -167,11 +168,11 @@ interface Suggest {
 }
 
 const LOCAL_CMDS = [
-  { name: "model", description: "Ganti model" },
-  { name: "effort", description: "Ganti tingkat effort" },
-  { name: "mode", description: "Ganti mode izin" },
-  { name: "clear", description: "Mulai percakapan baru" },
-  { name: "resume", description: "Lanjutkan percakapan sebelumnya" },
+  { name: "model", description: tl("Ganti model") },
+  { name: "effort", description: tl("Ganti tingkat effort") },
+  { name: "mode", description: tl("Ganti mode izin") },
+  { name: "clear", description: tl("Mulai percakapan baru") },
+  { name: "resume", description: tl("Lanjutkan percakapan sebelumnya") },
 ];
 
 export function Composer({ onShowHistory }: { onShowHistory: () => void }) {
@@ -219,7 +220,7 @@ export function Composer({ onShowHistory }: { onShowHistory: () => void }) {
   const relTab =
     tab?.kind === "text" && root ? relative(root, tab.id) : fileName;
 
-  const modelList = agent === "claude" ? modelChoices(models) : [{ value: "default", displayName: "Bawaan", description: "Model bawaan agen" }, ...models.filter((m) => m.value !== "default")];
+  const modelList = agent === "claude" ? modelChoices(models) : [{ value: "default", displayName: "Bawaan", description: tl("Model bawaan agen") }, ...models.filter((m) => m.value !== "default")];
   const modelValue = modelList.some((m) => m.value === model)
     ? model
     : "default";
@@ -370,7 +371,7 @@ export function Composer({ onShowHistory }: { onShowHistory: () => void }) {
               className={`chip ${useSel ? "is-on" : ""}`}
               onClick={() => setUseSel((v) => !v)}
               aria-pressed={useSel}
-              title="Seleksi di editor ikut dikirim"
+              title={tl("Seleksi di editor ikut dikirim")}
             >
               <TextCursorInput size={12} aria-hidden /> {basename(relTab)}:
               {selection.from}
@@ -382,10 +383,10 @@ export function Composer({ onShowHistory }: { onShowHistory: () => void }) {
               onClick={() => setIncludeFile((v) => !v)}
               disabled={!fileName}
               aria-pressed={includeFile}
-              title="Isi berkas aktif ikut dikirim"
+              title={tl("Isi berkas aktif ikut dikirim")}
             >
               <FileCode2 size={12} aria-hidden />{" "}
-              {fileName ?? "tidak ada berkas"}
+              {fileName ?? tl("tidak ada berkas")}
             </button>
           )}
           {images.map((im, i) => (
@@ -407,7 +408,7 @@ export function Composer({ onShowHistory }: { onShowHistory: () => void }) {
           <div
             className="cz-suggest"
             role="listbox"
-            aria-label={suggest.kind === "file" ? "Berkas" : "Perintah"}
+            aria-label={suggest.kind === "file" ? tl("Berkas") : tl("Perintah")}
           >
             {suggest.items.map((it, i) => (
               <button
@@ -493,7 +494,7 @@ export function Composer({ onShowHistory }: { onShowHistory: () => void }) {
               void send();
             }
           }}
-          aria-label="Pesan untuk agen AI"
+          aria-label={tl("Pesan untuk agen AI")}
         />
 
         <div className="cz-bar">
@@ -501,7 +502,7 @@ export function Composer({ onShowHistory }: { onShowHistory: () => void }) {
             {caps.modes.length > 0 && (
             <Picker
               className="pick-mode"
-              label="Mode izin"
+              label={tl("Mode izin")}
               title={`Mode izin (${prettyKeys("Shift+Tab")} untuk ganti)`}
               icon={MODE_ICON[mode]}
               value={mode}
@@ -530,7 +531,7 @@ export function Composer({ onShowHistory }: { onShowHistory: () => void }) {
             <Picker
               className="pick-effort"
               label="Effort"
-              title="Effort: seberapa lama agen berpikir. Berlaku mulai pesan berikutnya."
+              title={tl("Effort: seberapa lama agen berpikir. Berlaku mulai pesan berikutnya.")}
               icon={<Brain size={12} aria-hidden />}
               value={
                 effortChoices.some((e) => e.id === effort) ? effort : "auto"
@@ -545,7 +546,7 @@ export function Composer({ onShowHistory }: { onShowHistory: () => void }) {
             )}
           </div>
           <div className="cz-actions">
-            <label className="cz-icon-btn" title="Lampirkan gambar">
+            <label className="cz-icon-btn" title={tl("Lampirkan gambar")}>
               <ImagePlus size={14} aria-hidden />
               <input
                 type="file"
@@ -555,13 +556,13 @@ export function Composer({ onShowHistory }: { onShowHistory: () => void }) {
                 onChange={(e) =>
                   e.target.files && void addFiles(e.target.files)
                 }
-                aria-label="Lampirkan gambar"
+                aria-label={tl("Lampirkan gambar")}
               />
             </label>
             <button
               className="cz-icon-btn"
-              title="Sebut berkas (@)"
-              aria-label="Sebut berkas"
+              title={tl("Sebut berkas (@)")}
+              aria-label={tl("Sebut berkas")}
               onClick={() => {
                 const next = `${text}${text && !text.endsWith(" ") ? " " : ""}@`;
                 setText(next);
@@ -575,8 +576,8 @@ export function Composer({ onShowHistory }: { onShowHistory: () => void }) {
               <button
                 className="cz-send is-stop"
                 onClick={() => void cancelClaude()}
-                aria-label="Hentikan"
-                title="Hentikan"
+                aria-label={tl("Hentikan")}
+                title={tl("Hentikan")}
               >
                 <Square size={12} />
               </button>
@@ -585,7 +586,7 @@ export function Composer({ onShowHistory }: { onShowHistory: () => void }) {
                 className="cz-send"
                 onClick={() => void send()}
                 disabled={!text.trim() && !images.length}
-                aria-label="Kirim"
+                aria-label={tl("Kirim")}
                 title={`Kirim (Enter)`}
               >
                 <ArrowUp size={15} />
@@ -595,7 +596,7 @@ export function Composer({ onShowHistory }: { onShowHistory: () => void }) {
         </div>
       </div>
       <div className="cz-foot">
-        <span>Shift+Enter baris baru · @ berkas · / perintah</span>
+        <span>{tl("Shift+Enter baris baru · @ berkas · / perintah")}</span>
         <span className="spacer" />
         {ctxPct != null && (
           <span

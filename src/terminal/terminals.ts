@@ -10,6 +10,7 @@ import { api, errMsg, on, openExternal } from "../lib/ipc";
 import { formatDuration, stripAnsi } from "../lib/format";
 import { basename } from "../lib/paths";
 import { getState, setState, toast, useStore, type TermSession } from "../state/store";
+import { tl } from "../i18n";
 
 interface Runtime {
   key: string;
@@ -92,7 +93,7 @@ function init() {
     if (sess?.kind === "run") void import("../components/PenguinMascot").then((m) => m.flashPenguin(code === 0 ? "sukses" : "error", code === 0 ? 6000 : 9000));
     if (sess?.kind === "run" && code !== 0 && code !== 130 && code !== null) {
       toast(`${sess.title} gagal (kode ${code})`, "error", {
-        label: "Tanya agen AI",
+        label: tl("Tanya agen AI"),
         run: () => void import("../claude/claude").then((m) => m.explainTerminal(key)),
       });
     }

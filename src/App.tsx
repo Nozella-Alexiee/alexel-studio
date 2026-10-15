@@ -10,6 +10,7 @@ import { TourHost } from "./components/Tour";
 import { api, call, confirmWindowClose, isDemo, on, pathForFile } from "./lib/ipc";
 import { CommandPalette } from "./panels/CommandPalette";
 import { ask, getState, isSaver, setState, useStore } from "./state/store";
+import { tl } from "./i18n";
 
 const AuroraShell = lazy(() => import("./shells/AuroraShell"));
 const ZenShell = lazy(() => import("./shells/ZenShell"));
@@ -114,7 +115,7 @@ function useBackgroundTasks() {
           const running = getState().terminals.filter((t) => t.status === "running" && t.kind !== "shell");
           if (dirty.length && !(await A.closeAllTabs())) return;
           if (running.length) {
-            const r = await ask({ kind: "confirm", title: `${running.length} proses masih berjalan`, message: running.map((t) => t.title).join(", ") + " akan dihentikan.", okLabel: "Hentikan & keluar", danger: true });
+            const r = await ask({ kind: "confirm", title: `${running.length} proses masih berjalan`, message: running.map((t) => t.title).join(", ") + " akan dihentikan.", okLabel: tl("Hentikan & keluar"), danger: true });
             if (r !== true) return;
           }
           await confirmWindowClose();
@@ -177,9 +178,9 @@ export default function App() {
   const Shell = shell === "studio" ? StudioShell : shell === "zen" ? ZenShell : shell === "control" ? ControlShell : AuroraShell;
   return (
     <>
-      {isDemo && <div className="demo-ribbon">Pratinjau browser</div>}
+      {isDemo && <div className="demo-ribbon">{tl("Pratinjau browser")}</div>}
       {ready ? (
-        <ErrorBoundary label="Tampilan mengalami error" onReset={() => A.resetLayout()}>
+        <ErrorBoundary label={tl("Tampilan mengalami error")} onReset={() => A.resetLayout()}>
           <Suspense fallback={<div className="boot" />}>
             <Shell />
           </Suspense>

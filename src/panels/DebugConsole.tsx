@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from "react";
 import { IconButton } from "../components/ui";
 import { evaluateRepl } from "../debug/debug";
 import { setDbg, useDebug } from "../debug/state";
+import { tl } from "../i18n";
 
 export default function DebugConsole() {
   const lines = useDebug((s) => s.console);
@@ -20,13 +21,13 @@ export default function DebugConsole() {
   return (
     <div className="dbg-console">
       <div className="output-bar">
-        <span className="hint">{status === "paused" ? "Program berhenti, ekspresi dievaluasi di frame terpilih." : status === "running" ? "Program berjalan." : "Tidak ada sesi debug."}</span>
+        <span className="hint">{status === "paused" ? tl("Program berhenti, ekspresi dievaluasi di frame terpilih.") : status === "running" ? tl("Program berjalan.") : tl("Tidak ada sesi debug.")}</span>
         <span className="spacer" />
-        <IconButton label="Bersihkan" onClick={() => setDbg({ console: [] })} disabled={!lines.length}>
+        <IconButton label={tl("Bersihkan")} onClick={() => setDbg({ console: [] })} disabled={!lines.length}>
           <Trash2 size={13} />
         </IconButton>
       </div>
-      <div className="dbg-console-lines" ref={box} role="log" aria-label="Debug console">
+      <div className="dbg-console-lines" ref={box} role="log" aria-label={tl("Debug console")}>
         {lines.map((l, i) => (
           <div key={i} className={`dbg-line k-${l.kind}`}>
             {l.kind === "in" ? "› " : l.kind === "result" ? "‹ " : ""}
@@ -49,7 +50,7 @@ export default function DebugConsole() {
         <input
           className="input"
           value={expr}
-          placeholder={status === "paused" ? "Evaluasi ekspresi…" : "Tersedia saat program berhenti"}
+          placeholder={status === "paused" ? tl("Evaluasi ekspresi…") : tl("Tersedia saat program berhenti")}
           onChange={(e) => setExpr(e.target.value)}
           onKeyDown={(e) => {
             if (e.key === "ArrowUp" && hist.length) {
@@ -69,7 +70,7 @@ export default function DebugConsole() {
               }
             }
           }}
-          aria-label="Ekspresi debug"
+          aria-label={tl("Ekspresi debug")}
         />
       </form>
     </div>

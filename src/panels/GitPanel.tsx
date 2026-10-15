@@ -11,6 +11,7 @@ import { timeAgo } from "../lib/format";
 import type { Commit, GitFile } from "../lib/types";
 import { confirmDialog, promptDialog, toast, useStore } from "../state/store";
 import { prettyKeys, modKey } from "../lib/keys";
+import { tl } from "../i18n";
 
 const STATUS: Record<string, string> = { M: "Diubah", A: "Ditambahkan", D: "Dihapus", R: "Diganti nama", C: "Disalin", U: "Konflik", "?": "Baru" };
 
@@ -56,12 +57,12 @@ export default function GitPanel() {
     }
   };
 
-  if (!root) return <Empty title="Buka folder dulu" />;
+  if (!root) return <Empty title={tl("Buka folder dulu")} />;
   if (!git) return <div className="pad"><Spinner /></div>;
   if (!git.is_repo) {
     return (
-      <Empty icon={<GitBranch size={26} />} title="Bukan repository git" action={<button className="btn btn-primary" onClick={() => void run("init", () => api.gitInit(root), "Repo dibuat")}>Inisialisasi git</button>}>
-        Folder ini belum memakai git.
+      <Empty icon={<GitBranch size={26} />} title={tl("Bukan repository git")} action={<button className="btn btn-primary" onClick={() => void run("init", () => api.gitInit(root), "Repo dibuat")}>{tl("Inisialisasi git")}</button>}>
+        {tl("Folder ini belum memakai git.")}
       </Empty>
     );
   }
@@ -71,10 +72,10 @@ export default function GitPanel() {
 
   const commit = async () => {
     // Cek pesan dulu, supaya tidak ada "git add -A" yang tertinggal saat commit dibatalkan.
-    if (!msg.trim()) return toast("Tulis pesan commit dulu.", "error");
+    if (!msg.trim()) return toast(tl("Tulis pesan commit dulu."), "error");
     if (!staged.length) {
-      if (!changes.length) return toast("Tidak ada perubahan untuk di-commit.");
-      if (!(await confirmDialog("Belum ada yang di-stage", "Stage semua perubahan lalu commit?", "Stage semua & commit"))) return;
+      if (!changes.length) return toast(tl("Tidak ada perubahan untuk di-commit."));
+      if (!(await confirmDialog(tl("Belum ada yang di-stage"), "Stage semua perubahan lalu commit?", "Stage semua & commit"))) return;
       if (!(await run("stage", () => api.gitStage(repo, [])))) return;
     }
     const ok = await run("commit", () => api.gitCommit(repo, msg.trim()), "Commit dibuat");
@@ -108,9 +109,9 @@ export default function GitPanel() {
       ...b.local.map((name) => ({ label: name === b.current ? `✓ ${name}` : name, disabled: name === b.current, run: () => void run("checkout", () => api.gitCheckout(repo, name), `Pindah ke ${name}`).then(refreshHeads) })),
       { separator: true, label: "" },
       {
-        label: "Branch baru…",
+        label: tl("Branch baru…"),
         run: async () => {
-          const n = await promptDialog("Branch baru", { placeholder: "fitur/nama", validate: (v) => (/^[\w./-]+$/.test(v) && !v.startsWith("-") ? null : "Nama branch tidak valid.") });
+          const n = await promptDialog(tl("Branch baru"), { placeholder: "fitur/nama", validate: (v) => (/^[\w./-]+$/.test(v) && !v.startsWith("-") ? null : "Nama branch tidak valid.") });
           if (n) await run("checkout", () => api.gitCheckout(repo, n, true), `Branch ${n} dibuat`);
         },
       },
@@ -122,7 +123,7 @@ export default function GitPanel() {
     const name = f.path.split("/").pop()!;
     const dir = f.path.split("/").slice(0, -1).join("/");
     return (
-      <div className={`git-row git-${l}`} onContextMenu={(e) => openMenu(e, [{ label: "Buka berkas", run: () => void A.openFile(join(repo, f.path)) }, { label: "Lihat perubahan", run: () => void showDiff(f) }, ...(!isStaged ? [{ label: "Buang perubahan", danger: true, run: () => void discard([f]) }] : [])])}>
+      <div className={`git-row git-${l}`} onContextMenu={(e) => openMenu(e, [{ label: tl("Buka berkas"), run: () => void A.openFile(join(repo, f.path)) }, { label: tl("Lihat perubahan"), run: () => void showDiff(f) }, ...(!isStaged ? [{ label: tl("Buang perubahan"), danger: true, run: () => void discard([f]) }] : [])])}>
         <button className="git-file" onClick={() => void showDiff(f)} title={`${STATUS[l] ?? l} — klik untuk melihat perubahan`}>
           <FileIcon filename={name} size={14} />
           <span className="git-name">{name}</span>
@@ -130,7 +131,7 @@ export default function GitPanel() {
         </button>
         <div className="git-row-actions">
           {!isStaged && (
-            <IconButton label="Buang perubahan" onClick={() => void discard([f])}>
+            <IconButton label={tl("Buang perubahan")} onClick={() => void discard([f])}>
               <Undo2 size={13} />
             </IconButton>
           )}
@@ -146,7 +147,7 @@ export default function GitPanel() {
   return (
     <div className="git-panel">
       <div className="git-branch">
-        <button className="btn btn-ghost git-branch-btn" onClick={(e) => void branchMenu(e)} aria-label="Ganti branch">
+        <button className="btn btn-ghost git-branch-btn" onClick={(e) => void branchMenu(e)} aria-label={tl("Ganti branch")}>
           <GitBranch size={14} />
           <span>{git.branch || "HEAD"}</span>
           <ChevronDown size={12} />
@@ -160,7 +161,7 @@ export default function GitPanel() {
             <ArrowUp size={14} />
             {git.ahead > 0 && <span className="mini-count">{git.ahead}</span>}
           </IconButton>
-          <IconButton label="Muat ulang" onClick={() => void A.refreshGit()}>
+          <IconButton label={tl("Muat ulang")} onClick={() => void A.refreshGit()}>
             {busy ? <Spinner size={12} /> : <RefreshCw size={14} />}
           </IconButton>
         </div>
@@ -179,7 +180,7 @@ export default function GitPanel() {
               void commit();
             }
           }}
-          aria-label="Pesan commit"
+          aria-label={tl("Pesan commit")}
         />
         <button className="btn btn-primary btn-block" onClick={() => void commit()} disabled={busy === "commit"}>
           <Check size={14} /> Commit{staged.length ? ` ${staged.length} berkas` : ""}
@@ -190,9 +191,9 @@ export default function GitPanel() {
       {staged.length > 0 && (
         <section className="git-section">
           <div className="git-section-head">
-            <span>Di-stage</span>
+            <span>{tl("Di-stage")}</span>
             <span className="count-badge">{staged.length}</span>
-            <IconButton label="Unstage semua" onClick={() => void run("stage", () => api.gitUnstage(repo, []))}>
+            <IconButton label={tl("Unstage semua")} onClick={() => void run("stage", () => api.gitUnstage(repo, []))}>
               <Minus size={13} />
             </IconButton>
           </div>
@@ -203,14 +204,14 @@ export default function GitPanel() {
       )}
       <section className="git-section">
         <div className="git-section-head">
-          <span>Perubahan</span>
+          <span>{tl("Perubahan")}</span>
           <span className="count-badge">{changes.length}</span>
           {changes.length > 0 && (
             <>
-              <IconButton label="Buang semua perubahan" onClick={() => void discard(changes)}>
+              <IconButton label={tl("Buang semua perubahan")} onClick={() => void discard(changes)}>
                 <Undo2 size={13} />
               </IconButton>
-              <IconButton label="Stage semua" onClick={() => void run("stage", () => api.gitStage(repo, []))}>
+              <IconButton label={tl("Stage semua")} onClick={() => void run("stage", () => api.gitStage(repo, []))}>
                 <Plus size={13} />
               </IconButton>
             </>
@@ -219,13 +220,13 @@ export default function GitPanel() {
         {changes.map((f) => (
           <Item key={"c" + f.path} f={f} isStaged={false} />
         ))}
-        {!changes.length && !staged.length && <div className="hint pad-x">Bersih. Tidak ada perubahan.</div>}
+        {!changes.length && !staged.length && <div className="hint pad-x">{tl("Bersih. Tidak ada perubahan.")}</div>}
       </section>
 
       {log.length > 0 && (
         <section className="git-section">
           <div className="git-section-head">
-            <span>Riwayat</span>
+            <span>{tl("Riwayat")}</span>
           </div>
           <ol className="git-log">
             {log.map((c, i) => (

@@ -6,6 +6,7 @@ import { Empty, IconButton } from "../components/ui";
 import { setState, useStore } from "../state/store";
 import * as T from "../terminal/terminals";
 import { prettyKeys, shellName } from "../lib/keys";
+import { tl } from "../i18n";
 
 export default function TerminalPanel({ showTabs = true }: { showTabs?: boolean }) {
   const terminals = useStore((s) => s.terminals);
@@ -21,7 +22,7 @@ export default function TerminalPanel({ showTabs = true }: { showTabs?: boolean 
 
   if (!terminals.length) {
     return (
-      <Empty icon={<TerminalSquare size={22} />} title="Belum ada terminal" action={<button className="btn btn-primary" onClick={() => void openShell()}>Buka terminal</button>}>
+      <Empty icon={<TerminalSquare size={22} />} title={tl("Belum ada terminal")} action={<button className="btn btn-primary" onClick={() => void openShell()}>{tl("Buka terminal")}</button>}>
         Terminal sungguhan ({shellName()}) di folder project. <kbd className="kbd">{prettyKeys("Ctrl+`")}</kbd>
       </Empty>
     );
@@ -30,7 +31,7 @@ export default function TerminalPanel({ showTabs = true }: { showTabs?: boolean 
   return (
     <div className="terminal-panel">
       {showTabs && (
-        <div className="term-tabs" role="tablist" aria-label="Sesi terminal">
+        <div className="term-tabs" role="tablist" aria-label={tl("Sesi terminal")}>
           {terminals.map((t) => (
             <div key={t.key} role="tab" aria-selected={t.key === sess?.key} tabIndex={0} className={`term-tab ${t.key === sess?.key ? "is-active" : ""} st-${t.status}`} onClick={() => setState({ activeTerminal: t.key })} onKeyDown={(e) => e.key === "Enter" && setState({ activeTerminal: t.key })}>
               {t.kind === "run" ? <Play size={11} aria-hidden /> : t.kind === "claude" ? <CrabMascot size={13} /> : <TerminalSquare size={11} aria-hidden />}
@@ -48,7 +49,7 @@ export default function TerminalPanel({ showTabs = true }: { showTabs?: boolean 
               </button>
             </div>
           ))}
-          <IconButton label="Terminal baru" keys="Ctrl+Shift+`" onClick={() => void openShell()}>
+          <IconButton label={tl("Terminal baru")} keys="Ctrl+Shift+`" onClick={() => void openShell()}>
             <Plus size={13} />
           </IconButton>
           <span className="spacer" />
@@ -60,14 +61,14 @@ export default function TerminalPanel({ showTabs = true }: { showTabs?: boolean 
                 </IconButton>
               )}
               {sess.status === "running" && (
-                <IconButton label="Hentikan" tone="danger" onClick={() => void T.stopTerminal(sess.key)}>
+                <IconButton label={tl("Hentikan")} tone="danger" onClick={() => void T.stopTerminal(sess.key)}>
                   <Square size={12} />
                 </IconButton>
               )}
-              <IconButton label="Minta agen AI menjelaskan output ini" onClick={() => void import("../claude/claude").then((m) => m.explainTerminal(sess.key))}>
+              <IconButton label={tl("Minta agen AI menjelaskan output ini")} onClick={() => void import("../claude/claude").then((m) => m.explainTerminal(sess.key))}>
                 <CrabMascot size={15} />
               </IconButton>
-              <IconButton label="Bersihkan" onClick={() => T.clearTerminal(sess.key)}>
+              <IconButton label={tl("Bersihkan")} onClick={() => T.clearTerminal(sess.key)}>
                 <Trash2 size={13} />
               </IconButton>
             </>

@@ -17,6 +17,7 @@ import { FileTree } from "../panels/Explorer";
 import { activeTab, setLayout, useLayout, useStore } from "../state/store";
 import { EditorGroups, RightContent, SideContent, SideResizer, StatusBar, openProjectMenu } from "./common";
 import { prettyKeys } from "../lib/keys";
+import { tl } from "../i18n";
 
 function Section({ title, children, defaultOpen = true, action }: { title: string; children: ReactNode; defaultOpen?: boolean; action?: ReactNode }) {
   const [open, setOpen] = useState(defaultOpen);
@@ -77,14 +78,14 @@ export default function ZenShell() {
         <div className="traffic-space" />
         <NoziBrand />
         <div className="zen-crumb">
-          <button className="zen-root" onClick={openProjectMenu} title="Ganti project" aria-haspopup="menu">
+          <button className="zen-root" onClick={openProjectMenu} title={tl("Ganti project")} aria-haspopup="menu">
             {root ? root.split("/").pop() : "Buka project"}
           </button>
           {rel && (
             <>
               <span className="zen-slash">/</span>
               <b>{rel}</b>
-              {tab?.dirty && <span className="zen-live" aria-label="belum disimpan">●</span>}
+              {tab?.dirty && <span className="zen-live" aria-label={tl("belum disimpan")}>●</span>}
             </>
           )}
         </div>
@@ -98,7 +99,7 @@ export default function ZenShell() {
           <button className={`tbtn ${l.right ? "is-on" : ""}`} onClick={() => A.toggleRight("claude")} title={`Agen AI (${prettyKeys("Mod+Alt+B")})`}>
             <Kepi size={16} /> Agen AI
           </button>
-          <IconButton label="Mode fokus" active={!l.sidebar && !l.right} onClick={() => setLayout(!l.sidebar && !l.right ? { sidebar: true } : { sidebar: false, right: false, panel: false })}>
+          <IconButton label={tl("Mode fokus")} active={!l.sidebar && !l.right} onClick={() => setLayout(!l.sidebar && !l.right ? { sidebar: true } : { sidebar: false, right: false, panel: false })}>
             <Focus size={15} />
           </IconButton>
         </div>
@@ -127,13 +128,13 @@ export default function ZenShell() {
               <div className="side-scroll">
                 {l.sideView === "files" ? (
                   <>
-                    <Section title="Terbuka">
+                    <Section title={tl("Terbuka")}>
                       <OpenFiles />
                     </Section>
-                    <Section title="Ringkasan">
+                    <Section title={tl("Ringkasan")}>
                       <Outline />
                     </Section>
-                    <Section title="Berkas" defaultOpen={!!root}>
+                    <Section title={tl("Berkas")} defaultOpen={!!root}>
                       <FileTree />
                     </Section>
                     {penguin && (
@@ -162,7 +163,7 @@ export default function ZenShell() {
                 <div className="panel-head">
                   <PanelTabs />
                   <span className="spacer" />
-                  <IconButton label="Tutup" onClick={() => A.togglePanel()}>
+                  <IconButton label={tl("Tutup")} onClick={() => A.togglePanel()}>
                     <X size={14} />
                   </IconButton>
                 </div>
@@ -180,7 +181,7 @@ export default function ZenShell() {
         {l.right && (
           <>
             <SideResizer side="right" />
-            <aside className="right-panel zen-chat" aria-label="Agen AI">
+            <aside className="right-panel zen-chat" aria-label={tl("Agen AI")}>
               <RightContent />
             </aside>
           </>

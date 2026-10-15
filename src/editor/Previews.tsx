@@ -11,6 +11,7 @@ import { formatBytes } from "../lib/format";
 import { getState } from "../state/store";
 import * as docs from "./documents";
 import { IconButton, Spinner } from "../components/ui";
+import { tl } from "../i18n";
 
 function useDocText(path: string, delay = 250) {
   const [text, setText] = useState(() => docs.currentText(path) ?? "");
@@ -85,17 +86,17 @@ export function HtmlPreview({ path }: { path: string }) {
     <div className="html-preview">
       <div className="preview-bar">
         <span className="preview-url">{path.split("/").slice(-2).join("/")}</span>
-        <IconButton label="Muat ulang" onClick={() => setNonce((n) => n + 1)}>
+        <IconButton label={tl("Muat ulang")} onClick={() => setNonce((n) => n + 1)}>
           <RefreshCw size={13} />
         </IconButton>
-        <IconButton label="Buka di browser" onClick={() => void api.commandForFile(path).then(async (t) => (await import("../app/run")).runTarget(t))}>
+        <IconButton label={tl("Buka di browser")} onClick={() => void api.commandForFile(path).then(async (t) => (await import("../app/run")).runTarget(t))}>
           <ExternalLink size={13} />
         </IconButton>
       </div>
       {isNative ? (
-        <iframe key={nonce} ref={frame} title="Pratinjau HTML" src={`${previewUrl(path)}?v=${nonce}`} sandbox="allow-scripts allow-forms" />
+        <iframe key={nonce} ref={frame} title={tl("Pratinjau HTML")} src={`${previewUrl(path)}?v=${nonce}`} sandbox="allow-scripts allow-forms" />
       ) : (
-        <iframe title="Pratinjau HTML" srcDoc={text} sandbox="allow-scripts" />
+        <iframe title={tl("Pratinjau HTML")} srcDoc={text} sandbox="allow-scripts" />
       )}
     </div>
   );
@@ -140,17 +141,17 @@ export function ImageViewer({ path }: { path: string }) {
     <div className="image-viewer">
       <div className="preview-bar">
         <span className="preview-url">{dims ? `${dims.w} × ${dims.h}` : ""}{data ? ` · ${formatBytes(data.size)}` : ""}</span>
-        <IconButton label="Perkecil" onClick={() => setZoom((z) => Math.max(0.05, z / 1.25))}>
+        <IconButton label={tl("Perkecil")} onClick={() => setZoom((z) => Math.max(0.05, z / 1.25))}>
           <Minus size={13} />
         </IconButton>
         <span className="zoom-label">{Math.round(zoom * 100)}%</span>
-        <IconButton label="Perbesar" onClick={() => setZoom((z) => Math.min(16, z * 1.25))}>
+        <IconButton label={tl("Perbesar")} onClick={() => setZoom((z) => Math.min(16, z * 1.25))}>
           <Plus size={13} />
         </IconButton>
-        <IconButton label="Pas layar" onClick={fit}>
+        <IconButton label={tl("Pas layar")} onClick={fit}>
           <Maximize2 size={13} />
         </IconButton>
-        <IconButton label="Ukuran asli" onClick={() => setZoom(1)}>
+        <IconButton label={tl("Ukuran asli")} onClick={() => setZoom(1)}>
           <RotateCcw size={13} />
         </IconButton>
       </div>

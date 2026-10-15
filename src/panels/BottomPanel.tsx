@@ -5,6 +5,7 @@ import { ErrorBoundary } from "../components/ErrorBoundary";
 import { IconButton, Spinner } from "../components/ui";
 import { setLayout, useLayout, useStore, type PanelId } from "../state/store";
 import { PortsPanel, ProblemsPanel, TodoPanel } from "./BottomPanels";
+import { tl } from "../i18n";
 
 const TerminalPanel = lazy(() => import("./TerminalPanel"));
 const HistoryPanel = lazy(() => import("./HistoryPanel"));
@@ -19,15 +20,15 @@ export function PanelTabs({ upper }: { upper?: boolean }) {
   const label = (s: string) => (upper ? s.toUpperCase() : s);
   const tabs: { id: PanelId; label: string; count?: number }[] = [
     { id: "terminal", label: label("Terminal"), count: terms > 1 ? terms : undefined },
-    { id: "problems", label: label("Masalah"), count: problems || undefined },
+    { id: "problems", label: label(tl("Masalah")), count: problems || undefined },
     { id: "output", label: label("Output") },
     { id: "debug", label: label("Debug Console") },
     { id: "ports", label: label("Port") },
     { id: "todo", label: label("TODO"), count: todos || undefined },
-    { id: "history", label: label("Riwayat") },
+    { id: "history", label: label(tl("Riwayat")) },
   ];
   return (
-    <div className="panel-tabs" role="tablist" aria-label="Panel bawah">
+    <div className="panel-tabs" role="tablist" aria-label={tl("Panel bawah")}>
       {tabs.map((t) => (
         <button key={t.id} role="tab" aria-selected={layout.panelTab === t.id} className={`panel-tab ${layout.panelTab === t.id ? "is-active" : ""}`} onClick={() => setLayout({ panelTab: t.id, panel: true })}>
           {t.label}
@@ -59,14 +60,14 @@ export function PanelContent({ terminalTabs = true }: { terminalTabs?: boolean }
 
 export function BottomPanel({ className = "", upper }: { className?: string; upper?: boolean }) {
   return (
-    <section className={`bottom-panel ${className}`} aria-label="Panel bawah">
+    <section className={`bottom-panel ${className}`} aria-label={tl("Panel bawah")}>
       <div className="panel-head">
         <PanelTabs upper={upper} />
         <span className="spacer" />
-        <IconButton label="Sembunyikan panel" keys="Mod+J" onClick={() => togglePanel()}>
+        <IconButton label={tl("Sembunyikan panel")} keys="Mod+J" onClick={() => togglePanel()}>
           <ChevronDown size={14} />
         </IconButton>
-        <IconButton label="Tutup panel" onClick={() => setLayout({ panel: false })}>
+        <IconButton label={tl("Tutup panel")} onClick={() => setLayout({ panel: false })}>
           <X size={14} />
         </IconButton>
       </div>

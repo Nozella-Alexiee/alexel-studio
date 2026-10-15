@@ -6,6 +6,7 @@ import { renderSnapshot, type SnapshotOptions } from "../editor/snapshot";
 import { api, call, errMsg, isNative, pickSavePath } from "../lib/ipc";
 import { basename, dirname, join } from "../lib/paths";
 import { activeTab, getState, setState, toast, useStore } from "../state/store";
+import { tl } from "../i18n";
 
 export function SnapshotDialog() {
   const open = useStore((s) => s.snapshotOpen);
@@ -48,7 +49,7 @@ export function SnapshotDialog() {
         const blob: Blob = await new Promise((res, rej) => c.toBlob((b) => (b ? res(b) : rej(new Error("Gagal membuat gambar"))), "image/png"));
         await navigator.clipboard.write([new ClipboardItem({ "image/png": blob })]);
       }
-      toast("Gambar disalin ke clipboard", "success");
+      toast(tl("Gambar disalin ke clipboard"), "success");
     } catch (e) {
       toast(`Tidak bisa menyalin gambar: ${errMsg(e)}. Coba Simpan PNG.`, "error");
     }
@@ -72,17 +73,17 @@ export function SnapshotDialog() {
 
   return (
     <div className="scrim" onMouseDown={(e) => e.target === e.currentTarget && close()}>
-      <div className="snapshot" role="dialog" aria-modal="true" aria-label="Snapshot kode">
+      <div className="snapshot" role="dialog" aria-modal="true" aria-label={tl("Snapshot kode")}>
         <div className="compare-head">
-          <strong>Snapshot kode</strong>
+          <strong>{tl("Snapshot kode")}</strong>
           <span className="hint">{docs.selectionText(getState().focusedGroup).trim() ? "dari seleksi" : "seluruh berkas (maks 400 baris)"}</span>
           <span className="spacer" />
-          <IconButton label="Tutup" onClick={close}>
+          <IconButton label={tl("Tutup")} onClick={close}>
             <X size={15} />
           </IconButton>
         </div>
         <div className="snap-controls">
-          <Segmented label="Latar" value={o.background} onChange={(v) => setO({ ...o, background: v })} options={[{ id: "design", label: "Desain" }, { id: "accent", label: "Aksen" }, { id: "transparent", label: "Transparan" }]} />
+          <Segmented label={tl("Latar")} value={o.background} onChange={(v) => setO({ ...o, background: v })} options={[{ id: "design", label: tl("Desain") }, { id: "accent", label: tl("Aksen") }, { id: "transparent", label: tl("Transparan") }]} />
           <label className="check">
             <input type="checkbox" checked={o.lineNumbers} onChange={(e) => setO({ ...o, lineNumbers: e.target.checked })} /> Nomor baris
           </label>
@@ -91,7 +92,7 @@ export function SnapshotDialog() {
           </label>
           <label className="check">
             Huruf
-            <input type="range" min={11} max={22} value={o.fontSize} onChange={(e) => setO({ ...o, fontSize: Number(e.target.value) })} aria-label="Ukuran huruf" />
+            <input type="range" min={11} max={22} value={o.fontSize} onChange={(e) => setO({ ...o, fontSize: Number(e.target.value) })} aria-label={tl("Ukuran huruf")} />
           </label>
         </div>
         <div className="snap-stage checker" ref={stage} />

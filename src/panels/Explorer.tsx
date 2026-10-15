@@ -9,6 +9,7 @@ import type { FileEntry } from "../lib/types";
 import { activeTabId, getState, setState, useStore } from "../state/store";
 import { fileManagerName } from "../lib/keys";
 import { isMac } from "../lib/ipc";
+import { tl } from "../i18n";
 
 interface Row {
   entry: FileEntry;
@@ -53,23 +54,23 @@ function TreeRow({ row, active, focused, onFocusRow }: { row: Row; active: boole
     openMenu(e, [
       ...(entry.is_dir
         ? [
-            { label: "Berkas baru…", run: () => void A.newFile(entry.path) },
-            { label: "Folder baru…", run: () => void A.newFolder(entry.path) },
+            { label: tl("Berkas baru…"), run: () => void A.newFile(entry.path) },
+            { label: tl("Folder baru…"), run: () => void A.newFolder(entry.path) },
             { separator: true, label: "" },
           ]
         : [
-            { label: "Buka", run: () => void A.openFile(entry.path) },
-            { label: "Buka di sisi kanan", run: () => void A.openFile(entry.path, { group: 1 }) },
+            { label: tl("Buka"), run: () => void A.openFile(entry.path) },
+            { label: tl("Buka di sisi kanan"), run: () => void A.openFile(entry.path, { group: 1 }) },
             { separator: true, label: "" },
           ]),
-      { label: "Ganti nama…", keys: "↵", run: () => void A.renamePath(entry.path) },
-      { label: "Duplikat", run: () => void A.duplicatePath(entry.path) },
-      { label: "Salin path", run: () => void A.copyPath(entry.path) },
-      { label: "Salin path relatif", run: () => void A.copyPath(entry.path, true) },
+      { label: tl("Ganti nama…"), keys: "↵", run: () => void A.renamePath(entry.path) },
+      { label: tl("Duplikat"), run: () => void A.duplicatePath(entry.path) },
+      { label: tl("Salin path"), run: () => void A.copyPath(entry.path) },
+      { label: tl("Salin path relatif"), run: () => void A.copyPath(entry.path, true) },
       { label: `Tampilkan di ${fileManagerName()}`, run: () => void import("../lib/ipc").then((m) => m.api.reveal(entry.path)) },
-      ...(entry.is_dir ? [{ label: "Buka terminal di sini", run: () => void import("../terminal/terminals").then((m) => m.newTerminal({ cwd: entry.path, title: basename(entry.path) })) }] : []),
+      ...(entry.is_dir ? [{ label: tl("Buka terminal di sini"), run: () => void import("../terminal/terminals").then((m) => m.newTerminal({ cwd: entry.path, title: basename(entry.path) })) }] : []),
       { separator: true, label: "" },
-      { label: "Pindahkan ke Trash", keys: isMac ? "Mod+Backspace" : "Delete", danger: true, run: () => void A.deletePath(entry.path) },
+      { label: tl("Pindahkan ke Trash"), keys: isMac ? "Mod+Backspace" : "Delete", danger: true, run: () => void A.deletePath(entry.path) },
     ]);
   };
 
@@ -115,7 +116,7 @@ function TreeRow({ row, active, focused, onFocusRow }: { row: Row; active: boole
           {mark}
         </span>
       )}
-      {dirMark && <span className="tree-git-dot" aria-label="Berisi perubahan" />}
+      {dirMark && <span className="tree-git-dot" aria-label={tl("Berisi perubahan")} />}
     </div>
   );
 }
@@ -173,7 +174,7 @@ export function FileTree() {
       <div className="tree-empty-hint">
         Pilih project di halaman sambutan, atau{" "}
         <button className="link" onClick={() => void A.openProjectDialog()}>
-          buka folder
+          {tl("buka folder")}
         </button>
         .
       </div>
@@ -184,13 +185,13 @@ export function FileTree() {
       ref={box}
       className="tree"
       role="tree"
-      aria-label="Berkas project"
+      aria-label={tl("Berkas project")}
       onKeyDown={onKey}
       onContextMenu={(e) =>
         e.target === e.currentTarget &&
         openMenu(e, [
-          { label: "Berkas baru…", run: () => void A.newFile(root) },
-          { label: "Folder baru…", run: () => void A.newFolder(root) },
+          { label: tl("Berkas baru…"), run: () => void A.newFile(root) },
+          { label: tl("Folder baru…"), run: () => void A.newFolder(root) },
         ])
       }
       onDragOver={(e) => e.dataTransfer.types.includes("text/x-nozel-path") && e.preventDefault()}
@@ -202,7 +203,7 @@ export function FileTree() {
       {rows.map((r, i) => (
         <TreeRow key={r.entry.path} row={r} active={r.entry.path === active} focused={i === Math.min(focusIdx, rows.length - 1)} onFocusRow={() => setFocusIdx(i)} />
       ))}
-      {rows.length === 0 && <div className="empty-body pad">Folder ini kosong.</div>}
+      {rows.length === 0 && <div className="empty-body pad">{tl("Folder ini kosong.")}</div>}
     </div>
   );
 }
@@ -214,16 +215,16 @@ export function ExplorerHeader({ title = "Explorer" }: { title?: string }) {
       <span className="side-title">{title}</span>
       {root && (
         <div className="side-actions">
-          <IconButton label="Berkas baru" keys="Mod+N" onClick={() => void A.newFile(null)}>
+          <IconButton label={tl("Berkas baru")} keys="Mod+N" onClick={() => void A.newFile(null)}>
             <FilePlus2 size={14} />
           </IconButton>
-          <IconButton label="Folder baru" onClick={() => void A.newFolder(null)}>
+          <IconButton label={tl("Folder baru")} onClick={() => void A.newFolder(null)}>
             <FolderPlus size={14} />
           </IconButton>
-          <IconButton label="Muat ulang" onClick={() => void A.refreshTree()}>
+          <IconButton label={tl("Muat ulang")} onClick={() => void A.refreshTree()}>
             <RefreshCw size={14} />
           </IconButton>
-          <IconButton label="Tutup semua folder" onClick={() => setState({ expanded: root ? { [root]: true } : {} })}>
+          <IconButton label={tl("Tutup semua folder")} onClick={() => setState({ expanded: root ? { [root]: true } : {} })}>
             <ListCollapse size={14} />
           </IconButton>
         </div>

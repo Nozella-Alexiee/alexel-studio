@@ -12,6 +12,7 @@ import { lineHunks } from "../lib/diff";
 import { relative } from "../lib/paths";
 import { confirmDialog, getState, setState, toast } from "../state/store";
 import { prettyKeys } from "../lib/keys";
+import { tl } from "../i18n";
 
 interface InlineHunk {
   id: number;
@@ -216,7 +217,7 @@ async function runInline(view: EditorView, prompt: string) {
   const startLine = view.state.doc.lineAt(st.from).number;
   const endLine = view.state.doc.lineAt(st.to).number;
   if (!(await import("../claude/claude").then((m) => m.ensureConsent()))) return;
-  if (s.settings.claudeConfirm && !(await confirmDialog("Kirim ke Claude?", `Baris ${startLine}–${endLine} dari ${rel || "berkas ini"} (plus isi berkas sebagai konteks) dan permintaanmu akan dikirim ke Claude Code. Claude tidak mengubah berkas apa pun; kamu yang memilih perubahan.`, "Kirim"))) return;
+  if (s.settings.claudeConfirm && !(await confirmDialog(tl("Kirim ke Claude?"), `Baris ${startLine}–${endLine} dari ${rel || "berkas ini"} (plus isi berkas sebagai konteks) dan permintaanmu akan dikirim ke Claude Code. Claude tidak mengubah berkas apa pun; kamu yang memilih perubahan.`, "Kirim"))) return;
   const full = view.state.doc.toString();
   const context = full.length > 40_000 ? full.slice(0, 40_000) + "\n…(dipotong)" : full;
   const payload = [
@@ -244,7 +245,7 @@ async function runInline(view: EditorView, prompt: string) {
       return { id: ++seq, from: first.from, to: last.to, oldCount: h.oldCount, newLines: h.newLines };
     });
     if (!hunks.length) {
-      toast("Claude tidak menyarankan perubahan untuk bagian ini.");
+      toast(tl("Claude tidak menyarankan perubahan untuk bagian ini."));
       view.dispatch({ effects: setInline.of(null) });
     } else {
       view.dispatch({ effects: setInline.of({ ...cur, phase: "diff", hunks, runId: null }) });

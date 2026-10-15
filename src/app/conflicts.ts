@@ -3,17 +3,18 @@
 import * as docs from "../editor/documents";
 import { basename } from "../lib/paths";
 import { ask, setState } from "../state/store";
+import { tl } from "../i18n";
 
 export async function resolveConflict(path: string): Promise<boolean> {
   const name = basename(path);
   const choice = await ask({
     kind: "choice",
     title: `${name} berubah di luar Alexel Studio`,
-    message: "Berkas ini diubah program lain (git, formatter, atau agen AI) sejak kamu membukanya, dan kamu juga punya editan yang belum disimpan.",
+    message: tl("Berkas ini diubah program lain (git, formatter, atau agen AI) sejak kamu membukanya, dan kamu juga punya editan yang belum disimpan."),
     choices: [
-      { id: "overwrite", label: "Simpan versiku (timpa disk)", danger: true },
-      { id: "reload", label: "Pakai versi disk (buang editanku)" },
-      { id: "compare", label: "Bandingkan dulu" },
+      { id: "overwrite", label: tl("Simpan versiku (timpa disk)"), danger: true },
+      { id: "reload", label: tl("Pakai versi disk (buang editanku)") },
+      { id: "compare", label: tl("Bandingkan dulu") },
     ],
   });
   if (choice === "overwrite") {

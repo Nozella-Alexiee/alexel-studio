@@ -8,6 +8,7 @@ import { detectAgent, selectAgent } from "../claude/claude";
 import { CrabMascot } from "../components/CrabMascot";
 import { api, errMsg, isWindows, on, openExternal } from "../lib/ipc";
 import { confirmDialog, toast, useStore } from "../state/store";
+import { tl } from "../i18n";
 
 const LOGO: Record<AgentId, { mark: string; bg: string }> = {
   claude: { mark: "✳", bg: "#d97757" },
@@ -33,7 +34,7 @@ void on<{ agent: string; phase: string; pct: number | null }>("agent-install-pro
 export async function installAgent(agent: AgentId) {
   const info = agentInfo(agent);
   if (agent === "codex" && isWindows) {
-    toast("Codex untuk Windows belum ada di Open VSX. Pasang lewat terminal: npm install -g @openai/codex", "info");
+    toast(tl("Codex untuk Windows belum ada di Open VSX. Pasang lewat terminal: npm install -g @openai/codex"), "info");
     const { runInTerminal } = await import("../app/run");
     await runInTerminal("npm install -g @openai/codex", "Pasang Codex");
     return;
@@ -87,11 +88,11 @@ function AgentCard({ id }: { id: AgentId }) {
             </span>
           ) : ready ? (
             <span className="tone-success-fg">
-              <CheckCircle2 size={11} aria-hidden /> {status?.source === "extension" || installed ? `Terpasang ${installed?.version ?? status?.version ?? ""}` : `Sudah ada di komputer${status?.version ? ` (${status.version.split(" ")[0]})` : ""}`}
+              <CheckCircle2 size={11} aria-hidden /> {status?.source === "extension" || installed ? `${tl("Terpasang")} ${installed?.version ?? status?.version ?? ""}` : `${tl("Sudah ada di komputer")}${status?.version ? ` (${status.version.split(" ")[0]})` : ""}`}
               {status?.loggedIn === false ? " · belum masuk" : ""}
             </span>
           ) : (
-            <span className="hint">{id === "acp" ? "Atur perintahnya di Pengaturan" : id === "antigravity" ? "Pasang aplikasi Antigravity dulu" : "Belum dipasang"}</span>
+            <span className="hint">{id === "acp" ? tl("Atur perintahnya di Pengaturan") : id === "antigravity" ? tl("Pasang aplikasi Antigravity dulu") : tl("Belum dipasang")}</span>
           )}
         </div>
         {prog?.pct != null && (
@@ -103,7 +104,7 @@ function AgentCard({ id }: { id: AgentId }) {
       <div className="agent-actions">
         {ready ? (
           <button className={`btn btn-sm ${current ? "" : "btn-primary"}`} disabled={current} onClick={() => void selectAgent(id)}>
-            {current ? "Dipakai" : "Pakai"}
+            {current ? tl("Dipakai") : tl("Pakai")}
           </button>
         ) : id === "antigravity" ? (
           <button className="btn btn-sm" onClick={() => void openExternal("https://antigravity.google/download")}>
@@ -115,7 +116,7 @@ function AgentCard({ id }: { id: AgentId }) {
           </button>
         ) : (
           <button className="btn btn-sm" onClick={() => void import("../app/actions").then((m) => m.openSettings(undefined, "agents"))}>
-            Atur
+            {tl("Atur")}
           </button>
         )}
         {installed && !prog && (

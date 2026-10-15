@@ -6,6 +6,7 @@ import { DESIGNS } from "../design/designs";
 import { call, isMac, on } from "../lib/ipc";
 import { getState, useStore } from "../state/store";
 import { COMMANDS, keysOf, type Command } from "./commands";
+import { tl } from "../i18n";
 
 export type MenuNode =
   | "-"
@@ -23,17 +24,17 @@ const home = (p: string) => p.replace(/^\/Users\/[^/]+|^\/home\/[^/]+|^[A-Z]:\/U
 
 export const MENUS: TopMenu[] = [
   {
-    label: "Berkas",
+    label: tl("Berkas"),
     items: () => [
       { cmd: "newFile" },
       { cmd: "newFolder" },
       "-",
       { cmd: "openFolder" },
       {
-        label: "Buka terbaru",
+        label: tl("Buka terbaru"),
         sub: () => {
           const r = s().recents.filter((x) => x !== s().root).slice(0, 10);
-          return r.length ? r.map((p) => ({ cmd: `recent:${p}`, label: home(p) })) : [{ cmd: "noop", label: "(belum ada)" }];
+          return r.length ? r.map((p) => ({ cmd: `recent:${p}`, label: home(p) })) : [{ cmd: "noop", label: tl("(belum ada)") }];
         },
       },
       { cmd: "cloneRepo" },
@@ -64,7 +65,7 @@ export const MENUS: TopMenu[] = [
       { cmd: "find" },
       { cmd: "replace" },
       "-",
-      { cmd: "search", label: "Cari di seluruh project" },
+      { cmd: "search", label: tl("Cari di seluruh project") },
       "-",
       { cmd: "comment" },
       { cmd: "format" },
@@ -72,7 +73,7 @@ export const MENUS: TopMenu[] = [
     ],
   },
   {
-    label: "Seleksi",
+    label: tl("Seleksi"),
     items: () => [
       { role: "selectAll", cmd: "selectAll" },
       { cmd: "expandSelection" },
@@ -90,7 +91,7 @@ export const MENUS: TopMenu[] = [
     ],
   },
   {
-    label: "Tampilan",
+    label: tl("Tampilan"),
     items: () => [
       { cmd: "palette" },
       "-",
@@ -111,16 +112,16 @@ export const MENUS: TopMenu[] = [
       { cmd: "wrap", checked: () => s().settings.wordWrap },
       { cmd: "minimap", checked: () => s().settings.minimap },
       "-",
-      { label: "Desain", sub: () => DESIGNS.map((d) => ({ cmd: `design:${d.id}`, label: d.name, checked: () => s().settings.design === d.id })) },
+      { label: tl("Desain"), sub: () => DESIGNS.map((d) => ({ cmd: `design:${d.id}`, label: d.name, checked: () => s().settings.design === d.id })) },
       { cmd: "fontUp" },
       { cmd: "fontDown" },
       { role: "togglefullscreen", cmd: "fullscreen" },
     ],
   },
   {
-    label: "Pergi",
+    label: tl("Pergi"),
     items: () => [
-      { cmd: "quickOpen", label: "Buka berkas…" },
+      { cmd: "quickOpen", label: tl("Buka berkas…") },
       { cmd: "gotoSymbol" },
       { cmd: "workspaceSymbol" },
       { cmd: "gotoLine" },
@@ -134,10 +135,10 @@ export const MENUS: TopMenu[] = [
     ],
   },
   {
-    label: "Jalankan",
+    label: tl("Jalankan"),
     items: () => [
       { cmd: "debugStart" },
-      { cmd: "runNoDebug", label: "Jalankan tanpa debug" },
+      { cmd: "runNoDebug", label: tl("Jalankan tanpa debug") },
       { cmd: "debugStop" },
       { cmd: "debugRestart" },
       "-",
@@ -155,10 +156,10 @@ export const MENUS: TopMenu[] = [
   },
   {
     label: "Terminal",
-    items: () => [{ cmd: "newTerminal" }, { cmd: "terminal", label: "Tampilkan terminal" }, "-", { cmd: "run", label: "Jalankan berkas aktif" }, { cmd: "runTarget" }, "-", { cmd: "claudeTerm" }],
+    items: () => [{ cmd: "newTerminal" }, { cmd: "terminal", label: tl("Tampilkan terminal") }, "-", { cmd: "run", label: tl("Jalankan berkas aktif") }, { cmd: "runTarget" }, "-", { cmd: "claudeTerm" }],
   },
   {
-    label: "Bantuan",
+    label: tl("Bantuan"),
     items: () => [{ cmd: "welcome" }, { cmd: "tour" }, { cmd: "keyboardShortcuts" }, "-", { cmd: "reportIssue" }, { cmd: "checkUpdate" }, ...(isMac ? [] : (["-", { cmd: "about" }] as MenuNode[]))],
   },
 ];
@@ -248,9 +249,9 @@ function syncNativeMenu() {
   const appMenu = {
     label: "Alexel Studio",
     submenu: [
-      { id: "about", label: "Tentang Alexel Studio" },
+      { id: "about", label: tl("Tentang Alexel Studio") },
       { type: "separator" },
-      { id: "settings", label: "Pengaturan…", accelerator: "Cmd+," },
+      { id: "settings", label: tl("Pengaturan…"), accelerator: "Cmd+," },
       { type: "separator" },
       { role: "hide" },
       { role: "hideOthers" },
@@ -259,10 +260,11 @@ function syncNativeMenu() {
       { role: "quit" },
     ],
   };
-  const windowMenu = { label: "Jendela", submenu: [{ role: "minimize" }, { role: "zoom" }, { type: "separator" }, { role: "front" }] };
+  const windowMenu = { label: tl("Jendela"), submenu: [{ role: "minimize" }, { role: "zoom" }, { type: "separator" }, { role: "front" }] };
   const spec = [appMenu, ...MENUS.map((m) => ({ label: m.label, submenu: toSpec(resolveItems(m.items())) })), windowMenu];
   // Pindahkan "Bantuan" ke paling kanan seperti aplikasi macOS lain.
-  const help = spec.splice(spec.findIndex((m) => m.label === "Bantuan"), 1);
+  const hi = spec.findIndex((m) => m.label === tl("Bantuan"));
+  const help = hi >= 0 ? spec.splice(hi, 1) : [];
   spec.push(...help);
   void call("menu_set", { spec }).catch(() => {});
 }

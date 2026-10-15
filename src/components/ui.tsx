@@ -1,6 +1,7 @@
 import React, { useEffect, useRef } from "react";
 import { prettyKeys } from "../app/commands";
 import { PenguinMascot, usePenguinVariant } from "./PenguinMascot";
+import { tl } from "../i18n";
 
 export function IconButton({
   label,
@@ -133,7 +134,7 @@ export function Segmented<T extends string>({ value, options, onChange, label }:
 }
 
 export function Spinner({ size = 14 }: { size?: number }) {
-  return <span className="spinner" style={{ width: size, height: size }} aria-label="Memuat" role="status" />;
+  return <span className="spinner" style={{ width: size, height: size }} aria-label={tl("Memuat")} role="status" />;
 }
 
 /** Fokus elemen saat komponen dipasang. */

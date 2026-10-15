@@ -3,6 +3,7 @@
 import { applyDesign, DESIGNS } from "../design/designs";
 import { api } from "../lib/ipc";
 import { DEFAULT_LAYOUTS, DEFAULT_SETTINGS, getState, setState, toast, type Group, type Layout, type Settings } from "../state/store";
+import { tl } from "../i18n";
 
 interface SessionFile {
   v: 1;
@@ -123,11 +124,11 @@ export async function settingsFileSaved(path: string) {
   if (!settingsFile || path !== settingsFile) return;
   const raw = parse<Partial<Settings>>((await api.readText(path).catch(() => null))?.content ?? null);
   if (!raw) {
-    toast("settings.json bukan JSON yang valid; pengaturan tidak diubah.", "error");
+    toast(tl("settings.json bukan JSON yang valid; pengaturan tidak diubah."), "error");
     return;
   }
   const next = sanitizeSettings({ ...raw, claudeConsent: raw.claudeConsent ?? getState().settings.claudeConsent });
   const { updateSettings } = await import("./actions");
   updateSettings(next);
-  toast("Pengaturan dari settings.json diterapkan.", "success");
+  toast(tl("Pengaturan dari settings.json diterapkan."), "success");
 }

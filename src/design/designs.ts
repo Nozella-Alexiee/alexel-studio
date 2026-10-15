@@ -1,3 +1,4 @@
+import { tl } from "../i18n";
 // Desain Alexel Studio. Masing-masing mengubah warna, font, kepadatan,
 // DAN tata letak. Warna & ukuran ada di src/styles/tokens.css per [data-design].
 
@@ -22,7 +23,7 @@ export const DESIGNS: DesignInfo[] = [
   {
     id: "studio",
     name: "Studio Gelap",
-    tagline: "Tata letak seperti VS Code: activity bar, sidebar, panel bawah, dan agen AI di sidebar kanan.",
+    tagline: tl("Tata letak seperti VS Code: activity bar, sidebar, panel bawah, dan agen AI di sidebar kanan."),
     scheme: "dark",
     shell: "studio",
     group: "Klasik",
@@ -31,7 +32,7 @@ export const DESIGNS: DesignInfo[] = [
   {
     id: "studio-light",
     name: "Studio Terang",
-    tagline: "Tata letak seperti VS Code dengan warna terang yang bersih.",
+    tagline: tl("Tata letak seperti VS Code dengan warna terang yang bersih."),
     scheme: "light",
     shell: "studio",
     group: "Klasik",
@@ -40,7 +41,7 @@ export const DESIGNS: DesignInfo[] = [
   {
     id: "aurora",
     name: "Aurora Glass",
-    tagline: "Gelap ala macOS. Sidebar kaca, palette di title bar, agen AI di kanan, terminal melayang.",
+    tagline: tl("Gelap ala macOS. Sidebar kaca, palette di title bar, agen AI di kanan, terminal melayang."),
     scheme: "dark",
     shell: "aurora",
     group: "Klasik",
@@ -49,7 +50,7 @@ export const DESIGNS: DesignInfo[] = [
   {
     id: "zen",
     name: "Zen Paper",
-    tagline: "Terang dan hangat. Satu kolom fokus tanpa activity bar, saran AI inline, omnibar di bawah.",
+    tagline: tl("Terang dan hangat. Satu kolom fokus tanpa activity bar, saran AI inline, omnibar di bawah."),
     scheme: "light",
     shell: "zen",
     group: "Klasik",
@@ -58,7 +59,7 @@ export const DESIGNS: DesignInfo[] = [
   {
     id: "control",
     name: "Control Room",
-    tagline: "Padat ala IDE. Toolbar run, split editor, panel Git dengan staging, terminal multi-tab.",
+    tagline: tl("Padat ala IDE. Toolbar run, split editor, panel Git dengan staging, terminal multi-tab."),
     scheme: "dark",
     shell: "control",
     group: "Klasik",
@@ -67,7 +68,7 @@ export const DESIGNS: DesignInfo[] = [
   {
     id: "antartika",
     name: "Antartika",
-    tagline: "Gelap biru es. Nozi berkupluk menemani di sidebar dan beranda, aksen oranye paruh.",
+    tagline: tl("Gelap biru es. Nozi berkupluk menemani di sidebar dan beranda, aksen oranye paruh."),
     scheme: "dark",
     shell: "aurora",
     penguin: "antartika",
@@ -77,7 +78,7 @@ export const DESIGNS: DesignInfo[] = [
   {
     id: "tuxedo",
     name: "Tuxedo",
-    tagline: "Hitam-putih kontras tinggi, Nozi berdasi kupu-kupu kuning. Rapi dan profesional.",
+    tagline: tl("Hitam-putih kontras tinggi, Nozi berdasi kupu-kupu kuning. Rapi dan profesional."),
     scheme: "dark",
     shell: "control",
     penguin: "tuxedo",
@@ -87,7 +88,7 @@ export const DESIGNS: DesignInfo[] = [
   {
     id: "kawanan",
     name: "Kawanan",
-    tagline: "Terang seperti salju, kawanan Nozi berselendang di beranda. Ceria dan bulat.",
+    tagline: tl("Terang seperti salju, kawanan Nozi berselendang di beranda. Ceria dan bulat."),
     scheme: "light",
     shell: "zen",
     penguin: "kawanan",

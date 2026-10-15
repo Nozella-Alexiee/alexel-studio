@@ -11,6 +11,7 @@ import { detectClaude, selectAgent } from "../claude/claude";
 import { AGENTS, type AgentId } from "../agents/registry";
 import { isMac } from "../lib/ipc";
 import { EFFORTS, modelChoices, PERM_MODES } from "../claude/options";
+import { langPref, setLanguage, tl } from "../i18n";
 
 function Row({ label, hint, children }: { label: string; hint?: string; children: React.ReactNode }) {
   return (
@@ -63,14 +64,14 @@ function LanguageServers() {
       <h2>Server bahasa (autocomplete & go-to-definition)</h2>
       <p className="hint">TypeScript/JavaScript sudah dibundel. Bahasa lain memakai server yang terpasang di komputermu. Pintasan: F12 ke definisi (atau {isMac ? "⌘" : "Ctrl"}+klik), F2 rename, {prettyKeys("Shift+Alt+F")} format, ⇧F12 referensi.</p>
       {list === null ? (
-        <p className="hint">Memeriksa…</p>
+        <p className="hint">{tl("Memeriksa…")}</p>
       ) : list.length === 0 ? (
-        <p className="hint">Hanya tersedia di aplikasi desktop.</p>
+        <p className="hint">{tl("Hanya tersedia di aplikasi desktop.")}</p>
       ) : (
         list.map((s) => (
-          <Row key={s.id} label={s.name} hint={s.bundled ? "Dibundel bersama Alexel Studio" : s.available ? "Terpasang" : s.install ?? undefined}>
+          <Row key={s.id} label={s.name} hint={s.bundled ? "Dibundel bersama Alexel Studio" : s.available ? tl("Terpasang") : s.install ?? undefined}>
             {s.available ? (
-              <span className="tone-success-fg">Aktif</span>
+              <span className="tone-success-fg">{tl("Aktif")}</span>
             ) : (
               <button
                 className="btn btn-sm"
@@ -80,7 +81,7 @@ function LanguageServers() {
                   })
                 }
               >
-                Pasang
+                {tl("Pasang")}
               </button>
             )}
           </Row>
@@ -88,7 +89,7 @@ function LanguageServers() {
       )}
       {list && list.length > 0 && (
         <button className="btn btn-sm btn-ghost" onClick={refresh}>
-          Periksa ulang
+          {tl("Periksa ulang")}
         </button>
       )}
     </section>
@@ -135,11 +136,11 @@ function Keybindings() {
                 <td>
                   <span className="hint">{c.group}:</span> {c.label}
                 </td>
-                <td>{editing === c.id ? <span className="kbd is-recording">Tekan kombinasi…</span> : k ? <kbd className="kbd">{prettyKeys(k)}</kbd> : <span className="hint">—</span>}</td>
+                <td>{editing === c.id ? <span className="kbd is-recording">{tl("Tekan kombinasi…")}</span> : k ? <kbd className="kbd">{prettyKeys(k)}</kbd> : <span className="hint">—</span>}</td>
                 <td className="shortcut-actions">
                   {!c.shownKeys && (
                     <button className="link-btn" onClick={() => setEditing(c.id)}>
-                      Ubah
+                      {tl("Ubah")}
                     </button>
                   )}
                   {changed && (
@@ -152,7 +153,7 @@ function Keybindings() {
                       }}
                       title={defaultKeysOf(c.id) ? `Bawaan: ${prettyKeys(defaultKeysOf(c.id))}` : "Bawaan: tanpa shortcut"}
                     >
-                      Kembalikan
+                      {tl("Kembalikan")}
                     </button>
                   )}
                 </td>
@@ -200,20 +201,20 @@ export default function SettingsView() {
   return (
     <div className="settings" ref={rootEl}>
       <div className="settings-top">
-        <h1>Pengaturan</h1>
-        <input className="input settings-search" type="search" placeholder="Cari pengaturan…" value={q} onChange={(e) => setQ(e.target.value)} aria-label="Cari pengaturan" autoFocus />
-        <button className="btn btn-sm" onClick={() => void A.openSettingsJson()} title="Edit semua pengaturan sebagai JSON">
-          Buka settings.json
+        <h1>{tl("Pengaturan")}</h1>
+        <input className="input settings-search" type="search" placeholder={tl("Cari pengaturan…")} value={q} onChange={(e) => setQ(e.target.value)} aria-label={tl("Cari pengaturan")} autoFocus />
+        <button className="btn btn-sm" onClick={() => void A.openSettingsJson()} title={tl("Edit semua pengaturan sebagai JSON")}>
+          {tl("Buka settings.json")}
         </button>
       </div>
       {q && noHits && <p className="hint">Tidak ada pengaturan yang cocok dengan "{q}".</p>}
 
       <section className="set-section">
-        <h2>Desain</h2>
-        <p className="hint">Ganti kapan saja. Tata letak, warna, font, dan kepadatan ikut berubah. Shortcut: {prettyKeys("Ctrl+Mod+T")}.</p>
+        <h2>{tl("Desain")}</h2>
+        <p className="hint">{tl("Ganti kapan saja. Tata letak, warna, font, dan kepadatan ikut berubah. Shortcut: {keys}.", { keys: prettyKeys("Ctrl+Mod+T") })}</p>
         {(["Pinguin", "Klasik"] as const).map((group) => (
           <React.Fragment key={group}>
-            <h3 className="design-group-title">{group === "Pinguin" ? "Identitas Nozi" : "Klasik"}</h3>
+            <h3 className="design-group-title">{group === "Pinguin" ? tl("Identitas Nozi") : tl("Klasik")}</h3>
             <div className="design-cards">
               {DESIGNS.filter((d) => d.group === group).map((d) => (
                 <button key={d.id} className={`design-card ${s.design === d.id ? "is-on" : ""}`} onClick={() => A.setDesign(d.id)} aria-pressed={s.design === d.id} style={{ "--sw-bg": d.swatch.bg, "--sw-panel": d.swatch.panel, "--sw-accent": d.swatch.accent, "--sw-text": d.swatch.text, "--sw-alt": d.swatch.alt } as React.CSSProperties}>
@@ -225,9 +226,9 @@ export default function SettingsView() {
             </div>
           </React.Fragment>
         ))}
-        <Row label="Warna aksen" hint="Khusus desain yang sedang dipakai.">
+        <Row label={tl("Warna aksen")} hint={tl("Khusus desain yang sedang dipakai.")}>
           <div className="accent-row">
-            <button className={`accent-dot auto ${!s.accent ? "is-on" : ""}`} onClick={() => set({ accent: null })} aria-label="Bawaan desain">
+            <button className={`accent-dot auto ${!s.accent ? "is-on" : ""}`} onClick={() => set({ accent: null })} aria-label={tl("Bawaan desain")}>
               A
             </button>
             {ACCENTS[s.design].map((c) => (
@@ -235,61 +236,73 @@ export default function SettingsView() {
             ))}
           </div>
         </Row>
-        <Row label="Tata letak" hint="Lebar panel yang kamu geser disimpan per desain.">
+        <Row label={tl("Tata letak")} hint={tl("Lebar panel yang kamu geser disimpan per desain.")}>
           <button className="btn btn-sm" onClick={A.resetLayout}>
-            Kembalikan bawaan
+            {tl("Kembalikan bawaan")}
           </button>
         </Row>
-        <Row label="Tur singkat" hint="Kenalan lagi dengan fitur utama: seret tab, AI inline, dan maskot.">
+        <Row label={tl("Tur singkat")} hint={tl("Kenalan lagi dengan fitur utama: seret tab, AI inline, dan maskot.")}>
           <button className="btn btn-sm" onClick={() => void import("../components/Tour").then((m) => m.startTour())}>
-            Mulai tur
+            {tl("Mulai tur")}
           </button>
         </Row>
-        <Row label="Nozi di sidebar" hint="Nozi kecil dengan tips di bawah Explorer (desain Pinguin).">
+        <Row label={tl("Nozi di sidebar")} hint={tl("Nozi kecil dengan tips di bawah Explorer (desain Pinguin).")}>
           <button
             className="btn btn-sm"
             onClick={showNoziPeek}
           >
-            Munculkan lagi
+            {tl("Munculkan lagi")}
           </button>
         </Row>
       </section>
 
       <section className="set-section">
         <h2>Editor</h2>
-        <Row label="Ukuran huruf">
+        <Row label={tl("Ukuran huruf")}>
           <div className="stepper">
-            <button className="btn btn-sm" onClick={() => set({ fontSize: Math.max(9, s.fontSize - 1) })} aria-label="Perkecil">−</button>
+            <button className="btn btn-sm" onClick={() => set({ fontSize: Math.max(9, s.fontSize - 1) })} aria-label={tl("Perkecil")}>−</button>
             <span className="mono">{s.fontSize}px</span>
-            <button className="btn btn-sm" onClick={() => set({ fontSize: Math.min(28, s.fontSize + 1) })} aria-label="Perbesar">+</button>
+            <button className="btn btn-sm" onClick={() => set({ fontSize: Math.min(28, s.fontSize + 1) })} aria-label={tl("Perbesar")}>+</button>
           </div>
         </Row>
-        <Row label="Lebar tab">
-          <Segmented label="Lebar tab" value={String(s.tabSize)} onChange={(v) => set({ tabSize: Number(v) })} options={[{ id: "2", label: "2" }, { id: "4", label: "4" }, { id: "8", label: "8" }]} />
+        <Row label={tl("Lebar tab")}>
+          <Segmented label={tl("Lebar tab")} value={String(s.tabSize)} onChange={(v) => set({ tabSize: Number(v) })} options={[{ id: "2", label: "2" }, { id: "4", label: "4" }, { id: "8", label: "8" }]} />
         </Row>
-        <Row label="Bungkus baris panjang">
-          <Toggle label="Bungkus baris" value={s.wordWrap} onChange={(v) => set({ wordWrap: v })} />
+        <Row label={tl("Bungkus baris panjang")}>
+          <Toggle label={tl("Bungkus baris")} value={s.wordWrap} onChange={(v) => set({ wordWrap: v })} />
         </Row>
-        <Row label="Minimap" hint="Otomatis mati di mode hemat daya.">
+        <Row label="Minimap" hint={tl("Otomatis mati di mode hemat daya.")}>
           <Toggle label="Minimap" value={s.minimap} onChange={(v) => set({ minimap: v })} />
         </Row>
-        <Row label="Simpan otomatis" hint={s.autoSave === "delay" ? "Menyimpan 1,2 detik setelah berhenti mengetik." : s.autoSave === "focus" ? "Menyimpan saat pindah tab atau jendela kehilangan fokus." : "Simpan sendiri dengan Simpan."}>
+        <Row label={tl("Simpan otomatis")} hint={tl(s.autoSave === "delay" ? "Menyimpan 1,2 detik setelah berhenti mengetik." : s.autoSave === "focus" ? "Menyimpan saat pindah tab atau jendela kehilangan fokus." : "Simpan sendiri dengan Simpan.")}>
           <Segmented
-            label="Simpan otomatis"
+            label={tl("Simpan otomatis")}
             value={s.autoSave}
             onChange={(v) => set({ autoSave: v })}
             options={[
-              { id: "off", label: "Mati" },
-              { id: "delay", label: "Setelah jeda" },
-              { id: "focus", label: "Saat pindah" },
+              { id: "off", label: tl("Mati") },
+              { id: "delay", label: tl("Setelah jeda") },
+              { id: "focus", label: tl("Saat pindah") },
             ]}
           />
         </Row>
-        <Row label="Cek pembaruan otomatis" hint="Sekali sehari menanyakan versi terbaru ke GitHub Releases. Tidak ada data lain yang dikirim.">
-          <Toggle label="Cek pembaruan otomatis" value={s.updateCheck} onChange={(v) => set({ updateCheck: v })} />
+        <Row label={tl("Bahasa aplikasi")} hint={tl("Aplikasi dimuat ulang untuk mengganti bahasa.")}>
+          <Segmented
+            label={tl("Bahasa aplikasi")}
+            value={langPref()}
+            onChange={(v) => setLanguage(v)}
+            options={[
+              { id: "auto", label: tl("Mengikuti sistem") },
+              { id: "id", label: "Indonesia" },
+              { id: "en", label: "English" },
+            ]}
+          />
         </Row>
-        <Row label="RAM & CPU di status bar" hint="Pemakaian memori dan prosesor Alexel Studio.">
-          <Toggle label="RAM & CPU di status bar" value={s.showResources} onChange={(v) => set({ showResources: v })} />
+        <Row label={tl("Cek pembaruan otomatis")} hint={tl("Sekali sehari menanyakan versi terbaru ke GitHub Releases. Tidak ada data lain yang dikirim.")}>
+          <Toggle label={tl("Cek pembaruan otomatis")} value={s.updateCheck} onChange={(v) => set({ updateCheck: v })} />
+        </Row>
+        <Row label={tl("RAM & CPU di status bar")} hint={tl("Pemakaian memori dan prosesor Alexel Studio.")}>
+          <Toggle label={tl("RAM & CPU di status bar")} value={s.showResources} onChange={(v) => set({ showResources: v })} />
         </Row>
       </section>
 
@@ -297,16 +310,16 @@ export default function SettingsView() {
         <h2>
           <Leaf size={16} aria-hidden /> Mode hemat daya
         </h2>
-        <p className="hint">Mengurangi polling, animasi, minimap, dan pemindaian di latar saat laptop memakai baterai.</p>
-        <Row label="Aktifkan" hint={power ? `Sekarang: ${power.on_battery ? "baterai" : "listrik"}${power.percent != null ? ` ${power.percent}%` : ""}${power.low_power_mode ? " · Low Power Mode" : ""}` : undefined}>
+        <p className="hint">{tl("Mengurangi polling, animasi, minimap, dan pemindaian di latar saat laptop memakai baterai.")}</p>
+        <Row label={tl("Aktifkan")} hint={power ? `Sekarang: ${power.on_battery ? "baterai" : "listrik"}${power.percent != null ? ` ${power.percent}%` : ""}${power.low_power_mode ? " · Low Power Mode" : ""}` : undefined}>
           <Segmented
-            label="Mode hemat daya"
+            label={tl("Mode hemat daya")}
             value={s.powerMode}
             onChange={(v) => set({ powerMode: v })}
             options={[
-              { id: "auto", label: "Otomatis" },
-              { id: "on", label: "Selalu" },
-              { id: "off", label: "Mati" },
+              { id: "auto", label: tl("Otomatis") },
+              { id: "on", label: tl("Selalu") },
+              { id: "off", label: tl("Mati") },
             ]}
           />
         </Row>
@@ -318,13 +331,13 @@ export default function SettingsView() {
 
       <section className="set-section">
         <h2>Git Bot</h2>
-        <Row label="Setiap simpan" hint="Hanya berkas yang disimpan yang di-commit. Dilewati saat merge/rebase, konflik, atau berkas mirip rahasia (.env, .pem).">
+        <Row label={tl("Setiap simpan")} hint={tl("Hanya berkas yang disimpan yang di-commit. Dilewati saat merge/rebase, konflik, atau berkas mirip rahasia (.env, .pem).")}>
           <Segmented
             label="Git Bot"
             value={s.gitBot}
             onChange={(v) => set({ gitBot: v })}
             options={[
-              { id: "off", label: "Mati" },
+              { id: "off", label: tl("Mati") },
               { id: "commit", label: "Commit" },
               { id: "push", label: "Commit + push" },
             ]}
@@ -333,9 +346,9 @@ export default function SettingsView() {
       </section>
 
       <section className="set-section">
-        <h2 id="set-agents">Agen AI</h2>
-        <Row label="Agen bawaan" hint="Agen yang dipakai panel Agen AI. Pasang agen lain dari panel Ekstensi → Agen AI.">
-          <select className="input select" value={s.agent} onChange={(e) => void selectAgent(e.target.value as AgentId)} aria-label="Agen AI">
+        <h2 id="set-agents">{tl("Agen AI")}</h2>
+        <Row label={tl("Agen bawaan")} hint={tl("Agen yang dipakai panel Agen AI. Pasang agen lain dari panel Ekstensi → Agen AI.")}>
+          <select className="input select" value={s.agent} onChange={(e) => void selectAgent(e.target.value as AgentId)} aria-label={tl("Agen AI")}>
             {AGENTS.map((a) => (
               <option key={a.id} value={a.id}>
                 {a.name}
@@ -343,21 +356,21 @@ export default function SettingsView() {
             ))}
           </select>
         </Row>
-        <Row label="Perintah agen ACP" hint="Untuk agen lain yang mendukung Agent Client Protocol, mis. my-agent --acp. Dijalankan di folder project.">
-          <input className="input" value={s.acpCommand} placeholder="perintah --acp" onChange={(e) => set({ acpCommand: e.target.value })} aria-label="Perintah agen ACP" />
+        <Row label={tl("Perintah agen ACP")} hint={tl("Untuk agen lain yang mendukung Agent Client Protocol, mis. my-agent --acp. Dijalankan di folder project.")}>
+          <input className="input" value={s.acpCommand} placeholder={tl("perintah --acp")} onChange={(e) => set({ acpCommand: e.target.value })} aria-label={tl("Perintah agen ACP")} />
         </Row>
         <h3 className="set-sub">Claude Code</h3>
         <Row label="Status" hint={claude?.path ?? undefined}>
           <span className={claude?.installed ? "tone-success-fg" : "tone-danger-fg"}>{claude ? (claude.installed ? claude.version : claude.error) : "belum diperiksa"}</span>
           <button className="btn btn-sm" onClick={() => void detectClaude()}>
-            Periksa ulang
+            {tl("Periksa ulang")}
           </button>
         </Row>
-        <Row label="Mode izin bawaan" hint={PERM_MODES.find((m) => m.id === s.claudeMode)?.hint}>
-          <Segmented label="Mode izin" value={s.claudeMode} onChange={(v) => set({ claudeMode: v })} options={PERM_MODES.map((m) => ({ id: m.id, label: m.label }))} />
+        <Row label={tl("Mode izin bawaan")} hint={PERM_MODES.find((m) => m.id === s.claudeMode)?.hint}>
+          <Segmented label={tl("Mode izin")} value={s.claudeMode} onChange={(v) => set({ claudeMode: v })} options={PERM_MODES.map((m) => ({ id: m.id, label: m.label }))} />
         </Row>
-        <Row label="Model bawaan" hint="Bisa diganti per percakapan dari bawah kotak pesan.">
-          <select className="input select" value={s.claudeModel} onChange={(e) => set({ claudeModel: e.target.value })} aria-label="Model Claude">
+        <Row label={tl("Model bawaan")} hint={tl("Bisa diganti per percakapan dari bawah kotak pesan.")}>
+          <select className="input select" value={s.claudeModel} onChange={(e) => set({ claudeModel: e.target.value })} aria-label={tl("Model Claude")}>
             {modelChoices(models).map((m) => (
               <option key={m.value} value={m.value}>
                 {m.displayName}
@@ -365,8 +378,8 @@ export default function SettingsView() {
             ))}
           </select>
         </Row>
-        <Row label="Effort bawaan" hint="Effort lebih tinggi = berpikir lebih lama dan lebih teliti.">
-          <select className="input select" value={s.claudeEffort} onChange={(e) => set({ claudeEffort: e.target.value })} aria-label="Effort Claude">
+        <Row label={tl("Effort bawaan")} hint={tl("Effort lebih tinggi = berpikir lebih lama dan lebih teliti.")}>
+          <select className="input select" value={s.claudeEffort} onChange={(e) => set({ claudeEffort: e.target.value })} aria-label={tl("Effort Claude")}>
             {EFFORTS.map((e) => (
               <option key={e.id} value={e.id}>
                 {e.label}
@@ -374,50 +387,50 @@ export default function SettingsView() {
             ))}
           </select>
         </Row>
-        <Row label="Model untuk Claude inline" hint="Cepat memakai Sonnet dengan effort rendah (±15 detik). Bawaan mengikuti model Claude Code kamu, bisa beberapa menit.">
+        <Row label={tl("Model untuk Claude inline")} hint={tl("Cepat memakai Sonnet dengan effort rendah (±15 detik). Bawaan mengikuti model Claude Code kamu, bisa beberapa menit.")}>
           <Segmented
-            label="Model Claude inline"
+            label={tl("Model Claude inline")}
             value={s.claudeInlineModel}
             onChange={(v) => set({ claudeInlineModel: v })}
             options={[
-              { id: "fast", label: "Cepat" },
-              { id: "default", label: "Bawaan" },
+              { id: "fast", label: tl("Cepat") },
+              { id: "default", label: tl("Bawaan") },
             ]}
           />
         </Row>
-        <Row label="Tampilkan isi sebelum dikirim" hint="Setiap pesan, kamu melihat dulu persis teks dan berkas yang akan dikirim ke agen.">
-          <Toggle label="Konfirmasi kirim" value={s.claudeConfirm} onChange={(v) => set({ claudeConfirm: v })} />
+        <Row label={tl("Tampilkan isi sebelum dikirim")} hint={tl("Setiap pesan, kamu melihat dulu persis teks dan berkas yang akan dikirim ke agen.")}>
+          <Toggle label={tl("Konfirmasi kirim")} value={s.claudeConfirm} onChange={(v) => set({ claudeConfirm: v })} />
         </Row>
-        <Row label="Sertakan berkas aktif secara bawaan">
-          <Toggle label="Sertakan berkas aktif" value={s.claudeIncludeFile} onChange={(v) => set({ claudeIncludeFile: v })} />
+        <Row label={tl("Sertakan berkas aktif secara bawaan")}>
+          <Toggle label={tl("Sertakan berkas aktif")} value={s.claudeIncludeFile} onChange={(v) => set({ claudeIncludeFile: v })} />
         </Row>
       </section>
 
       <LanguageServers />
 
       <section className="set-section">
-        <h2>Terminal & berkas</h2>
-        <Row label="Ukuran huruf terminal">
+        <h2>{tl("Terminal & berkas")}</h2>
+        <Row label={tl("Ukuran huruf terminal")}>
           <div className="stepper">
-            <button className="btn btn-sm" onClick={() => set({ terminalFontSize: Math.max(9, s.terminalFontSize - 1) })} aria-label="Perkecil">−</button>
+            <button className="btn btn-sm" onClick={() => set({ terminalFontSize: Math.max(9, s.terminalFontSize - 1) })} aria-label={tl("Perkecil")}>−</button>
             <span className="mono">{s.terminalFontSize}px</span>
-            <button className="btn btn-sm" onClick={() => set({ terminalFontSize: Math.min(24, s.terminalFontSize + 1) })} aria-label="Perbesar">+</button>
+            <button className="btn btn-sm" onClick={() => set({ terminalFontSize: Math.min(24, s.terminalFontSize + 1) })} aria-label={tl("Perbesar")}>+</button>
           </div>
         </Row>
-        <Row label="Tanya sebelum memindah ke Trash">
-          <Toggle label="Konfirmasi hapus" value={s.confirmDelete} onChange={(v) => set({ confirmDelete: v })} />
+        <Row label={tl("Tanya sebelum memindah ke Trash")}>
+          <Toggle label={tl("Konfirmasi hapus")} value={s.confirmDelete} onChange={(v) => set({ confirmDelete: v })} />
         </Row>
       </section>
 
       <section className="set-section" id="set-keys">
-        <h2>Shortcut keyboard</h2>
-        <p className="hint">Klik Ubah lalu tekan kombinasi baru. Esc membatalkan, Backspace melepas shortcut.</p>
+        <h2>{tl("Shortcut keyboard")}</h2>
+        <p className="hint">{tl("Klik Ubah lalu tekan kombinasi baru. Esc membatalkan, Backspace melepas shortcut.")}</p>
         <Keybindings />
       </section>
 
       <section className="set-section">
         <button className="btn btn-danger btn-sm" onClick={A.resetSettings}>
-          Kembalikan semua pengaturan
+          {tl("Kembalikan semua pengaturan")}
         </button>
       </section>
     </div>

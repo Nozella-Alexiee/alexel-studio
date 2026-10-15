@@ -6,6 +6,7 @@ import { syntaxTree, syntaxTreeAvailable, forceParsing } from "@codemirror/langu
 import { linter, type Diagnostic } from "@codemirror/lint";
 import type { EditorState, Extension } from "@codemirror/state";
 import type { EditorView } from "@codemirror/view";
+import { tl } from "../i18n";
 
 /** Bahasa dengan grammar Lezer yang cukup akurat untuk dijadikan sumber error. */
 const RELIABLE = new Set(["js", "ts", "json", "jsonc", "css", "py", "rs", "go", "java", "c", "cpp", "php", "yaml", "xml"]);
@@ -26,7 +27,7 @@ export function lezerDiagnostics(state: EditorState): Diagnostic[] {
       let to = Math.max(node.to, from + 1);
       if (to > line.to) to = Math.max(line.to, from);
       if (from === to && from > 0) {
-        out.push({ from: from - 1, to: from, severity: "error", message: "Sintaks tidak lengkap di sini.", source: "Sintaks" });
+        out.push({ from: from - 1, to: from, severity: "error", message: tl("Sintaks tidak lengkap di sini."), source: "Sintaks" });
         return false;
       }
       const snippet = state.sliceDoc(from, Math.min(to, from + 24)).trim();
@@ -67,7 +68,7 @@ export function jsonDiagnostics(doc: string): Diagnostic[] {
         from,
         to: Math.min(doc.length, from + 1),
         severity: "error",
-        message: "JSON tidak valid: " + msg.replace(/^JSON\.parse:\s*/i, "").replace(/^Unexpected/, "Tidak terduga"),
+        message: tl("JSON tidak valid: ") + msg.replace(/^JSON\.parse:\s*/i, "").replace(/^Unexpected/, "Tidak terduga"),
         source: "JSON",
       },
     ];

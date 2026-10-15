@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import * as docs from "../editor/documents";
 import { extractSymbols } from "../editor/symbols";
 import { activeTab, getState, useStore } from "../state/store";
+import { tl } from "../i18n";
 
 export function useDocVersion(path?: string) {
   const [v, setV] = useState(0);
@@ -35,8 +36,8 @@ export function Outline() {
     return d ? extractSymbols(d.langId, docs.currentText(tab.id) ?? "") : [];
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tab?.id, tab?.kind, version]);
-  if (tab?.kind !== "text") return <div className="hint pad-x">Buka berkas untuk melihat strukturnya.</div>;
-  if (!syms.length) return <div className="hint pad-x">Tidak ada simbol di berkas ini.</div>;
+  if (tab?.kind !== "text") return <div className="hint pad-x">{tl("Buka berkas untuk melihat strukturnya.")}</div>;
+  if (!syms.length) return <div className="hint pad-x">{tl("Tidak ada simbol di berkas ini.")}</div>;
   const current = [...syms].reverse().find((s) => s.line <= cursorLine);
   return (
     <ul className="zen-outline" aria-label="Outline">

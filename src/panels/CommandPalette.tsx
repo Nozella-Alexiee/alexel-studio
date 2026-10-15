@@ -17,6 +17,7 @@ import { join } from "../lib/paths";
 import { activeTab, getState, setState, useStore } from "../state/store";
 import { modKey } from "../lib/keys";
 import { projectFiles } from "../lib/projectFiles";
+import { tl } from "../i18n";
 
 interface Item {
   key: string;
@@ -29,13 +30,13 @@ interface Item {
 }
 
 const MODES: Record<string, { placeholder: string; label: string }> = {
-  "": { placeholder: "Cari berkas…  (ketik > perintah, : baris, @ simbol, # simbol project, ! run, ? agen AI)", label: "Berkas" },
-  ">": { placeholder: "Ketik perintah…", label: "Perintah" },
-  ":": { placeholder: "Nomor baris, mis. 42 atau 42:10", label: "Pergi ke baris" },
-  "@": { placeholder: "Simbol di berkas ini…", label: "Simbol" },
-  "#": { placeholder: "Simbol di seluruh project…", label: "Simbol project" },
-  "!": { placeholder: "Target Smart Run…", label: "Smart Run" },
-  "?": { placeholder: "Tanya agen AI tentang project ini…", label: "Agen AI" },
+  "": { placeholder: tl("Cari berkas…  (ketik > perintah, : baris, @ simbol, # simbol project, ! run, ? agen AI)"), label: tl("Berkas") },
+  ">": { placeholder: tl("Ketik perintah…"), label: tl("Perintah") },
+  ":": { placeholder: tl("Nomor baris, mis. 42 atau 42:10"), label: tl("Pergi ke baris") },
+  "@": { placeholder: tl("Simbol di berkas ini…"), label: tl("Simbol") },
+  "#": { placeholder: tl("Simbol di seluruh project…"), label: tl("Simbol project") },
+  "!": { placeholder: tl("Target Smart Run…"), label: "Smart Run" },
+  "?": { placeholder: tl("Tanya agen AI tentang project ini…"), label: tl("Agen AI") },
 };
 
 export function CommandPalette() {
@@ -226,14 +227,14 @@ export function CommandPalette() {
               {it.keys && <kbd className="kbd">{prettyKeys(it.keys)}</kbd>}
             </div>
           ))}
-          {!items.length && <div className="pal-empty">{prefix === ":" ? "Ketik nomor baris." : prefix === "?" ? "Ketik pertanyaanmu." : !root && !prefix ? "Buka folder dulu untuk mencari berkas." : "Tidak ada hasil."}</div>}
+          {!items.length && <div className="pal-empty">{prefix === ":" ? "Ketik nomor baris." : prefix === "?" ? "Ketik pertanyaanmu." : !root && !prefix ? "Buka folder dulu untuk mencari berkas." : tl("Tidak ada hasil.")}</div>}
         </div>
         <div className="pal-foot">
           <span>
             <CornerDownLeft size={11} aria-hidden /> pilih
           </span>
           <span>{prettyKeys("Mod+Enter")} buka di kanan</span>
-          <span>esc tutup</span>
+          <span>{tl("esc tutup")}</span>
         </div>
       </div>
     </div>

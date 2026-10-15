@@ -3,6 +3,7 @@ import React, { useEffect, useRef, useState } from "react";
 import { create } from "zustand";
 import { getState, setState, useStore } from "../state/store";
 import { prettyKeys } from "../lib/keys";
+import { tl } from "../i18n";
 
 // ---------------- Dialog (confirm / prompt / pilihan) ----------------
 
@@ -164,7 +165,7 @@ export function Toasts() {
               {t.action.label}
             </button>
           )}
-          <button className="toast-x" aria-label="Tutup notifikasi" onClick={() => setState((s) => ({ toasts: s.toasts.filter((x) => x.id !== t.id) }))}>
+          <button className="toast-x" aria-label={tl("Tutup notifikasi")} onClick={() => setState((s) => ({ toasts: s.toasts.filter((x) => x.id !== t.id) }))}>
             <X size={13} />
           </button>
         </div>

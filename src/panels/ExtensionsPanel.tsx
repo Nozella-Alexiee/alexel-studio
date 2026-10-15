@@ -6,6 +6,7 @@ import { loadExtensions, useExtensions, type InstalledExt } from "../extensions/
 import { call, errMsg, isNative } from "../lib/ipc";
 import { confirmDialog, toast, useStore } from "../state/store";
 import { AgentExtensions, agentForPackage, installAgent } from "./AgentExtensions";
+import { tl } from "../i18n";
 
 interface Result {
   id: string;
@@ -20,9 +21,9 @@ interface Result {
 }
 
 const CATS = [
-  { id: "Themes", label: "Tema" },
+  { id: "Themes", label: tl("Tema") },
   { id: "Snippets", label: "Snippet" },
-  { id: "Programming Languages", label: "Bahasa" },
+  { id: "Programming Languages", label: tl("Bahasa") },
 ] as const;
 
 const fmtDl = (n: number) => (n >= 1e6 ? `${(n / 1e6).toFixed(1)} jt` : n >= 1e3 ? `${Math.round(n / 1e3)} rb` : String(n));
@@ -53,10 +54,10 @@ function Installed({ ext }: { ext: InstalledExt }) {
             {ext.iconThemes.length > 0 && <span className="todo-tag">{ext.iconThemes.length} tema ikon</span>}
             {ext.snippets.length > 0 && <span className="todo-tag">{ext.snippets.length} snippet</span>}
             {ext.grammars.length > 0 && <span className="todo-tag">{ext.grammars.length} grammar</span>}
-            {ext.id.startsWith("vscode.") && <span className="todo-tag" title="Grammar bawaan VS Code, dipasang otomatis karena dipakai ekstensi lain">pendukung</span>}
+            {ext.id.startsWith("vscode.") && <span className="todo-tag" title={tl("Grammar bawaan VS Code, dipasang otomatis karena dipakai ekstensi lain")}>{tl("pendukung")}</span>}
           </div>
         </div>
-        <IconButton label="Hapus ekstensi" onClick={() => void remove()}>
+        <IconButton label={tl("Hapus ekstensi")} onClick={() => void remove()}>
           <Trash2 size={13} />
         </IconButton>
       </div>
@@ -72,7 +73,7 @@ function Installed({ ext }: { ext: InstalledExt }) {
           >
             <Palette size={12} aria-hidden />
             <span className="ext-theme-label">{t.label}</span>
-            <span className="right">{on ? "Aktif" : "Pakai"}</span>
+            <span className="right">{on ? tl("Aktif") : tl("Pakai")}</span>
           </button>
         );
       })}
@@ -88,7 +89,7 @@ function Installed({ ext }: { ext: InstalledExt }) {
           >
             <Shapes size={12} aria-hidden />
             <span className="ext-theme-label">{t.label}</span>
-            <span className="right">{on ? "Aktif" : "Pakai ikon"}</span>
+            <span className="right">{on ? tl("Aktif") : "Pakai ikon"}</span>
           </button>
         );
       })}
@@ -126,7 +127,7 @@ export default function ExtensionsPanel() {
     return () => clearTimeout(t);
   }, [q, cat]);
 
-  if (!isNative) return <Empty icon={<Puzzle size={24} />} title="Ekstensi">Pasang tema & snippet dari Open VSX di aplikasi desktop Alexel Studio.</Empty>;
+  if (!isNative) return <Empty icon={<Puzzle size={24} />} title={tl("Ekstensi")}>{tl("Pasang tema & snippet dari Open VSX di aplikasi desktop Alexel Studio.")}</Empty>;
 
   const install = async (r: Result) => {
     // Ekstensi agen (Claude Code, Codex): pasang bineran agennya ke panel Agen AI.
@@ -159,22 +160,22 @@ export default function ExtensionsPanel() {
   return (
     <div className="ext-panel">
       <div className="side-head">
-        <span className="side-title">Ekstensi</span>
+        <span className="side-title">{tl("Ekstensi")}</span>
       </div>
       <div className="search-form">
         <div className="input-wrap">
-          <input className="input" placeholder="Cari di Open VSX (mis. dracula, svelte)" value={q} onChange={(e) => setQ(e.target.value)} aria-label="Cari ekstensi" />
+          <input className="input" placeholder={tl("Cari di Open VSX (mis. dracula, svelte)")} value={q} onChange={(e) => setQ(e.target.value)} aria-label={tl("Cari ekstensi")} />
           <div className="input-tools">{busy ? <Spinner size={12} /> : <Search size={13} aria-hidden style={{ margin: 6, color: "var(--fg-subtle)" }} />}</div>
         </div>
-        <Segmented label="Kategori" value={cat} onChange={setCat} options={CATS.map((c) => ({ id: c.id, label: c.label }))} />
-        <p className="hint ext-note">Alexel Studio memakai tema, tema ikon, snippet, dan grammar dari ekstensi. Kode JavaScript ekstensi tidak pernah dijalankan.</p>
+        <Segmented label={tl("Kategori")} value={cat} onChange={setCat} options={CATS.map((c) => ({ id: c.id, label: c.label }))} />
+        <p className="hint ext-note">{tl("Alexel Studio memakai tema, tema ikon, snippet, dan grammar dari ekstensi. Kode JavaScript ekstensi tidak pernah dijalankan.")}</p>
       </div>
       <div className="ext-scroll">
         {!q && <AgentExtensions />}
         {installed.length > 0 && (
           <section>
             <div className="git-section-head">
-              <span>Terpasang</span>
+              <span>{tl("Terpasang")}</span>
               <span className="count-badge">{installed.length}</span>
             </div>
             {[...installed].sort((a, b) => Number(a.id.startsWith("vscode.")) - Number(b.id.startsWith("vscode."))).map((e) => (
@@ -192,14 +193,14 @@ export default function ExtensionsPanel() {
               <Spinner />
             </div>
           ) : res.length === 0 ? (
-            <div className="hint pad-x">Tidak ada hasil.</div>
+            <div className="hint pad-x">{tl("Tidak ada hasil.")}</div>
           ) : (
             res.map((r) => (
               <div key={r.id} className="ext-item">
                 {r.icon ? <img className="ext-icon" src={r.icon} alt="" loading="lazy" referrerPolicy="no-referrer" /> : <div className="ext-icon ph"><Puzzle size={16} /></div>}
                 <div className="ext-main">
                   <div className="ext-name">
-                    <span className="ext-id" title={r.displayName}>{r.displayName}</span> {r.verified && <BadgeCheck size={12} className="tone-success-fg ext-badge" aria-label="Penerbit terverifikasi" />}
+                    <span className="ext-id" title={r.displayName}>{r.displayName}</span> {r.verified && <BadgeCheck size={12} className="tone-success-fg ext-badge" aria-label={tl("Penerbit terverifikasi")} />}
                   </div>
                   <div className="ext-meta" title={r.id}>
                     <span className="ext-id">{r.namespace}</span>
@@ -210,10 +211,10 @@ export default function ExtensionsPanel() {
                   <div className="ext-desc">{r.description}</div>
                   <div className="ext-actions">
                     {installedIds.has(r.id) ? (
-                      <span className="hint">Terpasang</span>
+                      <span className="hint">{tl("Terpasang")}</span>
                     ) : (
                       <button className="btn btn-sm btn-primary" onClick={() => void install(r)} disabled={!!installing} aria-label={`Pasang ${r.displayName}`}>
-                        {installing === r.id ? <Spinner size={11} /> : "Pasang"}
+                        {installing === r.id ? <Spinner size={11} /> : tl("Pasang")}
                       </button>
                     )}
                   </div>

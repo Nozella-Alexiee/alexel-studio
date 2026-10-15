@@ -6,6 +6,7 @@ import { Empty, IconButton, Spinner } from "../components/ui";
 import { api, errMsg } from "../lib/ipc";
 import type { SearchMatch, SearchResult } from "../lib/types";
 import { confirmDialog, toast, useStore } from "../state/store";
+import { tl } from "../i18n";
 
 // State pencarian disimpan di luar komponen: panel ini di-unmount saat pindah ke Explorer/Git,
 // dan kata kunci, opsi, serta hasilnya harus tetap ada saat kembali.
@@ -82,7 +83,7 @@ export default function SearchPanel() {
     if (!(await confirmDialog(`Ganti ${res.matches.length} kecocokan di ${files.length} berkas?`, "Berkas yang sedang terbuka akan dimuat ulang. Versi lama tersimpan di time-travel.", "Ganti semua", true))) return;
     try {
       const dirtyOpen = files.filter((f) => useStore.getState().tabs[f]?.dirty);
-      if (dirtyOpen.length) return toast("Simpan dulu berkas yang sedang diedit sebelum mengganti.", "error");
+      if (dirtyOpen.length) return toast(tl("Simpan dulu berkas yang sedang diedit sebelum mengganti."), "error");
       const n = await api.replace(files, q, rep, opts);
       toast(`${n} kecocokan diganti`, "success");
       setQ((x) => x + "");
@@ -92,7 +93,7 @@ export default function SearchPanel() {
     }
   };
 
-  if (!root) return <Empty title="Buka folder dulu">Pencarian berjalan di seluruh project.</Empty>;
+  if (!root) return <Empty title={tl("Buka folder dulu")}>{tl("Pencarian berjalan di seluruh project.")}</Empty>;
 
   const toggle = (k: keyof typeof opts) => setOpts((o) => ({ ...o, [k]: !o[k] }));
   return (
@@ -103,12 +104,12 @@ export default function SearchPanel() {
             {showRep ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
           </IconButton>
           <div className="input-wrap">
-            <input id="search-input" className="input" placeholder="Cari" value={q} onChange={(e) => setQ(e.target.value)} aria-label="Cari di project" spellCheck={false} />
+            <input id="search-input" className="input" placeholder={tl("Cari")} value={q} onChange={(e) => setQ(e.target.value)} aria-label={tl("Cari di project")} spellCheck={false} />
             <div className="input-tools">
-              <IconButton label="Cocokkan huruf besar/kecil" active={opts.caseSensitive} onClick={() => toggle("caseSensitive")}>
+              <IconButton label={tl("Cocokkan huruf besar/kecil")} active={opts.caseSensitive} onClick={() => toggle("caseSensitive")}>
                 <CaseSensitive size={14} />
               </IconButton>
-              <IconButton label="Kata utuh" active={opts.wholeWord} onClick={() => toggle("wholeWord")}>
+              <IconButton label={tl("Kata utuh")} active={opts.wholeWord} onClick={() => toggle("wholeWord")}>
                 <WholeWord size={14} />
               </IconButton>
               <IconButton label="Regex" active={opts.isRegex} onClick={() => toggle("isRegex")}>
@@ -119,21 +120,21 @@ export default function SearchPanel() {
         </div>
         {showRep && (
           <div className="search-row indent">
-            <input className="input" placeholder="Ganti dengan" value={rep} onChange={(e) => setRep(e.target.value)} aria-label="Teks pengganti" spellCheck={false} />
-            <IconButton label="Ganti semua" onClick={() => void replaceAll()} disabled={!res?.matches.length}>
+            <input className="input" placeholder={tl("Ganti dengan")} value={rep} onChange={(e) => setRep(e.target.value)} aria-label={tl("Teks pengganti")} spellCheck={false} />
+            <IconButton label={tl("Ganti semua")} onClick={() => void replaceAll()} disabled={!res?.matches.length}>
               <Replace size={14} />
             </IconButton>
           </div>
         )}
         <div className="search-row indent">
-          <input className="input input-sm" placeholder="Hanya berkas (mis. .ts, src/)" value={include} onChange={(e) => setInclude(e.target.value)} aria-label="Filter berkas" />
+          <input className="input input-sm" placeholder={tl("Hanya berkas (mis. .ts, src/)")} value={include} onChange={(e) => setInclude(e.target.value)} aria-label={tl("Filter berkas")} />
         </div>
       </div>
       <div className="search-meta">
         {busy && <Spinner size={12} />}
         {err ? <span className="tone-danger-fg">{err}</span> : res && q ? <span>{res.matches.length}{res.truncated ? "+" : ""} hasil di {byFile.length} berkas</span> : null}
       </div>
-      <div className="search-results" role="tree" aria-label="Hasil pencarian" aria-busy={busy}>
+      <div className="search-results" role="tree" aria-label={tl("Hasil pencarian")} aria-busy={busy}>
         {busy && !res && (
           <div className="skeleton-list" aria-hidden>
             {[62, 90, 78, 0, 55, 84].map((w, i) => (w ? <div key={i} className="skeleton" style={{ width: `${w}%` }} /> : <div key={i} className="skeleton-gap" />))}
