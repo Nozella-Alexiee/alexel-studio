@@ -70,6 +70,9 @@ function sanitizeSettings(raw: Partial<Settings> | null): Settings {
   if (!["off", "delay", "focus"].includes(s.autoSave)) s.autoSave = "off";
   s.showResources = s.showResources === true;
   s.updateCheck = s.updateCheck !== false;
+  // Pengguna versi lama (antarmuka Indonesia) tetap berbahasa Indonesia.
+  if (raw && !("language" in raw)) s.language = "id";
+  if (!["auto", "id", "en"].includes(s.language)) s.language = "auto";
   if (!["claude", "codex", "gemini", "antigravity", "acp"].includes(s.agent)) s.agent = "claude";
   if (!s.agentPrefs || typeof s.agentPrefs !== "object") s.agentPrefs = {};
   if (typeof s.acpCommand !== "string") s.acpCommand = "";
@@ -97,6 +100,12 @@ export async function restoreAll() {
     }
   }
   setState({ settings, layouts, recents });
+  // Bahasa disimpan di pengaturan; bila berbeda dari yang sedang dipakai, muat ulang sekali.
+  const { langPref, setLanguage } = await import("../i18n");
+  if (settings.language !== langPref()) {
+    setLanguage(settings.language);
+    return;
+  }
   void import("./commands").then((m) => m.applyKeybindings(settings.keybindings));
   applyDesign(settings.design, settings.accent);
   void import("./actions").then((m) => m.syncTrafficLights());

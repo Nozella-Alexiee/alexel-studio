@@ -54,6 +54,7 @@ function carryOver(ctx: Ctx, old: string, marker: string) {
  * lalu dari versi Tauri lama bila masih ada.
  */
 export function migrateOldData(ctx: Ctx, appData: string) {
-  carryOver(ctx, path.join(appData, "Nozel Code"), ".migrated-from-nozel");
+  // Versi Nozel memakai folder "Nozel Code" (nama produk) atau "nozel-code" (nama paket).
+  for (const old of ["Nozel Code", "nozel-code"]) carryOver(ctx, path.join(appData, old), `.migrated-from-${old.replace(/\W+/g, "-").toLowerCase()}`);
   if (process.platform === "darwin") carryOver(ctx, path.join(os.homedir(), "Library/Application Support/com.nozel.code"), ".migrated-from-tauri");
 }

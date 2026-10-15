@@ -803,3 +803,12 @@ export async function reportIssue() {
   const body = encodeURIComponent(`**Versi:** ${info?.version ?? "?"}\n**OS:** ${info?.platform ?? "?"} ${info?.arch ?? ""}\n\n**Yang terjadi:**\n\n**Yang diharapkan:**\n\n**Langkah:**\n1. `);
   void openExternal(`https://github.com/${repo}/issues/new?body=${body}`);
 }
+
+/** Ganti bahasa antarmuka: simpan ke pengaturan lalu muat ulang jendela. */
+export async function setAppLanguage(language: "auto" | "id" | "en") {
+  const next = { ...getState().settings, language };
+  setState({ settings: next });
+  await api.storeSave("settings", JSON.stringify(next)).catch(() => {});
+  const { setLanguage } = await import("../i18n");
+  setLanguage(language);
+}

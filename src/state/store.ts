@@ -50,6 +50,8 @@ export interface Settings {
   showResources: boolean;
   /** Cek versi baru di GitHub sekali sehari. */
   updateCheck: boolean;
+  /** Bahasa antarmuka ("auto" = ikuti sistem). */
+  language: "auto" | "id" | "en";
   /** Model untuk ⌘K inline: "fast" (Sonnet, effort rendah) atau model bawaan Claude Code. */
   claudeInlineModel: "fast" | "default";
   terminalFontSize: number;
@@ -83,6 +85,7 @@ export const DEFAULT_SETTINGS: Settings = {
   keybindings: {},
   showResources: false,
   updateCheck: true,
+  language: "auto",
   claudeInlineModel: "fast",
   terminalFontSize: 12,
   autoSave: "off",

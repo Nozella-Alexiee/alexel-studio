@@ -47,6 +47,6 @@ jobs:
       - run: npm test
       - run: npm run build
       - name: Build & unggah ke draft rilis
-        run: npx electron-builder ${{ matrix.target }} --publish always
+        run: npx electron-builder ${{ matrix.target }} --publish always -c.publish.provider=github -c.publish.releaseType=draft
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

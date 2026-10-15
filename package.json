@@ -219,13 +219,7 @@
     },
     "rpm": {
       "artifactName": "Alexel-Studio-linux-${arch}.${ext}"
-    },
-    "publish": [
-      {
-        "provider": "github",
-        "releaseType": "draft"
-      }
-    ]
+    }
   },
   "license": "MIT",
   "homepage": "https://github.com/alexel-studio"

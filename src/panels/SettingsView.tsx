@@ -11,7 +11,7 @@ import { detectClaude, selectAgent } from "../claude/claude";
 import { AGENTS, type AgentId } from "../agents/registry";
 import { isMac } from "../lib/ipc";
 import { EFFORTS, modelChoices, PERM_MODES } from "../claude/options";
-import { langPref, setLanguage, tl } from "../i18n";
+import { tl } from "../i18n";
 
 function Row({ label, hint, children }: { label: string; hint?: string; children: React.ReactNode }) {
   return (
@@ -289,8 +289,8 @@ export default function SettingsView() {
         <Row label={tl("Bahasa aplikasi")} hint={tl("Aplikasi dimuat ulang untuk mengganti bahasa.")}>
           <Segmented
             label={tl("Bahasa aplikasi")}
-            value={langPref()}
-            onChange={(v) => setLanguage(v)}
+            value={s.language}
+            onChange={(v) => void A.setAppLanguage(v)}
             options={[
               { id: "auto", label: tl("Mengikuti sistem") },
               { id: "id", label: "Indonesia" },
