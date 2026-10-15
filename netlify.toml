@@ -1,0 +1,10 @@
+# Halaman unduh Alexel Studio di Netlify: folder site/ diterbitkan apa adanya (tanpa build).
+# Berkas installer tetap di GitHub Releases; halaman ini hanya menautkannya.
+[build]
+  publish = "site"
+  command = ""
+
+[[headers]]
+  for = "/img/*"
+  [headers.values]
+    Cache-Control = "public, max-age=604800"
