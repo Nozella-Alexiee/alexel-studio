@@ -1,5 +1,6 @@
 import { AlertCircle, AlertTriangle, Cpu, GitBranch, Leaf, Palette, ArrowUp, ArrowDown, Play } from "lucide-react";
 import { Kepi } from "../components/CrabMascot";
+import { DebugToolbar } from "../components/DebugToolbar";
 import { agentInfo } from "../agents/registry";
 import React, { Suspense, lazy, useEffect, useState } from "react";
 import * as A from "../app/actions";
@@ -36,6 +37,7 @@ export function EditorGroups({ tabs = true, breadcrumb = true }: { tabs?: boolea
   const [split, setSplit] = useState(50);
   return (
     <div className="editor-groups" style={{ gridTemplateColumns: count > 1 ? `${split}% 4px minmax(0,1fr)` : "minmax(0,1fr)" }}>
+      <DebugToolbar />
       {Array.from({ length: count }, (_, g) => (
         <React.Fragment key={g}>
           {g === 1 && <Resizer axis="x" value={split} min={20} max={80} onChange={(v) => setSplit(v)} className="group-resizer" />}

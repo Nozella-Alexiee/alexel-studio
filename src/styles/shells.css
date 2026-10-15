@@ -1061,3 +1061,7 @@ button.status-item:hover {
   max-width: 520px;
   margin: 0 auto;
 }
+.shell-studio.is-debugging .statusbar,
+.shell-studio.is-debugging .statusbar * {
+  color: #fff !important;
+}

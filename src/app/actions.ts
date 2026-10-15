@@ -65,6 +65,7 @@ export async function openProject(root: string, opts: { restoreTabs?: { groups: 
   void refreshRunTargets();
   void import("../panels/todoData").then((m) => m.refreshTodos());
   void setWindowTitle(`${basename(root)} — Alexel Studio`);
+  void import("../debug/debug").then((m) => m.loadBreakpoints(root));
   if (opts.restoreTabs) {
     for (let g = 0; g < opts.restoreTabs.groups.length && g < 2; g++) {
       const grp = opts.restoreTabs.groups[g];
@@ -751,4 +752,29 @@ export async function showAbout() {
     okLabel: "Tutup",
     cancelLabel: "",
   });
+}
+
+/** Buka .vscode/launch.json; buat contoh bila belum ada (format sama dengan VS Code). */
+export async function openLaunchJson() {
+  const root = getState().root;
+  if (!root) return;
+  const p = join(root, ".vscode/launch.json");
+  const exists = await api.readText(p).then(() => true).catch(() => false);
+  if (!exists) {
+    const template = {
+      version: "0.2.0",
+      configurations: [
+        { name: "Node: berkas aktif", type: "pwa-node", request: "launch", program: "${file}", cwd: "${workspaceFolder}", console: "internalConsole" },
+        { name: "Python: berkas aktif", type: "debugpy", request: "launch", program: "${file}", cwd: "${workspaceFolder}", console: "internalConsole" },
+      ],
+    };
+    try {
+      await api.createDir(join(root, ".vscode")).catch(() => {});
+      await api.writeText(p, JSON.stringify(template, null, 2) + "\n");
+    } catch (e) {
+      toast(errMsg(e), "error");
+      return;
+    }
+  }
+  await openFile(p);
 }

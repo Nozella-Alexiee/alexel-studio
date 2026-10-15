@@ -7,6 +7,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
 import { killAllAgents } from "./agents";
+import { killAllDap } from "./dap";
 import { killAllLsp } from "./lsp";
 import { buildCommands } from "./commands";
 import { pruneUndo } from "./fsOps";
@@ -71,7 +72,7 @@ function toUiPaths(v: unknown, key = ""): unknown {
 const ctx: Ctx = {
   userData: app.getPath("userData"),
   emit: (event, payload) => {
-    if (win && !win.isDestroyed()) win.webContents.send("nozel:event", event, event === "pty-data" || event === "agent-event" || event === "lsp-message" ? payload : toUiPaths(payload));
+    if (win && !win.isDestroyed()) win.webContents.send("nozel:event", event, event === "pty-data" || event === "agent-event" || event === "lsp-message" || event === "dap-message" ? payload : toUiPaths(payload));
   },
   trash: (p) => shell.trashItem(p),
   reveal: (p) => shell.showItemInFolder(p),
@@ -360,6 +361,7 @@ app.on("before-quit", () => {
 app.on("will-quit", () => {
   killAllPtys();
   killAllAgents();
+  killAllDap();
   killAllLsp();
   void unwatch();
 });

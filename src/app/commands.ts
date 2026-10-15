@@ -9,6 +9,7 @@ export { normalizeKeys, prettyKeys };
 import { getState, setState, activeTab, setLayout } from "../state/store";
 import * as A from "./actions";
 import * as E from "./editorCommands";
+import { isDebugging } from "../debug/state";
 import { openClaudeInteractive, openShell, runActiveFile, toggleTerminal } from "./run";
 
 export interface Command {
@@ -37,6 +38,8 @@ export function openPalette(initial = "") {
 }
 
 const claude = () => import("../claude/claude");
+const dbgm = () => import("../debug/debug");
+const debugging = () => isDebugging();
 
 /** Buka panel Claude dan fokus ke kotak pesan (⌘⎋ / Ctrl+Esc, seperti ekstensi VS Code). */
 function focusClaude() {
@@ -126,7 +129,16 @@ export const COMMANDS: Command[] = [
   { id: "dashboard", label: "Dashboard project", group: "Tampilan", run: () => { const g = getState().groups[getState().focusedGroup]; if (g) setState({ groups: getState().groups.map((x, i) => (i === getState().focusedGroup ? { ...x, active: null } : x)) }); } },
 
   { id: "run", label: "Jalankan berkas aktif", group: "Run", keys: "Mod+R", run: runActiveFile, when: hasText },
-  { id: "run2", label: "Jalankan berkas aktif", group: "Run", keys: "F5", run: runActiveFile, hidden: true },
+  { id: "debugStart", label: "Mulai debug / lanjutkan", group: "Debug", keys: "F5", run: () => void dbgm().then((m) => m.startDebug()) },
+  { id: "runNoDebug", label: "Jalankan tanpa debug", group: "Run", keys: "Ctrl+F5", run: runActiveFile, when: hasText, hidden: true },
+  { id: "debugStop", label: "Hentikan debug", group: "Debug", keys: "Shift+F5", run: () => void dbgm().then((m) => m.stopDebug()), when: debugging },
+  { id: "debugRestart", label: "Mulai ulang debug", group: "Debug", keys: "Mod+Shift+F5", run: () => void dbgm().then((m) => m.restartDebug()), when: debugging },
+  { id: "debugPause", label: "Jeda", group: "Debug", keys: "F6", run: () => void dbgm().then((m) => m.pauseRun()), when: debugging },
+  { id: "debugStepOver", label: "Step over", group: "Debug", keys: "F10", run: () => void dbgm().then((m) => m.stepOver()), when: debugging },
+  { id: "debugStepInto", label: "Step into", group: "Debug", keys: "F11", run: () => void dbgm().then((m) => m.stepInto()), when: debugging },
+  { id: "debugStepOut", label: "Step out", group: "Debug", keys: "Shift+F11", run: () => void dbgm().then((m) => m.stepOut()), when: debugging },
+  { id: "debugToggleBreakpoint", label: "Pasang/lepas breakpoint", group: "Debug", keys: "F9", run: () => void dbgm().then((m) => m.toggleBreakpointAtCursor()), when: hasText },
+  { id: "launchJson", label: "Buka konfigurasi debug (launch.json)", group: "Debug", run: () => void A.openLaunchJson(), when: hasRoot },
   { id: "runTarget", label: "Smart Run: pilih target…", group: "Run", run: () => openPalette("!"), when: hasRoot },
   { id: "stopRun", label: "Hentikan semua yang berjalan", group: "Run", run: () => void import("../terminal/terminals").then(async (T) => { for (const t of getState().terminals) if (t.kind === "run" && t.status === "running") await T.stopTerminal(t.key); }), when: () => getState().terminals.some((t) => t.kind === "run" && t.status === "running") },
 
@@ -179,7 +191,7 @@ function comboOf(e: KeyboardEvent): string {
   return parts.join("+");
 }
 
-const byKeys = new Map<string, Command>();
+const byKeys = new Map<string, Command[]>();
 const DEFAULT_KEYS = new Map(COMMANDS.map((c) => [c.id, c.keys] as const));
 
 /** Shortcut bawaan sebuah perintah (sebelum diubah pengguna). */
@@ -193,13 +205,16 @@ export function applyKeybindings(over: Record<string, string> = {}) {
   byKeys.clear();
   for (const c of COMMANDS) {
     c.keys = c.id in over ? over[c.id] || undefined : DEFAULT_KEYS.get(c.id);
-    if (c.keys) byKeys.set(normalizeKeys(c.keys), c);
+    if (c.keys) {
+      const k = normalizeKeys(c.keys);
+      byKeys.set(k, [...(byKeys.get(k) ?? []), c]);
+    }
   }
 }
 applyKeybindings();
 
 /** Perintah lain yang sudah memakai kombinasi ini (untuk peringatan bentrok). */
-export const commandWithKeys = (keys: string) => byKeys.get(normalizeKeys(keys));
+export const commandWithKeys = (keys: string) => byKeys.get(normalizeKeys(keys))?.[0];
 
 /** Kombinasi tombol dari sebuah event keyboard, dalam notasi COMMANDS ("Mod+Shift+P"). */
 export function recordCombo(e: KeyboardEvent): string | null {
@@ -210,14 +225,14 @@ export function recordCombo(e: KeyboardEvent): string | null {
 }
 
 /** Perintah yang tetap boleh dipakai saat fokus di terminal; sisanya diteruskan ke shell. */
-const TERMINAL_SAFE = new Set(["askClaude", "askClaude2", "quickOpen", "palette2", "sidebar", "panel", "terminal", "newTerminal", "settings", "cycleDesign", "explorer", "search", "git", "extensions"]);
+const TERMINAL_SAFE = new Set(["debugStart", "debugStop", "debugStepOver", "debugStepInto", "debugStepOut", "debugPause", "askClaude", "askClaude2", "quickOpen", "palette2", "sidebar", "panel", "terminal", "newTerminal", "settings", "cycleDesign", "explorer", "search", "git", "extensions"]);
 
 /** Global key handler (fase capture, supaya didahulukan dari CodeMirror). */
 export function handleGlobalKey(e: KeyboardEvent) {
   if (e.isComposing) return;
   // Sedang merekam shortcut baru di Pengaturan.
   if (document.querySelector(".kbd.is-recording")) return;
-  if (!(e.metaKey || e.ctrlKey || e.altKey || e.key === "F5")) return;
+  if (!(e.metaKey || e.ctrlKey || e.altKey || /^F\d{1,2}$/.test(e.key))) return;
   const s = getState();
   if (s.dialog || s.compare || s.snapshotOpen) return; // dialog menangani tombolnya sendiri
   const combo = comboOf(e);
@@ -237,9 +252,10 @@ export function handleGlobalKey(e: KeyboardEvent) {
     void openInlineClaude();
     return;
   }
-  const cmd = byKeys.get(combo);
+  // Satu kombinasi bisa dipakai beberapa perintah (mis. F11: step into saat debug, layar penuh di luar itu).
+  const list = byKeys.get(combo);
+  const cmd = list?.find((c) => c.when && c.when()) ?? list?.find((c) => !c.when);
   if (!cmd) return;
-  if (cmd.when && !cmd.when()) return;
   if (inTerminal && !TERMINAL_SAFE.has(cmd.id)) return;
   // Di kolom input, biarkan ⌘A/⌘C dsb. Hanya perintah global yang ditangkap.
   const inField = !!el && (el.tagName === "INPUT" || el.tagName === "TEXTAREA") && !inTerminal;

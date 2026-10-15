@@ -32,6 +32,7 @@ import { nozelLinter } from "./lint";
 import { minimap } from "./minimap";
 import { snippetExtension } from "./snippets";
 import { nozelEditorTheme } from "./theme";
+import { debugExtension } from "../debug/editor";
 
 const syncAnno = Annotation.define<boolean>();
 
@@ -97,6 +98,7 @@ function baseExtensions(doc: Doc, group: number): Extension {
   const saver = isSaver();
   return [
     inlineClaude(),
+    debugExtension(doc.path),
     ...(doc.indent ? [Prec.highest(indentUnit.of(doc.indent))] : []),
     lineNumbers(),
     highlightActiveLineGutter(),
@@ -404,6 +406,7 @@ export function showInView(group: number, path: string) {
   v.setState(stateFor(d, group));
   shown[group] = path;
   v.dispatch({ effects: settingsComp.reconfigure(currentSettingsExt()) });
+  void import("../debug/debug").then((m) => m.onEditorShown(group, path));
   const top = d.scroll[group];
   requestAnimationFrame(() => {
     if (views[group] === v) v.scrollDOM.scrollTop = top;

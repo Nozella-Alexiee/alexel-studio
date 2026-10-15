@@ -6,6 +6,7 @@ import type { ReactNode } from "react";
 import * as A from "../app/actions";
 import { openPalette } from "../app/commands";
 import { Kepi } from "../components/CrabMascot";
+import { useDebug } from "../debug/state";
 import { MenuBar } from "../components/MenuBar";
 import { openMenu } from "../components/Overlays";
 import { IconButton } from "../components/ui";
@@ -19,7 +20,7 @@ export default function StudioShell() {
   const l = useLayout();
   const root = useStore((s) => s.root);
   const git = useStore((s) => s.git);
-  const debugging = false;
+  const debugging = useDebug((s) => s.status === "running" || s.status === "paused" || s.status === "starting");
 
   const items: [string, ReactNode, string, () => void, boolean, number?][] = [
     ["files", <Files size={22} strokeWidth={1.6} />, `Explorer (${prettyKeys("Mod+Shift+E")})`, () => A.toggleSidebar("files"), l.sidebar && l.sideView === "files"],

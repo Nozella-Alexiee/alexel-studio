@@ -151,6 +151,15 @@ export const api = {
   appInfo: () => call<{ version: string; electron: string; chrome?: string; node?: string; platform: string; arch?: string }>("app_info"),
   windowAction: (action: "fullscreen" | "minimize" | "maximize" | "close" | "devtools" | "zoomIn" | "zoomOut" | "zoomReset" | "quit") => call<void>("window_action", { action }),
 
+  // Debug (DAP)
+  dapStatus: (kind: string) => call<{ kind: string; available: boolean; installable?: boolean; install?: string | null; detail?: string | null }>("dap_status", { kind }),
+  dapInstallJsDebug: () => call<string>("dap_install_jsdebug"),
+  dapStart: (id: string, kind: string, cwd: string) => call<{ id: string }>("dap_start", { id, kind, cwd }),
+  dapStartChild: (parent: string, id: string) => call<{ id: string }>("dap_start_child", { parent, id }),
+  dapSend: (id: string, message: unknown) => call<void>("dap_send", { id, message }),
+  dapStop: (id: string) => call<void>("dap_stop", { id }),
+  dapBuild: (file: string) => call<string>("dap_build", { file }),
+
   // Claude
   claudeDetect: () => call<ClaudeInfo>("claude_detect"),
   claudeInline: (runId: string, projectDir: string, prompt: string, model: "fast" | "default" = "fast") => call<string>("claude_inline", { runId, projectDir, prompt, model }),

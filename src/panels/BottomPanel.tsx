@@ -9,6 +9,7 @@ import { PortsPanel, ProblemsPanel, TodoPanel } from "./BottomPanels";
 const TerminalPanel = lazy(() => import("./TerminalPanel"));
 const HistoryPanel = lazy(() => import("./HistoryPanel"));
 const OutputPanel = lazy(() => import("./OutputPanel"));
+const DebugConsole = lazy(() => import("./DebugConsole"));
 
 export function PanelTabs({ upper }: { upper?: boolean }) {
   const layout = useLayout();
@@ -20,6 +21,7 @@ export function PanelTabs({ upper }: { upper?: boolean }) {
     { id: "terminal", label: label("Terminal"), count: terms > 1 ? terms : undefined },
     { id: "problems", label: label("Masalah"), count: problems || undefined },
     { id: "output", label: label("Output") },
+    { id: "debug", label: label("Debug Console") },
     { id: "ports", label: label("Port") },
     { id: "todo", label: label("TODO"), count: todos || undefined },
     { id: "history", label: label("Riwayat") },
@@ -45,6 +47,7 @@ export function PanelContent({ terminalTabs = true }: { terminalTabs?: boolean }
         {layout.panelTab === "terminal" && <TerminalPanel showTabs={terminalTabs} />}
         {layout.panelTab === "problems" && <ProblemsPanel />}
         {layout.panelTab === "output" && <OutputPanel />}
+        {layout.panelTab === "debug" && <DebugConsole />}
         {layout.panelTab === "ports" && <PortsPanel />}
         {layout.panelTab === "todo" && <TodoPanel />}
         {layout.panelTab === "history" && <HistoryPanel />}

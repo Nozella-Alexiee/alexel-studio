@@ -5,6 +5,7 @@ import { app, BrowserWindow, clipboard, ClipboardItem, dialog, powerMonitor, she
 import fs from "node:fs";
 import path from "node:path";
 import * as agents from "./agents";
+import * as dap from "./dap";
 import * as claude from "./claude";
 import * as X from "./extensions";
 import * as F from "./fsOps";
@@ -91,6 +92,15 @@ export function buildCommands(ctx: Ctx, hooks: { confirmClose: (win: BrowserWind
     agent_sessions: (a) => agents.agentSessions(ctx, a.agent, String(a.cwd ?? "")),
     agent_session_load: (a) => agents.agentSessionLoad(ctx, a.agent, String(a.cwd ?? ""), String(a.id ?? "")),
     claude_cancel: (a) => claude.claudeCancel(a.runId),
+
+    // Debug (DAP)
+    dap_status: (a) => dap.adapterStatus(ctx, a.kind),
+    dap_install_jsdebug: () => dap.installJsDebug(ctx),
+    dap_start: (a) => dap.dapStart(ctx, String(a.id ?? ""), a.kind, String(a.cwd ?? "")),
+    dap_start_child: (a) => dap.dapStartChild(ctx, String(a.parent ?? ""), String(a.id ?? "")),
+    dap_send: (a) => dap.dapSend(String(a.id ?? ""), a.message),
+    dap_stop: (a) => dap.dapStop(String(a.id ?? "")),
+    dap_build: (a) => dap.buildForDebug(String(a.file ?? "")),
 
     // Ekstensi (Open VSX, data saja)
     ext_search: (a) => X.extSearch(String(a.query ?? ""), a.category ?? null),
