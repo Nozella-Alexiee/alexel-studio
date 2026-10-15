@@ -180,6 +180,20 @@ export async function gitCheckout(dir: string, branch: string, create: boolean) 
   await git(dir, create ? ["checkout", "-q", "-b", branch] : ["checkout", "-q", branch], "Checkout");
 }
 
+/**
+ * Clone repositori ke dalam folder `parent`. Hanya URL https://, ssh://, git@host:path, atau file://
+ * yang diterima (tidak ada opsi git dari pengguna). Mengembalikan path folder hasil clone.
+ */
+export async function gitClone(url: string, parent: string): Promise<string> {
+  const u = url.trim();
+  if (!/^(https:\/\/|ssh:\/\/|git@[\w.-]+:|file:\/\/)[^\s]+$/.test(u)) throw new Error("URL repositori tidak valid. Pakai https://… atau git@host:user/repo.git");
+  const name = (u.replace(/\/+$/, "").split(/[/:]/).pop() ?? "repo").replace(/\.git$/, "").replace(/[^\w.-]/g, "-") || "repo";
+  let dest = path.join(parent, name);
+  for (let i = 2; fs.existsSync(dest); i++) dest = path.join(parent, `${name}-${i}`);
+  await git(parent, ["clone", "--", u, dest], "git clone", 10 * 60_000);
+  return dest;
+}
+
 export const gitInit = (dir: string) => git(dir, ["init", "-q"], "git init").then(() => undefined);
 
 /** Isi berkas di HEAD; null kalau berkas baru atau bukan repo. Dijalankan dari folder berkas itu. */

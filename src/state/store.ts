@@ -12,8 +12,8 @@ let chatSeq = 0;
 /** Kunci proses percakapan baru (huruf, angka, "-"). */
 export const newChatKey = () => `c-${Date.now().toString(36)}-${++chatSeq}`;
 
-export type PanelId = "terminal" | "problems" | "ports" | "todo" | "history";
-export type SideView = "files" | "search" | "git" | "todo" | "ext";
+export type PanelId = "terminal" | "problems" | "output" | "ports" | "todo" | "history" | "debug";
+export type SideView = "files" | "search" | "git" | "todo" | "ext" | "outline" | "run";
 export type RightView = "claude" | "git";
 export type PreviewMode = "code" | "split" | "preview";
 
@@ -37,10 +37,15 @@ export interface Settings {
   claudeModel: string;
   /** "auto" = bawaan model, atau "low" … "max". */
   claudeEffort: string;
+  /** Shortcut buatan pengguna: id perintah → kombinasi ("" = dilepas). */
+  keybindings: Record<string, string>;
+  /** Tampilkan RAM & CPU aplikasi di status bar. */
+  showResources: boolean;
   /** Model untuk ⌘K inline: "fast" (Sonnet, effort rendah) atau model bawaan Claude Code. */
   claudeInlineModel: "fast" | "default";
   terminalFontSize: number;
-  autoSave: "off" | "delay";
+  /** off, setelah jeda mengetik, atau saat pindah tab / jendela kehilangan fokus. */
+  autoSave: "off" | "delay" | "focus";
   confirmDelete: boolean;
   /** Tema warna dari ekstensi Open VSX, diterapkan di atas desain aktif. */
   extTheme: { ext: string; path: string; label: string; uiTheme: string } | null;
@@ -49,7 +54,7 @@ export interface Settings {
 }
 
 export const DEFAULT_SETTINGS: Settings = {
-  design: "aurora",
+  design: "studio",
   accent: null,
   fontSize: 13,
   tabSize: 2,
@@ -63,6 +68,8 @@ export const DEFAULT_SETTINGS: Settings = {
   claudeMode: "default",
   claudeModel: "default",
   claudeEffort: "auto",
+  keybindings: {},
+  showResources: false,
   claudeInlineModel: "fast",
   terminalFontSize: 12,
   autoSave: "off",
@@ -84,6 +91,8 @@ export interface Layout {
 }
 
 export const DEFAULT_LAYOUTS: Record<DesignId, Layout> = {
+  studio: { sidebar: true, sidebarW: 260, sideView: "files", panel: false, panelH: 240, panelTab: "terminal", right: true, rightW: 360, rightView: "claude" },
+  "studio-light": { sidebar: true, sidebarW: 260, sideView: "files", panel: false, panelH: 240, panelTab: "terminal", right: true, rightW: 360, rightView: "claude" },
   aurora: { sidebar: true, sidebarW: 248, sideView: "files", panel: false, panelH: 220, panelTab: "terminal", right: true, rightW: 340, rightView: "claude" },
   zen: { sidebar: true, sidebarW: 232, sideView: "files", panel: false, panelH: 180, panelTab: "terminal", right: true, rightW: 340, rightView: "claude" },
   control: { sidebar: true, sidebarW: 252, sideView: "files", panel: false, panelH: 220, panelTab: "terminal", right: true, rightW: 340, rightView: "claude" },
@@ -92,7 +101,7 @@ export const DEFAULT_LAYOUTS: Record<DesignId, Layout> = {
   kawanan: { sidebar: true, sidebarW: 240, sideView: "files", panel: false, panelH: 190, panelTab: "terminal", right: true, rightW: 340, rightView: "claude" },
 };
 
-export type TabKind = "text" | "image" | "settings" | "dashboard";
+export type TabKind = "text" | "image" | "settings" | "dashboard" | "welcome";
 
 export interface Tab {
   /** Path absolut, atau id khusus "nozel:settings". */
@@ -352,8 +361,16 @@ export const useSaver = () => useStore((s) => isSaver(s));
 let toastId = 1;
 export function toast(text: string, kind: Toast["kind"] = "info", action?: Toast["action"]) {
   const id = toastId++;
+  if (kind === "error") void import("../app/output").then((m) => m.logOutput("Alexel Studio", text));
   setState((s) => ({ toasts: [...s.toasts.slice(-3), { id, kind, text, action }] }));
   setTimeout(() => setState((s) => ({ toasts: s.toasts.filter((t) => t.id !== id) })), action ? 9000 : kind === "error" ? 7000 : 4000);
+}
+
+/** Toast yang tetap tampil sampai fungsi yang dikembalikan dipanggil (untuk proses panjang). */
+export function stickyToast(text: string): () => void {
+  const id = toastId++;
+  setState((s) => ({ toasts: [...s.toasts.slice(-3), { id, kind: "info", text }] }));
+  return () => setState((s) => ({ toasts: s.toasts.filter((t) => t.id !== id) }));
 }
 
 export function ask(req: Omit<DialogRequest, "resolve">): Promise<string | boolean | null> {

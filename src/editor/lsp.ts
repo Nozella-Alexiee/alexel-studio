@@ -119,6 +119,7 @@ function ensureListener() {
   if (listening) return;
   listening = true;
   void on<{ key: string; message: string }>("lsp-message", ({ key, message }) => handlers.get(key)?.forEach((h) => h(message)));
+  void on<{ key: string; text: string }>("lsp-log", ({ key, text }) => void import("../app/output").then((m) => m.logOutput("Server bahasa", `${key.split("::")[0]}: ${text}`)));
   void on<{ key: string }>("lsp-exit", ({ key }) => {
     // Kunci klien sama dengan kunci di main process ("server::root").
     clients.delete(key);
@@ -166,6 +167,7 @@ async function getClient(serverId: string, root: string): Promise<LSPClient | nu
         return client;
       } catch (e) {
         console.warn("LSP gagal dimulai", serverId, e);
+        void import("../app/output").then((m) => m.logOutput("Server bahasa", `${serverId} gagal dimulai: ${e instanceof Error ? e.message : String(e)}`));
         return null;
       }
     })();
@@ -196,6 +198,36 @@ export async function lspFor(path: string, langId: string) {
   const client = await getClient(st.id, root);
   if (!client) return null;
   return { client, server: st, extension: [client.plugin(fileUri(path), languageIdFor(path, langId)), cmdClickDefinition] };
+}
+
+export interface WorkspaceSymbol {
+  name: string;
+  kind: string;
+  container?: string;
+  path: string;
+  line: number;
+  col: number;
+}
+
+const SYMBOL_KINDS: Record<number, string> = { 2: "modul", 3: "namespace", 5: "kelas", 6: "method", 7: "properti", 8: "field", 9: "constructor", 10: "enum", 11: "interface", 12: "fungsi", 13: "variabel", 14: "konstanta", 23: "struct", 26: "tipe" };
+
+/** Cari simbol di seluruh project lewat semua server bahasa yang sedang berjalan (workspace/symbol). */
+export async function workspaceSymbols(query: string): Promise<WorkspaceSymbol[]> {
+  const out: WorkspaceSymbol[] = [];
+  for (const p of clients.values()) {
+    const c = await p;
+    if (!c) continue;
+    try {
+      const res = (await c.request("workspace/symbol", { query })) as { name: string; kind: number; containerName?: string; location: { uri: string; range?: { start: { line: number; character: number } } } }[] | null;
+      for (const s of res ?? []) {
+        if (!s.location?.uri?.startsWith("file:")) continue;
+        out.push({ name: s.name, kind: SYMBOL_KINDS[s.kind] ?? "simbol", container: s.containerName || undefined, path: uriToPath(s.location.uri), line: (s.location.range?.start.line ?? 0) + 1, col: (s.location.range?.start.character ?? 0) + 1 });
+      }
+    } catch {
+      /* server tidak mendukung workspace/symbol */
+    }
+  }
+  return out.slice(0, 200);
 }
 
 /** Matikan semua server saat ganti/tutup project. */

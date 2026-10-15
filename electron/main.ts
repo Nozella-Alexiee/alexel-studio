@@ -82,6 +82,7 @@ const commands = buildCommands(ctx, {
     allowClose = true;
     w.close();
   },
+  setMenu: (spec) => setAppMenu(Array.isArray(spec) ? (spec as MenuSpec[]) : null),
 });
 
 // Mode uji otomatis saja: skrip uji boleh minta screenshot berkali-kali ke folder NOZEL_SMOKE_SHOTS.
@@ -182,30 +183,62 @@ function serveApp() {
   });
 }
 
-function buildMenu() {
-  const isMac = process.platform === "darwin";
-  // Sengaja tanpa akselerator yang bentrok dengan shortcut editor (⌘W, ⌘R, ⌘N, ⌘O…).
-  const template: MenuItemConstructorOptions[] = [
-    ...(isMac
-      ? [
-          {
-            label: "Alexel Studio",
-            submenu: [{ role: "about" }, { type: "separator" }, { role: "hide" }, { role: "hideOthers" }, { role: "unhide" }, { type: "separator" }, { role: "quit" }],
-          } as MenuItemConstructorOptions,
-        ]
-      : []),
-    {
-      label: "Edit",
-      submenu: [{ role: "undo" }, { role: "redo" }, { type: "separator" }, { role: "cut" }, { role: "copy" }, { role: "paste" }, { role: "pasteAndMatchStyle" }, { role: "selectAll" }],
-    },
-    {
-      label: "Tampilan",
-      submenu: [{ role: "togglefullscreen" }, ...(DEV_URL ? ([{ role: "toggleDevTools" }] as MenuItemConstructorOptions[]) : [])],
-    },
-    { label: "Jendela", submenu: [{ role: "minimize" }, { role: "zoom" }, ...(isMac ? ([{ type: "separator" }, { role: "front" }] as MenuItemConstructorOptions[]) : [])] },
+/** Item menu dari renderer (src/app/menus.ts). id = perintah renderer; role = aksi bawaan Electron. */
+interface MenuSpec {
+  label?: string;
+  id?: string;
+  role?: string;
+  accelerator?: string;
+  enabled?: boolean;
+  checked?: boolean;
+  type?: "separator" | "checkbox";
+  submenu?: MenuSpec[];
+}
+
+const ROLES = new Set(["undo", "redo", "cut", "copy", "paste", "pasteAndMatchStyle", "selectAll", "togglefullscreen", "minimize", "zoom", "front", "about", "hide", "hideOthers", "unhide", "quit", "toggleDevTools", "close"]);
+
+function toTemplate(items: MenuSpec[], depth = 0): MenuItemConstructorOptions[] {
+  return items.slice(0, 80).map((it): MenuItemConstructorOptions => {
+    if (it.type === "separator") return { type: "separator" };
+    if (it.role && ROLES.has(it.role)) return { role: it.role as MenuItemConstructorOptions["role"], ...(it.label ? { label: String(it.label) } : {}) };
+    const out: MenuItemConstructorOptions = { label: String(it.label ?? "") };
+    if (Array.isArray(it.submenu) && depth < 2) out.submenu = toTemplate(it.submenu, depth + 1);
+    else if (typeof it.id === "string") {
+      const id = it.id;
+      out.click = () => ctx.emit("menu-command", { id });
+      if (typeof it.accelerator === "string" && it.accelerator.length < 40) {
+        out.accelerator = it.accelerator;
+        // Shortcut hanya ditampilkan; tombolnya ditangani renderer supaya perilakunya sama di semua OS.
+        out.registerAccelerator = false;
+      }
+      if (it.enabled === false) out.enabled = false;
+      if (it.type === "checkbox") {
+        out.type = "checkbox";
+        out.checked = !!it.checked;
+      }
+    }
+    return out;
+  });
+}
+
+/** macOS: menu aplikasi native dari definisi renderer. Windows/Linux memakai menu bar di dalam jendela. */
+function setAppMenu(spec: MenuSpec[] | null) {
+  if (process.platform !== "darwin") {
+    Menu.setApplicationMenu(null);
+    return;
+  }
+  const fallback: MenuItemConstructorOptions[] = [
+    { label: "Alexel Studio", submenu: [{ role: "about" }, { type: "separator" }, { role: "hide" }, { role: "hideOthers" }, { role: "unhide" }, { type: "separator" }, { role: "quit" }] },
+    { label: "Edit", submenu: [{ role: "undo" }, { role: "redo" }, { type: "separator" }, { role: "cut" }, { role: "copy" }, { role: "paste" }, { role: "selectAll" }] },
+    { label: "Jendela", submenu: [{ role: "minimize" }, { role: "zoom" }, { type: "separator" }, { role: "front" }] },
   ];
-  // Windows/Linux: tanpa menu bar (shortcut ditangani renderer); macOS butuh menu aplikasi.
-  Menu.setApplicationMenu(isMac ? Menu.buildFromTemplate(template) : null);
+  const template = spec ? toTemplate(spec) : fallback;
+  if (DEV_URL && spec) template.push({ label: "Developer", submenu: [{ role: "reload" }, { role: "toggleDevTools" }] });
+  Menu.setApplicationMenu(Menu.buildFromTemplate(template));
+}
+
+function buildMenu() {
+  setAppMenu(null);
 }
 
 function createWindow() {

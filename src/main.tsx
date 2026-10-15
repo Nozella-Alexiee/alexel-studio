@@ -2,6 +2,7 @@ import React from "react";
 import ReactDOM from "react-dom/client";
 import App from "./App";
 import { applyDesign, cachedDesign } from "./design/designs";
+import { platform } from "./lib/ipc";
 import "@fontsource-variable/nunito";
 import "@fontsource-variable/jetbrains-mono";
 import "@fontsource-variable/space-grotesk";
@@ -24,6 +25,8 @@ if (import.meta.env.DEV) {
   );
 }
 
+// Platform untuk CSS (title bar, ruang tombol jendela).
+document.documentElement.dataset.platform = platform;
 // Terapkan desain terakhir sebelum render supaya tidak berkedip.
 const d = cachedDesign();
 applyDesign(d.id, d.accent);

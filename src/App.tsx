@@ -14,6 +14,7 @@ import { ask, getState, isSaver, setState, useStore } from "./state/store";
 const AuroraShell = lazy(() => import("./shells/AuroraShell"));
 const ZenShell = lazy(() => import("./shells/ZenShell"));
 const ControlShell = lazy(() => import("./shells/ControlShell"));
+const StudioShell = lazy(() => import("./shells/StudioShell"));
 const CompareModal = lazy(() => import("./panels/compare").then((m) => ({ default: m.CompareModal })));
 const SnapshotDialog = lazy(() => import("./panels/SnapshotDialog").then((m) => ({ default: m.SnapshotDialog })));
 
@@ -31,6 +32,7 @@ function useBackgroundTasks() {
         void import("./shells/AuroraShell");
         void import("./shells/ZenShell");
         void import("./shells/ControlShell");
+        void import("./shells/StudioShell");
       }, 1500);
     }
 
@@ -47,6 +49,7 @@ function useBackgroundTasks() {
       if (!t.closest("input, textarea, .xterm, .md-preview, .chat-md")) e.preventDefault();
     };
     window.addEventListener("contextmenu", onCtx);
+    void import("./app/menus").then((m) => m.initMenus());
 
     const offs: Promise<() => void>[] = [];
     offs.push(on<{ root: string; paths: string[]; git: boolean }>("fs-changed", (p) => p.root === getState().root && void A.onFsChanged(p.paths, p.git)));
@@ -70,11 +73,20 @@ function useBackgroundTasks() {
       powerTimer = window.setTimeout(pollPower, saver ? 120_000 : 60_000);
     };
     void pollPower();
+    // Simpan otomatis "saat pindah": tab lain dibuka atau jendela kehilangan fokus.
+    const saveDirty = (only?: string | null) => {
+      if (getState().settings.autoSave !== "focus") return;
+      for (const t of Object.values(getState().tabs)) if (t.dirty && t.kind === "text" && (!only || t.id === only)) void import("./editor/documents").then((d) => d.saveDocument(t.id, { quiet: true }));
+    };
+    const onBlur = () => saveDirty();
+    window.addEventListener("blur", onBlur);
     const unsub = useStore.subscribe((s, p) => {
       if (s.settings.powerMode !== p.settings.powerMode) {
         clearTimeout(powerTimer);
         void pollPower();
       }
+      const prevActive = p.groups[p.focusedGroup]?.active;
+      if (prevActive && prevActive !== s.groups[s.focusedGroup]?.active) saveDirty(prevActive);
     });
 
     // Jangan kehilangan editan saat jendela ditutup (⌘Q / tombol merah).
@@ -133,6 +145,7 @@ function useBackgroundTasks() {
     return () => {
       window.removeEventListener("keydown", handleGlobalKey, true);
       window.removeEventListener("contextmenu", onCtx);
+      window.removeEventListener("blur", onBlur);
       offs.forEach((o) => void o.then((f) => f()));
       clearTimeout(powerTimer);
       unsub();
@@ -148,7 +161,7 @@ export default function App() {
   const compare = useStore((s) => !!s.compare);
   const snapshot = useStore((s) => s.snapshotOpen);
   const shell = designById(design).shell;
-  const Shell = shell === "zen" ? ZenShell : shell === "control" ? ControlShell : AuroraShell;
+  const Shell = shell === "studio" ? StudioShell : shell === "zen" ? ZenShell : shell === "control" ? ControlShell : AuroraShell;
   return (
     <>
       {isDemo && <div className="demo-ribbon">Pratinjau browser</div>}

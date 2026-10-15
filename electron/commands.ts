@@ -3,6 +3,7 @@
 
 import { app, BrowserWindow, clipboard, ClipboardItem, dialog, powerMonitor, shell } from "electron";
 import fs from "node:fs";
+import path from "node:path";
 import * as claude from "./claude";
 import * as X from "./extensions";
 import * as F from "./fsOps";
@@ -22,7 +23,7 @@ import * as watcher from "./watcher";
 type A = Record<string, any>; // eslint-disable-line @typescript-eslint/no-explicit-any
 export type Handler = (args: A, win: BrowserWindow | null) => unknown;
 
-export function buildCommands(ctx: Ctx, hooks: { confirmClose: (win: BrowserWindow) => void }): Record<string, Handler> {
+export function buildCommands(ctx: Ctx, hooks: { confirmClose: (win: BrowserWindow) => void; setMenu: (spec: unknown) => void }): Record<string, Handler> {
   return {
     // Berkas
     list_dir: (a) => F.listDir(a.dirPath),
@@ -52,6 +53,7 @@ export function buildCommands(ctx: Ctx, hooks: { confirmClose: (win: BrowserWind
 
     // Git
     git_status: (a) => G.gitStatus(a.projectDir),
+    git_clone: (a) => G.gitClone(String(a.url ?? ""), String(a.parent ?? "")),
     git_stage: (a) => G.gitStage(a.projectDir, a.paths),
     git_unstage: (a) => G.gitUnstage(a.projectDir, a.paths),
     git_discard: (a) => G.gitDiscard(ctx, a.projectDir, a.paths, a.untracked),
@@ -112,6 +114,7 @@ export function buildCommands(ctx: Ctx, hooks: { confirmClose: (win: BrowserWind
     // Penyimpanan & watcher & pratinjau
     store_load: (a) => store.storeLoad(ctx, a.key),
     store_save: (a) => store.storeSave(ctx, a.key, a.json),
+    settings_path: () => path.join(ctx.userData, "settings.json"),
     watch_project: (a) => watcher.watchProject(ctx, a.root, a.debounceMs ?? 300),
     unwatch_project: () => watcher.unwatch(),
     preview_set_root: (a) => preview.setRoot(a.root ?? null),
@@ -153,6 +156,23 @@ export function buildCommands(ctx: Ctx, hooks: { confirmClose: (win: BrowserWind
       (wc as unknown as Record<string, () => void>)[act]();
       return null;
     },
+    menu_set: (a) => hooks.setMenu(a.spec),
+    app_info: () => ({ version: app.getVersion(), electron: process.versions.electron, chrome: process.versions.chrome, node: process.versions.node, platform: process.platform, arch: process.arch }),
+    /** Aksi jendela untuk menu bar di dalam jendela (Windows/Linux). */
+    window_action: (a, win) => {
+      if (!win) return null;
+      const act = String(a.action);
+      if (act === "fullscreen") win.setFullScreen(!win.isFullScreen());
+      else if (act === "minimize") win.minimize();
+      else if (act === "maximize") (win.isMaximized() ? win.unmaximize() : win.maximize());
+      else if (act === "close") win.close();
+      else if (act === "devtools") win.webContents.toggleDevTools();
+      else if (act === "zoomIn") win.webContents.setZoomLevel(Math.min(5, win.webContents.getZoomLevel() + 0.5));
+      else if (act === "zoomOut") win.webContents.setZoomLevel(Math.max(-3, win.webContents.getZoomLevel() - 0.5));
+      else if (act === "zoomReset") win.webContents.setZoomLevel(0);
+      else if (act === "quit") app.quit();
+      return null;
+    },
     window_close_confirmed: (_a, win) => {
       if (win) hooks.confirmClose(win);
     },
@@ -169,6 +189,5 @@ export function buildCommands(ctx: Ctx, hooks: { confirmClose: (win: BrowserWind
         return false;
       }
     },
-    app_info: () => ({ version: app.getVersion(), electron: process.versions.electron, platform: process.platform }),
   };
 }

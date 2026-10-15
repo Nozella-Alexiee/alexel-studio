@@ -144,7 +144,10 @@ function onControlResponse(key: string, r: any) {
     c.lastCost = 0;
     return;
   }
-  if (r.subtype === "error") toast(`Claude: ${r.error ?? "permintaan ditolak"}`, "error");
+  if (r.subtype === "error") {
+    toast(`Claude: ${r.error ?? "permintaan ditolak"}`, "error");
+    void import("../app/output").then((m) => m.logOutput("Claude Code", `Kontrol ditolak: ${r.error ?? "?"}`));
+  }
 }
 
 function onControlRequest(key: string, ev: any) {
@@ -284,6 +287,7 @@ function ensureListeners() {
     if (replaced) return;
     const c = convs.get(run_id);
     if (c?.cancelTimer) clearTimeout(c.cancelTimer);
+    void import("../app/output").then((m) => m.logOutput("Claude Code", `Proses selesai (kode ${code}).${stderr.trim() ? `\n${stderr.trim()}` : ""}`));
     if (c) {
       c.costBase += c.lastCost;
       c.lastCost = 0;

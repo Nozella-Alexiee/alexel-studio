@@ -1,4 +1,4 @@
-import { AlertTriangle, ChevronRight, Columns2, Code2, Eye, Play, Settings as Cog, X } from "lucide-react";
+import { AlertTriangle, ChevronRight, Columns2, Code2, Eye, Play, Settings as Cog, Sparkle, X } from "lucide-react";
 import React, { Suspense, lazy, useEffect, useRef, useState } from "react";
 import * as A from "../app/actions";
 import { runActiveFile } from "../app/run";
@@ -12,6 +12,7 @@ import { HtmlPreview, ImageViewer, MarkdownPreview } from "./Previews";
 
 const SettingsView = lazy(() => import("../panels/SettingsView"));
 const Dashboard = lazy(() => import("../panels/Dashboard"));
+const WelcomePage = lazy(() => import("../panels/Dashboard").then((m) => ({ default: m.Welcome })));
 
 /** Tab yang sedang diseret (dataTransfer tidak bisa dibaca saat dragover, jadi disimpan di sini). */
 let dragTab: { id: string; group: number } | null = null;
@@ -60,7 +61,7 @@ function TabItem({ tab, group, active, drop }: { tab: Tab; group: number; active
       onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && A.activateTab(tab.id, group)}
       onContextMenu={onMenu}
     >
-      {tab.kind === "settings" ? <Cog size={14} aria-hidden /> : <FileIcon filename={tab.name} size={14} />}
+      {tab.kind === "settings" ? <Cog size={14} aria-hidden /> : tab.kind === "welcome" ? <Sparkle size={14} aria-hidden /> : <FileIcon filename={tab.name} size={14} />}
       <span className="tab-name">{tab.name}</span>
       <button
         className="tab-close"
@@ -298,6 +299,16 @@ export function EditorBody({ group, breadcrumb = true }: { group: number; breadc
       <div className="editor-body" {...drop.props}>
         <Suspense fallback={null}>
           <Dashboard />
+        </Suspense>
+        {drop.overlay}
+      </div>
+    );
+  }
+  if (tab.kind === "welcome") {
+    return (
+      <div className="editor-body" {...drop.props}>
+        <Suspense fallback={null}>
+          <WelcomePage />
         </Suspense>
         {drop.overlay}
       </div>

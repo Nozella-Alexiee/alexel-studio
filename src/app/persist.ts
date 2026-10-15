@@ -2,7 +2,7 @@
 
 import { applyDesign, DESIGNS } from "../design/designs";
 import { api } from "../lib/ipc";
-import { DEFAULT_LAYOUTS, DEFAULT_SETTINGS, getState, setState, type Group, type Layout, type Settings } from "../state/store";
+import { DEFAULT_LAYOUTS, DEFAULT_SETTINGS, getState, setState, toast, type Group, type Layout, type Settings } from "../state/store";
 
 interface SessionFile {
   v: 1;
@@ -60,8 +60,17 @@ function sanitizeSettings(raw: Partial<Settings> | null): Settings {
   if (typeof s.claudeModel !== "string" || !/^[A-Za-z0-9._[\]-]{1,80}$/.test(s.claudeModel)) s.claudeModel = "default";
   if (!["auto", "low", "medium", "high", "xhigh", "max"].includes(s.claudeEffort)) s.claudeEffort = "auto";
   // Versi lama menampilkan dialog di setiap pesan; sekarang cukup persetujuan sekali.
-  if (raw && !("claudeConsent" in raw)) s.claudeConfirm = false;
+  if (raw && !("claudeConsent" in raw)) {
+    s.claudeConfirm = false;
+    // Pengguna versi Nozel: pindah sekali ke tata letak Studio (seperti VS Code). Bisa diganti lagi kapan saja.
+    s.design = "studio";
+  }
   s.claudeConsent = s.claudeConsent === true;
+  if (!["off", "delay", "focus"].includes(s.autoSave)) s.autoSave = "off";
+  s.showResources = s.showResources === true;
+  const kb: Record<string, string> = {};
+  if (s.keybindings && typeof s.keybindings === "object") for (const [k, v] of Object.entries(s.keybindings)) if (typeof v === "string" && /^[\w:.-]{1,64}$/.test(k) && v.length < 40) kb[k] = v;
+  s.keybindings = kb;
   if (s.claudeInlineModel !== "default") s.claudeInlineModel = "fast";
   return s;
 }
@@ -83,6 +92,7 @@ export async function restoreAll() {
     }
   }
   setState({ settings, layouts, recents });
+  void import("./commands").then((m) => m.applyKeybindings(settings.keybindings));
   applyDesign(settings.design, settings.accent);
   void import("./actions").then((m) => m.syncTrafficLights());
 
@@ -96,4 +106,24 @@ export async function restoreAll() {
   }
   restoring = false;
   setState({ ready: true });
+}
+
+let settingsFile: string | null = null;
+void api
+  .settingsPath()
+  .then((p) => (settingsFile = p))
+  .catch(() => {});
+
+/** settings.json disimpan dari editor: terapkan isinya (nilai tidak valid diganti bawaan). */
+export async function settingsFileSaved(path: string) {
+  if (!settingsFile || path !== settingsFile) return;
+  const raw = parse<Partial<Settings>>((await api.readText(path).catch(() => null))?.content ?? null);
+  if (!raw) {
+    toast("settings.json bukan JSON yang valid; pengaturan tidak diubah.", "error");
+    return;
+  }
+  const next = sanitizeSettings({ ...raw, claudeConsent: raw.claudeConsent ?? getState().settings.claudeConsent });
+  const { updateSettings } = await import("./actions");
+  updateSettings(next);
+  toast("Pengaturan dari settings.json diterapkan.", "success");
 }

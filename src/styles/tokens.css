@@ -566,3 +566,173 @@
     animation: none;
   }
 }
+
+/* ───────────────────────── Studio (ala VS Code) ───────────────────────── */
+[data-design="studio"],
+[data-design="studio-light"] {
+  --font-ui: -apple-system, BlinkMacSystemFont, "Segoe UI", "SF Pro Text", "Ubuntu", "Helvetica Neue", sans-serif;
+  --font-mono: "SF Mono", Menlo, Consolas, "JetBrains Mono", "Ubuntu Mono", ui-monospace, monospace;
+  --ui-size: 13px;
+  --ui-small: 11.5px;
+  --row-h: 22px;
+  --tab-h: 35px;
+  --titlebar-h: 35px;
+  --status-h: 22px;
+  --radius-sm: 4px;
+  --radius: 5px;
+  --radius-lg: 8px;
+  --code-line-height: 1.5;
+  --code-pad-y: 4px;
+}
+[data-design="studio"] {
+  color-scheme: dark;
+  --accent: #0078d4;
+  --accent-fg: #ffffff;
+  --claude: #d97757;
+  --claude-fg: #1f0f08;
+  --bg: #181818;
+  --surface-1: #181818;
+  --surface-2: #1f1f1f;
+  --surface-3: #2b2b2b;
+  --surface-hover: #2a2d2e;
+  --surface-popover: #222222;
+  --input-bg: #313131;
+  --border: #2b2b2b;
+  --border-strong: #3c3c3c;
+  --fg: #cccccc;
+  --fg-strong: #e7e7e7;
+  --fg-muted: #9d9d9d;
+  --fg-subtle: #6e7681;
+  --success: #73c991;
+  --warning: #cca700;
+  --danger: #f14c4c;
+  --git-add: #2ea043;
+  --git-mod: #0078d4;
+  --git-del: #f85149;
+  --git-untracked: #73c991;
+  --shadow-pop: 0 8px 24px rgba(0, 0, 0, 0.5);
+  --glass: rgba(24, 24, 24, 0.96);
+
+  --ed-bg: #1f1f1f;
+  --ed-fg: #cccccc;
+  --ed-gutter-bg: #1f1f1f;
+  --ed-gutter-fg: #6e7681;
+  --ed-active-line: #282828;
+  --ed-selection: #264f78;
+  --ed-match: rgba(234, 92, 0, 0.33);
+  --ed-bracket: rgba(0, 100, 0, 0.35);
+  --minimap-fg: rgba(204, 204, 204, 0.25);
+  --minimap-view: rgba(121, 121, 121, 0.2);
+
+  --syn-keyword: #c586c0;
+  --syn-tag: #569cd6;
+  --syn-self: #569cd6;
+  --syn-string: #ce9178;
+  --syn-regexp: #d16969;
+  --syn-number: #b5cea8;
+  --syn-atom: #569cd6;
+  --syn-function: #dcdcaa;
+  --syn-attr: #9cdcfe;
+  --syn-type: #4ec9b0;
+  --syn-namespace: #4ec9b0;
+  --syn-constant: #4fc1ff;
+  --syn-definition: #9cdcfe;
+  --syn-variable: #9cdcfe;
+  --syn-property: #9cdcfe;
+  --syn-operator: #d4d4d4;
+  --syn-punct: #cccccc;
+  --syn-comment: #6a9955;
+  --syn-heading: #569cd6;
+  --syn-link: #3794ff;
+
+  --term-bg: #181818;
+  --term-fg: #cccccc;
+  --ansi-black: #000000;
+  --ansi-red: #cd3131;
+  --ansi-green: #0dbc79;
+  --ansi-yellow: #e5e510;
+  --ansi-blue: #2472c8;
+  --ansi-magenta: #bc3fbc;
+  --ansi-cyan: #11a8cd;
+  --ansi-white: #e5e5e5;
+  --ansi-bright-black: #666666;
+  --ansi-bright-white: #ffffff;
+  --snap-bg: #1f1f1f;
+}
+[data-design="studio-light"] {
+  color-scheme: light;
+  --scrim: rgba(0, 0, 0, 0.25);
+  --accent: #005fb8;
+  --accent-fg: #ffffff;
+  --claude: #c4613f;
+  --claude-fg: #ffffff;
+  --bg: #f8f8f8;
+  --surface-1: #f8f8f8;
+  --surface-2: #ffffff;
+  --surface-3: #ececec;
+  --surface-hover: #e8e8e8;
+  --surface-popover: #ffffff;
+  --input-bg: #ffffff;
+  --border: #e5e5e5;
+  --border-strong: #cecece;
+  --fg: #3b3b3b;
+  --fg-strong: #1f1f1f;
+  --fg-muted: #6f6f6f;
+  --fg-subtle: #8b949e;
+  --success: #388a34;
+  --warning: #bf8803;
+  --danger: #e51400;
+  --git-add: #2ea043;
+  --git-mod: #005fb8;
+  --git-del: #f85149;
+  --git-untracked: #388a34;
+  --shadow-pop: 0 8px 24px rgba(0, 0, 0, 0.16);
+  --glass: rgba(248, 248, 248, 0.96);
+  --wavy-danger: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='6' height='3'%3E%3Cpath d='M0 3 L1.5 0 L3 3 L4.5 0 L6 3' stroke='%23e51400' fill='none' stroke-width='0.9'/%3E%3C/svg%3E");
+
+  --ed-bg: #ffffff;
+  --ed-fg: #3b3b3b;
+  --ed-gutter-bg: #ffffff;
+  --ed-gutter-fg: #6e7681;
+  --ed-active-line: #f5f5f5;
+  --ed-selection: #add6ff;
+  --ed-match: rgba(234, 92, 0, 0.25);
+  --ed-bracket: rgba(0, 100, 0, 0.18);
+  --minimap-fg: rgba(59, 59, 59, 0.2);
+  --minimap-view: rgba(100, 100, 100, 0.15);
+
+  --syn-keyword: #af00db;
+  --syn-tag: #800000;
+  --syn-self: #0000ff;
+  --syn-string: #a31515;
+  --syn-regexp: #811f3f;
+  --syn-number: #098658;
+  --syn-atom: #0000ff;
+  --syn-function: #795e26;
+  --syn-attr: #e50000;
+  --syn-type: #267f99;
+  --syn-namespace: #267f99;
+  --syn-constant: #0070c1;
+  --syn-definition: #001080;
+  --syn-variable: #001080;
+  --syn-property: #001080;
+  --syn-operator: #000000;
+  --syn-punct: #3b3b3b;
+  --syn-comment: #008000;
+  --syn-heading: #800000;
+  --syn-link: #005fb8;
+
+  --term-bg: #f8f8f8;
+  --term-fg: #3b3b3b;
+  --ansi-black: #000000;
+  --ansi-red: #cd3131;
+  --ansi-green: #00bc00;
+  --ansi-yellow: #949800;
+  --ansi-blue: #0451a5;
+  --ansi-magenta: #bc05bc;
+  --ansi-cyan: #0598bc;
+  --ansi-white: #555555;
+  --ansi-bright-black: #666666;
+  --ansi-bright-white: #a5a5a5;
+  --snap-bg: #ffffff;
+}

@@ -1,4 +1,4 @@
-import { FolderOpen, GitBranch, ListTodo, Play, Search, TerminalSquare, Clock, HardDrive, Files } from "lucide-react";
+import { Command, FilePlus2, FolderOpen, GitBranch, ListTodo, Play, Puzzle, Search, TerminalSquare, Clock, HardDrive, Files } from "lucide-react";
 import { CrabMascot } from "../components/CrabMascot";
 import { useEffect, useState } from "react";
 import { openPalette } from "../app/commands";
@@ -67,58 +67,94 @@ function ProjectPicker() {
   );
 }
 
-function Welcome() {
+/** Halaman Selamat datang ala VS Code: Mulai, Terbaru, dan Panduan. */
+export function Welcome() {
   const design = useStore((s) => s.settings.design);
+  const claude = useStore((s) => s.claude);
   const penguin = usePenguinVariant();
   return (
-    <div className="welcome">
-      <div className="welcome-hero">
-        {penguin ? (
-          <NoziHero size={96} />
-        ) : (
-          <div className="logo-mark" aria-hidden>
-            N
-          </div>
-        )}
-        <div className="welcome-hero-text">
-          <h1>{penguin ? "Halo! Nozi siap ngoding." : "Alexel Studio"}</h1>
-          <p className="hint">Pilih project di bawah, atau buka folder lain.</p>
-          <div className="welcome-actions">
-            <button className="btn btn-primary" onClick={() => void A.openProjectDialog()}>
-              <FolderOpen size={15} /> Buka folder…
-            </button>
-            <button className="btn" onClick={() => void openShell()}>
-              <TerminalSquare size={15} /> Terminal
-            </button>
-          </div>
+    <div className="welcome welcome-v2">
+      <header className="welcome-head">
+        {penguin ? <NoziHero size={76} /> : <img className="welcome-logo" src="./icon.png" alt="" aria-hidden onError={(e) => (e.currentTarget.style.display = "none")} />}
+        <div>
+          <h1>Alexel Studio</h1>
+          <p className="hint">Editor kode dengan Claude di dalamnya.</p>
         </div>
-      </div>
+      </header>
       {isDemo && <p className="hint small">Mode pratinjau browser: backend tiruan. Buka lewat aplikasi Alexel Studio untuk berkas sungguhan.</p>}
-      <div className="welcome-grid">
-        <ProjectPicker />
-        <section className="card">
-          <h2 className="card-title">Desain</h2>
-          <div className="design-mini">
-            {DESIGNS.map((d) => (
-              <button key={d.id} className={`design-mini-item ${d.id === design ? "is-on" : ""}`} onClick={() => A.setDesign(d.id)} aria-pressed={d.id === design}>
-                <span className="swatch" style={{ background: d.swatch.bg, borderColor: d.swatch.accent }}>
-                  <i style={{ background: d.swatch.accent }} />
-                  <i style={{ background: d.swatch.alt }} />
+      <div className="welcome-cols">
+        <div className="welcome-col">
+          <section>
+            <h2 className="welcome-h">Mulai</h2>
+            <ul className="welcome-links">
+              <li>
+                <button onClick={() => void A.newFile(null)}>
+                  <FilePlus2 size={15} aria-hidden /> Berkas baru… <Kbd keys="Mod+N" />
+                </button>
+              </li>
+              <li>
+                <button onClick={() => void A.openProjectDialog()}>
+                  <FolderOpen size={15} aria-hidden /> Buka folder… <Kbd keys="Mod+O" />
+                </button>
+              </li>
+              <li>
+                <button onClick={() => void A.cloneRepo()}>
+                  <GitBranch size={15} aria-hidden /> Clone repositori Git…
+                </button>
+              </li>
+              <li>
+                <button onClick={() => void openShell()}>
+                  <TerminalSquare size={15} aria-hidden /> Buka terminal <Kbd keys="Ctrl+`" />
+                </button>
+              </li>
+            </ul>
+          </section>
+          <ProjectPicker />
+        </div>
+        <div className="welcome-col">
+          <section>
+            <h2 className="welcome-h">Panduan</h2>
+            <div className="walk">
+              <button className="walk-card" onClick={() => setLayout({ right: true, rightView: "claude" })}>
+                <CrabMascot size={26} />
+                <span>
+                  <strong>Kerja bareng Claude Code</strong>
+                  <span className="hint">{claude?.installed ? "Panel Claude di kanan: pilih model, effort, dan mode izin. Kamu menyetujui setiap perubahan." : "Pasang Claude Code sekali, lalu masuk dengan akun Claude Pro atau Max kamu."}</span>
                 </span>
-                {d.name}
               </button>
-            ))}
-          </div>
-          <h2 className="card-title">Shortcut penting</h2>
-          <ul className="shortcut-list">
-            <li><Kbd keys="Mod+O" /> Buka folder</li>
-            <li><Kbd keys="Mod+P" /> Buka berkas</li>
-            <li><Kbd keys="Mod+K" /> Semua perintah</li>
-            <li><Kbd keys="Ctrl+`" /> Terminal</li>
-            <li><Kbd keys="Mod+L" /> Tanya Claude</li>
-            <li><Kbd keys="Mod+R" /> Jalankan berkas</li>
-          </ul>
-        </section>
+              <button className="walk-card" onClick={() => openPalette(">")}>
+                <Command size={22} aria-hidden />
+                <span>
+                  <strong>Semua perintah di satu tempat</strong>
+                  <span className="hint">
+                    Tekan <Kbd keys="Mod+Shift+P" /> untuk palette perintah, <Kbd keys="Mod+P" /> untuk membuka berkas.
+                  </span>
+                </span>
+              </button>
+              <button className="walk-card" onClick={() => A.toggleSidebar("ext")}>
+                <Puzzle size={22} aria-hidden />
+                <span>
+                  <strong>Tema & ikon dari Open VSX</strong>
+                  <span className="hint">Pasang tema warna, tema ikon, snippet, dan bahasa yang biasa kamu pakai di VS Code.</span>
+                </span>
+              </button>
+            </div>
+          </section>
+          <section>
+            <h2 className="welcome-h">Desain</h2>
+            <div className="design-mini">
+              {DESIGNS.map((d) => (
+                <button key={d.id} className={`design-mini-item ${d.id === design ? "is-on" : ""}`} onClick={() => A.setDesign(d.id)} aria-pressed={d.id === design}>
+                  <span className="swatch" style={{ background: d.swatch.bg, borderColor: d.swatch.accent }}>
+                    <i style={{ background: d.swatch.accent }} />
+                    <i style={{ background: d.swatch.alt }} />
+                  </span>
+                  {d.name}
+                </button>
+              ))}
+            </div>
+          </section>
+        </div>
       </div>
     </div>
   );

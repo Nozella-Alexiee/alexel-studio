@@ -101,8 +101,13 @@ export function lspStart(ctx: Ctx, serverId: string, root: string): { key: strin
     r.buf = rest;
     for (const message of messages) ctx.emit("lsp-message", { key, message });
   });
-  proc.stderr?.on("data", () => {
-    /* log server diabaikan */
+  // Log server diteruskan ke panel Output (dibatasi supaya server yang cerewet tidak membanjiri UI).
+  let logBudget = 200_000;
+  proc.stderr?.on("data", (b: Buffer) => {
+    if (logBudget <= 0) return;
+    const text = b.toString("utf8").slice(0, 4000);
+    logBudget -= text.length;
+    ctx.emit("lsp-log", { key, text });
   });
   const gone = (code: number | null) => {
     if (running.get(key) === r) running.delete(key);

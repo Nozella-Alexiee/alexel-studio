@@ -38,7 +38,18 @@ export const isNative = !!bridge;
 export const isTauri = isNative;
 export const isDemo = !isNative && import.meta.env.DEV;
 /** OS tempat app berjalan ("darwin" | "win32" | "linux"); di browser ditebak dari userAgent. */
-export const platform: string = bridge?.platform ?? (typeof navigator !== "undefined" && /Mac/i.test(navigator.platform) ? "darwin" : typeof navigator !== "undefined" && /Win/i.test(navigator.platform) ? "win32" : "linux");
+/** Mode dev saja: localStorage "nozel.fakePlatform" meniru OS lain untuk menguji tampilan Windows/Linux. */
+const fakePlatform = (() => {
+  if (!import.meta.env.DEV) return null;
+  try {
+    const v = localStorage.getItem("nozel.fakePlatform");
+    return v === "win32" || v === "linux" || v === "darwin" ? v : null;
+  } catch {
+    return null;
+  }
+})();
+export const platform: string =
+  fakePlatform ?? bridge?.platform ?? (typeof navigator !== "undefined" && /Mac/i.test(navigator.platform) ? "darwin" : typeof navigator !== "undefined" && /Win/i.test(navigator.platform) ? "win32" : "linux");
 export const isMac = platform === "darwin";
 export const isWindows = platform === "win32";
 
@@ -134,6 +145,11 @@ export const api = {
   // Run
   commandForFile: (filePath: string, projectDir?: string | null) => call<RunTarget>("command_for_file", { filePath, projectDir: projectDir ?? null }),
   runTargets: (projectDir: string) => call<RunTarget[]>("detect_run_targets", { projectDir }),
+
+  settingsPath: () => call<string>("settings_path"),
+  gitClone: (url: string, parent: string) => call<string>("git_clone", { url, parent }),
+  appInfo: () => call<{ version: string; electron: string; chrome?: string; node?: string; platform: string; arch?: string }>("app_info"),
+  windowAction: (action: "fullscreen" | "minimize" | "maximize" | "close" | "devtools" | "zoomIn" | "zoomOut" | "zoomReset" | "quit") => call<void>("window_action", { action }),
 
   // Claude
   claudeDetect: () => call<ClaudeInfo>("claude_detect"),

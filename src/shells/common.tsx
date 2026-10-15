@@ -18,6 +18,8 @@ const SearchPanel = lazy(() => import("../panels/SearchPanel"));
 const GitPanel = lazy(() => import("../panels/GitPanel"));
 const ClaudePanel = lazy(() => import("../claude/ClaudePanel"));
 const ExtensionsPanel = lazy(() => import("../panels/ExtensionsPanel"));
+const OutlinePanel = lazy(() => import("../panels/OutlinePanel"));
+const RunView = lazy(() => import("../panels/RunView"));
 const TodoSide = lazy(() => import("../panels/BottomPanels").then((m) => ({ default: m.TodoPanel })));
 
 export const Loading = () => (
@@ -63,6 +65,8 @@ export function SideContent() {
       {layout.sideView === "git" && <GitPanel />}
       {layout.sideView === "todo" && <TodoSide />}
       {layout.sideView === "ext" && <ExtensionsPanel />}
+      {layout.sideView === "outline" && <OutlinePanel />}
+      {layout.sideView === "run" && <RunView />}
     </Suspense>
     </ErrorBoundary>
   );
@@ -85,10 +89,14 @@ export function SideResizer({ side }: { side: "left" | "right" | "bottom" }) {
   return <Resizer axis="y" value={l.panelH} min={110} max={Math.round(window.innerHeight * 0.75)} invert onChange={(v) => setLayout({ panelH: v })} />;
 }
 
-function useFootprint() {
+function useFootprint(enabled: boolean) {
   const [fp, setFp] = useState<Footprint | null>(null);
   const saver = useSaver();
   useEffect(() => {
+    if (!enabled) {
+      setFp(null);
+      return;
+    }
     let alive = true;
     const tick = () => api.footprint().then((f) => alive && setFp((p) => (p && Math.abs(p.core_mb - f.core_mb) < 0.5 && Math.abs(p.cpu_percent - f.cpu_percent) < 1 ? p : f))).catch(() => {});
     tick();
@@ -97,7 +105,7 @@ function useFootprint() {
       alive = false;
       clearInterval(t);
     };
-  }, [saver]);
+  }, [saver, enabled]);
   return fp;
 }
 
@@ -132,7 +140,32 @@ export function DesignButton({ compact }: { compact?: boolean }) {
   );
 }
 
-export function StatusBar({ variant }: { variant: "aurora" | "zen" | "control" }) {
+const LANG_CHOICES: [string, string | null][] = [
+  ["Otomatis (dari nama berkas)", null],
+  ["Teks biasa", "txt"],
+  ["JavaScript", "js"],
+  ["TypeScript", "ts"],
+  ["TypeScript (TSX)", "tsx"],
+  ["JSON", "json"],
+  ["HTML", "html"],
+  ["CSS", "css"],
+  ["SCSS", "scss"],
+  ["Markdown", "md"],
+  ["Python", "py"],
+  ["Rust", "rs"],
+  ["Go", "go"],
+  ["PHP", "php"],
+  ["Java", "java"],
+  ["C", "c"],
+  ["C++", "cpp"],
+  ["SQL", "sql"],
+  ["YAML", "yaml"],
+  ["XML", "xml"],
+  ["Shell", "sh"],
+  ["Vue", "vue"],
+];
+
+export function StatusBar({ variant }: { variant: "aurora" | "zen" | "control" | "studio" }) {
   const git = useStore((s) => s.git);
   const cursor = useStore((s) => s.cursor);
   const tab = useStore((s) => activeTab(s));
@@ -147,7 +180,8 @@ export function StatusBar({ variant }: { variant: "aurora" | "zen" | "control" }
   const saver = useSaver();
   const running = useStore((s) => s.terminals.filter((t) => t.kind !== "shell" && t.status === "running").length);
   const claude = useStore((s) => s.claude);
-  const fp = useFootprint();
+  const showRes = useStore((s) => s.settings.showResources);
+  const fp = useFootprint(showRes);
   const doc = tab?.kind === "text" ? docs.getDoc(tab.id) : null;
   const zen = variant === "zen";
 
@@ -197,15 +231,41 @@ export function StatusBar({ variant }: { variant: "aurora" | "zen" | "control" }
             Ln {cursor.line}, Kol {cursor.col}
             {cursor.sel > 0 && ` (${cursor.sel} dipilih)`}
           </span>
-          {!zen && <span className="status-item">Spasi: {tabSize}</span>}
-          {!zen && doc && <span className="status-item">{doc.eol === "crlf" ? "CRLF" : "LF"}</span>}
-          <span className="status-item sb-lang" title={doc?.lspName ? `Server bahasa: ${doc.lspName}` : "Tanpa server bahasa"}>
+          {!zen && (
+            <button
+              className="status-item"
+              title="Ukuran indentasi"
+              onClick={(e) => openMenu(e, [2, 4, 8].map((n) => ({ label: `${n === tabSize ? "✓ " : ""}Spasi: ${n}`, run: () => A.updateSettings({ tabSize: n }) })))}
+            >
+              Spasi: {tabSize}
+            </button>
+          )}
+          {!zen && <span className="status-item" title="Encoding berkas">UTF-8</span>}
+          {!zen && doc && (
+            <button
+              className="status-item"
+              title="Akhir baris"
+              onClick={(e) =>
+                openMenu(e, [
+                  { label: `${doc.eol === "lf" ? "✓ " : ""}LF (macOS, Linux)`, run: () => docs.setDocEol(tab.id, "lf") },
+                  { label: `${doc.eol === "crlf" ? "✓ " : ""}CRLF (Windows)`, run: () => docs.setDocEol(tab.id, "crlf") },
+                ])
+              }
+            >
+              {doc.eol === "crlf" ? "CRLF" : "LF"}
+            </button>
+          )}
+          <button
+            className="status-item sb-lang"
+            title={`Bahasa: ${tab.lang}${doc?.lspName ? ` · server bahasa ${doc.lspName}` : ""}. Klik untuk mengganti.`}
+            onClick={(e) => openMenu(e, LANG_CHOICES.map(([label, ext]) => ({ label, run: () => docs.setDocLanguage(tab.id, ext) })))}
+          >
             {tab.lang}
             {doc?.lspName && <span className="sb-lsp" aria-label="Server bahasa aktif" />}
-          </span>
+          </button>
         </>
       )}
-      {fp && (
+      {showRes && fp && (
         <span className="status-item sb-mem" title={`RAM total Alexel Studio ${fp.core_mb} MB${fp.processes ? ` di ${fp.processes} proses` : ""}, CPU ${fp.cpu_percent}%.${isSaver() ? " (hemat daya)" : ""}`}>
           <Cpu size={12} aria-hidden /> {Math.round(fp.core_mb)} MB{!zen && ` · ${fp.cpu_percent}%`}
         </span>
@@ -215,7 +275,7 @@ export function StatusBar({ variant }: { variant: "aurora" | "zen" | "control" }
           <Kepi size={14} /> Claude
         </button>
       )}
-      <DesignButton compact={zen} />
+      {variant !== "studio" && <DesignButton compact={zen} />}
     </footer>
   );
 }

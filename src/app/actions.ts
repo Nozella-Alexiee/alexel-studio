@@ -1,7 +1,7 @@
 // Aksi tingkat aplikasi: project, tree, tab, simpan, berkas, git, desain.
 // Semua aksi membaca state terbaru lewat getState() — tidak ada closure basi.
 
-import { applyDesign, type DesignId } from "../design/designs";
+import { applyDesign, DESIGNS, type DesignId } from "../design/designs";
 import * as docs from "../editor/documents";
 import { languageFor } from "../editor/languages";
 import { api, errMsg, isDemo, pickFolder, setTrafficLights, setWindowTitle } from "../lib/ipc";
@@ -16,6 +16,7 @@ import {
   promptDialog,
   setLayout,
   setState,
+  stickyToast,
   toast,
   type Group,
   type Layout,
@@ -69,6 +70,7 @@ export async function openProject(root: string, opts: { restoreTabs?: { groups: 
       const grp = opts.restoreTabs.groups[g];
       for (const id of grp.tabs) {
         if (id === SETTINGS_TAB) openSettings(g);
+        else if (id === WELCOME_TAB) showWelcome(g);
         else await openFile(id, { group: g, quiet: true });
       }
       if (grp.active && getState().tabs[grp.active]) activateTab(grp.active, g);
@@ -198,11 +200,35 @@ async function createTab(path: string, opts: { quiet?: boolean; preview?: Tab["p
   }
 }
 
-export function openSettings(group = getState().focusedGroup) {
+export function openSettings(group = getState().focusedGroup, section?: string) {
   if (!getState().tabs[SETTINGS_TAB]) {
     setState((s) => ({ tabs: { ...s.tabs, [SETTINGS_TAB]: { id: SETTINGS_TAB, name: "Pengaturan", kind: "settings", dirty: false, lang: "", preview: "code" } } }));
   }
   addTabToGroup(SETTINGS_TAB, ensureGroup(group));
+  if (section) setTimeout(() => document.getElementById(`set-${section}`)?.scrollIntoView({ block: "start" }), 150);
+}
+
+export const WELCOME_TAB = "nozel:welcome";
+
+/** Halaman Selamat datang sebagai tab (seperti Help → Welcome di VS Code). */
+export function showWelcome(group = getState().focusedGroup) {
+  if (!getState().root) {
+    setState((s) => ({ groups: s.groups.map((g, i) => (i === group ? { ...g, active: null } : g)) }));
+    return;
+  }
+  if (!getState().tabs[WELCOME_TAB]) {
+    setState((s) => ({ tabs: { ...s.tabs, [WELCOME_TAB]: { id: WELCOME_TAB, name: "Selamat datang", kind: "welcome", dirty: false, lang: "", preview: "code" } } }));
+  }
+  addTabToGroup(WELCOME_TAB, ensureGroup(group));
+}
+
+/** Buka settings.json di editor; perubahan diterapkan saat disimpan. */
+export async function openSettingsJson() {
+  const p = await api.settingsPath().catch(() => null);
+  if (!p) return toast("settings.json tidak ditemukan.", "error");
+  persistSettings();
+  await new Promise((r) => setTimeout(r, 400));
+  await openFile(p);
 }
 
 export function activateTab(id: string, g = getState().focusedGroup) {
@@ -383,6 +409,7 @@ export async function saveAll() {
 let gitTimer = 0;
 export function afterSave(path: string, quiet?: boolean) {
   if (!quiet) toast(`${basename(path)} tersimpan`, "success");
+  void import("./persist").then((m) => m.settingsFileSaved(path));
   const s = getState();
   clearTimeout(gitTimer);
   gitTimer = window.setTimeout(() => void refreshGit(), 400);
@@ -609,7 +636,7 @@ export function setDesign(id: DesignId) {
 }
 
 export function cycleDesign() {
-  const order: DesignId[] = ["aurora", "zen", "control", "antartika", "tuxedo", "kawanan"];
+  const order: DesignId[] = DESIGNS.map((d) => d.id);
   const cur = order.indexOf(getState().settings.design);
   setDesign(order[(cur + 1) % order.length]);
 }
@@ -627,6 +654,7 @@ export function updateSettings(patch: Partial<Settings>) {
   if (patch.design !== undefined || "extTheme" in patch) void import("../extensions/registry").then((m) => m.applySavedTheme());
   if ("iconTheme" in patch) void import("../extensions/registry").then((m) => m.applySavedIconTheme());
   if (["fontSize", "tabSize", "wordWrap", "minimap", "design"].some((k) => k in patch)) requestAnimationFrame(() => docs.applyEditorSettings());
+  if ("keybindings" in patch) void import("./commands").then((m) => m.applyKeybindings(next.keybindings));
   persistSettings();
 }
 
@@ -688,3 +716,39 @@ export function resetSettings() {
 }
 
 export const demoMode = isDemo;
+
+/** Clone repositori Git: minta URL, pilih folder induk, lalu buka hasilnya. */
+export async function cloneRepo() {
+  const url = await promptDialog("Clone repositori Git", {
+    message: "Tempel URL repositori (https:// atau git@…). Kamu akan memilih folder tujuan setelah ini.",
+    placeholder: "https://github.com/user/repo.git",
+    okLabel: "Pilih folder…",
+    validate: (v) => (/^(https:\/\/|ssh:\/\/|git@[\w.-]+:|file:\/\/)\S+$/.test(v.trim()) ? null : "Pakai URL https://… atau git@host:user/repo.git"),
+  });
+  if (!url) return;
+  const parent = await pickFolder();
+  if (!parent) return;
+  const done = stickyToast(`Meng-clone ${url.trim()}…`);
+  try {
+    const dest = await api.gitClone(url.trim(), parent);
+    done();
+    toast(`Selesai di-clone ke ${dest}`, "success");
+    await openProject(dest);
+  } catch (e) {
+    done();
+    toast(errMsg(e), "error");
+  }
+}
+
+/** Tentang Alexel Studio: versi aplikasi dan komponen. */
+export async function showAbout() {
+  const info = await api.appInfo().catch(() => null);
+  await ask({
+    kind: "confirm",
+    title: "Alexel Studio",
+    message: "Editor kode gratis dan open source dengan terminal, server bahasa, dan Claude Code bawaan. Lisensi MIT.",
+    detail: info ? `Versi ${info.version}\nElectron ${info.electron}${info.chrome ? `\nChromium ${info.chrome}` : ""}${info.node ? `\nNode ${info.node}` : ""}\n${info.platform} ${info.arch ?? ""}` : undefined,
+    okLabel: "Tutup",
+    cancelLabel: "",
+  });
+}

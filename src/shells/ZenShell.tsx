@@ -3,19 +3,18 @@
 
 import { ChevronDown, ChevronRight, Files, GitBranch, Play, Puzzle, Search, TerminalSquare, X, Focus, ListTodo } from "lucide-react";
 import { Kepi } from "../components/CrabMascot";
-import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import * as A from "../app/actions";
 import { openPalette } from "../app/commands";
 import { runActiveFile } from "../app/run";
 import { FileIcon } from "../components/FileIcon";
 import { NoziBrand, NoziProcesses, usePenguinVariant } from "../components/PenguinMascot";
 import { IconButton, Kbd } from "../components/ui";
-import * as docs from "../editor/documents";
-import { extractSymbols } from "../editor/symbols";
 import { relative } from "../lib/paths";
 import { PanelContent, PanelTabs } from "../panels/BottomPanel";
+import { Outline } from "../panels/OutlinePanel";
 import { FileTree } from "../panels/Explorer";
-import { activeTab, getState, setLayout, useLayout, useStore } from "../state/store";
+import { activeTab, setLayout, useLayout, useStore } from "../state/store";
 import { EditorGroups, RightContent, SideContent, SideResizer, StatusBar, openProjectMenu } from "./common";
 import { prettyKeys } from "../lib/keys";
 
@@ -59,49 +58,6 @@ function OpenFiles() {
           </li>
         );
       })}
-    </ul>
-  );
-}
-
-function useDocVersion(path?: string) {
-  const [v, setV] = useState(0);
-  useEffect(() => {
-    if (!path) return;
-    let t = 0;
-    const off = docs.onDocTextChange((p) => {
-      if (p !== path) return;
-      clearTimeout(t);
-      t = window.setTimeout(() => setV((x) => x + 1), 600);
-    });
-    return () => {
-      clearTimeout(t);
-      off();
-    };
-  }, [path]);
-  return v;
-}
-
-function Outline() {
-  const tab = useStore((s) => activeTab(s));
-  const cursorLine = useStore((s) => s.cursor.line);
-  const version = useDocVersion(tab?.kind === "text" ? tab.id : undefined);
-  const syms = useMemo(() => {
-    if (tab?.kind !== "text") return [];
-    const d = docs.getDoc(tab.id);
-    return d ? extractSymbols(d.langId, docs.currentText(tab.id) ?? "") : [];
-  }, [tab?.id, tab?.kind, version]);
-  if (!syms.length) return <div className="hint pad-x">Tidak ada simbol.</div>;
-  const current = [...syms].reverse().find((s) => s.line <= cursorLine);
-  return (
-    <ul className="zen-outline">
-      {syms.slice(0, 300).map((s, i) => (
-        <li key={i}>
-          <button className={`zen-sym ${s === current ? "is-on" : ""}`} style={{ paddingLeft: 10 + s.depth * 10 }} onClick={() => docs.revealPosition(getState().focusedGroup, s.line)}>
-            <span className="zen-kind">{s.kind === "judul" ? "#" : s.kind === "kelas" || s.kind === "struct" ? "◇" : s.kind === "tipe" ? "T" : "ƒ"}</span>
-            {s.name}
-          </button>
-        </li>
-      ))}
     </ul>
   );
 }

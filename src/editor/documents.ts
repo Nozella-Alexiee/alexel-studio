@@ -40,6 +40,8 @@ export interface Doc {
   saved: Text;
   mtime: number;
   eol: "lf" | "crlf";
+  /** Nama berkas contoh untuk bahasa yang dipilih manual (mis. "x.py"); null = dari nama berkas. */
+  langFile?: string | null;
   langId: string;
   langName: string;
   language: Extension | null;
@@ -260,7 +262,7 @@ function scheduleAutoSave(path: string) {
 
 async function loadLanguage(doc: Doc) {
   try {
-    const ext = await languageFor(doc.path).load();
+    const ext = await languageFor(doc.langFile ?? doc.path).load();
     if (docs.get(doc.path) !== doc) return; // dokumen sudah ditutup
     doc.language = ext;
     for (let g = 0; g < doc.states.length; g++) {
@@ -280,8 +282,31 @@ async function loadLanguage(doc: Doc) {
  * Deteksi ulang bahasa semua dokumen terbuka (mis. setelah ekstensi grammar dimuat atau dipasang,
  * karena tab yang dipulihkan saat start dibuka sebelum daftar ekstensi siap).
  */
+/** Pilih bahasa secara manual dari status bar (ext contoh, mis. "py"); null = kembali otomatis. */
+export function setDocLanguage(path: string, ext: string | null) {
+  const doc = docs.get(path);
+  if (!doc) return;
+  doc.langFile = ext ? `berkas.${ext}` : null;
+  const info = languageFor(doc.langFile ?? basename(doc.path));
+  doc.langId = info.id;
+  doc.langName = info.name;
+  const tab = getState().tabs[path];
+  if (tab) setState((s) => ({ tabs: { ...s.tabs, [path]: { ...tab, lang: info.name } } }));
+  void loadLanguage(doc);
+}
+
+/** Ganti akhir baris (LF/CRLF); berlaku saat berkas disimpan. */
+export function setDocEol(path: string, eol: "lf" | "crlf") {
+  const doc = docs.get(path);
+  if (!doc || doc.eol === eol) return;
+  doc.eol = eol;
+  const tab = getState().tabs[path];
+  if (tab) setState((s) => ({ tabs: { ...s.tabs, [path]: { ...tab, dirty: true } } }));
+}
+
 export function redetectLanguages() {
   for (const doc of docs.values()) {
+    if (doc.langFile) continue;
     const info = languageFor(basename(doc.path));
     if (info.id === doc.langId && info.name === doc.langName) continue;
     doc.langId = info.id;

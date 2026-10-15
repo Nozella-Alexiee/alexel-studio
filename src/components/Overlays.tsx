@@ -127,9 +127,11 @@ export function DialogHost() {
             </>
           ) : (
             <>
-              <button className="btn" onClick={() => close(null)}>
-                {d.cancelLabel ?? "Batal"}
-              </button>
+              {d.cancelLabel !== "" && (
+                <button className="btn" onClick={() => close(null)}>
+                  {d.cancelLabel ?? "Batal"}
+                </button>
+              )}
               <button ref={okBtn} className={`btn ${d.danger ? "btn-danger" : "btn-primary"}`} onClick={submit}>
                 {d.okLabel ?? "OK"}
               </button>

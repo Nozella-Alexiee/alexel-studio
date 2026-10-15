@@ -801,3 +801,263 @@ button.status-item:hover {
 .cm-tooltip-hover {
   max-width: 560px;
 }
+
+/* ═════════════════════ Studio (ala VS Code) ═════════════════════ */
+.shell-studio .titlebar {
+  background: var(--bg);
+  border-bottom: 1px solid var(--border);
+  gap: 4px;
+  padding-right: 6px;
+}
+.shell-studio .shell-body > .resizer-x {
+  background: var(--border);
+  width: 1px;
+}
+.shell-studio .shell-body > .resizer-x:hover {
+  background: var(--accent);
+}
+.st-center {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: min(38vw, 520px);
+  pointer-events: none;
+}
+.st-command {
+  pointer-events: auto;
+  width: 100%;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  border-radius: 6px;
+  border: 1px solid var(--border-strong);
+  background: var(--surface-2);
+  color: var(--fg-muted);
+  font-size: 12px;
+}
+.st-command:hover {
+  background: var(--surface-hover);
+  color: var(--fg);
+}
+.st-command span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.activitybar {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  background: var(--bg);
+  border-right: 1px solid var(--border);
+  padding: 4px 0;
+}
+.activitybar button {
+  position: relative;
+  height: 48px;
+  display: grid;
+  place-items: center;
+  color: var(--fg-subtle);
+}
+.activitybar button:hover {
+  color: var(--fg-strong);
+}
+.activitybar button.is-on {
+  color: var(--fg-strong);
+}
+.activitybar button.is-on::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: var(--accent);
+}
+.ab-count {
+  position: absolute;
+  bottom: 9px;
+  right: 8px;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  border-radius: 8px;
+  background: var(--accent);
+  color: var(--accent-fg);
+  font-size: 9px;
+  font-weight: 600;
+  display: grid;
+  place-items: center;
+}
+.shell-studio .sidebar {
+  background: var(--surface-1);
+}
+.st-main {
+  background: var(--surface-2);
+}
+.st-editors {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+}
+.st-editors .editor-groups {
+  flex: 1;
+}
+.shell-studio .main > .resizer-y {
+  background: var(--border);
+  height: 1px;
+}
+.shell-studio .main > .resizer-y:hover {
+  background: var(--accent);
+}
+.st-panel {
+  flex: none;
+  display: flex;
+  background: var(--surface-1);
+}
+.st-panel .bottom-panel {
+  flex: 1;
+}
+.st-right {
+  background: var(--surface-1);
+}
+.shell-studio .tabstrip {
+  background: var(--surface-1);
+}
+.shell-studio .tab {
+  border-radius: 0;
+  border-right: 1px solid var(--border);
+}
+.shell-studio .tab.is-active {
+  background: var(--surface-2);
+  box-shadow: inset 0 1px 0 var(--accent);
+}
+.shell-studio .statusbar {
+  background: var(--bg);
+  border-top: 1px solid var(--border);
+  padding: 0 4px;
+  font-size: 12px;
+}
+.shell-studio .status-item {
+  border-radius: 0;
+  height: 100%;
+  padding: 0 8px;
+}
+.shell-studio.is-debugging .statusbar {
+  background: #cc6633;
+  color: #fff;
+}
+.shell-studio .claude-head {
+  height: 35px;
+}
+
+/* Menu bar (Windows/Linux) */
+.menubar {
+  display: flex;
+  align-items: center;
+  height: 100%;
+  padding-left: 4px;
+  flex: none;
+}
+.mb-top {
+  position: relative;
+  height: 100%;
+  display: flex;
+  align-items: center;
+}
+.mb-top-btn {
+  height: 24px;
+  padding: 0 7px;
+  border-radius: 4px;
+  font-size: 12.5px;
+  color: var(--fg);
+}
+.mb-top-btn:hover,
+.mb-top-btn.is-open {
+  background: var(--surface-hover);
+}
+.mb-menu {
+  position: absolute;
+  top: calc(100% - 2px);
+  left: 0;
+  z-index: 60;
+  min-width: 240px;
+  padding: 4px;
+  border: 1px solid var(--border-strong);
+  border-radius: 6px;
+  background: var(--surface-popover);
+  box-shadow: var(--shadow-pop);
+  -webkit-app-region: no-drag;
+  app-region: no-drag;
+}
+.mb-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  height: 26px;
+  padding: 0 10px 0 4px;
+  border-radius: 4px;
+  font-size: 12.5px;
+  text-align: left;
+  color: var(--fg);
+}
+.mb-item:hover:not(:disabled) {
+  background: var(--accent);
+  color: var(--accent-fg);
+}
+.mb-item:disabled {
+  opacity: 0.45;
+}
+.mb-check {
+  width: 16px;
+  display: grid;
+  place-items: center;
+  flex: none;
+}
+.mb-label {
+  flex: 1;
+  white-space: nowrap;
+}
+.mb-keys {
+  margin-left: 24px;
+  font-size: 11.5px;
+  opacity: 0.75;
+  white-space: nowrap;
+}
+.mb-sep {
+  height: 1px;
+  margin: 4px 6px;
+  background: var(--border-strong);
+}
+.mb-subwrap {
+  position: relative;
+}
+.mb-submenu .mb-menu {
+  top: -5px;
+  left: 100%;
+}
+
+/* Platform: Windows/Linux tanpa lampu lalu lintas; sisakan ruang untuk tombol jendela OS. */
+[data-platform="win32"] .traffic-space,
+[data-platform="linux"] .traffic-space {
+  width: 0;
+}
+[data-platform="win32"] .titlebar,
+[data-platform="linux"] .titlebar {
+  padding-right: calc(100vw - env(titlebar-area-width, calc(100vw - 140px)) - env(titlebar-area-x, 0px));
+}
+
+/* Windows/Linux: menu bar di kiri, command center mengisi sisa ruang (tidak menimpa menu). */
+[data-platform="win32"] .st-center,
+[data-platform="linux"] .st-center {
+  position: static;
+  transform: none;
+  flex: 1 1 auto;
+  min-width: 120px;
+  max-width: 520px;
+  margin: 0 auto;
+}

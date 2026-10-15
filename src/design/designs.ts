@@ -1,8 +1,8 @@
-// Tiga desain Nozel Code. Masing-masing mengubah warna, font, kepadatan,
+// Desain Alexel Studio. Masing-masing mengubah warna, font, kepadatan,
 // DAN tata letak. Warna & ukuran ada di src/styles/tokens.css per [data-design].
 
-export type DesignId = "aurora" | "zen" | "control" | "antartika" | "tuxedo" | "kawanan";
-export type ShellId = "aurora" | "zen" | "control";
+export type DesignId = "studio" | "studio-light" | "aurora" | "zen" | "control" | "antartika" | "tuxedo" | "kawanan";
+export type ShellId = "studio" | "aurora" | "zen" | "control";
 
 export interface DesignInfo {
   id: DesignId;
@@ -19,6 +19,24 @@ export interface DesignInfo {
 }
 
 export const DESIGNS: DesignInfo[] = [
+  {
+    id: "studio",
+    name: "Studio Gelap",
+    tagline: "Tata letak seperti VS Code: activity bar, sidebar, panel bawah, dan Claude di sidebar kanan.",
+    scheme: "dark",
+    shell: "studio",
+    group: "Klasik",
+    swatch: { bg: "#1f1f1f", panel: "#181818", accent: "#0078d4", text: "#cccccc", alt: "#d97757" },
+  },
+  {
+    id: "studio-light",
+    name: "Studio Terang",
+    tagline: "Tata letak seperti VS Code dengan warna terang yang bersih.",
+    scheme: "light",
+    shell: "studio",
+    group: "Klasik",
+    swatch: { bg: "#ffffff", panel: "#f8f8f8", accent: "#005fb8", text: "#3b3b3b", alt: "#c4613f" },
+  },
   {
     id: "aurora",
     name: "Aurora Glass",
@@ -81,6 +99,8 @@ export const DESIGNS: DesignInfo[] = [
 export const designById = (id: DesignId) => DESIGNS.find((d) => d.id === id) ?? DESIGNS[0];
 
 export const ACCENTS: Record<DesignId, string[]> = {
+  studio: ["#0078d4", "#d97757", "#2ea043", "#a371f7"],
+  "studio-light": ["#005fb8", "#c4613f", "#1a7f37", "#8250df"],
   aurora: ["#7aa2f7", "#5ee0a0", "#c792ea", "#d97757"],
   zen: ["#d97757", "#2f6fb5", "#5b7d3a", "#7a5fc0"],
   control: ["#8be9fd", "#ff79c6", "#50fa7b", "#bd93f9"],
@@ -115,5 +135,5 @@ export function cachedDesign(): { id: DesignId; accent: string | null } {
   } catch {
     /* abaikan */
   }
-  return { id: "aurora", accent: null };
+  return { id: "studio", accent: null };
 }

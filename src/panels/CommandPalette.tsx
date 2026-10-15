@@ -4,13 +4,14 @@
 import { CornerDownLeft, Hash, Play, SquareFunction, Terminal } from "lucide-react";
 import { CrabMascot } from "../components/CrabMascot";
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { prettyKeys, visibleCommands } from "../app/commands";
+import { keysOf, prettyKeys, visibleCommands } from "../app/commands";
 import * as A from "../app/actions";
 import { runTarget } from "../app/run";
 import { FileIcon } from "../components/FileIcon";
 import { Highlighted } from "../components/ui";
 import * as docs from "../editor/documents";
 import { extractSymbols } from "../editor/symbols";
+import type { WorkspaceSymbol } from "../editor/lsp";
 import { fuzzyFilter } from "../lib/fuzzy";
 import { join } from "../lib/paths";
 import { activeTab, getState, setState, useStore } from "../state/store";
@@ -28,10 +29,11 @@ interface Item {
 }
 
 const MODES: Record<string, { placeholder: string; label: string }> = {
-  "": { placeholder: "Cari berkas…  (ketik > perintah, : baris, @ simbol, ! run, ? Claude)", label: "Berkas" },
+  "": { placeholder: "Cari berkas…  (ketik > perintah, : baris, @ simbol, # simbol project, ! run, ? Claude)", label: "Berkas" },
   ">": { placeholder: "Ketik perintah…", label: "Perintah" },
   ":": { placeholder: "Nomor baris, mis. 42 atau 42:10", label: "Pergi ke baris" },
   "@": { placeholder: "Simbol di berkas ini…", label: "Simbol" },
+  "#": { placeholder: "Simbol di seluruh project…", label: "Simbol project" },
   "!": { placeholder: "Target Smart Run…", label: "Smart Run" },
   "?": { placeholder: "Tanya Claude tentang project ini…", label: "Claude" },
 };
@@ -55,6 +57,23 @@ export function CommandPalette() {
 
   const prefix = MODES[value[0]] && value[0] !== "" ? value[0] : "";
   const query = prefix ? value.slice(1).trimStart() : value;
+  const [wsSyms, setWsSyms] = useState<WorkspaceSymbol[]>([]);
+  useEffect(() => {
+    if (!palette.open || prefix !== "#") return;
+    let live = true;
+    const t = setTimeout(async () => {
+      const { workspaceSymbols } = await import("../editor/lsp");
+      let found = await workspaceSymbols(query);
+      // Tanpa server bahasa: simbol dari berkas yang sedang terbuka.
+      if (!found.length)
+        found = docs.openDocs().flatMap((d) => extractSymbols(d.langId, docs.currentText(d.path) ?? "").map((x) => ({ name: x.name, kind: x.kind, path: d.path, line: x.line, col: 1 })));
+      if (live) setWsSyms(found);
+    }, 150);
+    return () => {
+      live = false;
+      clearTimeout(t);
+    };
+  }, [palette.open, prefix, query]);
   const close = () => setState({ palette: { open: false, initial: "" } });
 
   const items: Item[] = useMemo(() => {
@@ -66,7 +85,7 @@ export function CommandPalette() {
         icon: <Terminal size={14} aria-hidden />,
         label: `${c.group}: ${c.label}`,
         positions,
-        keys: c.keys,
+        keys: keysOf(c),
         run: () => void c.run(),
       }));
     }
@@ -88,6 +107,17 @@ export function CommandPalette() {
         positions,
         detail: `${x.kind} · baris ${x.line}`,
         run: () => docs.revealPosition(s.focusedGroup, x.line),
+      }));
+    }
+    if (prefix === "#") {
+      const rootDir = root ?? "";
+      return fuzzyFilter(query, wsSyms, (x) => x.name, 120).map(({ item: x, positions }) => ({
+        key: `${x.path}:${x.line}:${x.name}`,
+        icon: <SquareFunction size={14} aria-hidden />,
+        label: x.name,
+        positions,
+        detail: `${x.kind} · ${x.path.startsWith(rootDir) ? x.path.slice(rootDir.length + 1) : x.path}:${x.line}`,
+        run: () => void A.openFile(x.path, { line: x.line, col: x.col }),
       }));
     }
     if (prefix === "!") {
@@ -131,7 +161,7 @@ export function CommandPalette() {
         run: (side?: boolean) => void A.openFile(join(rootDir, rel), { group: side ? 1 : undefined, line: lineMatch ? Number(lineMatch[2]) : undefined }),
       };
     });
-  }, [palette.open, prefix, query, files, root]);
+  }, [palette.open, prefix, query, files, root, wsSyms]);
 
   useEffect(() => setSel(0), [prefix, query]);
   useEffect(() => {

@@ -1,7 +1,7 @@
 import { BatteryCharging, Leaf, Plug } from "lucide-react";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { serverStatus, type ServerStatus } from "../editor/lsp";
-import { COMMANDS, prettyKeys } from "../app/commands";
+import { COMMANDS, commandWithKeys, defaultKeysOf, keysOf, prettyKeys, recordCombo } from "../app/commands";
 import * as A from "../app/actions";
 import { PenguinMascot, showNoziPeek } from "../components/PenguinMascot";
 import { Segmented } from "../components/ui";
@@ -94,6 +94,76 @@ function LanguageServers() {
   );
 }
 
+function Keybindings() {
+  const over = useStore((st) => st.settings.keybindings);
+  const [editing, setEditing] = useState<string | null>(null);
+  const [warn, setWarn] = useState<string | null>(null);
+  const list = COMMANDS.filter((c) => !c.hidden).sort((a, b) => a.group.localeCompare(b.group) || a.label.localeCompare(b.label));
+  useEffect(() => {
+    if (!editing) return;
+    const onKey = (e: KeyboardEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+      if (e.key === "Escape") return setEditing(null);
+      const next = { ...useStore.getState().settings.keybindings };
+      if (e.key === "Backspace" && !e.metaKey && !e.ctrlKey && !e.altKey) next[editing] = "";
+      else {
+        const combo = recordCombo(e);
+        if (!combo) return;
+        const other = commandWithKeys(combo);
+        setWarn(other && other.id !== editing ? `${prettyKeys(combo)} sebelumnya dipakai "${other.label}" dan dilepas dari perintah itu.` : null);
+        if (other && other.id !== editing) next[other.id] = "";
+        next[editing] = combo;
+      }
+      A.updateSettings({ keybindings: next });
+      setEditing(null);
+    };
+    window.addEventListener("keydown", onKey, true);
+    return () => window.removeEventListener("keydown", onKey, true);
+  }, [editing]);
+  return (
+    <>
+      {warn && <p className="hint tone-warning-fg">{warn}</p>}
+      <table className="shortcut-table">
+        <tbody>
+          {list.map((c) => {
+            const changed = c.id in over;
+            const k = keysOf(c);
+            return (
+              <tr key={c.id} className={changed ? "is-changed" : ""}>
+                <td>
+                  <span className="hint">{c.group}:</span> {c.label}
+                </td>
+                <td>{editing === c.id ? <span className="kbd is-recording">Tekan kombinasi…</span> : k ? <kbd className="kbd">{prettyKeys(k)}</kbd> : <span className="hint">—</span>}</td>
+                <td className="shortcut-actions">
+                  {!c.shownKeys && (
+                    <button className="link-btn" onClick={() => setEditing(c.id)}>
+                      Ubah
+                    </button>
+                  )}
+                  {changed && (
+                    <button
+                      className="link-btn"
+                      onClick={() => {
+                        const next = { ...over };
+                        delete next[c.id];
+                        A.updateSettings({ keybindings: next });
+                      }}
+                      title={defaultKeysOf(c.id) ? `Bawaan: ${prettyKeys(defaultKeysOf(c.id))}` : "Bawaan: tanpa shortcut"}
+                    >
+                      Kembalikan
+                    </button>
+                  )}
+                </td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+    </>
+  );
+}
+
 export default function SettingsView() {
   const s = useStore((st) => st.settings);
   const power = useStore((st) => st.power);
@@ -101,11 +171,41 @@ export default function SettingsView() {
   const claude = useStore((st) => st.claude);
   const models = useStore((st) => st.claudeModels);
   const set = (p: Partial<Settings>) => A.updateSettings(p);
-  const shortcuts = COMMANDS.filter((c) => c.keys && !c.hidden);
+  const [q, setQ] = useState("");
+  const [noHits, setNoHits] = useState(false);
+  const rootEl = useRef<HTMLDivElement>(null);
+  // Saring baris & bagian berdasarkan teksnya (judul, label, petunjuk).
+  useEffect(() => {
+    const el = rootEl.current;
+    if (!el) return;
+    const needle = q.trim().toLowerCase();
+    let hits = 0;
+    for (const sec of el.querySelectorAll<HTMLElement>(".set-section")) {
+      const head = sec.querySelector("h2")?.textContent?.toLowerCase() ?? "";
+      const headHit = !!needle && head.includes(needle);
+      let any = false;
+      for (const row of sec.querySelectorAll<HTMLElement>(".set-row, .shortcut-table tr")) {
+        const hit = !needle || headHit || (row.textContent ?? "").toLowerCase().includes(needle);
+        row.style.display = hit ? "" : "none";
+        if (hit) any = true;
+      }
+      const show = !needle || headHit || any;
+      sec.style.display = show ? "" : "none";
+      if (show && needle) hits++;
+    }
+    setNoHits(!!needle && hits === 0);
+  }, [q]);
 
   return (
-    <div className="settings">
-      <h1>Pengaturan</h1>
+    <div className="settings" ref={rootEl}>
+      <div className="settings-top">
+        <h1>Pengaturan</h1>
+        <input className="input settings-search" type="search" placeholder="Cari pengaturan…" value={q} onChange={(e) => setQ(e.target.value)} aria-label="Cari pengaturan" autoFocus />
+        <button className="btn btn-sm" onClick={() => void A.openSettingsJson()} title="Edit semua pengaturan sebagai JSON">
+          Buka settings.json
+        </button>
+      </div>
+      {q && noHits && <p className="hint">Tidak ada pengaturan yang cocok dengan "{q}".</p>}
 
       <section className="set-section">
         <h2>Desain</h2>
@@ -172,8 +272,20 @@ export default function SettingsView() {
         <Row label="Minimap" hint="Otomatis mati di mode hemat daya.">
           <Toggle label="Minimap" value={s.minimap} onChange={(v) => set({ minimap: v })} />
         </Row>
-        <Row label="Simpan otomatis" hint="Menyimpan 1,2 detik setelah berhenti mengetik.">
-          <Toggle label="Simpan otomatis" value={s.autoSave === "delay"} onChange={(v) => set({ autoSave: v ? "delay" : "off" })} />
+        <Row label="Simpan otomatis" hint={s.autoSave === "delay" ? "Menyimpan 1,2 detik setelah berhenti mengetik." : s.autoSave === "focus" ? "Menyimpan saat pindah tab atau jendela kehilangan fokus." : "Simpan sendiri dengan Simpan."}>
+          <Segmented
+            label="Simpan otomatis"
+            value={s.autoSave}
+            onChange={(v) => set({ autoSave: v })}
+            options={[
+              { id: "off", label: "Mati" },
+              { id: "delay", label: "Setelah jeda" },
+              { id: "focus", label: "Saat pindah" },
+            ]}
+          />
+        </Row>
+        <Row label="RAM & CPU di status bar" hint="Pemakaian memori dan prosesor Alexel Studio.">
+          <Toggle label="RAM & CPU di status bar" value={s.showResources} onChange={(v) => set({ showResources: v })} />
         </Row>
       </section>
 
@@ -280,20 +392,10 @@ export default function SettingsView() {
         </Row>
       </section>
 
-      <section className="set-section">
+      <section className="set-section" id="set-keys">
         <h2>Shortcut keyboard</h2>
-        <table className="shortcut-table">
-          <tbody>
-            {shortcuts.map((c) => (
-              <tr key={c.id}>
-                <td>{c.label}</td>
-                <td>
-                  <kbd className="kbd">{prettyKeys(c.keys)}</kbd>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+        <p className="hint">Klik Ubah lalu tekan kombinasi baru. Esc membatalkan, Backspace melepas shortcut.</p>
+        <Keybindings />
       </section>
 
       <section className="set-section">
