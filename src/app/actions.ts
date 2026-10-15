@@ -282,6 +282,7 @@ export async function closeAllTabs(): Promise<boolean> {
   }
   for (const id of Object.keys(getState().tabs)) docs.closeDocument(id);
   setState({ tabs: {}, groups: [{ tabs: [], active: null }], focusedGroup: 0 });
+  persistSession();
   return true;
 }
 

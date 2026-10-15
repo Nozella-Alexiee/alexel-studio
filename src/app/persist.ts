@@ -54,6 +54,7 @@ function sanitizeSettings(raw: Partial<Settings> | null): Settings {
   s.fontSize = Math.min(28, Math.max(9, Number(s.fontSize) || 13));
   s.tabSize = [2, 4, 8].includes(Number(s.tabSize)) ? Number(s.tabSize) : 2;
   s.terminalFontSize = Math.min(24, Math.max(9, Number(s.terminalFontSize) || 12));
+  if (s.claudeMode !== "edit") s.claudeMode = "read";
   return s;
 }
 

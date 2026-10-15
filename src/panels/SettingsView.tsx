@@ -139,10 +139,7 @@ export default function SettingsView() {
         <Row label="Pingu di sidebar" hint="Pingu kecil dengan tips di bawah Explorer (desain Pinguin).">
           <button
             className="btn btn-sm"
-            onClick={() => {
-              showPinguPeek();
-              location.reload();
-            }}
+            onClick={showPinguPeek}
           >
             Munculkan lagi
           </button>

@@ -235,6 +235,11 @@ export function PinguPeek() {
   const mood = usePenguinMood();
   const tip = useTip();
   const [hidden, setHidden] = useState(readHidden);
+  useEffect(() => {
+    const show = () => setHidden(false);
+    window.addEventListener("nozel:peek-show", show);
+    return () => window.removeEventListener("nozel:peek-show", show);
+  }, []);
   // Gelembung tampil sebentar saat tips/suasana berganti, lalu mengecil supaya Explorer lega.
   const [bubble, setBubble] = useState(true);
   useEffect(() => {
@@ -277,6 +282,7 @@ export function showPinguPeek() {
   } catch {
     /* abaikan */
   }
+  window.dispatchEvent(new Event("nozel:peek-show"));
 }
 
 /** Pingu besar di beranda/dashboard. Kawanan menampilkan tiga pinguin. */

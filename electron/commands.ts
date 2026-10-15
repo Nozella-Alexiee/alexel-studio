@@ -75,7 +75,7 @@ export function buildCommands(ctx: Ctx, hooks: { confirmClose: (win: BrowserWind
 
     // Claude
     claude_detect: () => claude.claudeDetect(),
-    claude_run: (a) => claude.claudeRun(ctx, a.runId, a.projectDir, a.prompt, a.resumeSession),
+    claude_run: (a) => claude.claudeRun(ctx, a.runId, a.projectDir, a.prompt, a.resumeSession, a.mode === "edit" ? "edit" : "read"),
     claude_cancel: (a) => claude.claudeCancel(a.runId),
 
     // Ekstensi (Open VSX, data saja)
@@ -127,6 +127,14 @@ export function buildCommands(ctx: Ctx, hooks: { confirmClose: (win: BrowserWind
     window_set_title: (a, win) => win?.setTitle(String(a.title ?? "Nozel Code")),
     window_set_traffic_lights: (a, win) => {
       if (process.platform === "darwin" && win && typeof a.y === "number") win.setWindowButtonPosition({ x: 16, y: Math.max(6, Math.round(a.y)) });
+    },
+    /** Potong/salin/tempel/pilih semua pada elemen yang sedang fokus (dipakai menu klik kanan editor). */
+    edit_action: (a, win) => {
+      const wc = win?.webContents;
+      const act = String(a.action);
+      if (!wc || !["cut", "copy", "paste", "selectAll", "undo", "redo"].includes(act)) return null;
+      (wc as unknown as Record<string, () => void>)[act]();
+      return null;
     },
     window_close_confirmed: (_a, win) => {
       if (win) hooks.confirmClose(win);

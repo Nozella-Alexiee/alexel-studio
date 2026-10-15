@@ -1,7 +1,8 @@
 import DOMPurify from "dompurify";
 import { marked } from "marked";
 import { Bot, Check, Copy, CornerDownLeft, FileCode2, Plus, Sparkles, Square, TerminalSquare, Wrench, AlertCircle, TextCursorInput } from "lucide-react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { memo, useEffect, useMemo, useRef, useState } from "react";
+import * as A from "../app/actions";
 import { openClaudeInteractive } from "../app/run";
 import * as docs from "../editor/documents";
 import { PenguinMascot, usePenguinVariant } from "../components/PenguinMascot";
@@ -79,11 +80,13 @@ function Markdown({ text }: { text: string }) {
   );
 }
 
-function Message({ m }: { m: ChatMessage }) {
+// memo: pesan lama tidak di-render ulang (marked + DOMPurify) setiap ada pesan baru.
+const Message = memo(function Message({ m }: { m: ChatMessage }) {
   if (m.role === "tool")
     return (
-      <div className="chat-tool">
+      <div className={`chat-tool ${m.meta ? "has-note" : ""}`}>
         <Wrench size={12} aria-hidden /> {m.text}
+        {m.meta && <span className="chat-tool-note">{m.meta}</span>}
       </div>
     );
   if (m.role === "error")
@@ -109,7 +112,7 @@ function Message({ m }: { m: ChatMessage }) {
       {m.meta && <div className="chat-meta">{m.meta}</div>}
     </div>
   );
-}
+});
 
 const QUICK = [
   { label: "Jelaskan berkas ini", prompt: "Jelaskan apa yang dilakukan berkas ini secara singkat." },
@@ -125,6 +128,10 @@ export default function ClaudePanel() {
   const tab = useStore((s) => activeTab(s));
   const [text, setText] = useState("");
   const [includeFile, setIncludeFile] = useState(includeDefault);
+  const mode = useStore((s) => s.settings.claudeMode);
+  // Ikuti chat ke bawah hanya bila pengguna memang sedang di bawah (tidak sedang membaca ke atas).
+  const stick = useRef(true);
+  useEffect(() => setIncludeFile(includeDefault), [includeDefault]);
   const [useSelection, setUseSelection] = useState(false);
   const list = useRef<HTMLDivElement>(null);
   const penguin = usePenguinVariant();
@@ -133,8 +140,8 @@ export default function ClaudePanel() {
     if (!info) void detectClaude();
   }, [info]);
   useEffect(() => {
-    list.current?.scrollTo({ top: list.current.scrollHeight, behavior: "smooth" });
-  }, [chat]);
+    if (stick.current) list.current?.scrollTo({ top: list.current.scrollHeight, behavior: "smooth" });
+  }, [chat, running]);
 
   const send = async (prompt = text) => {
     const ok = await sendToClaude(prompt, { includeFile: includeFile && !useSelection, includeSelection: useSelection });
@@ -160,7 +167,15 @@ export default function ClaudePanel() {
         </IconButton>
       </header>
 
-      <div className="claude-list" ref={list} aria-live="polite">
+      <div
+        className="claude-list"
+        ref={list}
+        aria-live="polite"
+        onScroll={(e) => {
+          const el = e.currentTarget;
+          stick.current = el.scrollHeight - el.scrollTop - el.clientHeight < 60;
+        }}
+      >
         {chat.length === 0 ? (
           <div className="claude-empty">
             <Bot size={26} aria-hidden />
@@ -168,7 +183,7 @@ export default function ClaudePanel() {
             {info && !info.installed && <p className="tone-danger-fg">{info.error}</p>}
             <div className="claude-quick">
               {QUICK.map((q) => (
-                <button key={q.label} className="chip" onClick={() => void send(q.prompt)} disabled={!fileName || !!running}>
+                <button key={q.label} className="chip" onClick={() => void sendToClaude(q.prompt, { includeFile: true })} disabled={!fileName || !!running}>
                   {q.label}
                 </button>
               ))}
@@ -191,6 +206,14 @@ export default function ClaudePanel() {
           </button>
           <button className={`chip ${useSelection ? "is-on" : ""}`} onClick={() => setUseSelection((v) => !v)} disabled={!fileName} aria-pressed={useSelection}>
             <TextCursorInput size={12} /> Seleksi saja
+          </button>
+          <button
+            className={`chip claude-mode ${mode === "edit" ? "is-edit" : ""}`}
+            onClick={() => A.updateSettings({ claudeMode: mode === "edit" ? "read" : "edit" })}
+            title={mode === "edit" ? "Claude boleh mengubah berkas di folder project. Klik untuk kembali ke Baca saja." : "Claude hanya membaca dan menyarankan. Klik agar Claude boleh mengubah berkas."}
+            aria-pressed={mode === "edit"}
+          >
+            {mode === "edit" ? "Boleh edit" : "Baca saja"}
           </button>
         </div>
         <textarea

@@ -34,6 +34,10 @@ export const isNative = !!bridge;
 /** Nama lama, dipertahankan untuk kode yang sudah ada. */
 export const isTauri = isNative;
 export const isDemo = !isNative && import.meta.env.DEV;
+/** OS tempat app berjalan ("darwin" | "win32" | "linux"); di browser ditebak dari userAgent. */
+export const platform: string = bridge?.platform ?? (typeof navigator !== "undefined" && /Mac/i.test(navigator.platform) ? "darwin" : typeof navigator !== "undefined" && /Win/i.test(navigator.platform) ? "win32" : "linux");
+export const isMac = platform === "darwin";
+export const isWindows = platform === "win32";
 
 type Handler = (args: Record<string, unknown>) => unknown | Promise<unknown>;
 type Listener = (payload: any) => void;
@@ -129,8 +133,8 @@ export const api = {
 
   // Claude
   claudeDetect: () => call<ClaudeInfo>("claude_detect"),
-  claudeRun: (runId: string, projectDir: string, prompt: string, resumeSession?: string | null) =>
-    call<void>("claude_run", { runId, projectDir, prompt, resumeSession: resumeSession ?? null }),
+  claudeRun: (runId: string, projectDir: string, prompt: string, resumeSession?: string | null, mode: "read" | "edit" = "read") =>
+    call<void>("claude_run", { runId, projectDir, prompt, resumeSession: resumeSession ?? null, mode }),
   claudeCancel: (runId: string) => call<void>("claude_cancel", { runId }),
 
   // Sistem

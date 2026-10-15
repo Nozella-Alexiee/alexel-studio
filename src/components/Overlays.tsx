@@ -5,16 +5,22 @@ import { getState, setState, useStore } from "../state/store";
 
 // ---------------- Dialog (confirm / prompt / pilihan) ----------------
 
-function useFocusTrap(ref: React.RefObject<HTMLElement | null>, onEscape: () => void) {
+/**
+ * Kunci Tab di dalam dialog dan kembalikan fokus saat ditutup. Dipasang SEKALI per dialog terbuka
+ * (bukan tiap render), supaya fokus tidak dilempar balik ke editor saat pengguna mengetik.
+ */
+function useFocusTrap(ref: React.RefObject<HTMLElement | null>, onEscape: () => void, active: unknown) {
+  const esc = useRef(onEscape);
+  esc.current = onEscape;
   useEffect(() => {
     const el = ref.current;
-    if (!el) return;
+    if (!active || !el) return;
     const prev = document.activeElement as HTMLElement | null;
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
         e.preventDefault();
         e.stopPropagation();
-        onEscape();
+        esc.current();
       } else if (e.key === "Tab") {
         const f = el.querySelectorAll<HTMLElement>('button, input, textarea, [tabindex]:not([tabindex="-1"])');
         if (!f.length) return;
@@ -34,7 +40,7 @@ function useFocusTrap(ref: React.RefObject<HTMLElement | null>, onEscape: () => 
       el.removeEventListener("keydown", onKey);
       prev?.focus?.();
     };
-  }, [ref, onEscape]);
+  }, [ref, active]);
 }
 
 export function DialogHost() {
@@ -64,7 +70,7 @@ export function DialogHost() {
     setState({ dialog: null });
     cur?.resolve(v);
   };
-  useFocusTrap(box, () => close(null));
+  useFocusTrap(box, () => close(null), d);
   if (!d) return null;
 
   const submit = () => {

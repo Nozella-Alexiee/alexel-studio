@@ -68,12 +68,13 @@ export default function GitPanel() {
   const changes = git.files.filter((f) => f.unstaged);
 
   const commit = async () => {
+    // Cek pesan dulu, supaya tidak ada "git add -A" yang tertinggal saat commit dibatalkan.
+    if (!msg.trim()) return toast("Tulis pesan commit dulu.", "error");
     if (!staged.length) {
       if (!changes.length) return toast("Tidak ada perubahan untuk di-commit.");
       if (!(await confirmDialog("Belum ada yang di-stage", "Stage semua perubahan lalu commit?", "Stage semua & commit"))) return;
       if (!(await run("stage", () => api.gitStage(repo, [])))) return;
     }
-    if (!msg.trim()) return toast("Tulis pesan commit dulu.", "error");
     const ok = await run("commit", () => api.gitCommit(repo, msg.trim()), "Commit dibuat");
     if (ok) {
       setMsg("");

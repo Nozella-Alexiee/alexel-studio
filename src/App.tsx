@@ -37,7 +37,13 @@ function useBackgroundTasks() {
     // Cegah menu konteks bawaan WebKit (Reload, Inspect) di luar elemen yang punya menu sendiri.
     const onCtx = (e: MouseEvent) => {
       const t = e.target as HTMLElement;
-      if (!t.closest("input, textarea, .cm-content, .xterm, .md-preview, .chat-md")) e.preventDefault();
+      // Editor: menu Nozel sendiri. Kolom teks, terminal, pratinjau: menu bawaan dari main process.
+      if (t.closest(".cm-editor")) {
+        e.preventDefault();
+        void import("./editor/editorMenu").then((m) => m.openEditorMenu(e));
+        return;
+      }
+      if (!t.closest("input, textarea, .xterm, .md-preview, .chat-md")) e.preventDefault();
     };
     window.addEventListener("contextmenu", onCtx);
 

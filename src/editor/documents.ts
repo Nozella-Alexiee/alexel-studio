@@ -7,7 +7,7 @@ import { defaultKeymap, history, historyKeymap, indentWithTab } from "@codemirro
 import { bracketMatching, foldGutter, foldKeymap, indentOnInput, indentUnit } from "@codemirror/language";
 import { forceLinting, lintGutter, lintKeymap } from "@codemirror/lint";
 import { highlightSelectionMatches, searchKeymap } from "@codemirror/search";
-import { Annotation, Compartment, EditorState, Text, type Extension, type Transaction } from "@codemirror/state";
+import { Annotation, Compartment, EditorState, Prec, Text, type Extension, Transaction } from "@codemirror/state";
 import {
   EditorView,
   crosshairCursor,
@@ -26,6 +26,7 @@ import { basename, isInside } from "../lib/paths";
 import { getState, isSaver, setState, type Problem, type Settings } from "../state/store";
 import { gitGutter, refreshGitGutter } from "./gitGutter";
 import { languageFor } from "./languages";
+import { detectIndent, minimalChange } from "../lib/text";
 import { nozelLinter } from "./lint";
 import { minimap } from "./minimap";
 import { snippetExtension } from "./snippets";
@@ -49,6 +50,8 @@ export interface Doc {
   /** Grup editor yang memegang koneksi LSP (satu view per berkas). */
   lspGroup: number;
   lspName?: string;
+  /** Indentasi yang terdeteksi dari isi berkas ("\t" atau sejumlah spasi); null = ikut Pengaturan. */
+  indent: string | null;
 }
 
 const docs = new Map<string, Doc>();
@@ -90,6 +93,7 @@ function setProblems(path: string, list: Problem[]) {
 function baseExtensions(doc: Doc, group: number): Extension {
   const saver = isSaver();
   return [
+    ...(doc.indent ? [Prec.highest(indentUnit.of(doc.indent))] : []),
     lineNumbers(),
     highlightActiveLineGutter(),
     highlightSpecialChars(),
@@ -195,7 +199,8 @@ function onUpdate(doc: Doc, group: number, u: ViewUpdate) {
       const other = liveState(doc, g);
       if (!other) continue;
       const v = views[g];
-      const spec = { changes: u.changes, annotations: [syncAnno.of(true)] };
+      // addToHistory=false: undo di grup ini tidak ikut membatalkan ketikan dari grup lain.
+      const spec = { changes: u.changes, annotations: [syncAnno.of(true), Transaction.addToHistory.of(false)] };
       if (v && shown[g] === doc.path) v.dispatch(spec);
       else doc.states[g] = other.update(spec).state;
     }
@@ -312,6 +317,7 @@ export async function openDocument(path: string): Promise<Doc> {
     head: undefined,
     lsp: null,
     lspGroup: 0,
+    indent: detectIndent(file.content, basename(path)),
   };
   docs.set(path, doc);
   void loadLanguage(doc);
@@ -453,7 +459,9 @@ export function replaceAll(doc: Doc, text: string) {
   for (let g = 0; g < doc.states.length; g++) {
     const st = liveState(doc, g);
     if (!st) continue;
-    const spec = { changes: { from: 0, to: st.doc.length, insert: text }, annotations: [syncAnno.of(true)] };
+    const change = minimalChange(st.doc.toString(), text);
+    if (!change) continue;
+    const spec = { changes: change, annotations: [syncAnno.of(true)] };
     const v = views[g];
     if (v && shown[g] === doc.path) v.dispatch(spec);
     else doc.states[g] = st.update(spec).state;

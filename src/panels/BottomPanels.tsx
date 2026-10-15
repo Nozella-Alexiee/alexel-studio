@@ -52,12 +52,15 @@ export function ProblemsPanel() {
 export function PortsPanel() {
   const [ports, setPorts] = useState<ListeningPort[] | null>(null);
   const [busy, setBusy] = useState(false);
+  const [loadErr, setLoadErr] = useState<string | null>(null);
   const load = async () => {
     setBusy(true);
     try {
       setPorts(await api.ports());
+      setLoadErr(null);
     } catch (e) {
-      toast(errMsg(e), "error");
+      // Ditampilkan di panel, bukan toast: pemanggilan ini diulang tiap beberapa detik.
+      setLoadErr(errMsg(e));
       setPorts([]);
     } finally {
       setBusy(false);
@@ -92,6 +95,8 @@ export function PortsPanel() {
         <div className="pad">
           <Spinner />
         </div>
+      ) : loadErr ? (
+        <Empty title="Daftar port tidak bisa dibaca">{loadErr}</Empty>
       ) : ports.length === 0 ? (
         <Empty title="Tidak ada port terbuka">Jalankan dev server (mis. npm run dev), lalu muncul di sini.</Empty>
       ) : (

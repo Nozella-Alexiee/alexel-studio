@@ -52,11 +52,15 @@ export async function claudeDetect() {
   }
 }
 
-export function claudeRun(ctx: Ctx, runId: string, projectDir: string, prompt: string, resume?: string | null) {
+/**
+ * Mode izin: "read" = Claude hanya membaca & menyarankan (`plan`), "edit" = boleh mengubah berkas
+ * di folder project (`acceptEdits`). Perintah shell tetap ditolak di mode non-interaktif.
+ */
+export function claudeRun(ctx: Ctx, runId: string, projectDir: string, prompt: string, resume?: string | null, mode: "read" | "edit" = "read") {
   if (Buffer.byteLength(prompt) > MAX_PROMPT_BYTES) throw new Error("Konteks terlalu besar untuk dikirim (maks 400 KB).");
   const cli = findClaude();
   if (!cli) throw new Error("Claude Code CLI belum terpasang.");
-  const args = ["-p", "--output-format", "stream-json", "--verbose"];
+  const args = ["-p", "--output-format", "stream-json", "--verbose", "--permission-mode", mode === "edit" ? "acceptEdits" : "plan"];
   if (resume && /^[A-Za-z0-9-]+$/.test(resume)) args.push("--resume", resume);
   const cwd = projectDir && fs.existsSync(projectDir) ? projectDir : os.homedir();
   const child = spawn(cli, args, { cwd, env: childEnv(), stdio: ["pipe", "pipe", "pipe"], windowsHide: true });

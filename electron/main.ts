@@ -211,6 +211,22 @@ function createWindow() {
       if (/^https?:/i.test(url)) void shell.openExternal(url);
     }
   });
+  // Menu klik kanan bawaan untuk kolom teks, terminal, dan teks terseleksi. Editor & Explorer
+  // memakai menu sendiri dari renderer (yang memanggil preventDefault, jadi event ini tidak muncul).
+  wc.on("context-menu", (_e, p) => {
+    const items: MenuItemConstructorOptions[] = [];
+    if (p.isEditable) {
+      items.push({ role: "undo", enabled: p.editFlags.canUndo }, { role: "redo", enabled: p.editFlags.canRedo }, { type: "separator" });
+      items.push({ role: "cut", enabled: p.editFlags.canCut }, { role: "copy", enabled: p.editFlags.canCopy }, { role: "paste", enabled: p.editFlags.canPaste }, { type: "separator" }, { role: "selectAll" });
+    } else if (p.selectionText.trim()) {
+      items.push({ role: "copy" });
+    }
+    if (p.linkURL && /^https?:/i.test(p.linkURL)) {
+      if (items.length) items.push({ type: "separator" });
+      items.push({ label: "Open Link in Browser", click: () => void shell.openExternal(p.linkURL) });
+    }
+    if (items.length && win) Menu.buildFromTemplate(items).popup({ window: win });
+  });
   wc.on("render-process-gone", () => {
     allowClose = true;
   });

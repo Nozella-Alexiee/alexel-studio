@@ -2,6 +2,7 @@
 
 import { DESIGNS, designById } from "../design/designs";
 import * as docs from "../editor/documents";
+import { isMac } from "../lib/ipc";
 import { getState, setState, activeTab, setLayout } from "../state/store";
 import * as A from "./actions";
 import { openClaudeInteractive, openShell, runActiveFile, toggleTerminal } from "./run";
@@ -92,10 +93,16 @@ export const COMMANDS: Command[] = [
 
 // ---------------- Keybinding ----------------
 
+/**
+ * Kombinasi tombol dalam notasi yang sama dengan `keys` di COMMANDS.
+ * "Mod" = ⌘ di macOS, Ctrl di Windows/Linux (lihat normalizeKeys).
+ */
 function comboOf(e: KeyboardEvent): string {
   const parts: string[] = [];
-  if (e.ctrlKey) parts.push("Ctrl");
-  if (e.metaKey) parts.push("Mod");
+  if (isMac) {
+    if (e.ctrlKey) parts.push("Ctrl");
+    if (e.metaKey) parts.push("Mod");
+  } else if (e.ctrlKey) parts.push("Ctrl");
   if (e.altKey) parts.push("Alt");
   if (e.shiftKey) parts.push("Shift");
   let k = e.key;
@@ -107,35 +114,66 @@ function comboOf(e: KeyboardEvent): string {
   else if (e.code === "Minus") k = "-";
   else if (e.code === "Comma") k = ",";
   else if (e.code.startsWith("Digit")) k = e.code.slice(5);
+  // Huruf: pakai karakter yang diketik (Dvorak/AZERTY benar); dengan Alt/Option karakternya
+  // berubah (⌥P → π), jadi saat itu pakai posisi tombol.
+  else if (k.length === 1 && /[a-z]/i.test(k) && !e.altKey) k = k.toUpperCase();
   else if (e.code.startsWith("Key")) k = e.code.slice(3);
   else if (k.length === 1) k = k.toUpperCase();
   parts.push(k);
   return parts.join("+");
 }
 
-const byKeys = new Map<string, Command>();
-for (const c of COMMANDS) if (c.keys) byKeys.set(c.keys, c);
+/** Notasi COMMANDS → notasi platform: di Windows/Linux "Mod" jadi Ctrl, "Ctrl+Mod" jadi Ctrl+Alt. */
+export function normalizeKeys(keys: string): string {
+  if (isMac) return keys;
+  const parts = keys.split("+");
+  const hasCtrl = parts.includes("Ctrl");
+  const hasMod = parts.includes("Mod");
+  const out = parts.filter((p) => p !== "Mod" && p !== "Ctrl");
+  const mods: string[] = [];
+  if (hasCtrl || hasMod) mods.push("Ctrl");
+  if (hasCtrl && hasMod && !out.includes("Alt")) mods.push("Alt");
+  return [...mods, ...out].join("+");
+}
 
-/** Teks shortcut untuk ditampilkan: "Mod+Shift+P" → "⌘⇧P". */
+const byKeys = new Map<string, Command>();
+for (const c of COMMANDS) if (c.keys) byKeys.set(normalizeKeys(c.keys), c);
+
+/** Teks shortcut untuk ditampilkan: mac "⌘⇧P", Windows/Linux "Ctrl+Shift+P". */
 export function prettyKeys(keys?: string): string {
   if (!keys) return "";
+  if (!isMac) return normalizeKeys(keys);
   return keys
     .split("+")
     .map((k) => ({ Mod: "⌘", Shift: "⇧", Alt: "⌥", Ctrl: "⌃", Tab: "⇥" })[k] ?? k)
     .join("");
 }
 
+/** Perintah yang tetap boleh dipakai saat fokus di terminal; sisanya diteruskan ke shell. */
+const TERMINAL_SAFE = new Set(["quickOpen", "palette2", "sidebar", "panel", "terminal", "newTerminal", "settings", "cycleDesign", "explorer", "search", "git", "extensions"]);
+
 /** Global key handler (fase capture, supaya didahulukan dari CodeMirror). */
 export function handleGlobalKey(e: KeyboardEvent) {
   if (e.isComposing) return;
   if (!(e.metaKey || e.ctrlKey || e.altKey || e.key === "F5")) return;
   const s = getState();
-  if (s.dialog || s.compare) return; // dialog menangani tombolnya sendiri
-  const cmd = byKeys.get(comboOf(e));
-  if (!cmd) return;
-  // Di kolom input, biarkan ⌘A/⌘C dsb. Hanya perintah global yang ditangkap.
+  if (s.dialog || s.compare || s.snapshotOpen) return; // dialog menangani tombolnya sendiri
+  const combo = comboOf(e);
   const el = e.target as HTMLElement | null;
-  const inField = !!el && (el.tagName === "INPUT" || el.tagName === "TEXTAREA") && !el.classList.contains("xterm-helper-textarea");
+  const inTerminal = !!el?.closest?.(".xterm");
+  // ⌘K di terminal = bersihkan layar (seperti Terminal.app & VS Code).
+  if (inTerminal && combo === normalizeKeys("Mod+K")) {
+    e.preventDefault();
+    e.stopPropagation();
+    void import("../terminal/terminals").then((m) => m.clearTerminal(getState().activeTerminal ?? ""));
+    return;
+  }
+  const cmd = byKeys.get(combo);
+  if (!cmd) return;
+  if (cmd.when && !cmd.when()) return;
+  if (inTerminal && !TERMINAL_SAFE.has(cmd.id)) return;
+  // Di kolom input, biarkan ⌘A/⌘C dsb. Hanya perintah global yang ditangkap.
+  const inField = !!el && (el.tagName === "INPUT" || el.tagName === "TEXTAREA") && !inTerminal;
   if (inField && ["save", "closeTab", "gotoLine", "wrap", "focusLeft", "focusRight", "fontUp", "fontDown", "snapshot"].includes(cmd.id)) return;
   if (s.palette.open && cmd.id !== "palette" && cmd.id !== "quickOpen") return;
   e.preventDefault();

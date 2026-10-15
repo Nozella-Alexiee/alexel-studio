@@ -24,6 +24,10 @@ interface RunCtx {
   assistantId: string | null;
   text: string;
   started: number;
+  /** Error sudah ditampilkan dari event "result"; jangan ditampilkan lagi saat proses keluar. */
+  errored?: boolean;
+  /** id pesan alat yang sedang berjalan, untuk menandai hasilnya (berhasil/ditolak). */
+  tools: Map<string, string>;
 }
 const runs = new Map<string, RunCtx>();
 
@@ -53,17 +57,39 @@ function handleLine(runId: string, line: string) {
         if (ctx.assistantId) update(ctx.assistantId, { text: ctx.text });
         else ctx.assistantId = push({ role: "assistant", text: ctx.text });
       } else if (part.type === "tool_use") {
-        push({ role: "tool", text: describeTool(part.name, part.input) });
+        const id = push({ role: "tool", text: describeTool(part.name, part.input) });
+        if (part.id) ctx.tools.set(part.id, id);
         // Teks sesudah tool masuk ke gelembung baru.
         ctx.assistantId = null;
         ctx.text = "";
       }
     }
+  } else if (ev.type === "user") {
+    // Hasil alat: tampilkan bila gagal/ditolak supaya pengguna tahu kenapa berkas tidak berubah.
+    for (const part of ev.message?.content ?? []) {
+      if (part.type !== "tool_result" || !part.is_error) continue;
+      const raw = typeof part.content === "string" ? part.content : (part.content ?? []).map((c: { text?: string }) => c.text ?? "").join(" ");
+      const denied = /permission|denied|not allowed|plan mode|izin/i.test(raw);
+      const msgId = ctx.tools.get(part.tool_use_id);
+      const note = denied
+        ? getState().settings.claudeMode === "read"
+          ? "Ditolak: mode Baca saja. Ubah ke \"Boleh edit\" kalau Claude perlu mengubah berkas."
+          : "Ditolak oleh izin Claude CLI."
+        : `Gagal: ${raw.slice(0, 200)}`;
+      if (msgId) update(msgId, { meta: note });
+      else push({ role: "tool", text: note });
+    }
   } else if (ev.type === "result") {
     if (ev.session_id) setState({ chatSession: ev.session_id });
     const secs = ((ev.duration_ms ?? Date.now() - ctx.started) / 1000).toFixed(1);
     const meta = `${secs} dtk${ev.num_turns ? ` · ${ev.num_turns} langkah` : ""}`;
-    if (ev.is_error || ev.subtype?.startsWith("error")) push({ role: "error", text: ev.result || "Claude berhenti dengan error.", meta });
+    if (ev.is_error || ev.subtype?.startsWith("error")) {
+      ctx.errored = true;
+      const text = ev.result || "Claude berhenti dengan error.";
+      const hint = /login|auth|credential|api key/i.test(text) ? "\n\nCoba jalankan `claude login` di terminal." : "";
+      push({ role: "error", text: text + hint, meta });
+      void import("../components/PenguinMascot").then((m) => m.flashPenguin("error", 6000));
+    }
     else if (ctx.assistantId) update(ctx.assistantId, { meta });
     else if (ev.result) push({ role: "assistant", text: ev.result, meta });
   }
@@ -79,7 +105,7 @@ function ensureListeners() {
     if (getState().chatRunning === run_id) setState({ chatRunning: null });
     if (code === 0) void import("../components/PenguinMascot").then((m) => m.flashPenguin("sukses", 4000));
     if (code === 130) push({ role: "error", text: "Dibatalkan." });
-    else if (code !== 0 && ctx && !ctx.text) {
+    else if (code !== 0 && ctx && !ctx.text && !ctx.errored) {
       const hint = /login|auth|credential/i.test(stderr) ? " Coba jalankan `claude login` di terminal." : "";
       push({ role: "error", text: `Claude CLI keluar dengan kode ${code}.${hint}\n\n${stderr.trim()}`.trim() });
     }
@@ -158,10 +184,10 @@ export async function sendToClaude(prompt: string, o: SendOptions = {}): Promise
   setLayout({ right: true, rightView: "claude" });
   push({ role: "user", text: prompt, context: summary || undefined });
   const runId = `r${Date.now()}`;
-  runs.set(runId, { assistantId: null, text: "", started: Date.now() });
+  runs.set(runId, { assistantId: null, text: "", started: Date.now(), tools: new Map() });
   setState({ chatRunning: runId });
   try {
-    await api.claudeRun(runId, s.root ?? "", payload, getState().chatSession);
+    await api.claudeRun(runId, s.root ?? "", payload, getState().chatSession, getState().settings.claudeMode);
     return true;
   } catch (e) {
     runs.delete(runId);

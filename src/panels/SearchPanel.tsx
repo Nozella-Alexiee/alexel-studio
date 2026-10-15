@@ -7,23 +7,46 @@ import { api, errMsg } from "../lib/ipc";
 import type { SearchMatch, SearchResult } from "../lib/types";
 import { confirmDialog, toast, useStore } from "../state/store";
 
+// State pencarian disimpan di luar komponen: panel ini di-unmount saat pindah ke Explorer/Git,
+// dan kata kunci, opsi, serta hasilnya harus tetap ada saat kembali.
+const kept = new Map<string, unknown>();
+function useKept<T>(key: string, initial: T): [T, (v: T | ((p: T) => T)) => void] {
+  const [v, setV] = useState<T>(() => (kept.has(key) ? (kept.get(key) as T) : initial));
+  const set = (next: T | ((p: T) => T)) =>
+    setV((prev) => {
+      const val = typeof next === "function" ? (next as (p: T) => T)(prev) : next;
+      kept.set(key, val);
+      return val;
+    });
+  return [v, set];
+}
+const seqRef = { current: 0 };
+
 export default function SearchPanel() {
   const root = useStore((s) => s.root);
-  const [q, setQ] = useState("");
-  const [rep, setRep] = useState("");
-  const [showRep, setShowRep] = useState(false);
-  const [opts, setOpts] = useState({ isRegex: false, caseSensitive: false, wholeWord: false });
-  const [include, setInclude] = useState("");
-  const [res, setRes] = useState<SearchResult | null>(null);
+  const [q, setQ] = useKept("q", "");
+  const [rep, setRep] = useKept("rep", "");
+  const [showRep, setShowRep] = useKept("showRep", false);
+  const [opts, setOpts] = useKept("opts", { isRegex: false, caseSensitive: false, wholeWord: false });
+  const [include, setInclude] = useKept("include", "");
+  const [res, setRes] = useKept<SearchResult | null>("res", null);
   const [busy, setBusy] = useState(false);
-  const [err, setErr] = useState<string | null>(null);
-  const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
-  const seq = useRef(0);
+  const [err, setErr] = useKept<string | null>("err", null);
+  const [collapsed, setCollapsed] = useKept<Record<string, boolean>>("collapsed", {});
+  const seq = seqRef;
+  const lastKey = useRef(kept.get("key") as string | undefined);
 
   useEffect(() => {
+    // Kembali ke panel dengan pencarian yang sama: pakai hasil yang tersimpan, jangan cari ulang.
+    const key = JSON.stringify([root, q, opts, include]);
+    if (key === lastKey.current && res) return;
+    lastKey.current = key;
+    kept.set("key", key);
     if (!root || !q) {
+      ++seq.current; // batalkan pencarian yang masih berjalan
       setRes(null);
       setErr(null);
+      setBusy(false);
       return;
     }
     const id = ++seq.current;
@@ -36,7 +59,10 @@ export default function SearchPanel() {
           setErr(null);
         }
       } catch (e) {
-        if (id === seq.current) setErr(errMsg(e));
+        if (id === seq.current) {
+          setErr(errMsg(e));
+          setRes(null);
+        }
       } finally {
         if (id === seq.current) setBusy(false);
       }

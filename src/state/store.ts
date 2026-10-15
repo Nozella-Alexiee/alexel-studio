@@ -22,6 +22,8 @@ export interface Settings {
   gitBot: "off" | "commit" | "push";
   claudeConfirm: boolean;
   claudeIncludeFile: boolean;
+  /** "read": Claude hanya membaca & menyarankan; "edit": boleh mengubah berkas project. */
+  claudeMode: "read" | "edit";
   terminalFontSize: number;
   autoSave: "off" | "delay";
   confirmDelete: boolean;
@@ -42,6 +44,7 @@ export const DEFAULT_SETTINGS: Settings = {
   gitBot: "off",
   claudeConfirm: true,
   claudeIncludeFile: true,
+  claudeMode: "read",
   terminalFontSize: 12,
   autoSave: "off",
   confirmDelete: true,

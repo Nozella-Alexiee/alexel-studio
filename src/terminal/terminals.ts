@@ -73,7 +73,8 @@ function init() {
     const key = byPty.get(id);
     const rt = key ? runtimes.get(key) : undefined;
     if (rt) feed(rt, data);
-    else pending.set(id, [...(pending.get(id) ?? []), data]);
+    // Data bisa tiba sebelum spawn() sempat mencatat id; simpan sebentar saja.
+    else if ((pending.get(id)?.length ?? 0) < 200) pending.set(id, [...(pending.get(id) ?? []), data]);
   });
   void on<{ id: number; code: number | null; elapsed_ms: number }>("pty-exit", ({ id, code, elapsed_ms }) => {
     const key = byPty.get(id);
@@ -129,7 +130,8 @@ function createRuntime(key: string): Runtime {
     cursorBlink: true,
     scrollback: 5000,
     allowProposedApi: false,
-    macOptionIsMeta: true,
+    // Seperti VS Code: Option tetap mengetik karakter (@ [ ] { } di keyboard non-US).
+    macOptionIsMeta: false,
     theme: theme(),
   });
   const fit = new FitAddon();
@@ -169,7 +171,7 @@ export async function newTerminal(opts: { kind?: TermSession["kind"]; title?: st
   const kind = opts.kind ?? "shell";
   const key = `t${++counter}`;
   const shells = s.terminals.filter((t) => t.kind === "shell").length;
-  const title = opts.title ?? (kind === "shell" ? `zsh ${shells + 1}` : basename(cwd));
+  const title = opts.title ?? (kind === "shell" ? `Terminal ${shells + 1}` : basename(cwd));
   const sess: TermSession = { key, ptyId: null, title, kind, cwd, command: opts.command, status: "starting", startedAt: Date.now() };
   setState((st) => ({ terminals: [...st.terminals, sess], activeTerminal: key }));
   const rt = createRuntime(key);
@@ -200,7 +202,15 @@ export async function rerun(key: string) {
   const sess = getState().terminals.find((t) => t.key === key);
   const rt = runtimes.get(key);
   if (!sess || !rt) return;
-  if (rt.ptyId !== null) await api.ptyKill(rt.ptyId).catch(() => {});
+  if (rt.ptyId !== null) {
+    // Lepas pemetaan proses lama dulu: event exit-nya yang datang belakangan tidak boleh
+    // menandai proses baru sebagai selesai.
+    const old = rt.ptyId;
+    byPty.delete(old);
+    pending.delete(old);
+    rt.ptyId = null;
+    await api.ptyKill(old).catch(() => {});
+  }
   rt.term.write(`\r\n\x1b[36m$ ${sess.command ?? ""}\x1b[0m\r\n`);
   setState({ activeTerminal: key });
   await spawn(rt, sess.cwd, sess.command);
@@ -233,7 +243,9 @@ export async function closeTerminal(key: string) {
 export function attachTerminal(key: string, container: HTMLElement): () => void {
   const rt = runtimes.get(key);
   if (!rt) return () => {};
-  if (rt.host.parentElement !== container) container.appendChild(rt.host);
+  // Satu container dipakai bergantian oleh semua sesi: hanya host sesi aktif yang terpasang,
+  // host lain dilepas (instance xterm tetap hidup di `runtimes`, riwayatnya tidak hilang).
+  if (container.firstChild !== rt.host || container.childNodes.length !== 1) container.replaceChildren(rt.host);
   rt.ro?.disconnect();
   rt.ro = new ResizeObserver(() => safeFit(rt));
   rt.ro.observe(container);
