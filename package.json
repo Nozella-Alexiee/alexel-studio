@@ -222,5 +222,12 @@
     }
   },
   "license": "MIT",
-  "homepage": "https://github.com/alexel-studio"
+  "homepage": "https://nozella-alexiee.github.io/alexel-studio/",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Nozella-Alexiee/alexel-studio.git"
+  },
+  "bugs": {
+    "url": "https://github.com/Nozella-Alexiee/alexel-studio/issues"
+  }
 }
