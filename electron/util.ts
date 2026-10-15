@@ -156,7 +156,8 @@ export function killTree(child: { pid?: number; kill: (sig?: NodeJS.Signals) => 
 /** Quote untuk PowerShell: '...' dengan ' digandakan. */
 export function psQuote(s: string): string {
   if (s && /^[A-Za-z0-9_.\\/][A-Za-z0-9_.\\/:-]*$/.test(s)) return s;
-  return `'${s.replace(/'/g, "''")}'`;
+  // PowerShell juga menganggap kutip kurung (U+2018–U+201B) sebagai kutip tunggal.
+  return `'${s.replace(/['\u2018-\u201B]/g, "$&$&")}'`;
 }
 
 /** Quote satu argumen untuk shell POSIX: 'a'\''b'. */
@@ -196,14 +197,27 @@ export function runCapture(cmd: string, args: string[], opts: { cwd?: string; ti
     });
     child.stderr?.on("data", (b: Buffer) => err.push(b));
     if (opts.input !== undefined) {
+      child.stdin?.on("error", () => {});
       child.stdin?.end(opts.input);
     }
     let timedOut = false;
     let done = false;
     const timer = setTimeout(() => {
       timedOut = true;
-      child.kill("SIGKILL");
+      killTree(child, "SIGKILL");
+      grace(null, 250);
     }, opts.timeoutMs ?? 15000);
+    // Cucu proses (mis. `sleep` di bawah dash, atau master ssh ControlPersist) bisa menahan pipe
+    // sehingga "close" baru datang jauh setelah proses utama selesai. Setelah keluar, tunggu sebentar saja.
+    let graceTimer: ReturnType<typeof setTimeout> | undefined;
+    const grace = (code: number | null, ms: number) => {
+      if (graceTimer) return;
+      graceTimer = setTimeout(() => {
+        child.stdout?.destroy();
+        child.stderr?.destroy();
+        finish(code);
+      }, ms);
+    };
     child.on("error", (e) => {
       clearTimeout(timer);
       done = true;
@@ -213,6 +227,7 @@ export function runCapture(cmd: string, args: string[], opts: { cwd?: string; ti
       if (done) return;
       done = true;
       clearTimeout(timer);
+      clearTimeout(graceTimer);
       resolve({
         stdout: Buffer.concat(out).toString("utf8"),
         stderr: Buffer.concat(err).toString("utf8"),
@@ -223,15 +238,18 @@ export function runCapture(cmd: string, args: string[], opts: { cwd?: string; ti
       });
     };
     child.on("close", finish);
-    // Setelah dibunuh, cucu proses (mis. `sleep` di bawah dash) bisa menahan pipe tetap terbuka
-    // sehingga "close" baru datang saat cucu itu selesai. Jangan tunggu.
     child.on("exit", (code) => {
-      if (!timedOut) return;
-      child.stdout?.destroy();
-      child.stderr?.destroy();
-      finish(code);
+      clearTimeout(timer);
+      grace(code, timedOut ? 250 : 1500);
     });
   });
+}
+
+/** `child` berada di dalam `parent` (netral OS: pemisah / atau \\, tidak tertipu /proj vs /proj2). */
+export function isWithin(parent: string, child: string, allowSame = false): boolean {
+  const rel = path.relative(path.resolve(parent), path.resolve(child));
+  if (!rel) return allowSame;
+  return !rel.startsWith("..") && !path.isAbsolute(rel);
 }
 
 /** Env git: prompt kredensial mati, ssh batch mode, lock opsional mati. */

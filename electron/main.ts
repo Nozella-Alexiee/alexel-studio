@@ -309,6 +309,9 @@ function createWindow() {
   });
   win.on("closed", () => {
     win = null;
+    // macOS: app tetap hidup tanpa jendela, tapi proses milik jendela (agen, terminal, debugger,
+    // server bahasa) harus berhenti; agen tanpa UI bisa terus mengubah berkas.
+    stopWindowProcesses();
     if (quitting || process.platform !== "darwin") app.quit();
   });
   void pruneUndo(ctx);
@@ -348,12 +351,13 @@ app.on("open-file", (e, p) => {
   else pendingOpen.push(p);
 });
 
-app.on("second-instance", (_e, argv) => {
+app.on("second-instance", (_e, argv, workingDirectory) => {
   if (win) {
     if (win.isMinimized()) win.restore();
     win.focus();
-    const p = argv.slice(1).find((a) => !a.startsWith("-") && fs.existsSync(a));
-    if (p) ctx.emit("open-path", { path: path.resolve(p) });
+    // Path relatif (mis. `alexel .`) dihitung dari folder terminal pemanggil, bukan folder instance pertama.
+    const p = argv.slice(1).filter((a) => !a.startsWith("-")).map((a) => path.resolve(workingDirectory || process.cwd(), a)).find((a) => fs.existsSync(a));
+    if (p) ctx.emit("open-path", { path: p });
   }
 });
 
@@ -361,13 +365,15 @@ app.on("before-quit", () => {
   quitting = true;
 });
 
-app.on("will-quit", () => {
+function stopWindowProcesses() {
   killAllPtys();
   killAllAgents();
   killAllDap();
   killAllLsp();
   void unwatch();
-});
+}
+
+app.on("will-quit", stopWindowProcesses);
 
 app.on("activate", () => {
   if (!win) createWindow();

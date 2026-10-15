@@ -3,7 +3,7 @@
 
 import fs from "node:fs";
 import path from "node:path";
-import { gitEnv, runCapture, type Captured, type Ctx } from "./util";
+import { gitEnv, isWithin, runCapture, type Captured, type Ctx } from "./util";
 
 const SHORT = 15_000;
 const NETWORK = 90_000;
@@ -109,7 +109,7 @@ export async function gitDiscard(ctx: Ctx, dir: string, paths: string[], untrack
   if (paths.length) await git(dir, ["checkout", "-q", "--", ...paths], "Discard");
   for (const u of untracked) {
     const p = path.join(dir, u);
-    if (p.startsWith(dir)) await ctx.trash(p);
+    if (isWithin(dir, p)) await ctx.trash(p);
   }
 }
 

@@ -17,6 +17,10 @@ interface Launch {
   args: string[];
   env: NodeJS.ProcessEnv;
   shell?: boolean;
+  /** Windows .cmd lewat cmd.exe: argumen sudah di-quote sendiri. */
+  verbatim?: boolean;
+  /** Perintah asli (tanpa pembungkus cmd.exe) untuk cek versi. */
+  probe?: { cmd: string; args: string[] };
   source: "extension" | "system";
   display: string;
 }
@@ -25,11 +29,14 @@ interface Launch {
 export function launchFor(ctx: Ctx, agent: Agent, command?: string): Launch | null {
   if (agent === "gemini") {
     const inst = installedAgent(ctx, "gemini");
-    if (inst) return { cmd: process.execPath, args: [inst.binary, "--experimental-acp"], env: { ...childEnv(), ELECTRON_RUN_AS_NODE: "1" }, source: "extension", display: inst.binary };
+    if (inst) {
+      const env = { ...childEnv(), ELECTRON_RUN_AS_NODE: "1" };
+      return { cmd: process.execPath, args: [inst.binary, "--experimental-acp"], env, probe: { cmd: process.execPath, args: [inst.binary] }, source: "extension", display: inst.binary };
+    }
     const p = findExecutable("gemini");
     if (p) {
       const sp = spawnable(p, ["--experimental-acp"]);
-      return { cmd: sp.cmd, args: sp.args, env: childEnv(), source: "system", display: p };
+      return { cmd: sp.cmd, args: sp.args, verbatim: sp.verbatim, env: childEnv(), probe: { cmd: p, args: [] }, source: "system", display: p };
     }
     return null;
   }
@@ -49,7 +56,8 @@ export async function acpStatus(ctx: Ctx, agent: Agent, command?: string): Promi
   const l = launchFor(ctx, agent, command);
   if (!l) return { installed: false, error: agent === "acp" ? "Isi perintah agen ACP di Pengaturan → Agen AI." : null };
   if (agent === "acp") return { installed: true, path: l.display, version: null, loggedIn: null, source: "system", error: null };
-  const v = await runCapture(l.cmd, [...l.args.filter((a) => a !== "--experimental-acp"), "--version"], { timeoutMs: 20_000, env: l.env }).catch(() => null);
+  const probe = l.probe ?? { cmd: l.cmd, args: [] };
+  const v = await runCapture(probe.cmd, [...probe.args, "--version"], { timeoutMs: 20_000, env: l.env }).catch(() => null);
   if (!v?.success) return { installed: false, path: l.display, source: l.source, error: `Gemini ditemukan tapi gagal jalan${v?.stderr ? `: ${v.stderr.trim().slice(0, 200)}` : "."}` };
   return { installed: true, path: l.display, version: v.stdout.trim().split("\n").pop() ?? null, loggedIn: geminiLoggedIn(), source: l.source, error: null };
 }
@@ -172,7 +180,7 @@ async function start(ctx: Ctx, key: string, agent: Agent, cfg: Session["cfg"], c
   const l = launchFor(ctx, agent, command);
   if (!l) throw new Error(agent === "acp" ? "Isi perintah agen ACP di Pengaturan → Agen AI." : "Gemini belum terpasang.");
   const cwd = cfg.cwd && fs.existsSync(cfg.cwd) ? cfg.cwd : os.homedir();
-  const child = spawn(l.cmd, l.args, { cwd, env: l.env, shell: l.shell, stdio: ["pipe", "pipe", "pipe"], windowsHide: true });
+  const child = spawn(l.cmd, l.args, { cwd, env: l.env, shell: l.shell, stdio: ["pipe", "pipe", "pipe"], windowsHide: true, windowsVerbatimArguments: l.verbatim });
   const s = { child, agent, cfg: { ...cfg, cwd }, sessionId: null, msgId: null, text: "", tools: new Set(), approvals: new Map(), started: Date.now(), stderr: "", seq: 0 } as unknown as Session;
   s.rpc = new LineRpc(child, { onNotify: (m, p) => m === "session/update" && (!s.sessionId || p?.sessionId === s.sessionId) && onUpdate(ctx, key, s, p.update), onRequest: (id, m, p) => onRequest(ctx, key, s, id, m, p) }, true);
   sessions.set(key, s);
@@ -303,7 +311,7 @@ export function killAllAcp() {
 export async function acpLogin(ctx: Ctx, agent: Agent, command?: string): Promise<string> {
   const l = launchFor(ctx, agent, command);
   if (!l) throw new Error("Agen belum terpasang.");
-  const child = spawn(l.cmd, l.args, { cwd: os.homedir(), env: l.env, shell: l.shell, stdio: ["pipe", "pipe", "ignore"], windowsHide: true });
+  const child = spawn(l.cmd, l.args, { cwd: os.homedir(), env: l.env, shell: l.shell, stdio: ["pipe", "pipe", "ignore"], windowsHide: true, windowsVerbatimArguments: l.verbatim });
   const rpc = new LineRpc(child, { onNotify: () => {}, onRequest: (id) => rpc.respondError(id, "Tidak didukung.") }, true);
   try {
     const init = await rpc.request<{ authMethods?: { id: string; name: string }[] }>("initialize", { protocolVersion: 1, clientCapabilities: { fs: { readTextFile: false, writeTextFile: false }, terminal: false } }, 60_000);

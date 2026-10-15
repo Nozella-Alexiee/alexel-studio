@@ -8,7 +8,7 @@ import path from "node:path";
 import { pipeline } from "node:stream/promises";
 import { Readable, Transform } from "node:stream";
 import zlib from "node:zlib";
-import type { Ctx } from "../util";
+import { isWithin, type Ctx } from "../util";
 
 const API = "https://open-vsx.org/api";
 
@@ -103,15 +103,49 @@ export function readZipEntries(fd: number, size: number): ZipEntry[] {
   return out;
 }
 
+/** Nama entri arsip aman: relatif, tanpa `..`, tanpa huruf drive/`:` (pemisah / maupun \\). */
+export function safeEntryName(n: string): boolean {
+  if (!n || /^[\\/]/.test(n) || n.includes(":") || n.includes("\0")) return false;
+  return !n.split(/[\\/]/).some((seg) => seg === "..");
+}
+
+/** Gabungkan folder tujuan + nama entri; tolak bila hasilnya keluar folder. */
+export function safeJoin(dest: string, name: string): string {
+  const out = path.join(dest, name);
+  if (!isWithin(dest, out)) throw new Error("Paket berisi path tidak aman.");
+  return out;
+}
+
+/** Versi dari registry dipakai sebagai nama folder: hanya karakter versi biasa. */
+const VERSION_RE = /^[\w.+-]{1,64}$/;
+export function checkVersion(v: unknown): string {
+  if (typeof v !== "string" || !VERSION_RE.test(v) || v === "." || v === "..") throw new Error("Versi paket tidak valid.");
+  return v;
+}
+
+/** Hapus folder tanpa melempar error (Windows: biner yang sedang berjalan tidak bisa dihapus). */
+function rmQuiet(p: string) {
+  try {
+    fs.rmSync(p, { recursive: true, force: true });
+  } catch {
+    /* dicoba lagi saat pemasangan berikutnya */
+  }
+}
+
 async function extractEntry(file: string, fd: number, e: ZipEntry, dest: string) {
   const lh = Buffer.alloc(30);
   fs.readSync(fd, lh, 0, 30, e.offset);
   if (lh.readUInt32LE(0) !== 0x04034b50) throw new Error("Paket rusak (header lokal).");
   const start = e.offset + 30 + lh.readUInt16LE(26) + lh.readUInt16LE(28);
   fs.mkdirSync(path.dirname(dest), { recursive: true });
-  const src = fs.createReadStream(file, { start, end: start + e.csize - 1 });
   // Biner (tanpa ekstensi atau .exe) bisa dijalankan; berkas lain tidak.
   const executable = /\.exe$/i.test(dest) || !path.basename(dest).includes(".") || (e.mode & 0o111) !== 0;
+  if (e.csize === 0) {
+    if (e.usize !== 0) throw new Error("Paket rusak (ukuran entri).");
+    fs.writeFileSync(dest, "", { mode: executable ? 0o755 : 0o644 });
+    return;
+  }
+  const src = fs.createReadStream(file, { start, end: start + e.csize - 1 });
   const out = fs.createWriteStream(dest, { mode: executable ? 0o755 : 0o644 });
   if (e.method === 0) await pipeline(src, out);
   else if (e.method === 8) await pipeline(src, zlib.createInflateRaw(), out);
@@ -123,7 +157,7 @@ async function extractEntry(file: string, fd: number, e: ZipEntry, dest: string)
 export function pickEntries(entries: { name: string }[], picks: string[]): string[] {
   return entries
     .map((e) => e.name)
-    .filter((n) => n.startsWith("extension/") && !n.endsWith("/") && !n.split("/").includes(".."))
+    .filter((n) => n.startsWith("extension/") && !n.endsWith("/") && safeEntryName(n))
     .filter((n) => {
       const rel = n.slice("extension/".length);
       return picks.some((p) => (p.endsWith("/") ? rel.startsWith(p) : rel === p));
@@ -180,14 +214,14 @@ export async function installAgentPackage(ctx: Ctx, agent: string): Promise<Inst
     if (hash.digest("hex") !== expected) throw new Error("Checksum paket tidak cocok; berkas dibuang.");
 
     progress("Memasang…");
-    const dir = path.join(root, `${meta.version}-${target}`);
-    fs.rmSync(dir, { recursive: true, force: true });
+    // Folder baru setiap pemasangan: versi yang sama bisa sedang berjalan (Windows mengunci bineri).
+    const dir = path.join(root, `${checkVersion(meta.version)}-${target}-${Date.now().toString(36)}`);
     const fd = fs.openSync(tmp, "r");
     try {
       const entries = readZipEntries(fd, fs.fstatSync(fd).size);
       const wanted = new Set(pickEntries(entries, pkg.pick(target)));
       if (!wanted.size) throw new Error("Biner agen tidak ditemukan di paket.");
-      for (const e of entries) if (wanted.has(e.name)) await extractEntry(tmp, fd, e, path.join(dir, e.name.slice("extension/".length)));
+      for (const e of entries) if (wanted.has(e.name)) await extractEntry(tmp, fd, e, safeJoin(dir, e.name.slice("extension/".length)));
     } finally {
       fs.closeSync(fd);
     }
@@ -197,7 +231,7 @@ export async function installAgentPackage(ctx: Ctx, agent: string): Promise<Inst
     const info: InstalledAgent = { version: meta.version, target, binary, installedAt: Date.now() };
     fs.writeFileSync(path.join(root, "current.json"), JSON.stringify(info, null, 2));
     // Versi lama dibersihkan.
-    for (const d of fs.readdirSync(root)) if (d !== path.basename(dir) && d !== "current.json" && !d.startsWith("download-")) fs.rmSync(path.join(root, d), { recursive: true, force: true });
+    for (const d of fs.readdirSync(root)) if (d !== path.basename(dir) && d !== "current.json" && !d.startsWith("download-")) rmQuiet(path.join(root, d));
     progress("Selesai", 100);
     return info;
   } finally {
@@ -251,8 +285,8 @@ export function extractTar(buf: Buffer, dest: string, keep: (name: string) => bo
     }
     if (type !== "0" && type !== "\0") continue; // hanya berkas biasa (tanpa symlink/hardlink)
     name = name.replace(/^\.\//, "");
-    if (!name || name.startsWith("/") || name.split("/").includes("..") || !keep(name)) continue;
-    const out = path.join(dest, name);
+    if (!safeEntryName(name) || !keep(name)) continue;
+    const out = safeJoin(dest, name);
     fs.mkdirSync(path.dirname(out), { recursive: true });
     fs.writeFileSync(out, body);
     n++;
@@ -290,14 +324,13 @@ export async function installNpmAgent(ctx: Ctx, agent: string): Promise<Installe
     const tgz = Buffer.concat(chunks);
     if (createHash("sha512").update(tgz).digest("base64") !== integrity) throw new Error("Checksum paket tidak cocok; berkas dibuang.");
     progress("Memasang…");
-    const dir = path.join(root, meta.version);
-    fs.rmSync(dir, { recursive: true, force: true });
+    const dir = path.join(root, `${checkVersion(meta.version)}-${Date.now().toString(36)}`);
     const count = extractTar(zlib.gunzipSync(tgz), dir, (n) => n === "package/package.json" || n.startsWith("package/bundle/") || n === "package/LICENSE");
     const entry = path.join(dir, "package", def.entry);
     if (!count || !fs.existsSync(entry)) throw new Error("Berkas agen tidak ditemukan di paket.");
     const info: InstalledAgent = { version: meta.version, target: "node", binary: entry, installedAt: Date.now() };
     fs.writeFileSync(path.join(root, "current.json"), JSON.stringify(info, null, 2));
-    for (const d of fs.readdirSync(root)) if (d !== meta.version && d !== "current.json") fs.rmSync(path.join(root, d), { recursive: true, force: true });
+    for (const d of fs.readdirSync(root)) if (d !== path.basename(dir) && d !== "current.json") rmQuiet(path.join(root, d));
     progress("Selesai", 100);
     return info;
   } finally {

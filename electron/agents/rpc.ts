@@ -25,14 +25,18 @@ export class LineRpc {
   ) {
     readline.createInterface({ input: child.stdout! }).on("line", (line) => this.onLine(line));
     child.stdin?.on("error", () => {});
-    child.on("close", () => {
-      this.closed = true;
-      for (const p of this.pending.values()) {
-        clearTimeout(p.timer);
-        p.reject(new Error("Proses agen berhenti."));
-      }
-      this.pending.clear();
-    });
+    child.on("close", () => this.fail(new Error("Proses agen berhenti.")));
+    // Tanpa listener ini, gagal spawn (ENOENT/EACCES) melempar error tak tertangkap di main process.
+    child.on("error", (e) => this.fail(new Error(`Gagal menjalankan agen: ${e.message}`)));
+  }
+
+  private fail(e: Error) {
+    this.closed = true;
+    for (const p of this.pending.values()) {
+      clearTimeout(p.timer);
+      p.reject(e);
+    }
+    this.pending.clear();
   }
 
   private write(obj: Record<string, unknown>) {
@@ -64,6 +68,7 @@ export class LineRpc {
   request<T = any>(method: string, params?: unknown, timeoutMs = 0): Promise<T> { // eslint-disable-line @typescript-eslint/no-explicit-any
     const id = ++this.seq;
     return new Promise<T>((resolve, reject) => {
+      if (this.closed || !this.child.stdin || this.child.stdin.destroyed) return reject(new Error("Proses agen sudah berhenti."));
       const timer = timeoutMs ? setTimeout(() => {
         this.pending.delete(id);
         reject(new Error(`${method}: agen tidak menjawab.`));

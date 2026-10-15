@@ -3,6 +3,7 @@
 import fs from "node:fs";
 import fsp from "node:fs/promises";
 import path from "node:path";
+import vm from "node:vm";
 import ignore, { type Ignore } from "ignore";
 import { snapshot } from "./history";
 import { writeAtomic } from "./fsOps";
@@ -106,6 +107,45 @@ export interface SearchMatch {
   text: string;
 }
 
+// Pencocokan dijalankan di konteks vm dengan batas waktu: regex dengan backtracking berlebihan
+// (mis. `(a+)+$` pada baris panjang) tidak boleh membekukan seluruh main process.
+const scanCtx = vm.createContext({});
+vm.runInContext(
+  `function __scan(a) {
+    const re = new RegExp(a.source, a.flags);
+    const out = [];
+    for (let f = 0; f < a.files.length; f++) {
+      const lines = a.files[f].split("\\n");
+      for (let i = 0; i < lines.length; i++) {
+        const line = lines[i].replace(/\\r$/, "");
+        re.lastIndex = 0;
+        let m;
+        while ((m = re.exec(line))) {
+          if (!m[0]) { re.lastIndex++; continue; }
+          out.push([f, i, m.index, m[0].length]);
+          if (out.length >= a.max) return out;
+        }
+      }
+    }
+    return out;
+  }`,
+  scanCtx
+);
+const SCAN_BATCH_BYTES = 1024 * 1024;
+const SCAN_TIMEOUT_MS = 4000;
+
+function scanBatch(files: string[], re: RegExp, max: number): [number, number, number, number][] {
+  scanCtx.__args = { files, source: re.source, flags: re.flags, max };
+  try {
+    return vm.runInContext("__scan(__args)", scanCtx, { timeout: SCAN_TIMEOUT_MS }) as [number, number, number, number][];
+  } catch (e) {
+    if ((e as { code?: string }).code === "ERR_SCRIPT_EXECUTION_TIMEOUT") throw new Error("Pencarian dihentikan: regex terlalu lambat untuk berkas ini. Sederhanakan polanya.");
+    throw e;
+  } finally {
+    scanCtx.__args = null;
+  }
+}
+
 export async function searchProject(root: string, query: string, o: { isRegex: boolean; caseSensitive: boolean; wholeWord: boolean; include?: string | null }) {
   if (!query) return { matches: [], files_searched: 0, truncated: false };
   const re = buildRegex(query, o.isRegex, o.caseSensitive, o.wholeWord);
@@ -116,33 +156,35 @@ export async function searchProject(root: string, query: string, o: { isRegex: b
     .filter(Boolean);
   const matches: SearchMatch[] = [];
   let filesSearched = 0;
-  let truncated = false;
+  let batch: { path: string; rel: string; text: string }[] = [];
+  let batchBytes = 0;
+  const flush = () => {
+    if (!batch.length) return false;
+    const hits = scanBatch(batch.map((b) => b.text), re, MAX_MATCHES - matches.length);
+    const split = new Map<number, string[]>();
+    for (const [f, i, col, len] of hits) {
+      const b = batch[f];
+      if (!split.has(f)) split.set(f, b.text.split("\n"));
+      const line = (split.get(f)![i] ?? "").replace(/\r$/, "");
+      const start = Math.max(0, col - 60);
+      matches.push({ path: b.path, rel: b.rel, line: i + 1, col: col + 1, len, text: line.length > 240 ? line.slice(start, start + 240) : line });
+    }
+    batch = [];
+    batchBytes = 0;
+    return matches.length >= MAX_MATCHES;
+  };
   for (const p of await walkFiles(root)) {
     const r = rel(root, p);
     if (inc.length && !inc.some((i) => r.toLowerCase().includes(i))) continue;
     const text = await readTextSmall(p);
     if (text === null) continue;
     filesSearched++;
-    const lines = text.split("\n");
-    for (let i = 0; i < lines.length; i++) {
-      const line = lines[i].replace(/\r$/, "");
-      re.lastIndex = 0;
-      let m: RegExpExecArray | null;
-      while ((m = re.exec(line))) {
-        if (!m[0]) {
-          re.lastIndex++;
-          continue;
-        }
-        const start = Math.max(0, m.index - 60);
-        matches.push({ path: p, rel: r, line: i + 1, col: m.index + 1, len: m[0].length, text: line.length > 240 ? line.slice(start, start + 240) : line });
-        if (matches.length >= MAX_MATCHES) {
-          truncated = true;
-          return { matches, files_searched: filesSearched, truncated };
-        }
-      }
-    }
+    batch.push({ path: p, rel: r, text });
+    batchBytes += text.length;
+    if (batchBytes >= SCAN_BATCH_BYTES && flush()) return { matches, files_searched: filesSearched, truncated: true };
   }
-  return { matches, files_searched: filesSearched, truncated };
+  if (flush()) return { matches, files_searched: filesSearched, truncated: true };
+  return { matches, files_searched: filesSearched, truncated: false };
 }
 
 export async function replaceInFiles(ctx: Ctx, paths: string[], query: string, replacement: string, o: { isRegex: boolean; caseSensitive: boolean; wholeWord: boolean }): Promise<number> {

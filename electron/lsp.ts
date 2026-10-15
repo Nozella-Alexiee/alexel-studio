@@ -94,6 +94,7 @@ export function lspStart(ctx: Ctx, serverId: string, root: string): { key: strin
   }
   const sp = spawnable(cmd, args);
   const proc = spawn(sp.cmd, sp.args, { cwd: fs.existsSync(root) ? root : undefined, env, stdio: ["pipe", "pipe", "pipe"], windowsHide: true, windowsVerbatimArguments: sp.verbatim });
+  proc.stdin?.on("error", () => {}); // server mati di tengah tulis: EPIPE jangan sampai crash main
   const r: Running = { key, proc, buf: Buffer.alloc(0) };
   running.set(key, r);
   proc.stdout?.on("data", (chunk: Buffer) => {

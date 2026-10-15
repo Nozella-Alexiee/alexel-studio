@@ -12,7 +12,7 @@ import { commandForFile, detectTargets } from "./runner";
 import { buildRegex, parseTodoLine, scanTodos, searchProject, walkFiles } from "./search";
 import { validKey } from "./store";
 import { parseLsof, parsePmset } from "./system";
-import { ensureCleanPath, runCapture, shellQuote, type Ctx } from "./util";
+import { ensureCleanPath, isWithin, psQuote, runCapture, shellQuote, type Ctx } from "./util";
 import { classify } from "./watcher";
 
 const tmp = (name: string) => {
@@ -38,6 +38,28 @@ describe("util", () => {
     const r = await runCapture("/bin/sh", ["-c", "read x; echo got:$x"], { timeoutMs: 5000 });
     expect(r.timedOut).toBe(false);
     expect(r.stdout).toContain("got:");
+  });
+  it("quote PowerShell: token aman polos, kutip biasa & kurung digandakan", () => {
+    expect(psQuote("dev")).toBe("dev");
+    expect(psQuote("C:\\a\\b.py")).toBe("C:\\a\\b.py");
+    expect(psQuote("a b")).toBe("'a b'");
+    expect(psQuote("x\u2019; calc; \u2019")).toBe("'x\u2019\u2019; calc; \u2019\u2019'");
+    expect(psQuote("it's")).toBe("'it''s'");
+  });
+  it("isWithin netral OS", () => {
+    const base = path.join(os.tmpdir(), "proj");
+    expect(isWithin(base, path.join(base, "a", "b"))).toBe(true);
+    expect(isWithin(base, base + "2")).toBe(false);
+    expect(isWithin(base, path.join(base, "..", "x"))).toBe(false);
+    expect(isWithin(base, base)).toBe(false);
+    expect(isWithin(base, base, true)).toBe(true);
+  });
+  posix("runCapture: selesai cepat walau cucu proses menahan pipe setelah keluar", async () => {
+    const t0 = Date.now();
+    const r = await runCapture("/bin/sh", ["-c", "(sleep 6 &) ; echo ok"], { timeoutMs: 20_000 });
+    expect(r.stdout).toContain("ok");
+    expect(r.success).toBe(true);
+    expect(Date.now() - t0).toBeLessThan(4000);
   });
   posix("menolak path dengan ..", () => {
     expect(() => ensureCleanPath("/a/../b")).toThrow();
@@ -157,6 +179,13 @@ describe("search & TODO", () => {
     expect((await searchProject(d, "fn\\s+\\w+", { isRegex: true, caseSensitive: true, wholeWord: false, include: "*.rs" })).matches.length).toBe(1);
     expect(() => buildRegex("(", true, true, false)).toThrow();
   });
+  it("regex lambat dihentikan, tidak membekukan proses", async () => {
+    const d = tmp("redos");
+    fs.writeFileSync(path.join(d, "x.txt"), "a".repeat(40) + "!");
+    const t0 = Date.now();
+    await expect(searchProject(d, "(a+)+$", { isRegex: true, caseSensitive: true, wholeWord: false })).rejects.toThrow(/terlalu lambat/);
+    expect(Date.now() - t0).toBeLessThan(8000);
+  }, 15000);
   it("TODO diparse", async () => {
     const d = fixture("todo");
     const t = await scanTodos(d);

@@ -64,6 +64,8 @@ interface Session {
 }
 
 const sessions = new Map<string, Session>();
+/** Percakapan dari proses yang dihentikan lewat Stop; dilanjutkan pada pesan berikutnya. */
+const stoppedConversations = new Map<string, string>();
 const emitLine = (ctx: Ctx, key: string, obj: unknown) => ctx.emit("agent-event", { run_id: key, line: JSON.stringify(obj) });
 const EFFORTS = ["low", "medium", "high", "xhigh", "max"];
 
@@ -187,6 +189,9 @@ export async function agySend(ctx: Ctx, key: string, raw: Record<string, unknown
     s = undefined;
   }
   if (!s) {
+    const stopped = stoppedConversations.get(key);
+    stoppedConversations.delete(key);
+    if (!cfg.resume && stopped) cfg.resume = stopped;
     s = start(ctx, key, cfg);
     void agyModels(findAgy()!).then((models) =>
       emitLine(ctx, key, { type: "control_response", response: { subtype: "success", request_id: `init-${key}`, response: { models, commands: [] } } })
@@ -201,6 +206,9 @@ export function agyControl(key: string, msg: unknown): boolean {
   const m = msg as { type?: string; request?: { subtype?: string } };
   if (m?.type === "control_request" && m.request?.subtype === "interrupt") {
     // agy tidak punya perintah interrupt: hentikan proses; percakapan dilanjutkan di proses berikutnya.
+    // Sesi langsung dilepas supaya pesan yang dikirim sebelum proses benar-benar mati tidak hilang.
+    sessions.delete(key);
+    if (s.conversation) stoppedConversations.set(key, s.conversation);
     killTree(s.child);
     return true;
   }

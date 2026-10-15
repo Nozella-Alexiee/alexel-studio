@@ -377,7 +377,8 @@ export function claudeOnce(runId: string, projectDir: string, prompt: string, mo
     child.on("close", (code, signal) => {
       clearTimeout(timer);
       runs.delete(runId);
-      if (signal) return reject(new Error("Dibatalkan."));
+      // Windows: taskkill membuat proses keluar dengan kode 1 tanpa sinyal.
+      if (signal || cancelled.delete(runId)) return reject(new Error("Dibatalkan."));
       try {
         const j = JSON.parse(out.trim().split("\n").pop() ?? "{}") as { result?: string; is_error?: boolean };
         if (j.is_error || code !== 0) return reject(new Error(j.result || err.trim() || `Claude CLI keluar dengan kode ${code}.`));
@@ -386,13 +387,19 @@ export function claudeOnce(runId: string, projectDir: string, prompt: string, mo
         reject(new Error(err.trim() || "Jawaban Claude tidak bisa dibaca."));
       }
     });
+    // Tanpa listener, EPIPE (CLI keluar sebelum prompt terkirim) membuat main process crash.
+    child.stdin?.on("error", () => {});
     child.stdin?.end(prompt);
   });
 }
 
+const cancelled = new Set<string>();
+
 export function claudeCancel(runId: string) {
   const c = runs.get(runId);
-  if (c) killTree(c);
+  if (!c) return;
+  cancelled.add(runId);
+  killTree(c);
 }
 
 export function killAllClaude() {

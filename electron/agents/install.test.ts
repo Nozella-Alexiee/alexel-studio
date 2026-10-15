@@ -3,7 +3,7 @@ import os from "node:os";
 import path from "node:path";
 import { zipSync } from "fflate";
 import { describe, expect, it } from "vitest";
-import { openVsxTarget, pickEntries, PACKAGES, readZipEntries } from "./install";
+import { checkVersion, openVsxTarget, pickEntries, PACKAGES, readZipEntries, safeEntryName, safeJoin } from "./install";
 
 describe("pasang agen dari VSIX", () => {
   it("target platform Open VSX", () => {
@@ -17,6 +17,26 @@ describe("pasang agen dari VSIX", () => {
     expect(pickEntries(e, PACKAGES.claude.pick("darwin-arm64"))).toEqual(["extension/resources/native-binary/claude"]);
     expect(pickEntries(e, PACKAGES.codex.pick("darwin-arm64"))).toEqual(["extension/bin/macos-aarch64/codex", "extension/bin/macos-aarch64/rg"]);
     expect(PACKAGES.codex.binary("win32-x64")).toBe("bin/windows-x86_64/codex.exe");
+  });
+  it("menolak nama entri berbahaya (pemisah \\ maupun /)", () => {
+    expect(safeEntryName("extension/bin/x")).toBe(true);
+    expect(safeEntryName("extension/bin/windows-x86_64/..\\..\\..\\evil.dll")).toBe(false);
+    expect(safeEntryName("package/bundle/../x")).toBe(false);
+    expect(safeEntryName("/etc/passwd")).toBe(false);
+    expect(safeEntryName("\\evil")).toBe(false);
+    expect(safeEntryName("C:/evil")).toBe(false);
+    const names = ["extension/bin/windows-x86_64/..\\..\\..\\evil.dll", "extension/bin/windows-x86_64/codex.exe"].map((name) => ({ name }));
+    expect(pickEntries(names, PACKAGES.codex.pick("win32-x64"))).toEqual(["extension/bin/windows-x86_64/codex.exe"]);
+    const dest = path.join(os.tmpdir(), "alexel-dest");
+    expect(safeJoin(dest, "a/b")).toBe(path.join(dest, "a", "b"));
+    expect(() => safeJoin(dest, "../x")).toThrow();
+  });
+  it("versi registry divalidasi sebelum jadi nama folder", () => {
+    expect(checkVersion("2.1.300")).toBe("2.1.300");
+    expect(checkVersion("0.40.0-preview.1")).toBe("0.40.0-preview.1");
+    expect(() => checkVersion("..")).toThrow();
+    expect(() => checkVersion("../../x")).toThrow();
+    expect(() => checkVersion(42)).toThrow();
   });
   it("membaca daftar isi zip tanpa memuat seluruh berkas", () => {
     const dir = fs.mkdtempSync(path.join(os.tmpdir(), "alexel-zip-"));

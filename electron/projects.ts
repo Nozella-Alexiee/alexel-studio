@@ -5,6 +5,7 @@
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
+import { isWithin } from "./util";
 
 export interface FoundProject {
   path: string;
@@ -60,7 +61,7 @@ export function discoverProjects(extraParents: string[] = [], limit = 60): Found
   const home = os.homedir();
   const parents = new Set<string>();
   for (const b of BASES) parents.add(path.join(home, b));
-  for (const p of extraParents) if (p && path.isAbsolute(p) && p !== home && p.startsWith(home + path.sep)) parents.add(p);
+  for (const p of extraParents) if (p && path.isAbsolute(p) && isWithin(home, p)) parents.add(p);
   const seen = new Set<string>();
   const out: FoundProject[] = [];
   for (const parent of parents) {

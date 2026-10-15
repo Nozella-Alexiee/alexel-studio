@@ -204,7 +204,7 @@ function onRequest(ctx: Ctx, key: string, s: Session, id: number | string, metho
   const reqId = `codex-${id}`;
   if (method === "item/commandExecution/requestApproval" || method === "execCommandApproval") {
     s.approvals.set(reqId, { rpcId: id, kind: "command" });
-    const command = p.command ?? (Array.isArray(p.command) ? p.command.join(" ") : "");
+    const command = Array.isArray(p.command) ? p.command.join(" ") : p.command ?? "";
     emitLine(ctx, key, { type: "control_request", request_id: reqId, request: { subtype: "can_use_tool", tool_name: "Bash", tool_use_id: p.itemId, input: { command, description: p.reason ?? undefined }, permission_suggestions: [{ type: "codex", scope: "session" }] } });
     return;
   }

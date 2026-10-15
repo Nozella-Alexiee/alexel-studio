@@ -136,7 +136,15 @@ function connectTcp(ctx: Ctx, s: DapSession, port: number, tries = 40): Promise<
   return new Promise((resolve, reject) => {
     const attempt = (n: number) => {
       const sock = net.connect(port, "127.0.0.1");
+      const onError = (e: Error) => {
+        sock.destroy();
+        if (n <= 0) reject(e);
+        else setTimeout(() => attempt(n - 1), 150);
+      };
       sock.once("connect", () => {
+        // Listener percobaan dilepas: ECONNRESET setelah tersambung tidak boleh memicu sambung ulang.
+        sock.off("error", onError);
+        sock.on("error", () => sock.destroy());
         s.conn = { write: (x) => sock.write(x), close: () => sock.destroy() };
         sock.on("data", (c: Buffer) => onData(ctx, s, c));
         sock.on("close", () => {
@@ -147,11 +155,7 @@ function connectTcp(ctx: Ctx, s: DapSession, port: number, tries = 40): Promise<
         });
         resolve();
       });
-      sock.once("error", (e) => {
-        sock.destroy();
-        if (n <= 0) reject(e);
-        else setTimeout(() => attempt(n - 1), 150);
-      });
+      sock.once("error", onError);
     };
     attempt(tries);
   });
