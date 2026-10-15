@@ -1,13 +1,14 @@
 // Desain C — Control Room: padat ala IDE. Toolbar run dengan pilihan target Smart Run,
 // rail ikon, sidebar, split editor, panel bawah ter-dock, panel Git/Claude di kanan.
 
-import { ChevronDown, Columns2, Files, FolderOpen, GitBranch, ListTodo, Play, Puzzle, Search, Settings, Sparkles, Square, Network, TerminalSquare } from "lucide-react";
+import { ChevronDown, Columns2, Files, FolderOpen, GitBranch, ListTodo, Play, Puzzle, Search, Settings, Square, Network, TerminalSquare } from "lucide-react";
+import { Kepi } from "../components/CrabMascot";
 import { useState, type ReactNode } from "react";
 import * as A from "../app/actions";
 import { openPalette } from "../app/commands";
 import { runActiveFile, runTarget } from "../app/run";
 import { openMenu } from "../components/Overlays";
-import { PinguBrand } from "../components/PenguinMascot";
+import { NoziBrand } from "../components/PenguinMascot";
 import { IconButton } from "../components/ui";
 import { BottomPanel } from "../panels/BottomPanel";
 import { getState, setLayout, useLayout, useStore } from "../state/store";
@@ -65,14 +66,14 @@ export default function ControlShell() {
     ["todo", <ListTodo size={19} />, "TODO", () => A.toggleSidebar("todo"), l.sidebar && l.sideView === "todo"],
     ["ext", <Puzzle size={19} />, "Ekstensi", () => A.toggleSidebar("ext"), l.sidebar && l.sideView === "ext"],
     ["ports", <Network size={19} />, "Port & proses", () => A.togglePanel("ports"), l.panel && l.panelTab === "ports"],
-    ["claude", <Sparkles size={19} />, "Claude (⌘⌥B)", () => A.toggleRight("claude"), l.right && l.rightView === "claude"],
+    ["claude", <Kepi size={21} />, "Claude (⌘⌥B)", () => A.toggleRight("claude"), l.right && l.rightView === "claude"],
   ];
 
   return (
     <div className="shell shell-control">
       <header className="titlebar">
         <div className="traffic-space" />
-        <PinguBrand />
+        <NoziBrand />
         <RunConfig />
         <div className="ctl-center">
           <button className="ctl-project" onClick={openProjectMenu} title="Ganti project" aria-haspopup="menu">

@@ -88,6 +88,49 @@ export function claudeRun(ctx: Ctx, runId: string, projectDir: string, prompt: s
   child.on("close", (code, signal) => finish(signal ? 130 : code));
 }
 
+/**
+ * Satu permintaan tanpa percakapan (Claude inline ⌘K): mode baca saja, hasil teks akhir.
+ * Dibatalkan otomatis setelah 3 menit.
+ */
+export function claudeOnce(runId: string, projectDir: string, prompt: string, model: "fast" | "default" = "fast"): Promise<string> {
+  if (Buffer.byteLength(prompt) > MAX_PROMPT_BYTES) throw new Error("Konteks terlalu besar untuk dikirim (maks 400 KB).");
+  const cli = findClaude();
+  if (!cli) throw new Error("Claude Code CLI belum terpasang.");
+  const cwd = projectDir && fs.existsSync(projectDir) ? projectDir : os.homedir();
+  // Edit kecil di tempat: model cepat + effort rendah (model bawaan bisa butuh beberapa menit).
+  const args = ["-p", "--output-format", "json", "--permission-mode", "plan", "--max-turns", "3"];
+  if (model === "fast") args.push("--model", "sonnet", "--effort", "low");
+  return new Promise((resolve, reject) => {
+    const child = spawn(cli, args, { cwd, env: childEnv(), stdio: ["pipe", "pipe", "pipe"], windowsHide: true });
+    runs.set(runId, child);
+    let out = "";
+    let err = "";
+    const timer = setTimeout(() => child.kill("SIGTERM"), 180_000);
+    child.stdout?.on("data", (b: Buffer) => (out += b.toString("utf8")));
+    child.stderr?.on("data", (b: Buffer) => {
+      if (err.length < 8000) err += b.toString("utf8");
+    });
+    child.on("error", (e) => {
+      clearTimeout(timer);
+      runs.delete(runId);
+      reject(e);
+    });
+    child.on("close", (code, signal) => {
+      clearTimeout(timer);
+      runs.delete(runId);
+      if (signal) return reject(new Error("Dibatalkan."));
+      try {
+        const j = JSON.parse(out.trim().split("\n").pop() ?? "{}") as { result?: string; is_error?: boolean };
+        if (j.is_error || code !== 0) return reject(new Error(j.result || err.trim() || `Claude CLI keluar dengan kode ${code}.`));
+        resolve(j.result ?? "");
+      } catch {
+        reject(new Error(err.trim() || "Jawaban Claude tidak bisa dibaca."));
+      }
+    });
+    child.stdin?.end(prompt);
+  });
+}
+
 export function claudeCancel(runId: string) {
   runs.get(runId)?.kill("SIGTERM");
 }

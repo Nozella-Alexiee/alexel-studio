@@ -113,3 +113,24 @@ export function diffStats(prev: string, next: string): { added: number; removed:
   }
   return { added, removed };
 }
+
+export interface Hunk {
+  /** Indeks baris lama (0-based) tempat perubahan dimulai. */
+  oldStart: number;
+  /** Jumlah baris lama yang diganti (0 = sisipan murni). */
+  oldCount: number;
+  /** Baris pengganti (kosong = hapus murni). */
+  newLines: string[];
+}
+
+/** Blok perubahan per baris dari `prev` ke `next`, dipakai Claude inline untuk Terima/Tolak per bagian. */
+export function lineHunks(prev: string, next: string): Hunk[] {
+  const a = splitLines(prev);
+  const b = splitLines(next);
+  let shift = 0;
+  return myers(a, b).map((e) => {
+    const oldStart = e.posNew + shift;
+    shift += e.a - e.b;
+    return { oldStart, oldCount: e.a, newLines: b.slice(e.posNew, e.posNew + e.b) };
+  });
+}

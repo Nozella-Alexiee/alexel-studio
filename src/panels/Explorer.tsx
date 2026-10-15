@@ -86,7 +86,8 @@ function TreeRow({ row, active, focused, onFocusRow }: { row: Row; active: boole
       draggable
       onDragStart={(e) => {
         e.dataTransfer.setData("text/x-nozel-path", entry.path);
-        e.dataTransfer.effectAllowed = "move";
+        // copyMove: bisa dipindah ke folder lain di pohon, atau "disalin" ke editor (= dibuka).
+        e.dataTransfer.effectAllowed = "copyMove";
       }}
       onDragOver={(e) => {
         if (!entry.is_dir || !e.dataTransfer.types.includes("text/x-nozel-path")) return;

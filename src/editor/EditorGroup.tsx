@@ -13,7 +13,10 @@ import { HtmlPreview, ImageViewer, MarkdownPreview } from "./Previews";
 const SettingsView = lazy(() => import("../panels/SettingsView"));
 const Dashboard = lazy(() => import("../panels/Dashboard"));
 
-function TabItem({ tab, group, active }: { tab: Tab; group: number; active: boolean }) {
+/** Tab yang sedang diseret (dataTransfer tidak bisa dibaca saat dragover, jadi disimpan di sini). */
+let dragTab: { id: string; group: number } | null = null;
+
+function TabItem({ tab, group, active, drop }: { tab: Tab; group: number; active: boolean; drop?: "before" | "after" | null }) {
   const mark = useStore((s) => s.gitMarks[tab.id]);
   const errors = useStore((s) => s.problems[tab.id]?.filter((p) => p.severity === "error").length ?? 0);
   const onMenu = (e: React.MouseEvent) =>
@@ -39,7 +42,18 @@ function TabItem({ tab, group, active }: { tab: Tab; group: number; active: bool
       aria-selected={active}
       tabIndex={active ? 0 : -1}
       data-tab={tab.id}
-      className={`tab ${active ? "is-active" : ""} ${tab.dirty ? "is-dirty" : ""} ${mark ? `git-${mark}` : ""} ${errors ? "has-errors" : ""}`}
+      className={`tab ${active ? "is-active" : ""} ${tab.dirty ? "is-dirty" : ""} ${mark ? `git-${mark}` : ""} ${errors ? "has-errors" : ""} ${drop ? `drop-${drop}` : ""}`}
+      draggable
+      onDragStart={(e) => {
+        dragTab = { id: tab.id, group };
+        e.dataTransfer.setData("text/x-nozel-tab", tab.id);
+        e.dataTransfer.effectAllowed = "move";
+        e.currentTarget.classList.add("is-dragging");
+      }}
+      onDragEnd={(e) => {
+        dragTab = null;
+        e.currentTarget.classList.remove("is-dragging");
+      }}
       title={tab.kind === "text" || tab.kind === "image" ? tab.id : tab.name}
       onClick={() => A.activateTab(tab.id, group)}
       onAuxClick={(e) => e.button === 1 && void A.closeTab(tab.id, group)}
@@ -68,6 +82,38 @@ export function TabStrip({ group, extra }: { group: number; extra?: React.ReactN
   const tabs = useStore((s) => s.tabs);
   const ref = useRef<HTMLDivElement>(null);
   const [edge, setEdge] = useState({ l: false, r: false });
+  const [dropAt, setDropAt] = useState<{ id: string; side: "before" | "after" } | null>(null);
+  const onTabsDragOver = (e: React.DragEvent) => {
+    const isPath = e.dataTransfer.types.includes("text/x-nozel-path");
+    if (!dragTab && !isPath) return;
+    e.preventDefault();
+    e.dataTransfer.dropEffect = dragTab ? "move" : "copy";
+    const el = (e.target as HTMLElement).closest<HTMLElement>(".tab[data-tab]");
+    if (!el) return setDropAt(null);
+    const r = el.getBoundingClientRect();
+    const side = e.clientX < r.left + r.width / 2 ? "before" : "after";
+    const id = el.dataset.tab!;
+    if (dropAt?.id !== id || dropAt.side !== side) setDropAt({ id, side });
+  };
+  const onTabsDrop = (e: React.DragEvent) => {
+    const at = dropAt;
+    setDropAt(null);
+    const list = g?.tabs ?? [];
+    const before = at ? (at.side === "before" ? at.id : list[list.indexOf(at.id) + 1] ?? null) : null;
+    if (dragTab) {
+      e.preventDefault();
+      e.stopPropagation();
+      A.moveTab(dragTab.id, dragTab.group, group, before);
+      dragTab = null;
+      return;
+    }
+    const p = e.dataTransfer.getData("text/x-nozel-path");
+    if (p) {
+      e.preventDefault();
+      e.stopPropagation();
+      void A.openFile(p, { group });
+    }
+  };
   const measure = () => {
     const el = ref.current;
     if (el) setEdge({ l: el.scrollLeft > 2, r: el.scrollLeft + el.clientWidth < el.scrollWidth - 2 });
@@ -98,8 +144,17 @@ export function TabStrip({ group, extra }: { group: number; extra?: React.ReactN
   if (!g) return null;
   return (
     <div className={`tabstrip ${edge.l ? "fade-l" : ""} ${edge.r ? "fade-r" : ""}`}>
-      <div className="tabs" role="tablist" aria-label="Berkas terbuka" ref={ref} onScroll={measure}>
-        {g.tabs.map((id) => tabs[id] && <TabItem key={id} tab={tabs[id]} group={group} active={g.active === id} />)}
+      <div
+        className="tabs"
+        role="tablist"
+        aria-label="Berkas terbuka"
+        ref={ref}
+        onScroll={measure}
+        onDragOver={onTabsDragOver}
+        onDragLeave={(e) => !e.currentTarget.contains(e.relatedTarget as Node) && setDropAt(null)}
+        onDrop={onTabsDrop}
+      >
+        {g.tabs.map((id) => tabs[id] && <TabItem key={id} tab={tabs[id]} group={group} active={g.active === id} drop={dropAt?.id === id ? dropAt.side : null} />)}
       </div>
       <div className="tabstrip-actions">{extra}</div>
     </div>
@@ -186,34 +241,84 @@ function ConflictBar({ tab }: { tab: Tab }) {
   );
 }
 
+/** Seret tab/berkas ke area editor: separuh kiri = buka di sini, tepi kanan (grup kiri) = belah ke kanan. */
+function useDropZone(group: number) {
+  const [zone, setZone] = useState<null | "here" | "right">(null);
+  const accepts = (e: React.DragEvent) => !!dragTab || e.dataTransfer.types.includes("text/x-nozel-path");
+  const props = {
+    onDragOver: (e: React.DragEvent<HTMLDivElement>) => {
+      if (!accepts(e)) return;
+      e.preventDefault();
+      e.dataTransfer.dropEffect = dragTab ? "move" : "copy";
+      const r = e.currentTarget.getBoundingClientRect();
+      const z = group === 0 && e.clientX - r.left > r.width * 0.6 ? "right" : "here";
+      if (z !== zone) setZone(z);
+    },
+    onDragLeave: (e: React.DragEvent<HTMLDivElement>) => {
+      if (!e.currentTarget.contains(e.relatedTarget as Node)) setZone(null);
+    },
+    onDrop: (e: React.DragEvent<HTMLDivElement>) => {
+      if (!accepts(e)) return;
+      e.preventDefault();
+      e.stopPropagation();
+      const target = zone === "right" ? 1 : group;
+      setZone(null);
+      if (dragTab) {
+        if (dragTab.group !== target) A.moveTab(dragTab.id, dragTab.group, target);
+        else A.activateTab(dragTab.id, target);
+        dragTab = null;
+        return;
+      }
+      const p = e.dataTransfer.getData("text/x-nozel-path");
+      if (p) void A.openFile(p, { group: target });
+    },
+  };
+  const overlay = zone ? (
+    <div className="drop-overlay" aria-hidden>
+      <div className={`drop-zone is-here ${zone === "here" ? "is-hot" : ""}`}>Buka di sini</div>
+      {group === 0 && (
+        <div className={`drop-zone is-right ${zone === "right" ? "is-hot" : ""}`}>
+          <Columns2 size={22} />
+          Belah ke kanan
+        </div>
+      )}
+    </div>
+  ) : null;
+  return { props, overlay };
+}
+
 export function EditorBody({ group, breadcrumb = true }: { group: number; breadcrumb?: boolean }) {
+  const drop = useDropZone(group);
   const activeId = useStore((s) => s.groups[group]?.active ?? null);
   const tab = useStore((s) => (activeId ? s.tabs[activeId] : undefined));
   const root = useStore((s) => s.root);
 
   if (!tab) {
     return (
-      <div className="editor-body">
+      <div className="editor-body" {...drop.props}>
         <Suspense fallback={null}>
           <Dashboard />
         </Suspense>
+        {drop.overlay}
       </div>
     );
   }
   if (tab.kind === "settings") {
     return (
-      <div className="editor-body">
+      <div className="editor-body" {...drop.props}>
         <Suspense fallback={null}>
           <SettingsView />
         </Suspense>
+        {drop.overlay}
       </div>
     );
   }
   if (tab.kind === "image") {
     return (
-      <div className="editor-body">
+      <div className="editor-body" {...drop.props}>
         {breadcrumb && root && <Breadcrumb path={tab.id} />}
         <ImageViewer path={tab.id} />
+        {drop.overlay}
       </div>
     );
   }
@@ -221,7 +326,7 @@ export function EditorBody({ group, breadcrumb = true }: { group: number; breadc
   const isHtml = /\.html?$/i.test(tab.id);
   const mode = isMd || isHtml ? tab.preview : "code";
   return (
-    <div className="editor-body">
+    <div className="editor-body" {...drop.props}>
       {breadcrumb && <Breadcrumb path={tab.id} />}
       <ConflictBar tab={tab} />
       <div className={`editor-split mode-${mode}`}>
@@ -230,6 +335,7 @@ export function EditorBody({ group, breadcrumb = true }: { group: number; breadc
         </div>
         {mode !== "code" && <div className="preview-pane">{isMd ? <MarkdownPreview path={tab.id} /> : <HtmlPreview path={tab.id} />}</div>}
       </div>
+      {drop.overlay}
     </div>
   );
 }

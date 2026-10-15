@@ -6,12 +6,12 @@ Buka **Pengaturan** (`⌘,`) → **Desain**, atau tekan `Ctrl+⌘T` untuk bergan
 
 | Grup | Desain | Karakter |
 |---|---|---|
-| Pinguin | **Antartika** | gelap biru es, Pingu ber-kupluk mengintip di sidebar |
+| Pinguin | **Antartika** | gelap biru es, Nozi ber-kupluk mengintip di sidebar |
 | Pinguin | **Tuxedo** | hitam-putih kontras tinggi, rail ikon ala Control |
 | Pinguin | **Kawanan** | terang ceria, satu panel fokus, kawanan pinguin di dashboard |
 | Klasik | Aurora Glass / Zen / Control | tiga desain awal |
 
-Pingu di status bar berganti ekspresi: santai, sibuk (Claude bekerja / proses berjalan), error, sukses.
+Nozi di status bar berganti ekspresi: santai, sibuk (Claude bekerja / proses berjalan), error, sukses.
 
 ## 2. Buka project
 
@@ -38,7 +38,7 @@ lalu cek di **Pengaturan → Server bahasa**:
 
 `⌘⇧X` → cari di Open VSX → **Pasang**.
 
-- **Tema warna** (Dracula, One Dark Pro, Catppuccin, ...): klik **Pakai**. Warnanya menimpa desain aktif, tata letak dan Pingu tetap. Lepas lewat tombol yang sama atau perintah *Lepas tema ekstensi*.
+- **Tema warna** (Dracula, One Dark Pro, Catppuccin, ...): klik **Pakai**. Warnanya menimpa desain aktif, tata letak dan Nozi tetap. Lepas lewat tombol yang sama atau perintah *Lepas tema ekstensi*.
 - **Tema ikon** (Material Icon Theme): klik **Pakai ikon**. Ikon berganti di Explorer, tab, Git, dan pencarian.
 - **Bahasa** (Svelte, Astro, Prisma, ...): langsung aktif saat berkasnya dibuka. Grammar pendukung (JS/TS/CSS) yang dibutuhkan terpasang otomatis dan bertanda *pendukung*.
 - **Snippet** (ES7+ React, ...): muncul di autocomplete.

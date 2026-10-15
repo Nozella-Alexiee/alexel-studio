@@ -45,7 +45,7 @@ export function Empty({ icon, title, children, action }: { icon?: React.ReactNod
   return (
     <div className="empty">
       {penguin ? (
-        <div className="empty-pingu">
+        <div className="empty-nozi">
           <PenguinMascot variant={penguin} size={52} />
         </div>
       ) : (

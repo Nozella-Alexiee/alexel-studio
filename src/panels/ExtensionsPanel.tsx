@@ -133,7 +133,7 @@ export default function ExtensionsPanel() {
       const m = await call<InstalledExt>("ext_install", { namespace: r.namespace, name: r.name });
       await loadExtensions();
       toast(`${m.displayName} terpasang`, "success");
-      if (m.themes[0] && (await confirmDialog(`Pakai tema ${m.themes[0].label}?`, "Warnanya diterapkan di atas desain yang sedang dipakai. Tata letak dan Pingu tetap.", "Pakai"))) {
+      if (m.themes[0] && (await confirmDialog(`Pakai tema ${m.themes[0].label}?`, "Warnanya diterapkan di atas desain yang sedang dipakai. Tata letak dan Nozi tetap.", "Pakai"))) {
         A.updateSettings({ extTheme: { ext: m.id, path: m.themes[0].path, label: m.themes[0].label, uiTheme: m.themes[0].uiTheme } });
       }
       if (m.iconThemes[0] && (await confirmDialog(`Pakai tema ikon ${m.iconThemes[0].label}?`, "Ikon berkas & folder di Explorer, tab, dan pencarian ikut berganti.", "Pakai"))) {

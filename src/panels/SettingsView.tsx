@@ -3,7 +3,7 @@ import React, { useEffect, useState } from "react";
 import { serverStatus, type ServerStatus } from "../editor/lsp";
 import { COMMANDS, prettyKeys } from "../app/commands";
 import * as A from "../app/actions";
-import { PenguinMascot, showPinguPeek } from "../components/PenguinMascot";
+import { PenguinMascot, showNoziPeek } from "../components/PenguinMascot";
 import { Segmented } from "../components/ui";
 import { ACCENTS, DESIGNS, type DesignInfo } from "../design/designs";
 import { isSaver, useStore, type Settings } from "../state/store";
@@ -109,7 +109,7 @@ export default function SettingsView() {
         <p className="hint">Ganti kapan saja. Tata letak, warna, font, dan kepadatan ikut berubah. Shortcut: {prettyKeys("Ctrl+Mod+T")}.</p>
         {(["Pinguin", "Klasik"] as const).map((group) => (
           <React.Fragment key={group}>
-            <h3 className="design-group-title">{group === "Pinguin" ? "Identitas Pingu" : "Klasik"}</h3>
+            <h3 className="design-group-title">{group === "Pinguin" ? "Identitas Nozi" : "Klasik"}</h3>
             <div className="design-cards">
               {DESIGNS.filter((d) => d.group === group).map((d) => (
                 <button key={d.id} className={`design-card ${s.design === d.id ? "is-on" : ""}`} onClick={() => A.setDesign(d.id)} aria-pressed={s.design === d.id} style={{ "--sw-bg": d.swatch.bg, "--sw-panel": d.swatch.panel, "--sw-accent": d.swatch.accent, "--sw-text": d.swatch.text, "--sw-alt": d.swatch.alt } as React.CSSProperties}>
@@ -136,10 +136,15 @@ export default function SettingsView() {
             Kembalikan bawaan
           </button>
         </Row>
-        <Row label="Pingu di sidebar" hint="Pingu kecil dengan tips di bawah Explorer (desain Pinguin).">
+        <Row label="Tur singkat" hint="Kenalan lagi dengan fitur utama: seret tab, ⌘K Claude, dan maskot.">
+          <button className="btn btn-sm" onClick={() => void import("../components/Tour").then((m) => m.startTour())}>
+            Mulai tur
+          </button>
+        </Row>
+        <Row label="Nozi di sidebar" hint="Nozi kecil dengan tips di bawah Explorer (desain Pinguin).">
           <button
             className="btn btn-sm"
-            onClick={showPinguPeek}
+            onClick={showNoziPeek}
           >
             Munculkan lagi
           </button>
@@ -215,6 +220,28 @@ export default function SettingsView() {
           <button className="btn btn-sm" onClick={() => void detectClaude()}>
             Periksa ulang
           </button>
+        </Row>
+        <Row label="Izin Claude di panel" hint="Baca saja: Claude hanya membaca dan menyarankan. Boleh edit: Claude boleh mengubah berkas di folder project (tetap tercatat di time-travel).">
+          <Segmented
+            label="Izin Claude"
+            value={s.claudeMode}
+            onChange={(v) => set({ claudeMode: v })}
+            options={[
+              { id: "read", label: "Baca saja" },
+              { id: "edit", label: "Boleh edit" },
+            ]}
+          />
+        </Row>
+        <Row label="Model untuk ⌘K di editor" hint="Cepat memakai Sonnet dengan effort rendah (±15 detik). Bawaan mengikuti model Claude Code kamu, bisa beberapa menit.">
+          <Segmented
+            label="Model ⌘K"
+            value={s.claudeInlineModel}
+            onChange={(v) => set({ claudeInlineModel: v })}
+            options={[
+              { id: "fast", label: "Cepat" },
+              { id: "default", label: "Bawaan" },
+            ]}
+          />
         </Row>
         <Row label="Tampilkan isi sebelum dikirim" hint="Kamu melihat persis teks dan berkas yang akan dikirim ke Claude.">
           <Toggle label="Konfirmasi kirim" value={s.claudeConfirm} onChange={(v) => set({ claudeConfirm: v })} />

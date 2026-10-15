@@ -133,7 +133,12 @@ export default function SearchPanel() {
         {busy && <Spinner size={12} />}
         {err ? <span className="tone-danger-fg">{err}</span> : res && q ? <span>{res.matches.length}{res.truncated ? "+" : ""} hasil di {byFile.length} berkas</span> : null}
       </div>
-      <div className="search-results" role="tree" aria-label="Hasil pencarian">
+      <div className="search-results" role="tree" aria-label="Hasil pencarian" aria-busy={busy}>
+        {busy && !res && (
+          <div className="skeleton-list" aria-hidden>
+            {[62, 90, 78, 0, 55, 84].map((w, i) => (w ? <div key={i} className="skeleton" style={{ width: `${w}%` }} /> : <div key={i} className="skeleton-gap" />))}
+          </div>
+        )}
         {byFile.map(([path, ms]) => (
           <div key={path} className="search-file" role="treeitem" aria-expanded={!collapsed[path]}>
             <button className="search-file-head" onClick={() => setCollapsed((c) => ({ ...c, [path]: !c[path] }))}>

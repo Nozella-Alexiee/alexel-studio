@@ -1,5 +1,5 @@
 // Ubah tema warna VS Code (colors + tokenColors) menjadi variabel desain Nozel.
-// Tema diterapkan DI ATAS desain aktif: tata letak & Pingu tetap, warnanya yang berganti.
+// Tema diterapkan DI ATAS desain aktif: tata letak & Nozi tetap, warnanya yang berganti.
 
 export interface VsTheme {
   name?: string;

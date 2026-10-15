@@ -1,13 +1,14 @@
 // Desain B — Zen Paper: terang hangat, tanpa activity bar & tab bar. Navigator di kiri
 // (berkas terbuka, ringkasan simbol, tree), satu kolom fokus, omnibar di bawah.
 
-import { ChevronDown, ChevronRight, Files, GitBranch, Play, Puzzle, Search, Sparkles, TerminalSquare, X, Focus, ListTodo } from "lucide-react";
+import { ChevronDown, ChevronRight, Files, GitBranch, Play, Puzzle, Search, TerminalSquare, X, Focus, ListTodo } from "lucide-react";
+import { Kepi } from "../components/CrabMascot";
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import * as A from "../app/actions";
 import { openPalette } from "../app/commands";
 import { runActiveFile } from "../app/run";
 import { FileIcon } from "../components/FileIcon";
-import { PinguBrand, PinguProcesses, usePenguinVariant } from "../components/PenguinMascot";
+import { NoziBrand, NoziProcesses, usePenguinVariant } from "../components/PenguinMascot";
 import { IconButton, Kbd } from "../components/ui";
 import * as docs from "../editor/documents";
 import { extractSymbols } from "../editor/symbols";
@@ -117,7 +118,7 @@ export default function ZenShell() {
     <div className="shell shell-zen">
       <header className="titlebar">
         <div className="traffic-space" />
-        <PinguBrand />
+        <NoziBrand />
         <div className="zen-crumb">
           <button className="zen-root" onClick={openProjectMenu} title="Ganti project" aria-haspopup="menu">
             {root ? root.split("/").pop() : "Buka project"}
@@ -138,7 +139,7 @@ export default function ZenShell() {
             <TerminalSquare size={14} /> Terminal
           </button>
           <button className={`tbtn ${l.right ? "is-on" : ""}`} onClick={() => A.toggleRight("claude")} title="Claude (⌘⌥B)">
-            <Sparkles size={14} /> Claude
+            <Kepi size={16} /> Claude
           </button>
           <IconButton label="Mode fokus" active={!l.sidebar && !l.right} onClick={() => setLayout(!l.sidebar && !l.right ? { sidebar: true } : { sidebar: false, right: false, panel: false })}>
             <Focus size={15} />
@@ -180,7 +181,7 @@ export default function ZenShell() {
                     </Section>
                     {penguin && (
                       <Section title="Kawanan">
-                        <PinguProcesses />
+                        <NoziProcesses />
                       </Section>
                     )}
                   </>

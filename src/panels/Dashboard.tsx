@@ -1,10 +1,11 @@
-import { FolderOpen, GitBranch, ListTodo, Play, Search, Sparkles, TerminalSquare, Clock, HardDrive, Files } from "lucide-react";
+import { FolderOpen, GitBranch, ListTodo, Play, Search, TerminalSquare, Clock, HardDrive, Files } from "lucide-react";
+import { CrabMascot } from "../components/CrabMascot";
 import { useEffect, useState } from "react";
 import { openPalette } from "../app/commands";
 import * as A from "../app/actions";
 import { openShell } from "../app/run";
 import { runTarget } from "../app/run";
-import { PinguHero, moodLine, usePenguinMood, usePenguinVariant } from "../components/PenguinMascot";
+import { NoziHero, moodLine, usePenguinMood, usePenguinVariant } from "../components/PenguinMascot";
 import { Kbd, Spinner } from "../components/ui";
 import { DESIGNS } from "../design/designs";
 import { api, isDemo } from "../lib/ipc";
@@ -73,14 +74,14 @@ function Welcome() {
     <div className="welcome">
       <div className="welcome-hero">
         {penguin ? (
-          <PinguHero size={96} />
+          <NoziHero size={96} />
         ) : (
           <div className="logo-mark" aria-hidden>
             N
           </div>
         )}
         <div className="welcome-hero-text">
-          <h1>{penguin ? "Halo! Pingu siap ngoding." : "Nozel Code"}</h1>
+          <h1>{penguin ? "Halo! Nozi siap ngoding." : "Nozel Code"}</h1>
           <p className="hint">Pilih project di bawah, atau buka folder lain.</p>
           <div className="welcome-actions">
             <button className="btn btn-primary" onClick={() => void A.openProjectDialog()}>
@@ -149,10 +150,10 @@ export default function Dashboard() {
   return (
     <div className="dashboard">
       {penguin && (
-        <section className={`pingu-banner pb-${penguin}`}>
-          <PinguHero size={penguin === "kawanan" ? 150 : 132} />
+        <section className={`nozi-banner pb-${penguin}`}>
+          <NoziHero size={penguin === "kawanan" ? 150 : 132} />
           <div>
-            <h2>{mood === "sukses" ? "Mantap, semua beres!" : mood === "error" ? "Ada yang perlu dibenahi" : mood === "sibuk" ? "Pingu lagi kerja…" : "Halo lagi! Pingu siap ngoding."}</h2>
+            <h2>{mood === "sukses" ? "Mantap, semua beres!" : mood === "error" ? "Ada yang perlu dibenahi" : mood === "sibuk" ? "Nozi lagi kerja…" : "Halo lagi! Nozi siap ngoding."}</h2>
             <p className="hint">{moodLine(mood)}</p>
           </div>
         </section>
@@ -170,7 +171,7 @@ export default function Dashboard() {
             <Search size={14} /> Cari
           </button>
           <button className="btn btn-claude" onClick={() => setLayout({ right: true, rightView: "claude" })}>
-            <Sparkles size={14} /> Tanya Claude
+            <CrabMascot size={16} /> Tanya Claude
           </button>
         </div>
       </header>

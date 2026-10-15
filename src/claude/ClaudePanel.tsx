@@ -1,12 +1,12 @@
 import DOMPurify from "dompurify";
 import { marked } from "marked";
-import { Bot, Check, Copy, CornerDownLeft, FileCode2, Plus, Sparkles, Square, TerminalSquare, Wrench, AlertCircle, TextCursorInput } from "lucide-react";
+import { Check, Copy, CornerDownLeft, FileCode2, Plus, Square, TerminalSquare, Wrench, AlertCircle, TextCursorInput } from "lucide-react";
 import { memo, useEffect, useMemo, useRef, useState } from "react";
 import * as A from "../app/actions";
 import { openClaudeInteractive } from "../app/run";
 import * as docs from "../editor/documents";
-import { PenguinMascot, usePenguinVariant } from "../components/PenguinMascot";
-import { IconButton, Spinner } from "../components/ui";
+import { CrabMascot, flashKepi, Kepi } from "../components/CrabMascot";
+import { IconButton } from "../components/ui";
 import { openExternal } from "../lib/ipc";
 import { activeTab, getState, useStore, type ChatMessage } from "../state/store";
 import { applyCodeToActive, cancelClaude, detectClaude, newConversation, sendToClaude } from "./claude";
@@ -134,7 +134,6 @@ export default function ClaudePanel() {
   useEffect(() => setIncludeFile(includeDefault), [includeDefault]);
   const [useSelection, setUseSelection] = useState(false);
   const list = useRef<HTMLDivElement>(null);
-  const penguin = usePenguinVariant();
 
   useEffect(() => {
     if (!info) void detectClaude();
@@ -153,7 +152,9 @@ export default function ClaudePanel() {
   return (
     <section className="claude-panel" aria-label="Claude Code">
       <header className="claude-head">
-        <Sparkles size={15} className="claude-mark" aria-hidden />
+        <button className="claude-kepi" onClick={() => flashKepi("melambai", 2400)} aria-label="Sapa Kepi" title="Kepi, teman Claude Code">
+          <Kepi size={24} />
+        </button>
         <span className="claude-title">Claude Code</span>
         <span className={`claude-status ${info?.installed ? "ok" : "bad"}`} title={info?.version ?? info?.error ?? ""}>
           {info === null ? "memeriksa…" : info.installed ? "terhubung" : "belum terpasang"}
@@ -178,7 +179,7 @@ export default function ClaudePanel() {
       >
         {chat.length === 0 ? (
           <div className="claude-empty">
-            <Bot size={26} aria-hidden />
+            <CrabMascot mood="melambai" size={58} />
             <p>Tanya apa saja tentang kode di project ini. Claude Code memakai langganan Pro/Max kamu lewat CLI resmi, tanpa API key.</p>
             {info && !info.installed && <p className="tone-danger-fg">{info.error}</p>}
             <div className="claude-quick">
@@ -194,7 +195,7 @@ export default function ClaudePanel() {
         )}
         {running && (
           <div className="chat-typing">
-            {penguin ? <PenguinMascot variant={penguin} mood="sibuk" size={22} /> : <Spinner size={12} />} Claude sedang bekerja…
+            <CrabMascot mood="mikir" size={22} /> Claude sedang bekerja…
           </div>
         )}
       </div>

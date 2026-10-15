@@ -9,6 +9,7 @@ import { pathToFileURL } from "node:url";
 import { killAllClaude } from "./claude";
 import { killAllLsp } from "./lsp";
 import { buildCommands } from "./commands";
+import { pruneUndo } from "./fsOps";
 import { extAsset } from "./extensions";
 import { resolvePreview } from "./preview";
 import { killAllPtys } from "./pty";
@@ -85,6 +86,16 @@ if (process.env.NOZEL_SMOKE && process.env.NOZEL_SMOKE_SHOTS) {
       wc.sendInputEvent({ type: "mouseMove", x, y });
       wc.sendInputEvent({ type: "mouseDown", x, y, button: "left", clickCount: 1 });
       wc.sendInputEvent({ type: "mouseUp", x, y, button: "left", clickCount: 1 });
+    } else if (a.type === "drag") {
+      const [x1, y1, x2, y2] = [Number(a.x), Number(a.y), Number(a.x2), Number(a.y2)];
+      wc.sendInputEvent({ type: "mouseMove", x: x1, y: y1 });
+      wc.sendInputEvent({ type: "mouseDown", x: x1, y: y1, button: "left", clickCount: 1 });
+      for (let i = 1; i <= 12; i++) {
+        await new Promise((r) => setTimeout(r, 25));
+        wc.sendInputEvent({ type: "mouseMove", x: Math.round(x1 + ((x2 - x1) * i) / 12), y: Math.round(y1 + ((y2 - y1) * i) / 12), button: "left" } as Electron.MouseInputEvent);
+      }
+      await new Promise((r) => setTimeout(r, 120));
+      wc.sendInputEvent({ type: "mouseUp", x: x2, y: y2, button: "left", clickCount: 1 });
     } else if (a.type === "key") {
       const keyCode = String(a.key);
       wc.sendInputEvent({ type: "keyDown", keyCode, modifiers: mods });
@@ -241,6 +252,7 @@ function createWindow() {
     win = null;
     if (quitting || process.platform !== "darwin") app.quit();
   });
+  void pruneUndo(ctx);
   wc.once("did-finish-load", () => {
     for (const p of pendingOpen.splice(0)) ctx.emit("open-path", { path: p });
   });
@@ -264,7 +276,7 @@ function runSmoke(w: BrowserWindow, scriptPath: string) {
       const shots = process.env.NOZEL_SMOKE_SHOT;
       if (shots) fs.writeFileSync(shots, (await w.webContents.capturePage()).toPNG());
     } catch (e) {
-      process.stdout.write(`SMOKE_ERROR ${(e as Error).message}\n`);
+      process.stdout.write(`SMOKE_ERROR ${e instanceof Error ? e.stack ?? e.message : String(e)}\n`);
     }
     allowClose = true;
     app.exit(0);

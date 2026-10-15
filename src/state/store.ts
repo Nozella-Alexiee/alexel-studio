@@ -2,6 +2,8 @@
 // itu ada di editor/documents.ts sebagai EditorState CodeMirror — supaya
 // mengetik tidak memicu render ulang seluruh aplikasi.
 
+import type { KepiMood } from "../components/CrabMascot";
+import type { PenguinMood } from "../components/PenguinMascot";
 import { create } from "zustand";
 import type { DesignId } from "../design/designs";
 import type { ClaudeInfo, FileEntry, GitStatus, PowerStatus, RunTarget, TodoItem } from "../lib/types";
@@ -24,6 +26,8 @@ export interface Settings {
   claudeIncludeFile: boolean;
   /** "read": Claude hanya membaca & menyarankan; "edit": boleh mengubah berkas project. */
   claudeMode: "read" | "edit";
+  /** Model untuk ⌘K inline: "fast" (Sonnet, effort rendah) atau model bawaan Claude Code. */
+  claudeInlineModel: "fast" | "default";
   terminalFontSize: number;
   autoSave: "off" | "delay";
   confirmDelete: boolean;
@@ -45,6 +49,7 @@ export const DEFAULT_SETTINGS: Settings = {
   claudeConfirm: true,
   claudeIncludeFile: true,
   claudeMode: "read",
+  claudeInlineModel: "fast",
   terminalFontSize: 12,
   autoSave: "off",
   confirmDelete: true,
@@ -204,7 +209,10 @@ interface State {
   snapshotOpen: boolean;
   historyFor: string | null;
   compare: CompareRequest | null;
-  penguinFlash: { mood: "idle" | "sibuk" | "error" | "sukses"; until: number } | null;
+  penguinFlash: { mood: PenguinMood; until: number } | null;
+  kepiFlash: { mood: KepiMood; until: number } | null;
+  /** Claude inline (⌘K) sedang menulis perubahan. */
+  inlineClaudeBusy: boolean;
   penguinTip: number;
 }
 
@@ -245,6 +253,8 @@ export const useStore = create<State>(() => ({
   historyFor: null,
   compare: null,
   penguinFlash: null,
+  kepiFlash: null,
+  inlineClaudeBusy: false,
   penguinTip: 0,
 }));
 
@@ -285,7 +295,7 @@ let toastId = 1;
 export function toast(text: string, kind: Toast["kind"] = "info", action?: Toast["action"]) {
   const id = toastId++;
   setState((s) => ({ toasts: [...s.toasts.slice(-3), { id, kind, text, action }] }));
-  setTimeout(() => setState((s) => ({ toasts: s.toasts.filter((t) => t.id !== id) })), kind === "error" ? 7000 : 4000);
+  setTimeout(() => setState((s) => ({ toasts: s.toasts.filter((t) => t.id !== id) })), action ? 9000 : kind === "error" ? 7000 : 4000);
 }
 
 export function ask(req: Omit<DialogRequest, "resolve">): Promise<string | boolean | null> {

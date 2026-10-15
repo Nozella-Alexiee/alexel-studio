@@ -1,4 +1,5 @@
-import { Bot, Play, Plus, RotateCw, Sparkles, Square, Trash2, X, TerminalSquare } from "lucide-react";
+import { Play, Plus, RotateCw, Square, Trash2, X, TerminalSquare } from "lucide-react";
+import { CrabMascot } from "../components/CrabMascot";
 import { useEffect, useRef } from "react";
 import { openShell } from "../app/run";
 import { Empty, IconButton } from "../components/ui";
@@ -31,7 +32,7 @@ export default function TerminalPanel({ showTabs = true }: { showTabs?: boolean 
         <div className="term-tabs" role="tablist" aria-label="Sesi terminal">
           {terminals.map((t) => (
             <div key={t.key} role="tab" aria-selected={t.key === sess?.key} tabIndex={0} className={`term-tab ${t.key === sess?.key ? "is-active" : ""} st-${t.status}`} onClick={() => setState({ activeTerminal: t.key })} onKeyDown={(e) => e.key === "Enter" && setState({ activeTerminal: t.key })}>
-              {t.kind === "run" ? <Play size={11} aria-hidden /> : t.kind === "claude" ? <Bot size={11} aria-hidden /> : <TerminalSquare size={11} aria-hidden />}
+              {t.kind === "run" ? <Play size={11} aria-hidden /> : t.kind === "claude" ? <CrabMascot size={13} /> : <TerminalSquare size={11} aria-hidden />}
               <span className="term-title">{t.title}</span>
               {t.status === "exited" && t.kind !== "shell" && <span className={`term-code ${t.exitCode === 0 ? "ok" : "bad"}`}>{t.exitCode ?? "?"}</span>}
               <button
@@ -63,7 +64,7 @@ export default function TerminalPanel({ showTabs = true }: { showTabs?: boolean 
                 </IconButton>
               )}
               <IconButton label="Claude jelaskan output ini" onClick={() => void import("../claude/claude").then((m) => m.explainTerminal(sess.key))}>
-                <Sparkles size={13} />
+                <CrabMascot size={15} />
               </IconButton>
               <IconButton label="Bersihkan" onClick={() => T.clearTerminal(sess.key)}>
                 <Trash2 size={13} />

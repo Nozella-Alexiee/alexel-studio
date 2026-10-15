@@ -11,7 +11,7 @@ export interface DesignInfo {
   scheme: "dark" | "light";
   /** Tata letak yang dipakai desain ini. */
   shell: ShellId;
-  /** Gaya maskot Pingu (khusus desain pinguin). */
+  /** Gaya maskot Nozi (khusus desain pinguin). */
   penguin?: "antartika" | "tuxedo" | "kawanan";
   group: "Klasik" | "Pinguin";
   /** Warna contoh untuk kartu pratinjau di Pengaturan. */
@@ -49,7 +49,7 @@ export const DESIGNS: DesignInfo[] = [
   {
     id: "antartika",
     name: "Antartika",
-    tagline: "Gelap biru es. Pingu berkupluk menemani di sidebar dan beranda, aksen oranye paruh.",
+    tagline: "Gelap biru es. Nozi berkupluk menemani di sidebar dan beranda, aksen oranye paruh.",
     scheme: "dark",
     shell: "aurora",
     penguin: "antartika",
@@ -59,7 +59,7 @@ export const DESIGNS: DesignInfo[] = [
   {
     id: "tuxedo",
     name: "Tuxedo",
-    tagline: "Hitam-putih kontras tinggi, Pingu berdasi kupu-kupu kuning. Rapi dan profesional.",
+    tagline: "Hitam-putih kontras tinggi, Nozi berdasi kupu-kupu kuning. Rapi dan profesional.",
     scheme: "dark",
     shell: "control",
     penguin: "tuxedo",
@@ -69,7 +69,7 @@ export const DESIGNS: DesignInfo[] = [
   {
     id: "kawanan",
     name: "Kawanan",
-    tagline: "Terang seperti salju, kawanan Pingu berselendang di beranda. Ceria dan bulat.",
+    tagline: "Terang seperti salju, kawanan Nozi berselendang di beranda. Ceria dan bulat.",
     scheme: "light",
     shell: "zen",
     penguin: "kawanan",

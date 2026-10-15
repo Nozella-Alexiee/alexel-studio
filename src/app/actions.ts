@@ -214,6 +214,12 @@ export function focusGroup(g: number) {
 }
 
 function removeFromGroup(id: string, g: number) {
+  // Grup kiri akan kosong sementara grup kanan masih ada → isi grup kanan pindah ke kiri
+  // beserta state editornya (undo, kursor, LSP).
+  const before = getState().groups;
+  if (g === 0 && before.length > 1 && before[0].tabs.length === 1 && before[0].tabs[0] === id) {
+    for (const t of before[1].tabs) docs.moveGroupState(t, 1, 0);
+  }
   setState((s) => {
     let groups = s.groups.map((grp, i) => {
       if (i !== g) return grp;
@@ -255,8 +261,53 @@ export async function closeTab(id: string, g = getState().focusedGroup): Promise
     } else if (choice !== "discard") return false;
   }
   removeFromGroup(id, g);
+  if ((tab.kind === "text" || tab.kind === "image") && !getState().tabs[id]) {
+    closedTabs.push(id);
+    if (closedTabs.length > 30) closedTabs.shift();
+  }
   persistSession();
   return true;
+}
+
+/** Riwayat tab yang ditutup, untuk ⌘⇧T. */
+const closedTabs: string[] = [];
+
+export async function reopenClosedTab() {
+  while (closedTabs.length) {
+    const path = closedTabs.pop()!;
+    if (getState().tabs[path]) continue;
+    if (await openFile(path, { quiet: true })) return;
+  }
+  toast("Tidak ada tab tertutup untuk dibuka lagi.");
+}
+
+/**
+ * Pindahkan tab: urutkan ulang di grup yang sama, atau pindah ke grup lain (grup 1 = editor kanan,
+ * dibuat bila belum ada). `beforeId` = sisipkan sebelum tab itu; kosong = di akhir.
+ */
+export function moveTab(id: string, from: number, to: number, beforeId?: string | null) {
+  const s = getState();
+  if (to > 1 || !s.groups[from]?.tabs.includes(id)) return;
+  const insert = (tabs: string[]) => {
+    const rest = tabs.filter((t) => t !== id);
+    const at = beforeId ? rest.indexOf(beforeId) : -1;
+    if (at < 0) rest.push(id);
+    else rest.splice(at, 0, id);
+    return rest;
+  };
+  if (from === to) {
+    setState((st) => ({ groups: st.groups.map((grp, i) => (i === to ? { ...grp, tabs: insert(grp.tabs), active: id } : grp)) }));
+    persistSession();
+    return;
+  }
+  // Satu-satunya tab di satu-satunya grup: tidak ada yang bisa dibelah.
+  if (s.groups.length === 1 && s.groups[0].tabs.length === 1) return;
+  const target = ensureGroup(to);
+  const already = getState().groups[target].tabs.includes(id);
+  if (!already) docs.moveGroupState(id, from, target);
+  setState((st) => ({ groups: st.groups.map((grp, i) => (i === target ? { tabs: insert(grp.tabs), active: id } : grp)), focusedGroup: target }));
+  removeFromGroup(id, from);
+  persistSession();
 }
 
 export async function closeOtherTabs(keep: string, g = getState().focusedGroup) {
@@ -300,8 +351,10 @@ export function splitEditor() {
   if (s.groups.length > 1) {
     // Sudah split → gabung lagi ke satu grup.
     const merged = [...new Set([...s.groups[0].tabs, ...s.groups[1].tabs])];
-    s.groups[1].tabs.forEach((id) => docs.forgetGroupState(1, id));
+    // Tab yang hanya ada di kanan membawa state editornya ke kiri; yang ada di dua sisi cukup dilupakan.
+    s.groups[1].tabs.forEach((id) => (s.groups[0].tabs.includes(id) ? docs.forgetGroupState(1, id) : docs.moveGroupState(id, 1, 0)));
     setState({ groups: [{ tabs: merged, active: s.groups[0].active ?? active ?? null }], focusedGroup: 0 });
+    persistSession();
     return;
   }
   if (!active) return toast("Buka berkas dulu untuk membelah editor.");
@@ -428,16 +481,33 @@ export async function movePath(path: string, toDir: string) {
 
 export async function deletePath(path: string) {
   const name = basename(path);
-  if (getState().settings.confirmDelete && !(await confirmDialog(`Pindahkan "${name}" ke Trash?`, "Kamu masih bisa mengembalikannya dari Trash macOS.", "Pindahkan ke Trash", true))) return;
+  if (getState().settings.confirmDelete && !(await confirmDialog(`Pindahkan "${name}" ke Trash?`, "Bisa diurungkan sesaat setelahnya, atau dikembalikan dari Trash sistem.", "Pindahkan ke Trash", true))) return;
   try {
-    await api.trash(path);
+    const token = await api.trash(path);
     // Tutup tab berkas itu dan semua isi folder (tanpa tanya; isinya sudah di Trash).
     for (const p of docs.docsUnder(path)) {
       const st = getState();
       st.groups.forEach((g, i) => g.tabs.includes(p) && removeFromGroup(p, i));
     }
     await loadDir(dirname(path));
-    toast(`${name} dipindah ke Trash`, "success");
+    toast(
+      `${name} dipindah ke Trash`,
+      "success",
+      token
+        ? {
+            label: "Urungkan",
+            run: async () => {
+              try {
+                await api.restoreDeleted(token, path);
+                await loadDir(dirname(path));
+                toast(`${name} dikembalikan`, "success");
+              } catch (e) {
+                toast(errMsg(e), "error");
+              }
+            },
+          }
+        : undefined
+    );
   } catch (e) {
     toast(errMsg(e), "error");
   }

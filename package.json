@@ -85,7 +85,7 @@
     "esbuild@0.28.2": true
   },
   "main": "dist-electron/main.cjs",
-  "description": "Nozel Code — editor kode dengan terminal sungguhan, Claude Code bawaan, dan maskot Pingu",
+  "description": "Nozel Code — editor kode dengan terminal sungguhan, Claude Code bawaan, dan maskot Nozi",
   "author": "Nozel",
   "build": {
     "appId": "com.nozel.code",

@@ -1,7 +1,8 @@
 // Satu kotak untuk semuanya. Awalan: (kosong) berkas · ">" perintah · ":" baris ·
 // "@" simbol · "!" Smart Run · "?" tanya Claude.
 
-import { CornerDownLeft, Hash, Play, Sparkles, SquareFunction, Terminal } from "lucide-react";
+import { CornerDownLeft, Hash, Play, SquareFunction, Terminal } from "lucide-react";
+import { CrabMascot } from "../components/CrabMascot";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { prettyKeys, visibleCommands } from "../app/commands";
 import * as A from "../app/actions";
@@ -112,7 +113,7 @@ export function CommandPalette() {
     }
     if (prefix === "?") {
       if (!query) return [];
-      return [{ key: "ask", icon: <Sparkles size={14} aria-hidden />, label: `Tanya Claude: ${query}`, detail: "dengan berkas aktif sebagai konteks", run: () => void import("../claude/claude").then((m) => m.sendToClaude(query, { includeFile: s.settings.claudeIncludeFile })) }];
+      return [{ key: "ask", icon: <CrabMascot size={15} />, label: `Tanya Claude: ${query}`, detail: "dengan berkas aktif sebagai konteks", run: () => void import("../claude/claude").then((m) => m.sendToClaude(query, { includeFile: s.settings.claudeIncludeFile })) }];
     }
     // Berkas: tab terbuka dulu (urutan terbaru), lalu seluruh project.
     const openIds = s.groups.flatMap((g) => g.tabs).filter((id, i, a) => a.indexOf(id) === i && s.tabs[id]?.kind !== "settings");

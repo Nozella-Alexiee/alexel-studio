@@ -19,7 +19,7 @@ child.stderr.on("data", (d) => {
   const s = d.toString();
   if (!/Autofill|DevTools|GPU process|ERROR:CONSOLE/.test(s)) process.stderr.write(s);
 });
-const timer = setTimeout(() => child.kill("SIGKILL"), 120000);
+const timer = setTimeout(() => child.kill("SIGKILL"), Number(process.env.NOZEL_SMOKE_TIMEOUT) || 120000);
 child.on("exit", async (code) => {
   clearTimeout(timer);
   await server.close();

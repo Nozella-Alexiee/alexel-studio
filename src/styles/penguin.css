@@ -1,7 +1,7 @@
-/* Identitas pinguin: maskot Pingu + penyesuaian tata letak untuk desain
+/* Identitas pinguin: maskot Nozi + penyesuaian tata letak untuk desain
    Antartika (shell aurora), Tuxedo (shell control), dan Kawanan (shell zen). */
 
-/* ---------- Animasi Pingu ---------- */
+/* ---------- Animasi Nozi ---------- */
 .penguin {
   overflow: visible;
   flex: none;
@@ -10,19 +10,43 @@
   transform-origin: 60px 130px;
 }
 .penguin.mood-idle .penguin-body {
-  animation: pingu-breathe 4.5s ease-in-out infinite;
+  animation: nozi-breathe 4.5s ease-in-out infinite;
 }
 .penguin.mood-sibuk .penguin-body {
-  animation: pingu-waddle 0.9s ease-in-out infinite;
+  animation: nozi-waddle 0.9s ease-in-out infinite;
 }
 .penguin.mood-sukses .penguin-body {
-  animation: pingu-hop 0.7s ease-out 2;
+  animation: nozi-hop 0.7s ease-out 2;
 }
 .penguin.mood-error .penguin-body {
-  animation: pingu-shake 0.4s ease-in-out 2;
+  animation: nozi-shake 0.4s ease-in-out 2;
+}
+.penguin.mood-jempol .penguin-body {
+  animation: nozi-hop 0.7s ease-out 2;
+}
+.penguin .penguin-thumb {
+  transform-origin: 96px 78px;
+  animation: nozi-thumb 0.9s ease-in-out 3;
+}
+.penguin.mood-semangat .penguin-body {
+  animation: nozi-waddle 0.35s ease-in-out infinite;
+}
+.penguin .penguin-speed {
+  animation: nozi-dot 0.5s ease-in-out infinite;
+}
+.penguin .penguin-hearts path {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: nozi-heart 1.4s ease-out infinite;
+}
+.penguin .penguin-hearts path:nth-child(2) {
+  animation-delay: 0.45s;
+}
+.penguin .penguin-hearts path:nth-child(3) {
+  animation-delay: 0.9s;
 }
 .penguin .penguin-dots circle {
-  animation: pingu-dot 1.2s ease-in-out infinite;
+  animation: nozi-dot 1.2s ease-in-out infinite;
 }
 .penguin .penguin-dots circle:nth-child(2) {
   animation-delay: 0.2s;
@@ -33,14 +57,14 @@
 .penguin .penguin-spark {
   transform-box: fill-box;
   transform-origin: center;
-  animation: pingu-spark 1.4s ease-in-out infinite;
+  animation: nozi-spark 1.4s ease-in-out infinite;
 }
-@keyframes pingu-breathe {
+@keyframes nozi-breathe {
   50% {
     transform: scaleY(0.975);
   }
 }
-@keyframes pingu-waddle {
+@keyframes nozi-waddle {
   25% {
     transform: rotate(-4deg);
   }
@@ -48,12 +72,12 @@
     transform: rotate(4deg);
   }
 }
-@keyframes pingu-hop {
+@keyframes nozi-hop {
   40% {
     transform: translateY(-9px);
   }
 }
-@keyframes pingu-shake {
+@keyframes nozi-shake {
   25% {
     transform: translateX(-3px);
   }
@@ -61,19 +85,43 @@
     transform: translateX(3px);
   }
 }
-@keyframes pingu-dot {
+@keyframes nozi-dot {
   50% {
     opacity: 0.15;
   }
 }
-@keyframes pingu-spark {
+@keyframes nozi-thumb {
+  50% {
+    transform: rotate(-10deg);
+  }
+}
+@keyframes nozi-heart {
+  0% {
+    opacity: 0;
+    transform: translateY(6px) scale(0.6);
+  }
+  25% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-22px) scale(1.1);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .penguin *,
+  .crab * {
+    animation: none !important;
+  }
+}
+@keyframes nozi-spark {
   50% {
     transform: scale(0.6) rotate(20deg);
   }
 }
 
 /* ---------- Potongan UI ---------- */
-.pingu-brand {
+.nozi-brand {
   display: flex;
   align-items: center;
   gap: 7px;
@@ -84,24 +132,24 @@
   white-space: nowrap;
   flex: none;
 }
-[data-design="tuxedo"] .pingu-brand {
+[data-design="tuxedo"] .nozi-brand {
   font-weight: 700;
   font-size: 12px;
   letter-spacing: 0.18em;
 }
-[data-design="kawanan"] .pingu-brand {
+[data-design="kawanan"] .nozi-brand {
   font-family: var(--font-display);
   font-weight: 600;
   font-size: 18px;
 }
-.pingu-status {
+.nozi-status {
   font-weight: 700;
   border: 1px solid var(--border);
   border-radius: 999px;
   padding: 0 9px 0 3px;
   height: 22px;
 }
-[data-design="tuxedo"] .pingu-status {
+[data-design="tuxedo"] .nozi-status {
   background: var(--accent);
   color: var(--accent-fg);
   border-color: var(--accent);
@@ -110,31 +158,31 @@
   letter-spacing: 0.06em;
   font-size: 10.5px;
 }
-[data-design="tuxedo"] .pingu-status:hover {
+[data-design="tuxedo"] .nozi-status:hover {
   background: var(--accent) !important;
   color: var(--accent-fg) !important;
 }
-.pingu-peek {
+.nozi-peek {
   position: relative;
   flex: none;
   height: 52px;
   margin: 4px 2px 0;
 }
 /* Gelembung melayang di atas daftar berkas hanya sebentar; tidak memakan tinggi sidebar. */
-.pingu-peek .pingu-bubble {
+.nozi-peek .nozi-bubble {
   bottom: 54px;
   top: auto;
   box-shadow: var(--shadow-pop);
   z-index: 2;
 }
-.pingu-peek .pingu-peek-x {
+.nozi-peek .nozi-peek-x {
   bottom: 60px;
   top: auto;
   right: 2px;
   z-index: 3;
   background: var(--surface-popover);
 }
-.pingu-bubble {
+.nozi-bubble {
   position: absolute;
   left: 4px;
   right: 54px;
@@ -148,10 +196,10 @@
   line-height: 1.45;
   text-align: left;
 }
-.pingu-bubble:hover {
+.nozi-bubble:hover {
   border-color: var(--penguin-accent);
 }
-.pingu-peek-x {
+.nozi-peek-x {
   position: absolute;
   right: 4px;
   top: 0;
@@ -160,23 +208,23 @@
   border-radius: 50%;
   color: var(--fg-subtle);
 }
-.pingu-peek-x:hover {
+.nozi-peek-x:hover {
   color: var(--fg-strong);
   background: var(--surface-hover);
 }
-.pingu-peek-body {
+.nozi-peek-body {
   position: absolute;
   right: 0;
   bottom: -6px;
 }
-.pingu-hero {
+.nozi-hero {
   position: relative;
   display: flex;
   align-items: flex-end;
   justify-content: center;
   flex: none;
 }
-.pingu-floe {
+.nozi-floe {
   position: absolute;
   bottom: 2px;
   left: 50%;
@@ -187,19 +235,19 @@
   background: #1b2f52;
   box-shadow: inset 0 -6px 0 #142443;
 }
-.pingu-hero > .penguin {
+.nozi-hero > .penguin {
   position: relative;
 }
-.pingu-flock {
+.nozi-flock {
   gap: 0;
 }
-.pingu-flock > .penguin:first-child {
+.nozi-flock > .penguin:first-child {
   margin-right: -14px;
 }
-.pingu-flock > .penguin:last-child {
+.nozi-flock > .penguin:last-child {
   margin-left: -12px;
 }
-.pingu-banner {
+.nozi-banner {
   display: flex;
   align-items: center;
   gap: 28px;
@@ -209,33 +257,33 @@
   border: 1px solid var(--border);
   overflow: hidden;
 }
-.pingu-banner h2 {
+.nozi-banner h2 {
   font-size: 24px;
   margin-bottom: 6px;
 }
-.pingu-banner.pb-antartika {
+.nozi-banner.pb-antartika {
   background: radial-gradient(120% 140% at 0% 100%, #16264a 0%, var(--surface-1) 60%);
 }
-.pingu-banner.pb-tuxedo {
+.nozi-banner.pb-tuxedo {
   background: var(--bg);
   border-color: var(--border-strong);
 }
-.pingu-banner.pb-tuxedo h2 {
+.nozi-banner.pb-tuxedo h2 {
   font-size: 34px;
   letter-spacing: -0.02em;
 }
-.pingu-banner.pb-kawanan {
+.nozi-banner.pb-kawanan {
   background: linear-gradient(180deg, #eaf4fd 0%, #ffffff 100%);
 }
-.pingu-banner.pb-kawanan h2 {
+.nozi-banner.pb-kawanan h2 {
   font-family: var(--font-display);
   font-weight: 600;
   font-size: 28px;
 }
-.empty-pingu {
+.empty-nozi {
   margin-bottom: 2px;
 }
-.pingu-procs {
+.nozi-procs {
   list-style: none;
   margin: 0;
   padding: 2px 14px 8px;
@@ -245,7 +293,7 @@
   color: var(--fg-muted);
   font-size: 12.5px;
 }
-.pingu-procs li {
+.nozi-procs li {
   display: flex;
   align-items: center;
   gap: 8px;
@@ -399,4 +447,103 @@
 }
 .design-card .thumb {
   position: relative;
+}
+
+/* ---------- Kepi, kepiting teman Claude ---------- */
+.crab {
+  overflow: visible;
+  flex: none;
+}
+.crab .crab-body {
+  transform-box: view-box;
+}
+.crab-siap .crab-body {
+  animation: kepi-bob 2.4s ease-in-out infinite;
+}
+.crab .crab-lid {
+  transform-box: fill-box;
+  transform-origin: top;
+  transform: scaleY(0);
+  animation: kepi-blink 3.6s steps(1) infinite;
+}
+.crab-mikir .crab-jaw-l {
+  transform-origin: 9px 26px;
+  animation: kepi-snip-l 0.7s ease-in-out infinite;
+}
+.crab-mikir .crab-jaw-r {
+  transform-origin: 55px 26px;
+  animation: kepi-snip-r 0.7s ease-in-out 0.35s infinite;
+}
+.crab .crab-dots rect {
+  animation: nozi-dot 1s ease-in-out infinite;
+}
+.crab .crab-dots rect:nth-child(2) {
+  animation-delay: 0.2s;
+}
+.crab .crab-dots rect:nth-child(3) {
+  animation-delay: 0.4s;
+}
+.crab-sukses .crab-body {
+  animation: kepi-hop 0.9s ease-out 3;
+}
+.crab .crab-spark {
+  animation: nozi-dot 1.2s ease-in-out infinite;
+}
+.crab-error .crab-body {
+  animation: kepi-shake 0.45s ease-in-out 3;
+}
+.crab-melambai .crab-claw-r {
+  transform-origin: 53px 34px;
+  animation: kepi-wave 0.55s ease-in-out 4;
+}
+@keyframes kepi-bob {
+  50% {
+    transform: translateY(-1px);
+  }
+}
+@keyframes kepi-blink {
+  0%,
+  92% {
+    transform: scaleY(0);
+  }
+  94% {
+    transform: scaleY(1);
+  }
+  97% {
+    transform: scaleY(0);
+  }
+}
+@keyframes kepi-snip-l {
+  50% {
+    transform: rotate(-22deg);
+  }
+}
+@keyframes kepi-snip-r {
+  50% {
+    transform: rotate(22deg);
+  }
+}
+@keyframes kepi-hop {
+  30% {
+    transform: translateY(-8px);
+  }
+  55% {
+    transform: translateY(0);
+  }
+  70% {
+    transform: translateY(-4px);
+  }
+}
+@keyframes kepi-shake {
+  25% {
+    transform: translateX(-3px);
+  }
+  75% {
+    transform: translateX(3px);
+  }
+}
+@keyframes kepi-wave {
+  50% {
+    transform: rotate(-28deg);
+  }
 }

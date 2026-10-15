@@ -561,3 +561,8 @@
     --dur: 0ms;
   }
 }
+@media (prefers-reduced-motion: reduce) {
+  .skeleton {
+    animation: none;
+  }
+}

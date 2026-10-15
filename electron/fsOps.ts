@@ -176,15 +176,68 @@ export async function duplicateEntry(p: string): Promise<string> {
   throw new Error("Terlalu banyak salinan.");
 }
 
-export async function deleteEntry(ctx: Ctx, p: string) {
+const UNDO_MAX_BYTES = 50 * 1024 * 1024;
+const UNDO_TTL_MS = 60 * 60 * 1000;
+
+async function sizeOf(p: string, limit: number): Promise<number> {
+  const st = await fsp.lstat(p);
+  if (!st.isDirectory()) return st.size;
+  let total = 0;
+  for (const e of await fsp.readdir(p)) {
+    total += await sizeOf(path.join(p, e), limit - total);
+    if (total > limit) break;
+  }
+  return total;
+}
+
+/** Hapus salinan "urungkan" yang sudah lebih dari sejam. */
+export async function pruneUndo(ctx: Ctx) {
+  const dir = path.join(ctx.userData, "undo-trash");
+  for (const e of await fsp.readdir(dir).catch(() => [] as string[])) {
+    const st = await fsp.stat(path.join(dir, e)).catch(() => null);
+    if (st && Date.now() - st.mtimeMs > UNDO_TTL_MS) await fsp.rm(path.join(dir, e), { recursive: true, force: true }).catch(() => {});
+  }
+}
+
+/**
+ * Pindahkan ke Trash/Recycle Bin. Bila kecil (≤ 50 MB), simpan salinan sementara dulu supaya
+ * bisa diurungkan dari dalam Nozel (Trash sistem tidak bisa dipulihkan lewat API lintas OS).
+ * Mengembalikan token urungkan, atau null bila terlalu besar.
+ */
+export async function deleteEntry(ctx: Ctx, p: string): Promise<string | null> {
   try {
     await fsp.lstat(p);
   } catch {
     throw new Error("Berkas sudah tidak ada.");
   }
+  let token: string | null = null;
+  try {
+    if ((await sizeOf(p, UNDO_MAX_BYTES + 1)) <= UNDO_MAX_BYTES) {
+      token = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+      const dest = path.join(ctx.userData, "undo-trash", token, path.basename(p));
+      await fsp.mkdir(path.dirname(dest), { recursive: true });
+      await fsp.cp(p, dest, { recursive: true, verbatimSymlinks: true });
+    }
+  } catch {
+    token = null;
+  }
   try {
     await ctx.trash(p);
   } catch (e) {
+    if (token) await fsp.rm(path.join(ctx.userData, "undo-trash", token), { recursive: true, force: true }).catch(() => {});
     throw new Error(`Gagal memindahkan ke Trash: ${(e as Error).message}`);
   }
+  return token;
+}
+
+/** Kembalikan berkas/folder yang baru dihapus dari salinan sementara. */
+export async function restoreDeleted(ctx: Ctx, token: string, original: string) {
+  if (!/^[\w-]+$/.test(token)) throw new Error("Token tidak valid.");
+  const dir = path.join(ctx.userData, "undo-trash", token);
+  const src = path.join(dir, path.basename(original));
+  if (!fs.existsSync(src)) throw new Error("Salinan sudah kedaluwarsa. Ambil dari Trash sistem.");
+  if (fs.existsSync(original)) throw new Error("Sudah ada berkas dengan nama itu di tempat asalnya.");
+  await fsp.mkdir(path.dirname(original), { recursive: true });
+  await fsp.cp(src, original, { recursive: true, verbatimSymlinks: true });
+  await fsp.rm(dir, { recursive: true, force: true });
 }

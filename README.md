@@ -1,6 +1,6 @@
 # Nozel Code 🐧
 
-> Editor kode desktop buatan sendiri ala VS Code, dengan identitas pinguin (maskot **Pingu**),
+> Editor kode desktop buatan sendiri ala VS Code, dengan identitas pinguin (maskot **Nozi**),
 > 6 desain yang bisa diganti kapan saja, autocomplete beneran lewat LSP, ekstensi dari Open VSX,
 > dan Claude Code bawaan lewat CLI resmi (langganan Pro/Max, tanpa API key).
 
@@ -34,10 +34,10 @@ yang konsisten lintas OS. Pilihan pindah ke Electron diambil dengan sadar: **fit
 
 ## Fitur
 
-**Desain & Pingu**
+**Desain & Nozi**
 - 6 desain, masing-masing dengan tata letak sendiri (bukan hanya warna). Ganti di Pengaturan atau `Ctrl+⌘T`.
-- Desain pinguin punya maskot Pingu: ekspresi di status bar (santai, sibuk, error, sukses), tips, dan empty state.
-- Tema warna dari ekstensi bisa ditimpa di atas desain mana saja. Tata letak dan Pingu tetap.
+- Desain pinguin punya maskot Nozi: ekspresi di status bar (santai, sibuk, error, sukses), tips, dan empty state.
+- Tema warna dari ekstensi bisa ditimpa di atas desain mana saja. Tata letak dan Nozi tetap.
 
 **Editor**
 - Quick Open fuzzy (`⌘P`), palette perintah (`⌘K` / `⌘⇧P`), simbol di berkas (`⌘⇧O`), pergi ke baris (`Ctrl+G`).

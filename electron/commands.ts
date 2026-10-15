@@ -34,6 +34,7 @@ export function buildCommands(ctx: Ctx, hooks: { confirmClose: (win: BrowserWind
     create_file: (a) => F.createFile(a.path),
     create_dir: (a) => F.createDir(a.path),
     delete_entry: (a) => F.deleteEntry(ctx, a.path),
+    restore_deleted: (a) => F.restoreDeleted(ctx, String(a.token), String(a.path)),
     rename_entry: (a) => F.renameEntry(a.oldPath, a.newPath),
     duplicate_entry: (a) => F.duplicateEntry(a.path),
     reveal_in_finder: (a) => ctx.reveal(a.path),
@@ -75,6 +76,7 @@ export function buildCommands(ctx: Ctx, hooks: { confirmClose: (win: BrowserWind
 
     // Claude
     claude_detect: () => claude.claudeDetect(),
+    claude_inline: (a) => claude.claudeOnce(String(a.runId), String(a.projectDir ?? ""), String(a.prompt ?? ""), a.model === "default" ? "default" : "fast"),
     claude_run: (a) => claude.claudeRun(ctx, a.runId, a.projectDir, a.prompt, a.resumeSession, a.mode === "edit" ? "edit" : "read"),
     claude_cancel: (a) => claude.claudeCancel(a.runId),
 

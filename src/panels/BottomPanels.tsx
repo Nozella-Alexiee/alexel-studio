@@ -1,6 +1,7 @@
 // Isi panel bawah: Masalah, Port & proses, Papan TODO.
 
-import { AlertCircle, AlertTriangle, ExternalLink, Info, RefreshCw, Sparkles, Square, Zap } from "lucide-react";
+import { AlertCircle, AlertTriangle, ExternalLink, Info, RefreshCw, Square, Zap } from "lucide-react";
+import { CrabMascot } from "../components/CrabMascot";
 import { useEffect, useMemo, useState } from "react";
 import * as A from "../app/actions";
 import { FileIcon } from "../components/FileIcon";
@@ -37,7 +38,7 @@ export function ProblemsPanel() {
                 </span>
               </button>
               <button className="btn btn-sm btn-ghost prob-ask" onClick={() => void import("../claude/claude").then((m) => m.explainProblem(path, p))} title="Minta Claude menjelaskan dan memperbaiki">
-                <Sparkles size={12} /> Jelaskan
+                <CrabMascot size={14} /> Jelaskan
               </button>
             </div>
           ))}

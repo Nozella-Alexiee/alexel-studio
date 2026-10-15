@@ -1,12 +1,13 @@
-// Pingu, maskot Nozel. Tiga gaya (Antartika, Tuxedo, Kawanan) × empat ekspresi.
+// Nozi, maskot Nozel. Tiga gaya (Antartika, Tuxedo, Kawanan) × empat ekspresi.
 // Digambar sebagai SVG supaya tajam di semua ukuran dan bisa dipakai untuk ikon app.
 
 import { memo, useEffect, useState } from "react";
 import { designById } from "../design/designs";
+import { Kepi } from "./CrabMascot";
 import { getState, setState, toast, useStore } from "../state/store";
 
 export type PenguinVariant = "antartika" | "tuxedo" | "kawanan";
-export type PenguinMood = "idle" | "sibuk" | "error" | "sukses";
+export type PenguinMood = "idle" | "sibuk" | "error" | "sukses" | "jempol" | "hati" | "semangat";
 
 interface Palette {
   body: string;
@@ -29,7 +30,7 @@ const PALETTES: Record<PenguinVariant, Palette> = {
   kawanan: { body: "#2b3a55", belly: "#ffffff", face: "#ffffff", beak: "#ff8a3d", beakLine: "#c85d17", eye: "#1c2433", cheek: "#ff9fb2", extra: "#ff8a3d", extra2: "#ffd166", accent: "#ff8a3d", shadow: "rgba(43,58,85,.18)" },
 };
 
-export const MOOD_LABEL: Record<PenguinMood, string> = { idle: "santai", sibuk: "lagi kerja", error: "nemu error", sukses: "senang!" };
+export const MOOD_LABEL: Record<PenguinMood, string> = { idle: "santai", sibuk: "lagi kerja", error: "nemu error", sukses: "senang!", jempol: "kasih jempol", hati: "dielus", semangat: "semangat!" };
 
 export const PenguinMascot = memo(function PenguinMascot({
   variant,
@@ -46,8 +47,9 @@ export const PenguinMascot = memo(function PenguinMascot({
 }) {
   const c = PALETTES[variant];
   const h = Math.round((size * 140) / 120);
-  const cheek = variant === "tuxedo" ? 0 : mood === "sukses" ? 0.9 : 0.55;
-  const label = title ?? `Pingu, ${MOOD_LABEL[mood]}`;
+  const cheek = variant === "tuxedo" ? 0 : mood === "sukses" || mood === "hati" ? 0.9 : 0.55;
+  const happy = mood === "sukses" || mood === "jempol" || mood === "hati";
+  const label = title ?? `Nozi, ${MOOD_LABEL[mood]}`;
   return (
     <svg viewBox="0 0 120 140" width={size} height={h} role="img" aria-label={label} className={`penguin mood-${mood} ${className}`}>
       <ellipse cx="60" cy="133" rx="32" ry="4.5" fill={c.shadow} />
@@ -55,7 +57,14 @@ export const PenguinMascot = memo(function PenguinMascot({
         <ellipse cx="45" cy="128" rx="10" ry="5" fill={c.beak} />
         <ellipse cx="75" cy="128" rx="10" ry="5" fill={c.beak} />
         <ellipse className="penguin-wing-l" cx="22" cy="86" rx="9" ry="24" fill={c.body} transform="rotate(22 22 86)" />
-        <ellipse className="penguin-wing-r" cx="98" cy="86" rx="9" ry="24" fill={c.body} transform="rotate(-22 98 86)" />
+        {mood === "jempol" ? (
+          <g className="penguin-thumb">
+            <ellipse cx="104" cy="62" rx="9" ry="22" fill={c.body} transform="rotate(28 104 62)" />
+            <rect x="105" y="34" width="9" height="15" rx="4.5" fill={c.beak} />
+          </g>
+        ) : (
+          <ellipse className="penguin-wing-r" cx="98" cy="86" rx="9" ry="24" fill={c.body} transform="rotate(-22 98 86)" />
+        )}
         <ellipse cx="60" cy="78" rx="40" ry="52" fill={c.body} stroke={c.outline ?? "none"} strokeWidth={c.outline ? 2 : 0} />
         <ellipse cx="60" cy="90" rx="27" ry="37" fill={c.belly} />
         <path d="M60 40 C40 40 33 54 36 66 C40 76 52 74 60 70 C68 74 80 76 84 66 C87 54 80 40 60 40 Z" fill={c.face} />
@@ -84,7 +93,7 @@ export const PenguinMascot = memo(function PenguinMascot({
         )}
         <circle cx="42" cy="66" r="4.5" fill={c.cheek} opacity={cheek} />
         <circle cx="78" cy="66" r="4.5" fill={c.cheek} opacity={cheek} />
-        {mood === "idle" && (
+        {(mood === "idle" || mood === "semangat") && (
           <g className="penguin-eyes">
             <circle cx="49" cy="56" r="5" fill={c.eye} />
             <circle cx="71" cy="56" r="5" fill={c.eye} />
@@ -111,9 +120,17 @@ export const PenguinMascot = memo(function PenguinMascot({
             <circle cx="102" cy="29" r="2.2" fill="#fff" />
           </g>
         )}
-        {mood === "sukses" && (
+        {happy && <path d="M43 59 Q49 51 55 59 M65 59 Q71 51 77 59" stroke={c.eye} strokeWidth="3.2" strokeLinecap="round" fill="none" />}
+        {mood === "hati" && (
+          <g className="penguin-hearts" fill={variant === "tuxedo" ? c.extra : "#ff8fa3"}>
+            <path d="M88 40c0-4 6-4 6 0 0-4 6-4 6 0 0 5-6 8-6 10 0-2-6-5-6-10z" />
+            <path d="M14 46c0-4 6-4 6 0 0-4 6-4 6 0 0 5-6 8-6 10 0-2-6-5-6-10z" />
+            <path d="M54 14c0-4 6-4 6 0 0-4 6-4 6 0 0 5-6 8-6 10 0-2-6-5-6-10z" />
+          </g>
+        )}
+        {mood === "semangat" && <path className="penguin-speed" d="M4 70h12M2 82h12M6 94h10" stroke={c.accent} strokeWidth="3" strokeLinecap="round" />}
+        {(mood === "sukses" || mood === "jempol") && (
           <g>
-            <path d="M43 59 Q49 51 55 59 M65 59 Q71 51 77 59" stroke={c.eye} strokeWidth="3.2" strokeLinecap="round" fill="none" />
             <path className="penguin-spark" d="M100 10 L102.5 17 L109 19 L102.5 21 L100 28 L97.5 21 L91 19 L97.5 17 Z" fill={c.accent} />
             <path className="penguin-spark" d="M14 26 L15.5 30 L19.5 31.5 L15.5 33 L14 37 L12.5 33 L8.5 31.5 L12.5 30 Z" fill={c.accent} />
           </g>
@@ -177,11 +194,17 @@ export function useTip(): string {
 export function moodLine(mood: PenguinMood): string {
   switch (mood) {
     case "sibuk":
-      return "Pingu lagi nungguin proses yang jalan. Kamu tetap bisa ngedit.";
+      return "Nozi lagi nungguin proses yang jalan. Kamu tetap bisa ngedit.";
     case "error":
       return "Ada error di berkas ini. Buka panel Masalah dan klik Jelaskan biar Claude bantu.";
     case "sukses":
       return "Berhasil! Semua beres.";
+    case "jempol":
+      return "Tersimpan! Versi ini masuk time-travel.";
+    case "hati":
+      return "Hehe, makasih dielus!";
+    case "semangat":
+      return "Wuih, ngebut! Nozi ikut semangat.";
     default:
       return "Semua tenang. Buka berkas dengan ⌘P atau ketik apa saja di ⌘K.";
   }
@@ -194,34 +217,41 @@ export function usePenguinVariant(): PenguinVariant | undefined {
   return useStore((s) => designById(s.settings.design).penguin);
 }
 
-/** Logo kecil di title bar: Pingu + nama aplikasi. */
-export function PinguBrand() {
+/** Logo kecil di title bar: Nozi + nama aplikasi. */
+export function NoziBrand() {
   const v = usePenguinVariant();
   const mood = usePenguinMood();
   if (!v) return null;
   return (
-    <div className="pingu-brand">
+    <div className="nozi-brand">
       <PenguinMascot variant={v} mood={mood} size={22} />
       <span>{v === "tuxedo" ? "NOZEL" : v === "kawanan" ? "nozel" : "Nozel"}</span>
     </div>
   );
 }
 
-/** Pingu di status bar; klik untuk tips berikutnya. */
-export function PinguStatus() {
+/** Nozi di status bar; klik untuk tips berikutnya. */
+export function NoziStatus() {
   const v = usePenguinVariant();
   const mood = usePenguinMood();
   if (!v) return null;
   return (
-    <button className="status-item pingu-status" onClick={() => toast(`Pingu: ${nextTip()}`)} title="Klik untuk tips dari Pingu">
+    <button
+      className="status-item nozi-status"
+      onClick={() => {
+        flashPenguin("hati", 2600);
+        toast(`Nozi: ${nextTip()}`);
+      }}
+      title="Klik untuk mengelus Nozi dan dapat tips"
+    >
       <PenguinMascot variant={v} mood={mood} size={15} />
-      Pingu {MOOD_LABEL[mood]}
+      Nozi {MOOD_LABEL[mood]}
     </button>
   );
 }
 
-/** Pingu mengintip di bawah sidebar sambil memberi tips (Antartika). */
-const PEEK_KEY = "nozel.pinguPeekHidden";
+/** Nozi mengintip di bawah sidebar sambil memberi tips (Antartika). */
+const PEEK_KEY = "nozel.noziPeekHidden";
 const readHidden = () => {
   try {
     return localStorage.getItem(PEEK_KEY) === "1";
@@ -230,7 +260,7 @@ const readHidden = () => {
   }
 };
 
-export function PinguPeek() {
+export function NoziPeek() {
   const v = usePenguinVariant();
   const mood = usePenguinMood();
   const tip = useTip();
@@ -257,26 +287,26 @@ export function PinguPeek() {
     }
   };
   return (
-    <div className={`pingu-peek ${bubble ? "has-bubble" : ""}`} onMouseEnter={() => setBubble(true)} onMouseLeave={() => setBubble(false)}>
+    <div className={`nozi-peek ${bubble ? "has-bubble" : ""}`} onMouseEnter={() => setBubble(true)} onMouseLeave={() => setBubble(false)}>
       {bubble && (
         <>
-          <button className="pingu-bubble" onClick={() => nextTip()} title="Tips berikutnya">
+          <button className="nozi-bubble" onClick={() => nextTip()} title="Tips berikutnya">
             {mood === "idle" ? tip : moodLine(mood)}
           </button>
-          <button className="pingu-peek-x" aria-label="Sembunyikan Pingu" title="Sembunyikan Pingu (bisa dimunculkan lagi di Pengaturan)" onClick={hide}>
+          <button className="nozi-peek-x" aria-label="Sembunyikan Nozi" title="Sembunyikan Nozi (bisa dimunculkan lagi di Pengaturan)" onClick={hide}>
             ×
           </button>
         </>
       )}
-      <div className="pingu-peek-body">
+      <button className="nozi-peek-body" onClick={() => flashPenguin("hati", 2600)} aria-label="Elus Nozi" title="Elus Nozi">
         <PenguinMascot variant={v} mood={mood} size={44} />
-      </div>
+      </button>
     </div>
   );
 }
 
-/** Munculkan lagi Pingu di sidebar (dipanggil dari Pengaturan). */
-export function showPinguPeek() {
+/** Munculkan lagi Nozi di sidebar (dipanggil dari Pengaturan). */
+export function showNoziPeek() {
   try {
     localStorage.removeItem(PEEK_KEY);
   } catch {
@@ -285,46 +315,47 @@ export function showPinguPeek() {
   window.dispatchEvent(new Event("nozel:peek-show"));
 }
 
-/** Pingu besar di beranda/dashboard. Kawanan menampilkan tiga pinguin. */
-export function PinguHero({ size = 200 }: { size?: number }) {
+/** Nozi besar di beranda/dashboard. Kawanan menampilkan tiga pinguin. */
+export function NoziHero({ size = 200 }: { size?: number }) {
   const v = usePenguinVariant();
   const mood = usePenguinMood();
   if (!v) return null;
   if (v === "kawanan") {
     return (
-      <div className="pingu-hero pingu-flock" aria-hidden={false}>
-        <PenguinMascot variant={v} mood="idle" size={Math.round(size * 0.45)} title="Pingu teman" />
+      <div className="nozi-hero nozi-flock" aria-hidden={false}>
+        <PenguinMascot variant={v} mood="idle" size={Math.round(size * 0.45)} title="Nozi teman" />
         <PenguinMascot variant={v} mood={mood} size={size} />
-        <PenguinMascot variant={v} mood="sukses" size={Math.round(size * 0.55)} title="Pingu teman" />
+        <PenguinMascot variant={v} mood="sukses" size={Math.round(size * 0.55)} title="Nozi teman" />
       </div>
     );
   }
   return (
-    <div className={`pingu-hero pingu-${v}`}>
-      {v === "antartika" && <div className="pingu-floe" aria-hidden />}
+    <div className={`nozi-hero nozi-${v}`}>
+      {v === "antartika" && <div className="nozi-floe" aria-hidden />}
       <PenguinMascot variant={v} mood={mood} size={size} />
     </div>
   );
 }
 
 /** Daftar proses berjalan sebagai kawanan pinguin kecil (Kawanan). */
-export function PinguProcesses() {
+export function NoziProcesses() {
   const v = usePenguinVariant();
   const terms = useStore((s) => s.terminals);
   const claudeBusy = useStore((s) => !!s.chatRunning);
   if (!v) return null;
-  const items = [
-    ...terms.filter((t) => t.kind !== "shell").map((t) => ({ key: t.key, label: `${t.title}${t.status === "running" ? "" : ` · kode ${t.exitCode ?? "?"}`}`, mood: (t.status === "running" ? "sibuk" : t.exitCode === 0 ? "sukses" : "error") as PenguinMood })),
-    { key: "claude", label: claudeBusy ? "Claude · bekerja" : "Claude · siap", mood: (claudeBusy ? "sibuk" : "idle") as PenguinMood },
-  ];
+  const items = terms.filter((t) => t.kind !== "shell").map((t) => ({ key: t.key, label: `${t.title}${t.status === "running" ? "" : ` · kode ${t.exitCode ?? "?"}`}`, mood: (t.status === "running" ? "sibuk" : t.exitCode === 0 ? "sukses" : "error") as PenguinMood }));
   return (
-    <ul className="pingu-procs">
+    <ul className="nozi-procs">
       {items.map((it) => (
         <li key={it.key}>
           <PenguinMascot variant={v} mood={it.mood} size={20} />
           <span>{it.label}</span>
         </li>
       ))}
+      <li key="claude">
+        <Kepi size={20} />
+        <span>{claudeBusy ? "Claude · bekerja" : "Claude · siap"}</span>
+      </li>
     </ul>
   );
 }

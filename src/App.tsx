@@ -6,6 +6,7 @@ import { detectClaude } from "./claude/claude";
 import { ErrorBoundary } from "./components/ErrorBoundary";
 import { designById } from "./design/designs";
 import { ContextMenuHost, DialogHost, Toasts } from "./components/Overlays";
+import { TourHost } from "./components/Tour";
 import { api, call, confirmWindowClose, isDemo, on, pathForFile } from "./lib/ipc";
 import { CommandPalette } from "./panels/CommandPalette";
 import { ask, getState, isSaver, setState, useStore } from "./state/store";
@@ -164,6 +165,7 @@ export default function App() {
       <DialogHost />
       <ContextMenuHost />
       <Toasts />
+      <TourHost />
       <Suspense fallback={null}>
         {compare && <CompareModal />}
         {snapshot && <SnapshotDialog />}

@@ -1,11 +1,12 @@
 // Desain A — Aurora Glass: gelap macOS, sidebar kaca dengan kartu workspace,
 // palette di title bar, agen Claude di kanan, dock terminal melayang.
 
-import { Columns2, GitBranch, PanelBottom, PanelRight, Play, Puzzle, Search, Sparkles } from "lucide-react";
+import { Columns2, GitBranch, PanelBottom, Play, Puzzle, Search } from "lucide-react";
+import { Kepi } from "../components/CrabMascot";
 import * as A from "../app/actions";
 import { openPalette } from "../app/commands";
 import { runActiveFile } from "../app/run";
-import { PinguBrand, PinguPeek } from "../components/PenguinMascot";
+import { NoziBrand, NoziPeek } from "../components/PenguinMascot";
 import { IconButton, Kbd, Segmented } from "../components/ui";
 import { BottomPanel } from "../panels/BottomPanel";
 import { setLayout, useLayout, useStore, type SideView } from "../state/store";
@@ -22,7 +23,7 @@ export default function AuroraShell() {
     <div className="shell shell-aurora">
       <header className="titlebar">
         <div className="traffic-space" />
-        <PinguBrand />
+        <NoziBrand />
         <button className="palette-pill" onClick={() => openPalette("")}>
           <Search size={14} aria-hidden />
           <span>{name ? `Cari di ${name}…` : "Cari berkas, perintah…"}</span>
@@ -39,7 +40,7 @@ export default function AuroraShell() {
             <PanelBottom size={15} />
           </IconButton>
           <IconButton label="Panel Claude" keys="Mod+Alt+B" active={l.right} onClick={() => A.toggleRight("claude")}>
-            <PanelRight size={15} />
+            <Kepi size={18} />
           </IconButton>
         </div>
       </header>
@@ -78,7 +79,7 @@ export default function AuroraShell() {
               <div className="side-scroll">
                 <SideContent />
               </div>
-              <PinguPeek />
+              <NoziPeek />
             </aside>
             <SideResizer side="left" />
           </>
@@ -106,7 +107,7 @@ export default function AuroraShell() {
                   value={l.rightView}
                   onChange={(v) => setLayout({ rightView: v })}
                   options={[
-                    { id: "claude", label: <><Sparkles size={12} /> Claude</> },
+                    { id: "claude", label: <><Kepi size={14} /> Claude</> },
                     { id: "git", label: <><GitBranch size={12} /> Git</> },
                   ]}
                 />

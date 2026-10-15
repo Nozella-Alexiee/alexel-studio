@@ -42,11 +42,12 @@ export default function GitPanel() {
     setBusy(label);
     try {
       const r = await fn();
-      if (okMsg) void import("../components/PenguinMascot").then((m) => m.flashPenguin("sukses", 5000));
+      if (okMsg) void import("../components/PenguinMascot").then((m) => m.flashPenguin(label === "commit" ? "jempol" : "sukses", 5000));
       if (okMsg) toast(okMsg + (typeof r === "string" && r && label !== "commit" ? `: ${r.split("\n").pop()}` : ""), "success");
       return true;
     } catch (e) {
       toast(errMsg(e), "error");
+      void import("../components/PenguinMascot").then((m) => m.flashPenguin("error", 5000));
       return false;
     } finally {
       setBusy(null);

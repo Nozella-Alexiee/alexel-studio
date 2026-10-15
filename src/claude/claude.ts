@@ -103,7 +103,10 @@ function ensureListeners() {
     const ctx = runs.get(run_id);
     runs.delete(run_id);
     if (getState().chatRunning === run_id) setState({ chatRunning: null });
-    if (code === 0) void import("../components/PenguinMascot").then((m) => m.flashPenguin("sukses", 4000));
+    if (code === 0) {
+      void import("../components/PenguinMascot").then((m) => m.flashPenguin("sukses", 4000));
+      void import("../components/CrabMascot").then((m) => m.flashKepi("sukses", 3500));
+    } else if (code !== 130) void import("../components/CrabMascot").then((m) => m.flashKepi("error", 5000));
     if (code === 130) push({ role: "error", text: "Dibatalkan." });
     else if (code !== 0 && ctx && !ctx.text && !ctx.errored) {
       const hint = /login|auth|credential/i.test(stderr) ? " Coba jalankan `claude login` di terminal." : "";

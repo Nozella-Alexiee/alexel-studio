@@ -26,6 +26,7 @@ import { basename, isInside } from "../lib/paths";
 import { getState, isSaver, setState, type Problem, type Settings } from "../state/store";
 import { gitGutter, refreshGitGutter } from "./gitGutter";
 import { languageFor } from "./languages";
+import { inlineClaude } from "./inlineClaude";
 import { detectIndent, minimalChange } from "../lib/text";
 import { nozelLinter } from "./lint";
 import { minimap } from "./minimap";
@@ -93,6 +94,7 @@ function setProblems(path: string, list: Problem[]) {
 function baseExtensions(doc: Doc, group: number): Extension {
   const saver = isSaver();
   return [
+    inlineClaude(),
     ...(doc.indent ? [Prec.highest(indentUnit.of(doc.indent))] : []),
     lineNumbers(),
     highlightActiveLineGutter(),
@@ -208,6 +210,20 @@ function onUpdate(doc: Doc, group: number, u: ViewUpdate) {
   markDirty(doc, u.state.doc);
   schedulePreview(doc.path);
   scheduleAutoSave(doc.path);
+  if (u.transactions.some((t) => t.isUserEvent("input.type"))) trackTyping();
+}
+
+// Ngetik cepat beberapa detik → maskot ikut "semangat" (paling sering sekali per menit).
+const typing: number[] = [];
+let lastCheer = 0;
+function trackTyping() {
+  const now = Date.now();
+  typing.push(now);
+  while (typing.length && now - typing[0] > 4000) typing.shift();
+  if (typing.length >= 28 && now - lastCheer > 60_000) {
+    lastCheer = now;
+    void import("../components/PenguinMascot").then((m) => m.flashPenguin("semangat", 2600));
+  }
 }
 
 function markDirty(doc: Doc, text: Text) {
@@ -417,6 +433,7 @@ export async function saveDocument(path: string, opts: { quiet?: boolean; force?
     setState((s) => (s.tabs[path] ? { tabs: { ...s.tabs, [path]: { ...s.tabs[path], conflict: false, missing: false } } } : {}));
     const { afterSave } = await import("../app/actions");
     afterSave(path, opts.quiet);
+    if (!opts.quiet) void import("../components/PenguinMascot").then((m) => m.flashPenguin("jempol", 2500));
     return true;
   } catch (e) {
     const { toast } = await import("../state/store");
@@ -504,6 +521,23 @@ export function closeDocument(path: string) {
     delete p[path];
     return { problems: p };
   });
+}
+
+/**
+ * Pindahkan state editor (undo, kursor, fold, koneksi LSP) dari satu grup ke grup lain —
+ * dipakai saat grup kiri kosong atau split digabung, supaya berkas tidak dibuka ulang dari nol.
+ */
+export function moveGroupState(path: string, from: number, to: number) {
+  const d = docs.get(path);
+  if (!d || from === to) return;
+  const v = views[from];
+  const st = v && shown[from] === path ? v.state : d.states[from];
+  if (st && !d.states[to]) {
+    d.states[to] = st;
+    d.scroll[to] = d.scroll[from];
+  }
+  d.states[from] = null;
+  if (d.lspGroup === from) d.lspGroup = to;
 }
 
 export function forgetGroupState(group: number, path: string) {

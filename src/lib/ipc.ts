@@ -86,7 +86,8 @@ export const api = {
   mtime: (path: string) => call<number>("file_mtime", { path }),
   createFile: (path: string) => call<void>("create_file", { path }),
   createDir: (path: string) => call<void>("create_dir", { path }),
-  trash: (path: string) => call<void>("delete_entry", { path }),
+  trash: (path: string) => call<string | null>("delete_entry", { path }),
+  restoreDeleted: (token: string, path: string) => call<void>("restore_deleted", { token, path }),
   rename: (oldPath: string, newPath: string) => call<void>("rename_entry", { oldPath, newPath }),
   duplicate: (path: string) => call<string>("duplicate_entry", { path }),
   reveal: (path: string) => call<void>("reveal_in_finder", { path }),
@@ -133,6 +134,7 @@ export const api = {
 
   // Claude
   claudeDetect: () => call<ClaudeInfo>("claude_detect"),
+  claudeInline: (runId: string, projectDir: string, prompt: string, model: "fast" | "default" = "fast") => call<string>("claude_inline", { runId, projectDir, prompt, model }),
   claudeRun: (runId: string, projectDir: string, prompt: string, resumeSession?: string | null, mode: "read" | "edit" = "read") =>
     call<void>("claude_run", { runId, projectDir, prompt, resumeSession: resumeSession ?? null, mode }),
   claudeCancel: (runId: string) => call<void>("claude_cancel", { runId }),

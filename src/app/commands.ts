@@ -32,6 +32,9 @@ const claude = () => import("../claude/claude");
 export const COMMANDS: Command[] = [
   { id: "quickOpen", label: "Buka berkas…", group: "Berkas", keys: "Mod+P", run: () => openPalette("") },
   { id: "palette", label: "Palette perintah", group: "Umum", keys: "Mod+K", run: () => openPalette(">") },
+  { id: "tour", label: "Tur singkat Nozel", group: "Bantuan", run: () => void import("../components/Tour").then((m) => m.startTour()) },
+  { id: "reopenTab", label: "Buka lagi tab yang ditutup", group: "Berkas", keys: "Mod+Shift+T", run: () => void A.reopenClosedTab() },
+  { id: "inlineClaude", label: "Claude: ubah seleksi di tempat (⌘K di editor)", group: "Claude", run: () => void openInlineClaude(), when: () => !!activeTab() && activeTab()!.kind === "text" },
   { id: "palette2", label: "Palette perintah", group: "Umum", keys: "Mod+Shift+P", run: () => openPalette(">"), hidden: true },
   { id: "gotoLine", label: "Pergi ke baris…", group: "Editor", keys: "Ctrl+G", run: () => openPalette(":"), when: hasText },
   { id: "gotoSymbol", label: "Pergi ke simbol di berkas…", group: "Editor", keys: "Mod+Shift+O", run: () => openPalette("@"), when: hasText },
@@ -168,6 +171,13 @@ export function handleGlobalKey(e: KeyboardEvent) {
     void import("../terminal/terminals").then((m) => m.clearTerminal(getState().activeTerminal ?? ""));
     return;
   }
+  // ⌘K di editor = Claude inline (ubah seleksi). Di luar editor tetap palette perintah.
+  if (combo === normalizeKeys("Mod+K") && el?.closest?.(".cm-editor")) {
+    e.preventDefault();
+    e.stopPropagation();
+    void openInlineClaude();
+    return;
+  }
   const cmd = byKeys.get(combo);
   if (!cmd) return;
   if (cmd.when && !cmd.when()) return;
@@ -179,6 +189,14 @@ export function handleGlobalKey(e: KeyboardEvent) {
   e.preventDefault();
   e.stopPropagation();
   void cmd.run();
+}
+
+/** Buka Claude inline di editor yang sedang fokus. */
+export async function openInlineClaude() {
+  const v = docs.viewOf(getState().focusedGroup);
+  if (!v) return;
+  const { openInline } = await import("../editor/inlineClaude");
+  openInline(v);
 }
 
 export const visibleCommands = () => COMMANDS.filter((c) => !c.hidden && (!c.when || c.when()));
