@@ -270,6 +270,11 @@ function removeFromGroup(id: string, g: number) {
 }
 
 /** Tutup tab. Kalau ada editan belum disimpan, tanya dulu. Mengembalikan false kalau dibatalkan. */
+/** Tutup tab berkas di semua grup tanpa bertanya (berkasnya sudah tidak ada). */
+export function closeTabEverywhere(path: string) {
+  getState().groups.forEach((g, i) => g.tabs.includes(path) && removeFromGroup(path, i));
+}
+
 export async function closeTab(id: string, g = getState().focusedGroup): Promise<boolean> {
   const s = getState();
   const tab = s.tabs[id];

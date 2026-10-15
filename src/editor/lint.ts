@@ -81,7 +81,7 @@ export function computeDiagnostics(langId: string, state: EditorState): Diagnost
   return lezerDiagnostics(state);
 }
 
-export function nozelLinter(langId: string, delay: number, onResult: (d: Diagnostic[], state: EditorState) => void): Extension {
+export function nozelLinter(langId: string, delay: number, onResult: (d: Diagnostic[], state: EditorState) => void, actions?: (d: Diagnostic) => Diagnostic["actions"]): Extension {
   return linter(
     (view: EditorView) => {
       const state = view.state;
@@ -95,7 +95,7 @@ export function nozelLinter(langId: string, delay: number, onResult: (d: Diagnos
       }
       const d = computeDiagnostics(langId, view.state);
       onResult(d, view.state);
-      return d;
+      return actions ? d.map((x) => ({ ...x, actions: [...(x.actions ?? []), ...(actions(x) ?? [])] })) : d;
     },
     { delay }
   );

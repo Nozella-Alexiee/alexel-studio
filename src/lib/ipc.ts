@@ -175,6 +175,13 @@ export const api = {
   agentClose: (agent: string, key: string) => call<void>("agent_close", { agent, key }),
   agentSessions: (agent: string, cwd: string) => call<ClaudeSessionInfo[]>("agent_sessions", { agent, cwd }),
   agentSessionLoad: (agent: string, cwd: string, id: string) => call<string[]>("agent_session_load", { agent, cwd, id }),
+  agentOnce: (agent: string, runId: string, cwd: string, prompt: string) => call<string>("agent_once", { agent, runId, cwd, prompt }),
+  agentOnceCancel: (runId: string) => call<void>("agent_once_cancel", { runId }),
+  gitCommitContext: (dir: string) => call<{ staged: boolean; files: string[]; diff: string; truncated: boolean; recent: string[] }>("git_commit_context", { dir }),
+  checkpointList: (root: string, chatKey: string) => call<{ turnId: string; time: number; files: { path: string; created: boolean }[] }[]>("checkpoint_list", { root, chatKey }),
+  checkpointPre: (root: string, chatKey: string, path: string) => call<{ content: string | null; turnId: string } | null>("checkpoint_pre", { root, chatKey, path }),
+  checkpointRestore: (root: string, chatKey: string, turnId: string, paths?: string[]) =>
+    call<{ restored: string[]; removed: string[]; failed: string[] }>("checkpoint_restore", { root, chatKey, turnId, paths }),
   claudeCancel: (runId: string) => call<void>("claude_cancel", { runId }),
 
   // Sistem

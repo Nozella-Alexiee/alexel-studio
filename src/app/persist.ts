@@ -67,6 +67,7 @@ function sanitizeSettings(raw: Partial<Settings> | null): Settings {
     s.design = "studio";
   }
   s.claudeConsent = s.claudeConsent === true;
+  s.agentReview = s.agentReview !== false;
   if (!["off", "delay", "focus"].includes(s.autoSave)) s.autoSave = "off";
   s.showResources = s.showResources === true;
   s.updateCheck = s.updateCheck !== false;

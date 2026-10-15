@@ -401,6 +401,9 @@ export default function SettingsView() {
         <Row label={tl("Tampilkan isi sebelum dikirim")} hint={tl("Setiap pesan, kamu melihat dulu persis teks dan berkas yang akan dikirim ke agen.")}>
           <Toggle label={tl("Konfirmasi kirim")} value={s.claudeConfirm} onChange={(v) => set({ claudeConfirm: v })} />
         </Row>
+        <Row label={tl("Tinjau perubahan agen di editor")} hint={tl("Setelah agen mengubah berkas yang terbuka, bagian yang berubah ditandai di editor. Terima atau tolak per bagian.")}>
+          <Toggle label={tl("Tinjau perubahan agen")} value={s.agentReview} onChange={(v) => set({ agentReview: v })} />
+        </Row>
         <Row label={tl("Sertakan berkas aktif secara bawaan")}>
           <Toggle label={tl("Sertakan berkas aktif")} value={s.claudeIncludeFile} onChange={(v) => set({ claudeIncludeFile: v })} />
         </Row>

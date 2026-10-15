@@ -33,6 +33,8 @@ export interface Settings {
   /** Pengguna sudah menyetujui (sekali) bahwa pesan & konteks dikirim lewat Claude Code. */
   claudeConsent: boolean;
   claudeIncludeFile: boolean;
+  /** Perubahan agen pada berkas yang terbuka ditinjau di editor (terima/tolak per bagian). */
+  agentReview: boolean;
   /** Mode izin: tanya dulu, terima edit otomatis, atau hanya merencanakan. */
   claudeMode: ClaudePermMode;
   /** "default" = model bawaan akun, atau alias seperti "opus" / "sonnet". */
@@ -77,6 +79,7 @@ export const DEFAULT_SETTINGS: Settings = {
   claudeConfirm: false,
   claudeConsent: false,
   claudeIncludeFile: true,
+  agentReview: true,
   claudeMode: "default",
   claudeModel: "default",
   claudeEffort: "auto",
@@ -180,7 +183,7 @@ export interface ChatPermission {
 
 export interface ChatMessage {
   id: string;
-  role: "user" | "assistant" | "tool" | "error" | "permission" | "todo" | "info";
+  role: "user" | "assistant" | "tool" | "error" | "permission" | "todo" | "info" | "changes";
   text: string;
   /** Ringkasan konteks yang ikut dikirim (untuk transparansi). */
   context?: string;
@@ -190,6 +193,10 @@ export interface ChatMessage {
   perm?: ChatPermission;
   /** Jumlah gambar yang dilampirkan pengguna. */
   images?: number;
+  /** Pesan pengguna: giliran agen yang dimulainya (untuk checkpoint/pulihkan). */
+  turn?: { id: string; key: string };
+  /** Kartu "berkas berubah" di akhir giliran. */
+  changes?: { turnId: string; key: string; files: { path: string; created: boolean }[]; restored?: boolean };
 }
 
 export interface ChatUsage {
@@ -276,6 +283,8 @@ interface State {
   chatSession: string | null;
   /** Daftar riwayat percakapan sedang tampil di panel agen. */
   chatHistoryOpen: boolean;
+  /** Berkas yang disalin checkpoint per giliran (turnId → berkas). */
+  chatTouched: Record<string, { path: string; created: boolean }[]>;
   /** Kunci proses CLI percakapan aktif; diganti saat percakapan baru. */
   chatKey: string;
   chatUsage: ChatUsage | null;
@@ -331,6 +340,7 @@ export const useStore = create<State>(() => ({
   chatRunning: null,
   chatSession: null,
   chatHistoryOpen: false,
+  chatTouched: {},
   chatKey: newChatKey(),
   chatUsage: null,
   claudeModels: [],

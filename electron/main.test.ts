@@ -5,7 +5,7 @@ import os from "node:os";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
 import * as F from "./fsOps";
-import { gitStatus, parseStatus, git } from "./git";
+import { gitCommitContext, gitStatus, parseStatus, git } from "./git";
 import { snapshotIn, _test as H } from "./history";
 import { resolvePreview, setOverride, setRoot } from "./preview";
 import { commandForFile, detectTargets } from "./runner";
@@ -148,6 +148,28 @@ describe("git", () => {
     await git(d, ["commit", "-q", "-m", "x"], "commit");
     st = await gitStatus(d);
     expect(st.files).toEqual([]);
+  });
+  it("bahan pesan commit: staged dulu, lockfile & rahasia dikecualikan", async () => {
+    const d = tmp("gitctx");
+    await git(d, ["init", "-q"], "init");
+    await git(d, ["config", "user.email", "t@t"], "cfg");
+    await git(d, ["config", "user.name", "t"], "cfg");
+    fs.writeFileSync(path.join(d, "a.txt"), "1\n");
+    await git(d, ["add", "-A"], "add");
+    await git(d, ["commit", "-q", "-m", "feat: awal"], "commit");
+    fs.writeFileSync(path.join(d, "a.txt"), "2\n");
+    fs.writeFileSync(path.join(d, "package-lock.json"), "{}");
+    fs.writeFileSync(path.join(d, ".env"), "TOKEN=rahasia");
+    let c = await gitCommitContext(d);
+    expect(c.staged).toBe(false);
+    expect(c.diff).toContain("+2");
+    expect(c.diff).not.toContain("rahasia");
+    expect(c.diff).toContain("package-lock.json"); // berkas baru hanya disebut namanya
+    expect(c.recent).toEqual(["feat: awal"]);
+    await git(d, ["add", "a.txt"], "add");
+    c = await gitCommitContext(d);
+    expect(c.staged).toBe(true);
+    expect(c.files).toEqual(["a.txt"]);
   });
 });
 

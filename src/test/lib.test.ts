@@ -69,3 +69,12 @@ describe("format", () => {
     expect(stripAnsi("\x1b[32mok\x1b[0m\r\n")).toBe("ok\r\n");
   });
 });
+
+describe("terjemahan", () => {
+  it("bentuk tunggal/jamak bahasa Inggris dipilih dari {n}", async () => {
+    const { tl } = await import("../i18n");
+    expect(tl("{n} berkas", { n: 1 })).toBe("1 file");
+    expect(tl("{n} berkas", { n: 3 })).toBe("3 files");
+    expect(tl("Nama tidak boleh berisi \\ < > : \" | ? *")).toContain("|");
+  });
+});

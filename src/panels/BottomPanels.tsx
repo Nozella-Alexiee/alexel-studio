@@ -1,6 +1,6 @@
 // Isi panel bawah: Masalah, Port & proses, Papan TODO.
 
-import { AlertCircle, AlertTriangle, ExternalLink, Info, RefreshCw, Square, Zap } from "lucide-react";
+import { AlertCircle, AlertTriangle, ExternalLink, Info, RefreshCw, Square, Wand2, Zap } from "lucide-react";
 import { CrabMascot } from "../components/CrabMascot";
 import { useEffect, useMemo, useState } from "react";
 import * as A from "../app/actions";
@@ -39,7 +39,10 @@ export function ProblemsPanel() {
                 </span>
               </button>
               <button className="btn btn-sm btn-ghost prob-ask" onClick={() => void import("../claude/claude").then((m) => m.explainProblem(path, p))} title={tl("Minta agen AI menjelaskan dan memperbaiki")}>
-                <CrabMascot size={14} /> Jelaskan
+                <CrabMascot size={14} /> {tl("Jelaskan")}
+              </button>
+              <button className="btn btn-sm btn-ghost prob-ask" onClick={() => void import("../editor/fixWithAi").then((m) => m.fixProblem(path, p))} title={tl("Perbaiki dengan AI")}>
+                <Wand2 size={13} /> {tl("Perbaiki")}
               </button>
             </div>
           ))}

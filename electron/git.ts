@@ -212,6 +212,46 @@ export async function gitDiffFile(dir: string, file: string, staged: boolean) {
 }
 
 /** Git Bot: commit HANYA berkas yang baru disimpan, lalu (opsional) push. */
+/** Nama berkas yang kelihatan seperti rahasia (.env, kunci, sertifikat). */
+export function looksSecret(file: string): boolean {
+  const name = path.basename(file).toLowerCase();
+  return name.startsWith(".env") || name.endsWith(".pem") || name.endsWith(".key") || name.endsWith(".p12") || name.includes("secret") || name === "id_rsa" || name === "id_ed25519";
+}
+
+const LOCKFILES = ["package-lock.json", "yarn.lock", "pnpm-lock.yaml", "bun.lockb", "Cargo.lock", "poetry.lock", "Gemfile.lock", "composer.lock", "go.sum"];
+const MAX_COMMIT_DIFF = 60_000;
+
+/**
+ * Bahan untuk pesan commit buatan AI: diff yang di-stage (atau semua perubahan bila belum ada yang
+ * di-stage), tanpa lockfile & berkas rahasia, dipotong 60 KB; plus 5 subjek commit terakhir sebagai
+ * contoh gaya penulisan.
+ */
+export async function gitCommitContext(dir: string): Promise<{ staged: boolean; files: string[]; diff: string; truncated: boolean; recent: string[] }> {
+  const names = (args: string[]) => git(dir, ["diff", "--name-only", "-z", ...args], "diff").then((o) => o.split("\0").filter(Boolean));
+  let staged = true;
+  let files = await names(["--cached"]);
+  const hasHead = await git(dir, ["rev-parse", "--verify", "HEAD"], "rev-parse").then(
+    () => true,
+    () => false
+  );
+  if (!files.length) {
+    staged = false;
+    files = hasHead ? await names(["HEAD"]) : [];
+  }
+  const untracked = staged ? [] : (await git(dir, ["ls-files", "--others", "--exclude-standard", "-z"], "ls-files")).split("\0").filter(Boolean);
+  const exclude = [...LOCKFILES.map((f) => `:(exclude,glob)**/${f}`), ...files.filter(looksSecret).map((f) => `:(exclude,literal)${f}`)];
+  let diff = "";
+  if (files.length) {
+    const base = staged ? ["diff", "--cached"] : hasHead ? ["diff", "HEAD"] : ["diff"];
+    diff = await git(dir, [...base, "--no-color", "--no-ext-diff", "-U2", "--stat=120", "--patch", "--", ".", ...exclude], "diff", 30_000);
+  }
+  if (untracked.length) diff += `\n# Untracked files\n${untracked.filter((f) => !looksSecret(f)).map((f) => `+ ${f}`).join("\n")}\n`;
+  const truncated = diff.length > MAX_COMMIT_DIFF;
+  if (truncated) diff = diff.slice(0, MAX_COMMIT_DIFF);
+  const recent = hasHead ? (await gitLog(dir, 5)).map((c) => c.subject) : [];
+  return { staged, files: [...files, ...untracked], diff, truncated, recent };
+}
+
 export async function gitAutoCommitFile(dir: string, file: string, push: boolean): Promise<string> {
   const gitDir = path.resolve(dir, (await git(dir, ["rev-parse", "--git-dir"], "rev-parse")).trim());
   for (const m of ["MERGE_HEAD", "REBASE_HEAD", "CHERRY_PICK_HEAD", "rebase-merge", "rebase-apply"]) {
@@ -219,7 +259,7 @@ export async function gitAutoCommitFile(dir: string, file: string, push: boolean
   }
   if ((await git(dir, ["diff", "--name-only", "--diff-filter=U"], "diff")).trim()) throw new Error("Git Bot dilewati: masih ada konflik.");
   const name = path.basename(file).toLowerCase();
-  if (name.startsWith(".env") || name.endsWith(".pem") || name.endsWith(".key") || name.includes("secret") || name === "id_rsa") {
+  if (looksSecret(name)) {
     throw new Error(`Git Bot tidak meng-commit ${name} karena kelihatan seperti berkas rahasia.`);
   }
   await git(dir, ["add", "--", file], "Stage");

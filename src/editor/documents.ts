@@ -34,6 +34,7 @@ import { snippetExtension } from "./snippets";
 import { nozelEditorTheme } from "./theme";
 import { debugExtension } from "../debug/editor";
 import { tl } from "../i18n";
+import { fixAction } from "./fixWithAi";
 
 const syncAnno = Annotation.define<boolean>();
 
@@ -67,6 +68,9 @@ const langComp = new Compartment();
 const settingsComp = new Compartment();
 const lintComp = new Compartment();
 const lspComp = new Compartment();
+/** Tinjauan perubahan agen (diff per bagian) per berkas; diisi src/editor/agentReview.ts. */
+const reviewComp = new Compartment();
+const reviewExts = new Map<string, Extension>();
 
 export const getDoc = (path: string) => docs.get(path);
 export const openDocs = () => [...docs.values()];
@@ -125,6 +129,7 @@ function baseExtensions(doc: Doc, group: number): Extension {
     lspComp.of(doc.lsp && group === doc.lspGroup ? doc.lsp : []),
     gitGutter(() => doc.head),
     langComp.of(doc.language ?? []),
+    reviewComp.of(reviewExts.get(doc.path) ?? []),
     settingsComp.of(currentSettingsExt()),
     EditorView.updateListener.of((u) => onUpdate(doc, group, u)),
   ];
@@ -139,7 +144,7 @@ function lezerLinter(doc: Doc, saver: boolean): Extension {
         return { line: line.number, col: x.from - line.from + 1, message: x.message, severity: x.severity as Problem["severity"], source: x.source };
       })
     );
-  });
+  }, () => [fixAction(doc.path)]);
 }
 
 /** Sambungkan dokumen ke language server bila tersedia (async, tidak menahan pembukaan berkas). */
@@ -174,6 +179,23 @@ function anyState(doc: Doc): EditorState | null {
   }
   return doc.states.find(Boolean) ?? null;
 }
+
+/** Pasang/lepas ekstensi tinjauan agen di semua grup yang membuka berkas ini. */
+export function setReviewExtension(path: string, ext: Extension | null) {
+  if (ext) reviewExts.set(path, ext);
+  else reviewExts.delete(path);
+  const doc = docs.get(path);
+  if (!doc) return;
+  for (let g = 0; g < doc.states.length; g++) {
+    const effects = reviewComp.reconfigure(ext ?? []);
+    const v = views[g];
+    if (v && shown[g] === path) v.dispatch({ effects });
+    else if (doc.states[g]) doc.states[g] = doc.states[g]!.update({ effects }).state;
+  }
+}
+
+/** View yang sedang menampilkan berkas ini. */
+export const viewsShowing = (path: string) => views.filter((v, g): v is EditorView => !!v && shown[g] === path);
 
 export function currentText(path: string): string | null {
   const d = docs.get(path);

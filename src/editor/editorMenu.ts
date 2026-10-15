@@ -7,6 +7,7 @@ import { openMenu, type MenuItem } from "../components/Overlays";
 import { call } from "../lib/ipc";
 import { viewOf } from "./documents";
 import { tl } from "../i18n";
+import { fixAtCursor, problemsAtCursor } from "./fixWithAi";
 
 function viewAt(target: EventTarget | null): EditorView | null {
   for (const g of [0, 1]) {
@@ -25,7 +26,9 @@ export function openEditorMenu(e: MouseEvent): boolean {
     view.focus();
     void call("edit_action", { action });
   };
+  const fixable = problemsAtCursor(view).length > 0;
   const items: MenuItem[] = [
+    ...(fixable ? [{ label: tl("Perbaiki dengan AI"), keys: prettyKeys("Mod+."), run: () => void fixAtCursor() }] : []),
     { label: hasSel ? tl("Ubah seleksi dengan AI…") : tl("Ubah baris ini dengan AI…"), keys: prettyKeys("Mod+K"), run: () => void import("./inlineClaude").then((m) => m.openInline(view)) },
     { label: hasSel ? tl("Tanya agen AI tentang seleksi") : tl("Tanya agen AI tentang berkas ini"), keys: prettyKeys("Mod+L"), run: () => void import("../claude/claude").then((m) => m.explainSelection()) },
     { label: "", separator: true },

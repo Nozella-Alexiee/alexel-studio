@@ -2,7 +2,7 @@
 
 import DOMPurify from "dompurify";
 import { marked } from "marked";
-import { AlertCircle, Check, CheckCircle2, ChevronRight, Circle, CircleDot, Copy, FileCode2, FileDiff, ImageIcon, Info, ListChecks, Loader2, ShieldAlert, TerminalSquare, TextCursorInput, Wrench, X } from "lucide-react";
+import { AlertCircle, Check, CheckCircle2, ChevronRight, Circle, CircleDot, Copy, FileCode2, FileDiff, ImageIcon, Info, ListChecks, Loader2, RotateCcw, ShieldAlert, TerminalSquare, TextCursorInput, Wrench, X } from "lucide-react";
 import { memo, useEffect, useMemo, useState } from "react";
 import * as A from "../app/actions";
 import * as docs from "../editor/documents";
@@ -10,8 +10,8 @@ import { IconButton } from "../components/ui";
 import { diffRows, unifiedRows } from "../lib/diff";
 import { openExternal } from "../lib/ipc";
 import { basename, relative, uiPath } from "../lib/paths";
-import { getState, type ChatMessage } from "../state/store";
-import { answerPermission, applyCodeToActive, proposedEdit, toolTarget } from "./claude";
+import { getState, useStore, type ChatMessage } from "../state/store";
+import { answerPermission, applyCodeToActive, proposedEdit, restoreTurn, reviewTurn, toolTarget } from "./claude";
 import { agentInfo } from "../agents/registry";
 import { tl } from "../i18n";
 
@@ -382,6 +382,61 @@ function TodoCard({ m }: { m: ChatMessage }) {
   );
 }
 
+// ---------------- Checkpoint ----------------
+
+/** Ada berkas yang diubah agen sejak pesan pengguna ini (giliran ini atau sesudahnya). */
+function useChangedSince(id: string): boolean {
+  return useStore((s) => {
+    const i = s.chat.findIndex((x) => x.id === id);
+    return i >= 0 && s.chat.slice(i).some((x) => x.role === "user" && !!x.turn && (s.chatTouched[x.turn.id]?.length ?? 0) > 0);
+  });
+}
+
+function RestoreButton({ m }: { m: ChatMessage }) {
+  const changed = useChangedSince(m.id);
+  const running = useStore((s) => !!s.chatRunning);
+  if (!m.turn || !changed) return null;
+  return (
+    <button className="chat-restore" disabled={running} onClick={() => void restoreTurn(m.turn!)} title={tl("Kembalikan berkas yang diubah agen sejak pesan ini")}>
+      <RotateCcw size={11} aria-hidden /> {tl("Pulihkan berkas ke sebelum pesan ini")}
+    </button>
+  );
+}
+
+function ChangesCard({ m }: { m: ChatMessage }) {
+  const c = m.changes!;
+  const root = useStore((s) => s.root) ?? "";
+  const running = useStore((s) => !!s.chatRunning);
+  return (
+    <div className={`chat-changes ${c.restored ? "is-restored" : ""}`}>
+      <div className="chat-changes-head">
+        <FileDiff size={13} aria-hidden />
+        <span>{c.restored ? tl("{n} berkas dipulihkan", { n: c.files.length }) : tl("{n} berkas diubah agen", { n: c.files.length })}</span>
+      </div>
+      <ul>
+        {c.files.map((f) => (
+          <li key={f.path}>
+            <button className="link-btn" onClick={() => void A.openFile(uiPath(f.path))} title={uiPath(f.path)}>
+              {relative(root, uiPath(f.path))}
+            </button>
+            {f.created && <span className="chat-changes-tag">{tl("baru")}</span>}
+          </li>
+        ))}
+      </ul>
+      {!c.restored && (
+        <div className="perm-actions">
+          <button className="btn btn-sm" onClick={() => void reviewTurn(c.files, c.key)}>
+            <FileDiff size={12} aria-hidden /> {tl("Tinjau di editor")}
+          </button>
+          <button className="btn btn-sm" disabled={running} onClick={() => void restoreTurn({ id: c.turnId, key: c.key }, c.files.map((f) => f.path))}>
+            <RotateCcw size={12} aria-hidden /> {tl("Batalkan perubahan ini")}
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ---------------- Pesan ----------------
 
 // memo: pesan lama tidak di-render ulang (marked + DOMPurify) setiap ada pesan baru.
@@ -389,6 +444,7 @@ export const Message = memo(function Message({ m }: { m: ChatMessage }) {
   if (m.role === "tool" && m.tool) return <ToolCard m={m} />;
   if (m.role === "permission" && m.perm) return <PermissionCard m={m} />;
   if (m.role === "todo") return <TodoCard m={m} />;
+  if (m.role === "changes" && m.changes) return <ChangesCard m={m} />;
   if (m.role === "info") return <div className="chat-info">{m.text}</div>;
   if (m.role === "tool")
     return (
@@ -420,6 +476,7 @@ export const Message = memo(function Message({ m }: { m: ChatMessage }) {
             {m.context && <span>+ {m.context}</span>}
           </div>
         )}
+        <RestoreButton m={m} />
       </div>
     );
   if (!m.text) return null;

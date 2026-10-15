@@ -40,6 +40,8 @@ interface Turn {
   lastBubble: string | null;
   errored: boolean;
   context: number;
+  /** Id giliran (checkpoint berkas). */
+  id: string;
 }
 
 /** Keadaan per proses percakapan (kunci = chatKey). */
@@ -65,7 +67,7 @@ function conv(key: string): Conv {
   return c;
 }
 
-const newTurn = (): Turn => ({ started: Date.now(), streamed: new Map(), blocks: new Map(), texts: new Map(), curMsg: null, seen: new Map(), lastBubble: null, errored: false, context: 0 });
+const newTurn = (): Turn => ({ id: `t${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`, started: Date.now(), streamed: new Map(), blocks: new Map(), texts: new Map(), curMsg: null, seen: new Map(), lastBubble: null, errored: false, context: 0 });
 
 // ---------------- Teks alat ----------------
 
@@ -255,9 +257,19 @@ function settleCards(ok = false) {
   for (const m of getState().chat) if (m.tool?.status === "running") update(m.id, ok ? { tool: { ...m.tool, status: "ok" } } : { tool: { ...m.tool, status: "error" }, meta: tl("terhenti") });
 }
 
+/** Giliran selesai: kartu "berkas berubah" (tinjau / pulihkan) bila agen mengubah berkas. */
+function pushChanges(key: string, turnId: string | undefined) {
+  if (!turnId || key !== getState().chatKey) return;
+  const files = getState().chatTouched[turnId];
+  if (!files?.length || getState().chat.some((m) => m.changes?.turnId === turnId)) return;
+  push({ role: "changes", text: "", changes: { turnId, key, files } });
+  void import("../editor/agentReview").then((m) => m.reviewOpenFiles(files, key));
+}
+
 function onResult(key: string, c: Conv, ev: any) {
   const t = c.turn;
   c.turn = null;
+  pushChanges(key, t?.id);
   if (key === getState().chatKey) settleCards(!(ev.is_error || String(ev.subtype ?? "").startsWith("error")));
   if (c.cancelTimer) clearTimeout(c.cancelTimer);
   if (getState().chatRunning === key) setState({ chatRunning: null });
@@ -293,11 +305,15 @@ function ensureListeners() {
   if (listening) return;
   listening = true;
   void on<{ run_id: string; line: string }>("agent-event", ({ run_id, line }) => handleLine(run_id, line));
+  void on<{ chat_key: string; turn_id: string; path: string; created: boolean }>("checkpoint-touched", ({ turn_id, path, created }) => {
+    setState((s) => ({ chatTouched: { ...s.chatTouched, [turn_id]: [...(s.chatTouched[turn_id] ?? []).filter((f) => f.path !== path), { path, created }] } }));
+  });
   void on<{ run_id: string; code: number | null; stderr: string; replaced?: boolean }>("agent-done", ({ run_id, code, stderr, replaced }) => {
     // Proses lama yang digantikan (mis. effort diganti) tidak memengaruhi percakapan.
     if (replaced) return;
     const c = convs.get(run_id);
     if (c?.cancelTimer) clearTimeout(c.cancelTimer);
+    if (c?.turn) pushChanges(run_id, c.turn.id);
     void import("../app/output").then((m) => m.logOutput("Agen AI", `${tl("Proses selesai (kode {code}).", { code: String(code) })}${stderr.trim() ? `\n${stderr.trim()}` : ""}`));
     if (c) {
       c.costBase += c.lastCost;
@@ -392,6 +408,8 @@ export interface SendOptions {
   includeFile?: boolean;
   includeSelection?: boolean;
   extraContext?: { label: string; body: string };
+  /** Konteks tambahan (mis. @problems, @terminal); disusun sebelum permintaan. */
+  extraContexts?: { label: string; body: string }[];
   images?: { media_type: string; data: string }[];
 }
 
@@ -403,9 +421,9 @@ export function buildPayload(prompt: string, o: SendOptions): { payload: string;
   const parts: string[] = [];
   const summary: string[] = [];
   const tab = activeTab();
-  if (o.extraContext) {
-    parts.push(`### ${o.extraContext.label}\n${o.extraContext.body}`);
-    summary.push(o.extraContext.label);
+  for (const x of [...(o.extraContext ? [o.extraContext] : []), ...(o.extraContexts ?? [])]) {
+    parts.push(`### ${x.label}\n${x.body}`);
+    summary.push(x.label);
   }
   if (tab?.kind === "text") {
     const rel = s.root ? relative(s.root, tab.id) : tab.id;
@@ -487,6 +505,10 @@ export async function sendToClaude(prompt: string, o: SendOptions = {}): Promise
     return false;
   }
   if (!(await ensureConsent())) return false;
+  const { resolveMentions } = await import("./mentions");
+  const mentioned = await resolveMentions(prompt);
+  if (mentioned.length) o = { ...o, extraContexts: [...(o.extraContexts ?? []), ...mentioned] };
+  if (pendingNote) o = { ...o, extraContexts: [...(o.extraContexts ?? []), { label: tl("Catatan dari editor"), body: pendingNote }] };
   const { payload, summary } = buildPayload(prompt, o);
   if (getState().settings.claudeConfirm) {
     const ok = await ask({
@@ -502,14 +524,15 @@ export async function sendToClaude(prompt: string, o: SendOptions = {}): Promise
   const key = getState().chatKey;
   const c = conv(key);
   c.turn = newTurn();
-  push({ role: "user", text: prompt, context: summary || undefined, images: o.images?.length || undefined });
+  push({ role: "user", text: prompt, context: summary || undefined, images: o.images?.length || undefined, turn: { id: c.turn.id, key } });
   setState({ chatRunning: key });
   const content: ClaudeContent[] = [
     ...(o.images ?? []).map((im) => ({ type: "image" as const, source: { type: "base64" as const, media_type: im.media_type, data: im.data } })),
     { type: "text", text: payload || "(lihat gambar)" },
   ];
   try {
-    await api.agentSend(agentNow(), key, cfgNow(), content);
+    await api.agentSend(agentNow(), key, { ...cfgNow(), turnId: c.turn.id }, content);
+    pendingNote = null;
     return true;
   } catch (e) {
     c.turn = null;
@@ -518,6 +541,49 @@ export async function sendToClaude(prompt: string, o: SendOptions = {}): Promise
     return false;
   }
 }
+
+/** Kembalikan berkas ke keadaan sebelum giliran ini (dan semua giliran sesudahnya). */
+export async function restoreTurn(turn: { id: string; key: string }, paths?: string[]) {
+  const root = getState().root;
+  if (!root) return;
+  if (getState().chatRunning) return toast(tl("Tunggu agen selesai dulu."));
+  const list = await api.checkpointList(root, turn.key).catch(() => []);
+  const from = list.findIndex((t) => t.turnId === turn.id);
+  if (from < 0) return toast(tl("Tidak ada berkas yang diubah sejak pesan ini."));
+  const files = [...new Set(list.slice(from).flatMap((t) => t.files.map((f) => f.path)))].filter((p) => !paths || paths.includes(p));
+  const rel = (p: string) => relative(root, uiPath(p));
+  const ok = await ask({
+    kind: "confirm",
+    title: tl("Pulihkan {n} berkas?", { n: files.length }),
+    message: tl("Berkas dikembalikan ke keadaan sebelum pesan ini. Berkas buatan agen dipindah ke Trash. Isi sekarang tetap tersimpan di panel Riwayat. Perubahan lewat perintah terminal tidak ikut dipulihkan."),
+    detail: files.map(rel).join("\n"),
+    okLabel: tl("Pulihkan"),
+    danger: true,
+  });
+  if (ok !== true) return;
+  try {
+    const r = await api.checkpointRestore(root, turn.key, turn.id, paths);
+    for (const p of [...r.restored, ...r.removed]) await docs.reloadFromDisk(uiPath(p)).catch(() => {});
+    void import("../editor/agentReview").then((m) => [...r.restored, ...r.removed].forEach((p) => m.stopReview(uiPath(p))));
+    setState((s) => ({ chat: s.chat.map((m) => (m.changes && list.slice(from).some((t) => t.turnId === m.changes!.turnId) ? { ...m, changes: { ...m.changes, restored: true } } : m)) }));
+    const n = r.restored.length + r.removed.length;
+    push({ role: "info", text: tl("{n} berkas dipulihkan ke sebelum pesan ini.", { n }) + (r.failed.length ? ` ${tl("Gagal: {list}", { list: r.failed.map(rel).join(", ") })}` : "") });
+    pendingNote = tl("Catatan: pengguna memulihkan {files} ke keadaan sebelum salah satu pesan sebelumnya. Baca ulang berkas itu sebelum mengubahnya.", { files: files.map(rel).join(", ") });
+  } catch (e) {
+    toast(errMsg(e), "error");
+  }
+}
+
+/** Tinjau perubahan agen di editor (diff per bagian). */
+export async function reviewTurn(files: { path: string; created: boolean }[], key: string) {
+  const { reviewFile } = await import("../editor/agentReview");
+  let any = false;
+  for (const f of files) if (await reviewFile(uiPath(f.path), { chatKey: key, quiet: files.length > 1 })) any = true;
+  if (!any && files.length > 1) toast(tl("Tidak ada perubahan agen yang bisa ditinjau."));
+}
+
+/** Catatan untuk agen di pesan berikutnya (mis. berkas dipulihkan). */
+let pendingNote: string | null = null;
 
 /** Hentikan jawaban yang sedang berjalan (interrupt; bila macet, proses ditutup). */
 export async function cancelClaude() {
@@ -704,6 +770,18 @@ export async function explainProblem(path: string, p: Problem) {
   const rel = relative(root, path);
   await sendToClaude(`${tl("Jelaskan kenapa error ini muncul dan beri perbaikan yang tepat.")}\n\n${tl("Error di {loc}", { loc: `${rel}:${p.line}:${p.col}` })} — ${p.message}`, {
     extraContext: { label: tl("Potongan {file} sekitar baris {line}", { file: rel, line: p.line }), body: "```\n" + excerpt(text, p.line) + "\n```" },
+  });
+}
+
+/** "Perbaiki dengan AI": minta agen memperbaiki error langsung di berkasnya. */
+export async function fixProblemWithAgent(path: string, p: Problem) {
+  const root = getState().root ?? "";
+  const text = docs.currentText(path) ?? "";
+  const rel = relative(root, path);
+  const what = p.message ? `${tl("Error di {loc}", { loc: `${rel}:${p.line}:${p.col}` })} — ${p.message}` : `${rel}:${p.line}`;
+  await sendToClaude(`${tl("Perbaiki masalah ini langsung di berkasnya. Ubah seperlunya saja, lalu jelaskan singkat apa yang diubah.")}\n\n${what}`, {
+    extraContext: { label: tl("Potongan {file} sekitar baris {line}", { file: rel, line: p.line }), body: "```\n" + excerpt(text, p.line) + "\n```" },
+    includeFile: false,
   });
 }
 

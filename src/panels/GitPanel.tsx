@@ -1,4 +1,4 @@
-import { ArrowDown, ArrowUp, Check, GitBranch, Minus, Plus, RefreshCw, Undo2, ChevronDown } from "lucide-react";
+import { ArrowDown, ArrowUp, Check, GitBranch, Minus, Plus, RefreshCw, Sparkles, Undo2, ChevronDown } from "lucide-react";
 import React, { useEffect, useState } from "react";
 import * as A from "../app/actions";
 import { refreshHeads } from "../editor/documents";
@@ -9,7 +9,7 @@ import { api, errMsg } from "../lib/ipc";
 import { join } from "../lib/paths";
 import { timeAgo } from "../lib/format";
 import type { Commit, GitFile } from "../lib/types";
-import { confirmDialog, promptDialog, toast, useStore } from "../state/store";
+import { ask, confirmDialog, getState, promptDialog, toast, useStore } from "../state/store";
 import { prettyKeys, modKey } from "../lib/keys";
 import { tl } from "../i18n";
 
@@ -29,6 +29,34 @@ export default function GitPanel() {
   const [msg, setMsg] = useState("");
   const [busy, setBusy] = useState<string | null>(null);
   const [log, setLog] = useState<Commit[]>([]);
+  const [writing, setWriting] = useState<string | null>(null);
+
+  /** ✨ Tulis pesan commit dengan agen AI dari diff yang di-stage (atau semua perubahan). */
+  const writeMessage = async () => {
+    if (writing) {
+      void api.agentOnceCancel(writing);
+      setWriting(null);
+      return;
+    }
+    const { ensureConsent, agentNow } = await import("../claude/claude");
+    if (!(await ensureConsent())) return;
+    const C = await import("../app/commitMessage");
+    const runId = `commit-${Date.now().toString(36)}`;
+    setWriting(runId);
+    try {
+      const ctx = await api.gitCommitContext(repo);
+      if (!ctx.diff.trim()) return toast(C.noChangesMessage());
+      const prompt = C.buildCommitPrompt(ctx, msg);
+      if (getState().settings.claudeConfirm && !(await ask({ kind: "confirm", title: tl("Kirim diff ke agen AI?"), message: tl("Diff berikut dikirim untuk menulis pesan commit."), detail: prompt, okLabel: tl("Kirim") }))) return;
+      const text = C.cleanCommitMessage(await api.agentOnce(agentNow(), runId, repo, prompt));
+      if (text) setMsg(text);
+      else toast(tl("Agen tidak memberi pesan commit."), "info");
+    } catch (e) {
+      if (!/Dibatalkan/.test(errMsg(e))) toast(errMsg(e), "error");
+    } finally {
+      setWriting((w) => (w === runId ? null : w));
+    }
+  };
 
   const repo = git?.root || root || "";
   useEffect(() => {
@@ -168,6 +196,7 @@ export default function GitPanel() {
       </div>
 
       <div className="git-commit">
+        <div className="git-commit-box">
         <textarea
           className="input textarea"
           placeholder={tl("Pesan commit ({keys} untuk commit ke {branch})", { keys: prettyKeys("Mod+Enter"), branch: git.branch })}
@@ -182,6 +211,16 @@ export default function GitPanel() {
           }}
           aria-label={tl("Pesan commit")}
         />
+          <button
+            className={`git-ai-btn ${writing ? "is-busy" : ""}`}
+            onClick={() => void writeMessage()}
+            disabled={!git.files.length && !writing}
+            title={writing ? tl("Batalkan") : tl("Tulis pesan commit dengan AI")}
+            aria-label={writing ? tl("Batalkan") : tl("Tulis pesan commit dengan AI")}
+          >
+            {writing ? <Spinner size={12} /> : <Sparkles size={14} />}
+          </button>
+        </div>
         <button className="btn btn-primary btn-block" onClick={() => void commit()} disabled={busy === "commit"}>
           <Check size={14} /> Commit{staged.length ? ` ${tl("{n} berkas", { n: staged.length })}` : ""}
         </button>

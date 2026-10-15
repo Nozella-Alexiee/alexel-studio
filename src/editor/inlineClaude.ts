@@ -13,6 +13,7 @@ import { relative } from "../lib/paths";
 import { confirmDialog, getState, setState, toast } from "../state/store";
 import { prettyKeys } from "../lib/keys";
 import { tl } from "../i18n";
+import { stripFences } from "../lib/text";
 
 interface InlineHunk {
   id: number;
@@ -201,10 +202,6 @@ function cancelInline(view: EditorView) {
   view.focus();
 }
 
-function stripFences(text: string): string {
-  const m = /```[\w+#.-]*\n([\s\S]*?)\n?```/.exec(text);
-  return (m ? m[1] : text).replace(/\s+$/, "");
-}
 
 async function runInline(view: EditorView, prompt: string) {
   const st = get(view);

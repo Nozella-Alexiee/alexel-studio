@@ -233,8 +233,8 @@ export function StatusBar({ variant }: { variant: "aurora" | "zen" | "control" |
       {tab?.kind === "text" && (
         <>
           <span className="status-item">
-            Ln {cursor.line}, Kol {cursor.col}
-            {cursor.sel > 0 && ` (${cursor.sel} dipilih)`}
+            {tl("Ln {line}, Kol {col}", { line: cursor.line, col: cursor.col })}
+            {cursor.sel > 0 && ` ${tl("({n} dipilih)", { n: cursor.sel })}`}
           </span>
           {!zen && (
             <button
@@ -242,7 +242,7 @@ export function StatusBar({ variant }: { variant: "aurora" | "zen" | "control" |
               title={tl("Ukuran indentasi")}
               onClick={(e) => openMenu(e, [2, 4, 8].map((n) => ({ label: `${n === tabSize ? "✓ " : ""}${tl("Spasi: {n}", { n })}`, run: () => A.updateSettings({ tabSize: n }) })))}
             >
-              Spasi: {tabSize}
+              {tl("Spasi: {n}", { n: tabSize })}
             </button>
           )}
           {!zen && <span className="status-item" title={tl("Encoding berkas")}>UTF-8</span>}

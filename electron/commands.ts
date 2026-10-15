@@ -5,6 +5,7 @@ import { app, BrowserWindow, clipboard, ClipboardItem, dialog, powerMonitor, she
 import fs from "node:fs";
 import path from "node:path";
 import * as agents from "./agents";
+import * as CP from "./checkpoints";
 import * as dap from "./dap";
 import { checkUpdate, repoSlug } from "./update";
 import * as claude from "./claude";
@@ -91,6 +92,12 @@ export function buildCommands(ctx: Ctx, hooks: { confirmClose: (win: BrowserWind
     agent_control: (a) => agents.agentControl(ctx, a.agent, String(a.key ?? ""), a.msg),
     agent_close: (a) => agents.agentClose(a.agent, String(a.key ?? "")),
     agent_sessions: (a) => agents.agentSessions(ctx, a.agent, String(a.cwd ?? "")),
+    agent_once: (a) => agents.agentOnce(ctx, a.agent, String(a.runId ?? ""), String(a.cwd ?? ""), String(a.prompt ?? "")),
+    agent_once_cancel: (a) => agents.agentOnceCancel(String(a.runId ?? "")),
+    git_commit_context: (a) => G.gitCommitContext(String(a.dir ?? "")),
+    checkpoint_list: (a) => CP.checkpointList(ctx, String(a.root ?? ""), String(a.chatKey ?? "")),
+    checkpoint_pre: (a) => CP.checkpointPre(ctx, String(a.root ?? ""), String(a.chatKey ?? ""), String(a.path ?? "")),
+    checkpoint_restore: (a) => CP.checkpointRestore(ctx, String(a.root ?? ""), String(a.chatKey ?? ""), String(a.turnId ?? ""), Array.isArray(a.paths) ? a.paths.map(String) : null),
     agent_session_load: (a) => agents.agentSessionLoad(ctx, a.agent, String(a.cwd ?? ""), String(a.id ?? "")),
     claude_cancel: (a) => claude.claudeCancel(a.runId),
 

@@ -4002,3 +4002,144 @@ select.input.select {
   height: 26px;
   font-family: var(--font-mono);
 }
+
+/* ---------- Checkpoint & tinjauan perubahan agen ---------- */
+.chat-restore {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 6px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--fg-muted);
+  font: 500 11px var(--font-ui);
+  cursor: pointer;
+}
+.chat-restore:hover:not(:disabled) {
+  color: var(--accent);
+  text-decoration: underline;
+}
+.chat-restore:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+.chat-changes {
+  border: 1px solid color-mix(in srgb, var(--git-add) 35%, var(--border));
+  border-radius: var(--radius);
+  padding: 8px 10px;
+  background: color-mix(in srgb, var(--git-add) 6%, var(--surface-1));
+  font-size: 12px;
+}
+.chat-changes.is-restored {
+  border-color: var(--border);
+  background: var(--surface-1);
+  opacity: 0.8;
+}
+.chat-changes-head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+.chat-changes ul {
+  list-style: none;
+  margin: 0 0 6px;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.chat-changes li {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+.chat-changes li .link-btn {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+}
+.chat-changes-tag {
+  flex: none;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--git-add);
+}
+.cm-agent-review {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  border-bottom: 1px solid var(--border);
+  background: color-mix(in srgb, var(--claude) 8%, var(--surface-2));
+  font: 600 12px var(--font-ui);
+  color: var(--fg);
+}
+.cm-agent-review-hint {
+  color: var(--claude);
+}
+.cm-agent-review-label {
+  flex: 1;
+  color: var(--fg-muted);
+  font-weight: 500;
+}
+.cm-editor .cm-changedLine {
+  background: color-mix(in srgb, var(--git-add) 12%, transparent) !important;
+}
+.cm-editor .cm-deletedChunk {
+  background: color-mix(in srgb, var(--danger) 10%, transparent);
+  padding: 2px 0;
+}
+.cm-editor .cm-deletedChunk .cm-chunkButtons {
+  display: inline-flex;
+  gap: 4px;
+  margin-left: 8px;
+}
+.cm-editor .cm-insertedLine,
+.cm-editor .cm-changedText {
+  background: color-mix(in srgb, var(--git-add) 22%, transparent) !important;
+}
+.cm-editor .cm-deletedText {
+  background: color-mix(in srgb, var(--danger) 22%, transparent) !important;
+}
+
+/* Pesan commit dengan AI */
+.git-commit-box {
+  position: relative;
+}
+.git-commit-box .textarea {
+  width: 100%;
+  padding-right: 32px;
+}
+.git-ai-btn {
+  position: absolute;
+  top: 5px;
+  right: 5px;
+  width: 24px;
+  height: 24px;
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--claude);
+  cursor: pointer;
+}
+.git-ai-btn:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--claude) 14%, transparent);
+}
+.git-ai-btn:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+.cz-ctx-icon {
+  flex: none;
+  color: var(--claude);
+}

@@ -23,6 +23,7 @@ import { fuzzyFilter } from "../lib/fuzzy";
 import { prettyKeys } from "../lib/keys";
 import { basename, relative } from "../lib/paths";
 import { projectFiles } from "../lib/projectFiles";
+import { MENTIONS } from "./mentions";
 import { activeTab, toast, useStore } from "../state/store";
 import {
   agentChoice,
@@ -164,7 +165,7 @@ const MODE_ICON: Record<string, React.ReactNode> = {
 
 interface Suggest {
   kind: "file" | "cmd";
-  items: { id: string; label: string; detail?: string; run: () => void }[];
+  items: { id: string; label: string; detail?: string; ctx?: boolean; run: () => void }[];
 }
 
 const LOCAL_CMDS = [
@@ -241,24 +242,23 @@ export function Composer({ onShowHistory }: { onShowHistory: () => void }) {
       if (!q) void projectFiles(root).then((f) => (files.current = f));
       const start = caret - q.length - 1;
       const hits = fuzzyFilter(q, files.current, (f) => f, 8);
+      const insert = (word: string) => {
+        const next = value.slice(0, start) + "@" + word + " " + value.slice(caret);
+        setText(next);
+        setSuggest(null);
+        requestAnimationFrame(() => {
+          const pos = start + word.length + 2;
+          area.current?.setSelectionRange(pos, pos);
+          area.current?.focus();
+        });
+      };
+      const ctxHits = MENTIONS.filter((m) => m.id.startsWith(q.toLowerCase()));
       setSuggest({
         kind: "file",
-        items: hits.map((h) => ({
-          id: h.item,
-          label: basename(h.item),
-          detail: h.item,
-          run: () => {
-            const next =
-              value.slice(0, start) + "@" + h.item + " " + value.slice(caret);
-            setText(next);
-            setSuggest(null);
-            requestAnimationFrame(() => {
-              const pos = start + h.item.length + 2;
-              area.current?.setSelectionRange(pos, pos);
-              area.current?.focus();
-            });
-          },
-        })),
+        items: [
+          ...ctxHits.map((m) => ({ id: m.label, label: m.label, detail: m.hint, ctx: true, run: () => insert(m.id) })),
+          ...hits.map((h) => ({ id: h.item, label: basename(h.item), detail: h.item, run: () => insert(h.item) })),
+        ],
       });
       setSel(0);
       return;
@@ -426,7 +426,9 @@ export function Composer({ onShowHistory }: { onShowHistory: () => void }) {
                 onMouseDown={(e) => e.preventDefault()}
                 onClick={it.run}
               >
-                {suggest.kind === "file" ? (
+                {it.ctx ? (
+                  <AtSign size={13} className="cz-ctx-icon" aria-hidden />
+                ) : suggest.kind === "file" ? (
                   <FileIcon filename={it.label} size={14} />
                 ) : (
                   <span className="cz-slash">/</span>

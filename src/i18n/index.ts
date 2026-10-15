@@ -34,6 +34,8 @@ export function langPref(): "auto" | Lang {
 /** Terjemahkan teks sumber (Indonesia). `{nama}` di teks diganti dari `vars`. */
 export function tl(s: string, vars?: Record<string, string | number>): string {
   let out = lang === "en" ? (EN[s] ?? s) : s;
+  // Bentuk tunggal|jamak (bahasa Inggris), dipilih dari {n}: "{n} file|{n} files".
+  if (vars && "n" in vars && out.includes("{n}") && /^[^|]*\{n\}[^|]*\|[^|]*\{n\}[^|]*$/.test(out)) out = out.split("|")[Number(vars.n) === 1 ? 0 : 1];
   if (vars) for (const [k, v] of Object.entries(vars)) out = out.split(`{${k}}`).join(String(v));
   return out;
 }

@@ -150,6 +150,7 @@ export const COMMANDS: Command[] = [
   { id: "askClaude2", label: tl("Tanya agen AI"), group: tl("Agen AI"), keys: "Mod+L", run: focusClaude, hidden: true },
   { id: "claudeHistory", label: tl("Agen AI: riwayat percakapan"), group: tl("Agen AI"), run: () => { focusClaude(); setState({ chatHistoryOpen: true }); } },
   { id: "claudeMode", label: tl("Agen AI: ganti mode izin"), group: tl("Agen AI"), run: () => void claude().then((m) => m.cycleClaudeMode()) },
+  { id: "fixWithAi", label: tl("Agen AI: perbaiki masalah di baris ini"), group: tl("Agen AI"), keys: "Mod+.", run: () => void import("../editor/fixWithAi").then((m) => m.fixAtCursor()), when: hasText },
   { id: "explainSel", label: tl("Agen AI: jelaskan seleksi"), group: tl("Agen AI"), run: () => void claude().then((m) => m.explainSelection()), when: hasText },
   { id: "claudeTerm", label: tl("Agen AI di terminal"), group: tl("Agen AI"), run: openClaudeInteractive },
   { id: "newChat", label: tl("Agen AI: percakapan baru"), group: tl("Agen AI"), run: () => void claude().then((m) => m.newConversation()) },

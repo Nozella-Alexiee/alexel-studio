@@ -385,12 +385,16 @@ export function killAllCodex() {
 
 // ---------------- Riwayat (thread/list, thread/read) ----------------
 
-async function withServer<T>(ctx: Ctx, fn: (rpc: LineRpc) => Promise<T>): Promise<T> {
+async function withServer<T>(ctx: Ctx, fn: (rpc: LineRpc) => Promise<T>, onNotify: (method: string, params: any) => void = () => {}): Promise<T> { // eslint-disable-line @typescript-eslint/no-explicit-any
   const f = findCodex(ctx);
   if (!f) throw new Error("Codex belum terpasang.");
   const sp = spawnable(f.path, ["app-server"]);
   const child = spawn(sp.cmd, sp.args, { cwd: os.homedir(), env: childEnv(), stdio: ["pipe", "pipe", "ignore"], windowsHide: true, windowsVerbatimArguments: sp.verbatim });
-  const rpc = new LineRpc(child, { onNotify: () => {}, onRequest: (id) => rpc.respondError(id, "Tidak didukung.") });
+  // Permintaan izin dari proses sekali pakai (baca saja) selalu ditolak.
+  const rpc = new LineRpc(child, {
+    onNotify,
+    onRequest: (id, method) => (/requestApproval|Approval$/.test(method) ? rpc.respond(id, { decision: "decline" }) : rpc.respondError(id, "Tidak didukung.")),
+  });
   try {
     await rpc.request("initialize", { clientInfo: { name: "alexel_studio", title: "Alexel Studio", version: "0.3.0" }, capabilities: null }, 30_000);
     rpc.notify("initialized");
@@ -398,6 +402,51 @@ async function withServer<T>(ctx: Ctx, fn: (rpc: LineRpc) => Promise<T>): Promis
   } finally {
     killTree(child);
   }
+}
+
+const onceRuns = new Map<string, () => void>();
+
+/** Satu permintaan tanpa percakapan (mis. pesan commit): sandbox baca saja, hasil = teks jawaban terakhir. */
+export async function codexOnce(ctx: Ctx, runId: string, cwd: string, prompt: string): Promise<string> {
+  const dir = cwd && fs.existsSync(cwd) ? cwd : os.homedir();
+  let text = "";
+  let done: ((v: string) => void) | null = null;
+  let fail: ((e: Error) => void) | null = null;
+  const finished = new Promise<string>((res, rej) => {
+    done = res;
+    fail = rej;
+  });
+  return withServer(
+    ctx,
+    async (rpc) => {
+      onceRuns.set(runId, () => fail?.(new Error("Dibatalkan.")));
+      const timer = setTimeout(() => fail?.(new Error("Codex tidak menjawab dalam 3 menit.")), 180_000);
+      try {
+        const list = await rpc.request<{ data?: any[] }>("model/list", {}, 30_000).catch(() => ({ data: [] })); // eslint-disable-line @typescript-eslint/no-explicit-any
+        const models = (list.data ?? []).filter((m) => !m.hidden);
+        const model = models.find((m) => m.isDefault)?.id ?? models[0]?.id ?? undefined;
+        const t = await rpc.request<any>("thread/start", { cwd: dir, model, approvalPolicy: "on-request", sandbox: "read-only" }, 60_000); // eslint-disable-line @typescript-eslint/no-explicit-any
+        await rpc.request("turn/start", { threadId: t.thread?.id, input: [{ type: "text", text: prompt, text_elements: [] }], model, effort: "low", approvalPolicy: "on-request", sandboxPolicy: sandboxPolicy("read-only", dir) }, 60_000);
+        return await finished;
+      } finally {
+        clearTimeout(timer);
+        onceRuns.delete(runId);
+      }
+    },
+    (method, p) => {
+      if (method === "item/completed" && p?.item?.type === "agentMessage" && p.item.text) text = p.item.text;
+      else if (method === "turn/completed") {
+        if (p?.turn?.status === "failed") fail?.(new Error(parseError(p.turn.error?.message) ?? "Codex berhenti dengan error."));
+        else done?.(text);
+      }
+    }
+  );
+}
+
+export function codexOnceCancel(runId: string): boolean {
+  const c = onceRuns.get(runId);
+  c?.();
+  return !!c;
 }
 
 export async function codexSessions(ctx: Ctx, cwd: string) {

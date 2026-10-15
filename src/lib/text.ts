@@ -44,3 +44,9 @@ export function minimalChange(oldText: string, text: string): { from: number; to
   }
   return { from: start, to: endOld, insert: text.slice(start, endNew) };
 }
+
+/** Ambil isi blok kode pertama dari jawaban AI (```lang … ```); tanpa blok, teks apa adanya. */
+export function stripFences(text: string): string {
+  const m = /```[\w+#.-]*\n([\s\S]*?)\n?```/.exec(text);
+  return (m ? m[1] : text).replace(/\s+$/, "");
+}
