@@ -155,6 +155,7 @@ export function killTree(child: { pid?: number; kill: (sig?: NodeJS.Signals) => 
 
 /** Quote untuk PowerShell: '...' dengan ' digandakan. */
 export function psQuote(s: string): string {
+  if (s && /^[A-Za-z0-9_.\\/][A-Za-z0-9_.\\/:-]*$/.test(s)) return s;
   return `'${s.replace(/'/g, "''")}'`;
 }
 
@@ -198,15 +199,19 @@ export function runCapture(cmd: string, args: string[], opts: { cwd?: string; ti
       child.stdin?.end(opts.input);
     }
     let timedOut = false;
+    let done = false;
     const timer = setTimeout(() => {
       timedOut = true;
       child.kill("SIGKILL");
     }, opts.timeoutMs ?? 15000);
     child.on("error", (e) => {
       clearTimeout(timer);
+      done = true;
       reject(new Error(e.message.includes("ENOENT") ? `Perintah tidak ditemukan: ${cmd}` : e.message));
     });
-    child.on("close", (code) => {
+    const finish = (code: number | null) => {
+      if (done) return;
+      done = true;
       clearTimeout(timer);
       resolve({
         stdout: Buffer.concat(out).toString("utf8"),
@@ -216,6 +221,15 @@ export function runCapture(cmd: string, args: string[], opts: { cwd?: string; ti
         timedOut,
         elapsedMs: Date.now() - start,
       });
+    };
+    child.on("close", finish);
+    // Setelah dibunuh, cucu proses (mis. `sleep` di bawah dash) bisa menahan pipe tetap terbuka
+    // sehingga "close" baru datang saat cucu itu selesai. Jangan tunggu.
+    child.on("exit", (code) => {
+      if (!timedOut) return;
+      child.stdout?.destroy();
+      child.stderr?.destroy();
+      finish(code);
     });
   });
 }

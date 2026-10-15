@@ -17,7 +17,7 @@ import { classify } from "./watcher";
 
 const tmp = (name: string) => {
   const d = fs.mkdtempSync(path.join(os.tmpdir(), `nozel-${name}-`));
-  return fs.realpathSync(d);
+  return fs.realpathSync.native(d);
 };
 const ctx = (dir: string): Ctx => ({ userData: dir, emit: () => {}, trash: async (p) => fs.rmSync(p, { recursive: true, force: true }), reveal: () => {} });
 
@@ -33,7 +33,7 @@ describe("util", () => {
     expect(shellQuote("")).toBe("''");
   });
   posix("runCapture: timeout & stdin tertutup", async () => {
-    const t = await runCapture("/bin/sh", ["-c", "sleep 5"], { timeoutMs: 200 });
+    const t = await runCapture("/bin/sh", ["-c", "sleep 5; true"], { timeoutMs: 200 }); // sleep jadi cucu proses
     expect(t.timedOut).toBe(true);
     const r = await runCapture("/bin/sh", ["-c", "read x; echo got:$x"], { timeoutMs: 5000 });
     expect(r.timedOut).toBe(false);
@@ -121,7 +121,7 @@ describe("git", () => {
     await git(d, ["add", "-A"], "add");
     let st = await gitStatus(d);
     expect(st.is_repo).toBe(true);
-    expect(st.root).toBe(d);
+    expect(path.resolve(st.root)).toBe(d);
     expect(st.files[0].staged).toBe(true);
     await git(d, ["commit", "-q", "-m", "x"], "commit");
     st = await gitStatus(d);
@@ -145,7 +145,7 @@ describe("search & TODO", () => {
   };
   it("melewati folder berat & .gitignore", async () => {
     const d = fixture("walk");
-    const files = (await walkFiles(d)).map((p) => path.relative(d, p)).sort();
+    const files = (await walkFiles(d)).map((p) => path.relative(d, p).split(path.sep).join("/")).sort();
     expect(files).toEqual([".gitignore", "src/a.ts", "src/b.rs"]);
   });
   it("menemukan kecocokan dengan posisi tepat", async () => {
