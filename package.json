@@ -1,19 +1,24 @@
 {
   "name": "alexel-studio",
   "private": true,
-  "version": "0.2.0",
+  "version": "0.3.0",
   "type": "module",
-  "description": "Alexel Studio — free, open source code editor with a real terminal, language servers and Claude Code built in",
-  "author": "Alexel",
+  "description": "Alexel Studio: a free, open source code editor with a real terminal, language servers, a debugger and your choice of AI agents (Claude Code, Codex, Gemini, Antigravity).",
+  "author": {
+    "name": "Alexel Studio contributors"
+  },
   "main": "dist-electron/main.cjs",
   "scripts": {
     "dev": "vite",
     "app": "node scripts/electron/dev.mjs",
     "build": "tsc && tsc -p tsconfig.electron.json && vite build && node scripts/electron/build.mjs",
-    "dist": "npm run build && electron-builder --mac",
-    "dist:win": "npm run build && electron-builder --win",
+    "dist": "npm run build && electron-builder --mac --publish never",
+    "dist:win": "npm run build && electron-builder --win --publish never",
     "test": "vitest run",
-    "postinstall": "node -e \"try{for(const d of ['darwin-arm64','darwin-x64']){require('fs').chmodSync('node_modules/node-pty/prebuilds/'+d+'/spawn-helper',0o755)}}catch{}\""
+    "postinstall": "node -e \"try{for(const d of ['darwin-arm64','darwin-x64']){require('fs').chmodSync('node_modules/node-pty/prebuilds/'+d+'/spawn-helper',0o755)}}catch{}\"",
+    "dist:linux": "npm run build && electron-builder --linux --publish never",
+    "typecheck": "tsc --noEmit -p . && tsc --noEmit -p tsconfig.electron.json",
+    "notices": "node scripts/notices.mjs"
   },
   "dependencies": {
     "@parcel/watcher": "^2.6.0",
@@ -90,7 +95,7 @@
   "build": {
     "appId": "dev.alexel.studio",
     "productName": "Alexel Studio",
-    "copyright": "© Alexel",
+    "copyright": "© Alexel Studio contributors",
     "directories": {
       "output": "release",
       "buildResources": "build"
@@ -113,23 +118,40 @@
         {
           "target": "dmg",
           "arch": [
-            "arm64"
+            "arm64",
+            "x64"
+          ]
+        },
+        {
+          "target": "zip",
+          "arch": [
+            "arm64",
+            "x64"
           ]
         }
       ],
       "icon": "build/icon.icns",
       "darkModeSupport": true,
       "identity": null,
-      "hardenedRuntime": false
+      "hardenedRuntime": false,
+      "artifactName": "Alexel-Studio-mac-${arch}.${ext}"
     },
     "dmg": {
-      "title": "Alexel Studio"
+      "title": "Alexel Studio",
+      "artifactName": "Alexel-Studio-mac-${arch}.${ext}"
     },
     "win": {
       "target": [
-        "nsis"
+        {
+          "target": "nsis",
+          "arch": [
+            "x64",
+            "arm64"
+          ]
+        }
       ],
-      "icon": "build/icon.png"
+      "icon": "build/icon.png",
+      "artifactName": "Alexel-Studio-win-${arch}.${ext}"
     },
     "fileAssociations": [
       {
@@ -155,6 +177,56 @@
       "en",
       "id"
     ],
-    "artifactName": "Alexel-Studio-${os}-${arch}.${ext}"
-  }
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "artifactName": "Alexel-Studio-win-${arch}.${ext}",
+      "shortcutName": "Alexel Studio"
+    },
+    "linux": {
+      "target": [
+        {
+          "target": "AppImage",
+          "arch": [
+            "x64"
+          ]
+        },
+        {
+          "target": "deb",
+          "arch": [
+            "x64"
+          ]
+        },
+        {
+          "target": "rpm",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "icon": "build/icon.png",
+      "category": "Development",
+      "maintainer": "Alexel Studio contributors <noreply@alexel.dev>",
+      "synopsis": "Open source code editor with AI agents",
+      "executableName": "alexel-studio"
+    },
+    "appImage": {
+      "artifactName": "Alexel-Studio-linux-${arch}.${ext}"
+    },
+    "deb": {
+      "artifactName": "Alexel-Studio-linux-${arch}.${ext}"
+    },
+    "rpm": {
+      "artifactName": "Alexel-Studio-linux-${arch}.${ext}"
+    },
+    "publish": [
+      {
+        "provider": "github",
+        "releaseType": "draft"
+      }
+    ]
+  },
+  "license": "MIT",
+  "homepage": "https://github.com/alexel-studio"
 }

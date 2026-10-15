@@ -4,7 +4,7 @@
 import { applyDesign, DESIGNS, type DesignId } from "../design/designs";
 import * as docs from "../editor/documents";
 import { languageFor } from "../editor/languages";
-import { api, errMsg, isDemo, pickFolder, setTrafficLights, setWindowTitle } from "../lib/ipc";
+import { api, errMsg, isDemo, openExternal, pickFolder, setTrafficLights, setWindowTitle } from "../lib/ipc";
 import { basename, dirname, isImagePath, isInside, join, relative, validateName } from "../lib/paths";
 import {
   DEFAULT_LAYOUTS,
@@ -777,4 +777,28 @@ export async function openLaunchJson() {
     }
   }
   await openFile(p);
+}
+
+/** Cek versi baru di GitHub Releases. `manual` = dari menu (selalu beri kabar). */
+export async function checkForUpdates(manual = false) {
+  try {
+    const r = await api.checkUpdate();
+    if (!r.repo) {
+      if (manual) toast("Pemeriksaan pembaruan belum tersedia di build ini.", "info");
+      return;
+    }
+    if (r.newer && r.latest && r.url) toast(`Alexel Studio ${r.latest} sudah tersedia (kamu memakai ${r.current}).`, "info", { label: "Lihat", run: () => void openExternal(r.url!) });
+    else if (manual) toast(`Kamu sudah memakai versi terbaru (${r.current}).`, "success");
+  } catch (e) {
+    if (manual) toast(`Gagal memeriksa pembaruan: ${errMsg(e)}`, "error");
+  }
+}
+
+/** Buka halaman issue GitHub untuk melaporkan masalah (dengan info versi & OS). */
+export async function reportIssue() {
+  const repo = await api.appRepo().catch(() => null);
+  if (!repo) return toast("Alamat repositori belum diatur di build ini.", "info");
+  const info = await api.appInfo().catch(() => null);
+  const body = encodeURIComponent(`**Versi:** ${info?.version ?? "?"}\n**OS:** ${info?.platform ?? "?"} ${info?.arch ?? ""}\n\n**Yang terjadi:**\n\n**Yang diharapkan:**\n\n**Langkah:**\n1. `);
+  void openExternal(`https://github.com/${repo}/issues/new?body=${body}`);
 }

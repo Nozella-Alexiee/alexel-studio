@@ -285,6 +285,9 @@ export default function SettingsView() {
             ]}
           />
         </Row>
+        <Row label="Cek pembaruan otomatis" hint="Sekali sehari menanyakan versi terbaru ke GitHub Releases. Tidak ada data lain yang dikirim.">
+          <Toggle label="Cek pembaruan otomatis" value={s.updateCheck} onChange={(v) => set({ updateCheck: v })} />
+        </Row>
         <Row label="RAM & CPU di status bar" hint="Pemakaian memori dan prosesor Alexel Studio.">
           <Toggle label="RAM & CPU di status bar" value={s.showResources} onChange={(v) => set({ showResources: v })} />
         </Row>

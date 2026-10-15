@@ -36,7 +36,10 @@ const CSP = [
 ].join("; ");
 
 // Folder data terpisah (dipakai uji otomatis supaya tidak menyentuh data asli).
-if (process.env.NOZEL_USER_DATA) app.setPath("userData", process.env.NOZEL_USER_DATA);
+// Hook uji otomatis hanya untuk build pengembangan; aplikasi terpaket mengabaikannya.
+const TEST = !app.isPackaged;
+const SMOKE = TEST ? process.env.NOZEL_SMOKE : undefined;
+if (TEST && process.env.NOZEL_USER_DATA) app.setPath("userData", process.env.NOZEL_USER_DATA);
 
 protocol.registerSchemesAsPrivileged([
   { scheme: "app", privileges: { standard: true, secure: true, supportFetchAPI: true, codeCache: true } },
@@ -87,7 +90,7 @@ const commands = buildCommands(ctx, {
 });
 
 // Mode uji otomatis saja: skrip uji boleh minta screenshot berkali-kali ke folder NOZEL_SMOKE_SHOTS.
-if (process.env.NOZEL_SMOKE && process.env.NOZEL_SMOKE_SHOTS) {
+if (SMOKE && process.env.NOZEL_SMOKE_SHOTS) {
   const dir = process.env.NOZEL_SMOKE_SHOTS;
   commands.smoke_shot = async (a, w) => {
     const name = String(a.name ?? "shot").replace(/[^\w.-]/g, "_");
@@ -315,7 +318,7 @@ function createWindow() {
 
   if (DEV_URL) void win.loadURL(DEV_URL);
   else void win.loadURL(`${APP_ORIGIN}/index.html`);
-  if (process.env.NOZEL_SMOKE) runSmoke(win, process.env.NOZEL_SMOKE);
+  if (SMOKE) runSmoke(win, SMOKE);
 }
 
 /** Uji otomatis (hanya bila env NOZEL_SMOKE berisi path skrip): jalankan skrip di renderer,
@@ -372,7 +375,7 @@ app.on("activate", () => {
 
 app.whenReady().then(() => {
   warmPath();
-  if (!process.env.NOZEL_USER_DATA) migrateOldData(ctx, app.getPath("appData"));
+  if (!(TEST && process.env.NOZEL_USER_DATA)) migrateOldData(ctx, app.getPath("appData"));
   session.defaultSession.setPermissionRequestHandler((_wc, permission, cb) => cb(permission === "clipboard-sanitized-write"));
   serveApp();
   buildMenu();

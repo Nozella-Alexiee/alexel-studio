@@ -6,6 +6,7 @@ import fs from "node:fs";
 import path from "node:path";
 import * as agents from "./agents";
 import * as dap from "./dap";
+import { checkUpdate, repoSlug } from "./update";
 import * as claude from "./claude";
 import * as X from "./extensions";
 import * as F from "./fsOps";
@@ -173,6 +174,8 @@ export function buildCommands(ctx: Ctx, hooks: { confirmClose: (win: BrowserWind
       return null;
     },
     menu_set: (a) => hooks.setMenu(a.spec),
+    app_check_update: () => checkUpdate(),
+    app_repo: () => repoSlug(),
     app_info: () => ({ version: app.getVersion(), electron: process.versions.electron, chrome: process.versions.chrome, node: process.versions.node, platform: process.platform, arch: process.arch }),
     /** Aksi jendela untuk menu bar di dalam jendela (Windows/Linux). */
     window_action: (a, win) => {

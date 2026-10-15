@@ -147,6 +147,8 @@ export const api = {
   runTargets: (projectDir: string) => call<RunTarget[]>("detect_run_targets", { projectDir }),
 
   settingsPath: () => call<string>("settings_path"),
+  checkUpdate: () => call<{ repo: string | null; current: string; latest: string | null; url: string | null; newer: boolean }>("app_check_update"),
+  appRepo: () => call<string | null>("app_repo"),
   gitClone: (url: string, parent: string) => call<string>("git_clone", { url, parent }),
   appInfo: () => call<{ version: string; electron: string; chrome?: string; node?: string; platform: string; arch?: string }>("app_info"),
   windowAction: (action: "fullscreen" | "minimize" | "maximize" | "close" | "devtools" | "zoomIn" | "zoomOut" | "zoomReset" | "quit") => call<void>("window_action", { action }),

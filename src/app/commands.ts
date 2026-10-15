@@ -88,6 +88,8 @@ export const COMMANDS: Command[] = [
   { id: "fullscreen", label: "Layar penuh", group: "Tampilan", keys: isMac ? "Ctrl+Mod+F" : "F11", run: () => void api.windowAction("fullscreen") },
   { id: "welcome", label: "Selamat datang", group: "Bantuan", run: () => A.showWelcome() },
   { id: "about", label: "Tentang Alexel Studio", group: "Bantuan", run: () => void A.showAbout() },
+  { id: "checkUpdate", label: "Periksa pembaruan", group: "Bantuan", run: () => void A.checkForUpdates(true) },
+  { id: "reportIssue", label: "Laporkan masalah", group: "Bantuan", run: () => void A.reportIssue() },
   { id: "keyboardShortcuts", label: "Shortcut keyboard", group: "Bantuan", run: () => A.openSettings(undefined, "keys") },
   { id: "newFile", label: "Berkas baru", group: "Berkas", keys: "Mod+N", run: () => A.newFile(activeTab()?.kind === "text" ? activeTab()!.id : null) },
   { id: "newFolder", label: "Folder baru", group: "Berkas", run: () => A.newFolder() },

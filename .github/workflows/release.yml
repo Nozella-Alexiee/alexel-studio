@@ -1,0 +1,52 @@
+name: Release
+
+# Membuat draft rilis GitHub berisi installer macOS, Windows, dan Linux saat tag v* di-push.
+# Nama berkas tetap (Alexel-Studio-<os>-<arch>.<ext>) supaya tautan
+# releases/latest/download/<berkas> di halaman unduh selalu menunjuk versi terbaru.
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: macos-latest
+            target: --mac
+          - os: windows-latest
+            target: --win
+          - os: ubuntu-latest
+            target: --linux
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Paket rpm (Linux)
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y rpm
+      - run: npm ci
+      # Installer untuk arsitektur kedua (Intel Mac, Windows ARM64) butuh modul native versi itu juga.
+      - name: Modul native arsitektur kedua (macOS)
+        if: runner.os == 'macOS'
+        run: npm install --no-save --force @parcel/watcher-darwin-x64@2.6.0 @parcel/watcher-darwin-arm64@2.6.0
+      - name: Modul native arsitektur kedua (Windows)
+        if: runner.os == 'Windows'
+        run: npm install --no-save --force @parcel/watcher-win32-arm64@2.6.0 @parcel/watcher-win32-x64@2.6.0
+      - name: Alamat repo untuk cek pembaruan
+        shell: bash
+        run: npm pkg set repository.type=git "repository.url=https://github.com/${GITHUB_REPOSITORY}"
+      - run: npm test
+      - run: npm run build
+      - name: Build & unggah ke draft rilis
+        run: npx electron-builder ${{ matrix.target }} --publish always
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

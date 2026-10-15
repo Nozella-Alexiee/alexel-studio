@@ -28,6 +28,16 @@ function useBackgroundTasks() {
       void restoreAll().then(() => {
         void import("./extensions/registry").then((m) => m.loadExtensions());
         void detectAgent(getState().settings.agent);
+        // Cek pembaruan sekali sehari (bisa dimatikan di Pengaturan).
+        try {
+          const last = Number(localStorage.getItem("as.updateChecked") || 0);
+          if (getState().settings.updateCheck && Date.now() - last > 86_400_000) {
+            localStorage.setItem("as.updateChecked", String(Date.now()));
+            setTimeout(() => void A.checkForUpdates(false), 8000);
+          }
+        } catch {
+          /* localStorage tidak tersedia */
+        }
         if (getState().settings.agent !== "claude") void detectClaude();
       });
       // Muat semua shell di latar supaya ganti desain pertama kali tidak berkedip.

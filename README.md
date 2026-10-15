@@ -1,83 +1,97 @@
-# Alexel Studio 🐧
+# Alexel Studio
 
-> Editor kode desktop buatan sendiri ala VS Code, dengan identitas pinguin (maskot **Nozi**),
-> 6 desain yang bisa diganti kapan saja, autocomplete beneran lewat LSP, ekstensi dari Open VSX,
-> dan Claude Code bawaan lewat CLI resmi (langganan Pro/Max, tanpa API key).
+A free, open source code editor for macOS, Windows and Linux. Work with the AI agent you prefer
+(Claude Code, Codex, Gemini, Antigravity or any agent that speaks the Agent Client Protocol)
+next to a real terminal, language servers and a debugger. Every change an agent proposes waits
+for your approval.
 
----
+[Bahasa Indonesia](README.id.md) · [Download](#download) · [Agents](docs/AGENTS.md) · [Contributing](CONTRIBUTING.md)
 
-## Isi singkat
+![An agent proposing an edit, with the diff waiting for approval](docs/screenshots/agent.jpg)
+
+## Features
+
+- **AI agents as extensions.** Install Claude Code, Codex or Gemini from the Extensions view.
+  The official package is downloaded, its checksum is verified, and you sign in with your own
+  account. Antigravity and other ACP agents are detected automatically.
+- **You approve every change.** Edits and shell commands appear as cards with the exact diff or
+  command. Allow once, allow for the session, or decline and tell the agent what to do instead.
+  Pick the model, effort and permission mode per conversation; resume earlier conversations.
+- **Debugger.** Breakpoints, variables, watch expressions, call stack and a debug console for
+  JavaScript/TypeScript (js-debug), Python (debugpy), C/C++/Rust (lldb-dap) and Go (Delve).
+  Reads `.vscode/launch.json`.
+- **Feels like VS Code.** Activity bar, command palette (`⌘⇧P` / `Ctrl+Shift+P`), full menus,
+  Source Control, Outline, Output, Problems, editable keyboard shortcuts and `settings.json`.
+- **Real terminal.** zsh, bash or PowerShell with full-screen programs. Smart Run reads
+  `package.json`, `Cargo.toml`, `go.mod` and more.
+- **Language servers.** TypeScript and JavaScript work out of the box. Python, Rust, Go, C/C++,
+  PHP and CSS work once their server is installed.
+- **Open VSX themes.** Color themes, file icon themes, snippets and grammars. Extension code is
+  never executed.
+- **File history.** Every save is kept; compare and restore any version.
 
 | | |
 |---|---|
-| **Platform** | Electron 44 (macOS arm64; Windows lewat `npm run dist:win`) |
-| **Editor** | CodeMirror 6, state per tab (undo, kursor, fold tetap saat pindah tab), split editor |
-| **Desain** | Klasik: Aurora Glass, Zen, Control · Pinguin: Antartika, Tuxedo, Kawanan |
-| **Autocomplete** | LSP: TypeScript/JavaScript (dibundel), Python, PHP, Rust, Go, C/C++, CSS bila server terpasang |
-| **Ekstensi** | Open VSX: tema warna, tema ikon berkas, snippet, grammar TextMate. Kode JS ekstensi tidak dijalankan |
-| **Terminal** | PTY asli (node-pty): `vim`, `htop`, `npm run dev` jalan normal |
-| **Claude** | Claude Code CLI resmi, isi yang dikirim ditampilkan dulu sebelum terkirim |
+| ![Debugger paused at a breakpoint](docs/screenshots/debug.jpg) | ![Agents in the Extensions view](docs/screenshots/ext.jpg) |
 
-### Angka jujur (diukur di MacBook Air M1)
+## Download
 
-| | Alexel Studio 0.2.0 (Electron) | Catatan |
+Get the latest installer from the [Releases](../../releases/latest) page:
+
+| System | File |
+|---|---|
+| macOS, Apple Silicon | `Alexel-Studio-mac-arm64.dmg` |
+| macOS, Intel | `Alexel-Studio-mac-x64.dmg` |
+| Windows x64 / ARM64 | `Alexel-Studio-win-x64.exe` / `Alexel-Studio-win-arm64.exe` |
+| Debian, Ubuntu | `Alexel-Studio-linux-amd64.deb` |
+| Fedora, openSUSE | `Alexel-Studio-linux-x86_64.rpm` |
+| Any Linux | `Alexel-Studio-linux-x86_64.AppImage` |
+
+Builds are not code-signed with a paid certificate yet:
+
+- **macOS:** right-click the app in Applications and choose **Open** the first time.
+- **Windows:** if SmartScreen warns about an unknown publisher, choose **More info**, then **Run anyway**.
+
+## AI agents
+
+Each agent signs in with its own account; Alexel Studio never asks for or stores credentials.
+
+| Agent | Account | How it connects |
 |---|---|---|
-| Ukuran `.dmg` | 123 MB | arm64 |
-| Ukuran app | 283 MB | sebagian besar framework Electron |
-| RAM, project terbuka | ~420 MB | 4 proses Electron |
-| RAM + language server TS | ~490 MB | naik lagi saat tsserver menganalisis project besar |
+| Claude Code | Claude Pro or Max | stream-json protocol of the official CLI |
+| Codex | ChatGPT or OpenAI API key | `codex app-server`, the protocol of the Codex VS Code extension |
+| Gemini | Google account or Gemini API key | Agent Client Protocol (Gemini CLI) |
+| Antigravity | Google account | `agy` CLI in stream-json mode |
+| Other agents | depends on the agent | Agent Client Protocol; set the command in Settings |
 
-Versi Tauri lama jauh lebih kecil (~40 MB RAM), tapi tidak punya LSP, ekstensi, dan tampilan
-yang konsisten lintas OS. Pilihan pindah ke Electron diambil dengan sadar: **fitur nomor satu**.
+See [docs/AGENTS.md](docs/AGENTS.md) for how each integration works and what data is sent.
 
----
+## Keyboard shortcuts
 
-## Fitur
+Shortcuts follow your system: `⌘` on macOS, `Ctrl` on Windows and Linux. A few to start with:
 
-**Desain & Nozi**
-- 6 desain, masing-masing dengan tata letak sendiri (bukan hanya warna). Ganti di Pengaturan atau `Ctrl+⌘T`.
-- Desain pinguin punya maskot Nozi: ekspresi di status bar (santai, sibuk, error, sukses), tips, dan empty state.
-- Tema warna dari ekstensi bisa ditimpa di atas desain mana saja. Tata letak dan Nozi tetap.
+| Action | macOS | Windows / Linux |
+|---|---|---|
+| Command palette | `⌘⇧P` | `Ctrl+Shift+P` |
+| Open file | `⌘P` | `Ctrl+P` |
+| Open the agent | `⌘⎋` | `Ctrl+Esc` |
+| Terminal | ``⌃` `` | ``Ctrl+` `` |
+| Start debugging / continue | `F5` | `F5` |
+| Toggle breakpoint | `F9` | `F9` |
 
-**Editor**
-- Quick Open fuzzy (`⌘P`), palette perintah (`⌘K` / `⌘⇧P`), simbol di berkas (`⌘⇧O`), pergi ke baris (`Ctrl+G`).
-- Split editor (`⌘\`), minimap, git gutter, word wrap, preview Markdown/HTML terisolasi.
-- Autocomplete, hover, go-to-definition (⌘klik), dan error asli dari language server di panel Masalah.
+All shortcuts can be changed in **Settings → Keyboard shortcuts**.
 
-**Fitur yang tidak ada di VS Code / VSCodium**
-- **Mode hemat baterai**: otomatis aktif saat di baterai, memperlambat proses latar.
-- **Time-travel per berkas** (`⌘⇧H`): setiap simpan tercatat, bisa dibandingkan dan dipulihkan.
-- **Port & proses manager**: lihat siapa yang memakai port, hentikan dengan satu klik.
-- **Claude jelaskan error**: kirim error dari terminal/Masalah ke Claude.
-- **Smart Run** (`⌘R` / `F5`): deteksi otomatis cara menjalankan berkas/project (npm, cargo, python, go, php, make, docker compose...).
-- **Papan TODO project**: semua `TODO`/`FIXME` dalam satu papan.
-- **Snapshot kode jadi gambar** (`⌘⇧2`).
-- **Dashboard project**: ringkasan bahasa, git, TODO, dan skrip.
+## Privacy
 
-**Git**: status, stage/unstage, commit, push/pull, branch, diff per berkas, penanda konflik.
+There is no telemetry. Alexel Studio only connects to the network when you:
 
-**Ekstensi** (`⌘⇧X`)
-- Cari & pasang dari [Open VSX](https://open-vsx.org). Checksum sha256 diverifikasi.
-- Yang didukung: tema warna, tema ikon berkas (mis. Material Icon Theme), snippet, dan grammar
-  TextMate (mis. Svelte, Astro, Prisma). Grammar bawaan VS Code yang dibutuhkan (JS/TS/CSS/HTML)
-  dipasang otomatis dari namespace resmi `vscode`.
-- **Tidak didukung**: ekstensi yang memakai API VS Code (GitLens, Copilot, debugger, dsb.) dan tema ikon berbasis font.
+- send a message to an agent (to that agent's provider, through its own CLI),
+- install an agent, debugger or theme (Open VSX, npm registry or GitHub, with checksums verified),
+- check for updates (one request to GitHub Releases per day; can be turned off in Settings).
 
----
+## Build from source
 
-## Keamanan
-
-- `contextIsolation`, `sandbox`, tanpa `nodeIntegration`. Renderer hanya bisa memanggil command lewat satu pintu IPC dengan whitelist.
-- CSP ketat; navigasi dan popup diblok, tautan dibuka di browser.
-- Preview HTML disajikan dari protokol terpisah (`nozelpreview://`), hanya bisa membaca folder project.
-- Ikon ekstensi disajikan dari `nozelext://`, hanya svg/png di dalam folder ekstensi.
-- Hapus berkas = pindah ke Trash. Isi yang dikirim ke Claude selalu ditampilkan dulu.
-
----
-
-## Pengembangan
-
-Kebutuhan: macOS 12+, Node.js 20+. Opsional: [Claude Code CLI](https://docs.claude.com/en/docs/claude-code), language server tambahan (`pyright`, `intelephense`, `rust-analyzer`, `gopls`, `clangd`).
+Requirements: Node.js 22 or later.
 
 ```bash
 npm install
@@ -91,26 +105,20 @@ npm run app
 npm test
 ```
 
-```bash
-npm run dist
-```
+Installers: `npm run dist` (macOS), `npm run dist:win`, `npm run dist:linux`. Releases are built
+by GitHub Actions when a `v*` tag is pushed (see `.github/workflows/release.yml`).
 
-| Skrip | Fungsi |
+Project layout:
+
+| Folder | Contents |
 |---|---|
-| `npm run app` | Electron mode dev (Vite + rebuild main process otomatis) |
-| `npm run dev` | Mode demo di browser (backend tiruan, untuk mengutak-atik UI) |
-| `npm test` | Vitest: frontend + main process |
-| `npm run build` | Typecheck + build renderer & main process |
-| `npm run dist` | Paket `.dmg` di folder `release/` |
+| `electron/` | main process: files, terminal, Git, language servers, agents, debugger |
+| `src/` | renderer: React UI, CodeMirror editor, panels |
+| `site/` | download page (GitHub Pages) |
+| `docs/` | documentation and screenshots |
 
-Struktur:
+## License
 
-```
-electron/        main process: fs, git, pty, search, lsp, extensions, claude, watcher, preview
-src/app/         aksi, perintah, persistensi sesi
-src/editor/      CodeMirror: dokumen, bahasa, LSP, minimap, git gutter, snippet
-src/extensions/  tema warna, tema ikon, grammar TextMate, registry ekstensi
-src/shells/      tata letak per desain (Aurora, Zen, Control)
-src/panels/      Explorer, Git, Cari, TODO, Ekstensi, Terminal, Dashboard, Pengaturan
-src/design/      daftar desain + token warna (src/styles/tokens.css)
-```
+[MIT](LICENSE). Claude, Codex, Gemini and Antigravity are trademarks of their respective owners.
+Alexel Studio is not affiliated with Anthropic, OpenAI, Google or Microsoft. Third-party
+licenses are listed in [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).

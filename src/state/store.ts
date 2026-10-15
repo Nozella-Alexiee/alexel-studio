@@ -48,6 +48,8 @@ export interface Settings {
   keybindings: Record<string, string>;
   /** Tampilkan RAM & CPU aplikasi di status bar. */
   showResources: boolean;
+  /** Cek versi baru di GitHub sekali sehari. */
+  updateCheck: boolean;
   /** Model untuk ⌘K inline: "fast" (Sonnet, effort rendah) atau model bawaan Claude Code. */
   claudeInlineModel: "fast" | "default";
   terminalFontSize: number;
@@ -80,6 +82,7 @@ export const DEFAULT_SETTINGS: Settings = {
   acpCommand: "",
   keybindings: {},
   showResources: false,
+  updateCheck: true,
   claudeInlineModel: "fast",
   terminalFontSize: 12,
   autoSave: "off",

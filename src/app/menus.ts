@@ -159,7 +159,7 @@ export const MENUS: TopMenu[] = [
   },
   {
     label: "Bantuan",
-    items: () => [{ cmd: "welcome" }, { cmd: "tour" }, { cmd: "keyboardShortcuts" }, "-", { cmd: "reportIssue" }, ...(isMac ? [] : (["-", { cmd: "about" }] as MenuNode[]))],
+    items: () => [{ cmd: "welcome" }, { cmd: "tour" }, { cmd: "keyboardShortcuts" }, "-", { cmd: "reportIssue" }, { cmd: "checkUpdate" }, ...(isMac ? [] : (["-", { cmd: "about" }] as MenuNode[]))],
   },
 ];
 

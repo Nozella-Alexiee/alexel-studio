@@ -21,22 +21,25 @@ const tmp = (name: string) => {
 };
 const ctx = (dir: string): Ctx => ({ userData: dir, emit: () => {}, trash: async (p) => fs.rmSync(p, { recursive: true, force: true }), reveal: () => {} });
 
+/** Tes yang bergantung pada shell & path POSIX (sh, quoting '…'); dilewati di Windows. */
+const posix = process.platform === "win32" ? it.skip : it;
+
 describe("util", () => {
-  it("quote shell aman", () => {
+  posix("quote shell aman", () => {
     expect(shellQuote("/usr/bin/node")).toBe("/usr/bin/node");
     expect(shellQuote("a b")).toBe("'a b'");
     expect(shellQuote("it's")).toBe("'it'\\''s'");
     expect(shellQuote("$(rm -rf ~)")).toBe("'$(rm -rf ~)'");
     expect(shellQuote("")).toBe("''");
   });
-  it("runCapture: timeout & stdin tertutup", async () => {
+  posix("runCapture: timeout & stdin tertutup", async () => {
     const t = await runCapture("/bin/sh", ["-c", "sleep 5"], { timeoutMs: 200 });
     expect(t.timedOut).toBe(true);
     const r = await runCapture("/bin/sh", ["-c", "read x; echo got:$x"], { timeoutMs: 5000 });
     expect(r.timedOut).toBe(false);
     expect(r.stdout).toContain("got:");
   });
-  it("menolak path dengan ..", () => {
+  posix("menolak path dengan ..", () => {
     expect(() => ensureCleanPath("/a/../b")).toThrow();
     expect(() => ensureCleanPath("rel/a")).toThrow();
     expect(() => ensureCleanPath("/a/b")).not.toThrow();
@@ -166,7 +169,7 @@ describe("search & TODO", () => {
 });
 
 describe("runner", () => {
-  it("nama berkas berbahaya di-quote", () => {
+  posix("nama berkas berbahaya di-quote", () => {
     const d = tmp("q");
     const f = path.join(d, "a $(touch x) 'b'.py");
     fs.writeFileSync(f, "print(1)");
