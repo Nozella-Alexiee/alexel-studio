@@ -47,7 +47,7 @@ export default function StudioShell() {
           <IconButton label="Panel bawah" keys="Mod+J" active={l.panel} onClick={() => A.togglePanel()}>
             <PanelBottom size={15} />
           </IconButton>
-          <IconButton label="Claude (sidebar kanan)" keys="Mod+Alt+B" active={l.right} onClick={() => A.toggleRight("claude")}>
+          <IconButton label="Agen AI (sidebar kanan)" keys="Mod+Alt+B" active={l.right} onClick={() => A.toggleRight("claude")}>
             <PanelRight size={15} />
           </IconButton>
         </div>
@@ -61,7 +61,7 @@ export default function StudioShell() {
               {count ? <span className="ab-count">{count > 99 ? "99+" : count}</span> : null}
             </button>
           ))}
-          <button className={l.right && l.rightView === "claude" ? "is-on" : ""} onClick={() => A.toggleRight("claude")} title={`Claude Code (${prettyKeys("Mod+Escape")})`} aria-label="Claude Code" aria-pressed={l.right}>
+          <button className={l.right && l.rightView === "claude" ? "is-on" : ""} onClick={() => A.toggleRight("claude")} title={`Agen AI (${prettyKeys("Mod+Escape")})`} aria-label="Agen AI" aria-pressed={l.right}>
             <Kepi size={22} />
           </button>
           <span className="spacer" />

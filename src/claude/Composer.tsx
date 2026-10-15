@@ -23,9 +23,9 @@ import { fuzzyFilter } from "../lib/fuzzy";
 import { prettyKeys } from "../lib/keys";
 import { basename, relative } from "../lib/paths";
 import { projectFiles } from "../lib/projectFiles";
-import type { ClaudePermMode } from "../lib/types";
 import { activeTab, toast, useStore } from "../state/store";
 import {
+  agentChoice,
   cancelClaude,
   cycleClaudeMode,
   newConversation,
@@ -34,7 +34,8 @@ import {
   setClaudeMode,
   setClaudeModel,
 } from "./claude";
-import { EFFORTS, effortLabel, modelChoices, PERM_MODES } from "./options";
+import { EFFORTS, effortLabel, modelChoices } from "./options";
+import { agentInfo } from "../agents/registry";
 
 interface Img {
   media_type: string;
@@ -149,10 +150,13 @@ function Picker<T extends string>({
   );
 }
 
-const MODE_ICON: Record<ClaudePermMode, React.ReactNode> = {
+const MODE_ICON: Record<string, React.ReactNode> = {
   default: <ShieldQuestion size={12} aria-hidden />,
+  untrusted: <ShieldQuestion size={12} aria-hidden />,
   acceptEdits: <Pencil size={12} aria-hidden />,
+  "on-request": <Pencil size={12} aria-hidden />,
   plan: <ListChecks size={12} aria-hidden />,
+  "read-only": <ListChecks size={12} aria-hidden />,
 };
 
 // ---------------- Saran @ dan / ----------------
@@ -174,9 +178,11 @@ export function Composer({ onShowHistory }: { onShowHistory: () => void }) {
   const running = useStore((s) => s.chatRunning);
   const root = useStore((s) => s.root);
   const includeDefault = useStore((s) => s.settings.claudeIncludeFile);
-  const mode = useStore((s) => s.settings.claudeMode);
-  const model = useStore((s) => s.settings.claudeModel);
-  const effort = useStore((s) => s.settings.claudeEffort);
+  const agent = useStore((s) => s.settings.agent);
+  const caps = agentInfo(agent).caps;
+  // Pilihan per agen (Claude memakai claudeModel dsb., agen lain agentPrefs).
+  const choice = useStore((s) => (s.settings.agent === "claude" ? `${s.settings.claudeModel}|${s.settings.claudeEffort}|${s.settings.claudeMode}` : JSON.stringify(s.settings.agentPrefs[s.settings.agent] ?? {})));
+  const { model, effort, mode } = useMemo(() => agentChoice(agent), [agent, choice]);
   const models = useStore((s) => s.claudeModels);
   const cliCommands = useStore((s) => s.claudeCommands);
   const usage = useStore((s) => s.chatUsage);
@@ -211,7 +217,7 @@ export function Composer({ onShowHistory }: { onShowHistory: () => void }) {
   const relTab =
     tab?.kind === "text" && root ? relative(root, tab.id) : fileName;
 
-  const modelList = modelChoices(models);
+  const modelList = agent === "claude" ? modelChoices(models) : [{ value: "default", displayName: "Bawaan", description: "Model bawaan agen" }, ...models.filter((m) => m.value !== "default")];
   const modelValue = modelList.some((m) => m.value === model)
     ? model
     : "default";
@@ -485,28 +491,30 @@ export function Composer({ onShowHistory }: { onShowHistory: () => void }) {
               void send();
             }
           }}
-          aria-label="Pesan untuk Claude"
+          aria-label="Pesan untuk agen AI"
         />
 
         <div className="cz-bar">
           <div className="cz-pickers">
+            {caps.modes.length > 0 && (
             <Picker
               className="pick-mode"
               label="Mode izin"
               title={`Mode izin (${prettyKeys("Shift+Tab")} untuk ganti)`}
               icon={MODE_ICON[mode]}
               value={mode}
-              choices={PERM_MODES.map((m) => ({
+              choices={caps.modes.map((m) => ({
                 id: m.id,
                 label: m.label,
                 hint: m.hint,
               }))}
               onPick={(v) => void setClaudeMode(v)}
             />
+            )}
             <Picker
               className="pick-model"
               label="Model"
-              title="Model Claude"
+              title="Model"
               icon={<span className="cz-model-dot" aria-hidden />}
               value={modelValue}
               choices={modelList.map((m) => ({
@@ -516,10 +524,11 @@ export function Composer({ onShowHistory }: { onShowHistory: () => void }) {
               }))}
               onPick={(v) => void setClaudeModel(v)}
             />
+            {caps.effort && (
             <Picker
               className="pick-effort"
               label="Effort"
-              title="Effort: seberapa lama Claude berpikir. Berlaku mulai pesan berikutnya."
+              title="Effort: seberapa lama agen berpikir. Berlaku mulai pesan berikutnya."
               icon={<Brain size={12} aria-hidden />}
               value={
                 effortChoices.some((e) => e.id === effort) ? effort : "auto"
@@ -531,6 +540,7 @@ export function Composer({ onShowHistory }: { onShowHistory: () => void }) {
               }))}
               onPick={(v) => void setClaudeEffort(v)}
             />
+            )}
           </div>
           <div className="cz-actions">
             <label className="cz-icon-btn" title="Lampirkan gambar">

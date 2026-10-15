@@ -436,10 +436,10 @@ export function createMockBackend(emit: (event: string, payload: unknown) => voi
       { id: "cargo:test", label: "cargo test", command: "cargo test", cwd: ROOT, kind: "cargo", detail: "Cargo.toml" },
     ],
     claude_detect: () => ({ installed: true, path: "/Users/demo/.local/bin/claude", version: "2.1.0 (Claude Code) — pratinjau", error: null, loggedIn: true, plan: "pro" }),
-    claude_session_send: ({ key, content }) => {
+    agent_send: ({ key, content }) => {
       const sid = "demo-session";
       const text = (content as { type: string; text?: string }[]).map((c) => c.text ?? "").join("");
-      const send = (o: unknown) => emit("claude-event", { run_id: key, line: JSON.stringify(o) });
+      const send = (o: unknown) => emit("agent-event", { run_id: key, line: JSON.stringify(o) });
       const reply = `Ini jawaban tiruan dari mode pratinjau browser. Kamu mengirim ${text.length} karakter. Di aplikasi Alexel Studio, Claude Code CLI menjawab dengan langganan Pro/Max kamu.`;
       setTimeout(() => send({ type: "control_response", response: { subtype: "success", request_id: `init-${key}`, response: { models: [
         { value: "default", displayName: "Default (recommended)", description: "Opus 5.5", supportedEffortLevels: ["low", "medium", "high", "xhigh", "max"] },
@@ -467,18 +467,19 @@ export function createMockBackend(emit: (event: string, payload: unknown) => voi
         }, 40);
       });
     },
-    claude_session_control: ({ key, msg }) => {
+    agent_control: ({ key, msg }) => {
       const m = msg as { type: string; request?: { subtype?: string } };
       if (m.type === "control_response") demoPending.get(key)?.();
-      if (m.type === "control_request" && m.request?.subtype === "interrupt") emit("claude-event", { run_id: key, line: JSON.stringify({ type: "result", subtype: "error_during_execution", is_error: true, result: "interrupted" }) });
+      if (m.type === "control_request" && m.request?.subtype === "interrupt") emit("agent-event", { run_id: key, line: JSON.stringify({ type: "result", subtype: "error_during_execution", is_error: true, result: "interrupted" }) });
       return true;
     },
-    claude_session_close: () => undefined,
-    claude_sessions_list: () => [
+    agent_close: () => undefined,
+    agent_status: ({ agent }) => (agent === "claude" ? { installed: true, path: "/Users/demo/.local/bin/claude", version: "2.1.0", loggedIn: true, plan: "pro", source: "system" } : { installed: false, error: null }),
+    agent_sessions: () => [
       { id: "demo-1", title: "Rapikan komponen Dashboard", time_ms: Date.now() - 3600e3, messages: 14 },
       { id: "demo-2", title: "Kenapa test fuzzy gagal?", time_ms: Date.now() - 86400e3 * 2, messages: 6 },
     ],
-    claude_session_load: () => [
+    agent_session_load: () => [
       JSON.stringify({ type: "user", message: { role: "user", content: "Rapikan komponen Dashboard" } }),
       JSON.stringify({ type: "assistant", message: { id: "x", content: [{ type: "text", text: "Sudah kurapikan: tiga bagian dipisah jadi komponen kecil." }] } }),
     ],

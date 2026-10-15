@@ -37,7 +37,7 @@ export function ProblemsPanel() {
                   {p.source} · {p.line}:{p.col}
                 </span>
               </button>
-              <button className="btn btn-sm btn-ghost prob-ask" onClick={() => void import("../claude/claude").then((m) => m.explainProblem(path, p))} title="Minta Claude menjelaskan dan memperbaiki">
+              <button className="btn btn-sm btn-ghost prob-ask" onClick={() => void import("../claude/claude").then((m) => m.explainProblem(path, p))} title="Minta agen AI menjelaskan dan memperbaiki">
                 <CrabMascot size={14} /> Jelaskan
               </button>
             </div>

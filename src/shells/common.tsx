@@ -1,5 +1,6 @@
 import { AlertCircle, AlertTriangle, Cpu, GitBranch, Leaf, Palette, ArrowUp, ArrowDown, Play } from "lucide-react";
 import { Kepi } from "../components/CrabMascot";
+import { agentInfo } from "../agents/registry";
 import React, { Suspense, lazy, useEffect, useState } from "react";
 import * as A from "../app/actions";
 import { ErrorBoundary } from "../components/ErrorBoundary";
@@ -180,6 +181,7 @@ export function StatusBar({ variant }: { variant: "aurora" | "zen" | "control" |
   const saver = useSaver();
   const running = useStore((s) => s.terminals.filter((t) => t.kind !== "shell" && t.status === "running").length);
   const claude = useStore((s) => s.claude);
+  const agent = useStore((s) => s.settings.agent);
   const showRes = useStore((s) => s.settings.showResources);
   const fp = useFootprint(showRes);
   const doc = tab?.kind === "text" ? docs.getDoc(tab.id) : null;
@@ -271,8 +273,8 @@ export function StatusBar({ variant }: { variant: "aurora" | "zen" | "control" |
         </span>
       )}
       {!zen && (
-        <button className={`status-item sb-claude ${claude?.installed ? "" : "is-off"}`} onClick={() => A.toggleRight("claude")} title={claude?.version ?? claude?.error ?? "Claude Code"}>
-          <Kepi size={14} /> Claude
+        <button className={`status-item sb-claude ${agent !== "claude" || claude?.installed ? "" : "is-off"}`} onClick={() => A.toggleRight("claude")} title={`Agen AI: ${agentInfo(agent).name}`}>
+          <Kepi size={14} /> {agentInfo(agent).short}
         </button>
       )}
       {variant !== "studio" && <DesignButton compact={zen} />}

@@ -95,8 +95,8 @@ export default function ZenShell() {
           <button className={`tbtn ${l.panel ? "is-on" : ""}`} onClick={() => A.togglePanel("terminal")} title={`Terminal (${prettyKeys("Ctrl+`")})`}>
             <TerminalSquare size={14} /> Terminal
           </button>
-          <button className={`tbtn ${l.right ? "is-on" : ""}`} onClick={() => A.toggleRight("claude")} title={`Claude (${prettyKeys("Mod+Alt+B")})`}>
-            <Kepi size={16} /> Claude
+          <button className={`tbtn ${l.right ? "is-on" : ""}`} onClick={() => A.toggleRight("claude")} title={`Agen AI (${prettyKeys("Mod+Alt+B")})`}>
+            <Kepi size={16} /> Agen AI
           </button>
           <IconButton label="Mode fokus" active={!l.sidebar && !l.right} onClick={() => setLayout(!l.sidebar && !l.right ? { sidebar: true } : { sidebar: false, right: false, panel: false })}>
             <Focus size={15} />
@@ -172,7 +172,7 @@ export default function ZenShell() {
           )}
           <button className="omnibar" onClick={() => openPalette("")}>
             <TerminalSquare size={15} aria-hidden />
-            <span>Tanya Claude (?), jalankan perintah (&gt;), atau buka berkas…</span>
+            <span>Tanya agen AI (?), jalankan perintah (&gt;), atau buka berkas…</span>
             <Kbd keys="Mod+K" />
           </button>
         </main>
@@ -180,7 +180,7 @@ export default function ZenShell() {
         {l.right && (
           <>
             <SideResizer side="right" />
-            <aside className="right-panel zen-chat" aria-label="Claude">
+            <aside className="right-panel zen-chat" aria-label="Agen AI">
               <RightContent />
             </aside>
           </>

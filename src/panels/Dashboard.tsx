@@ -70,7 +70,6 @@ function ProjectPicker() {
 /** Halaman Selamat datang ala VS Code: Mulai, Terbaru, dan Panduan. */
 export function Welcome() {
   const design = useStore((s) => s.settings.design);
-  const claude = useStore((s) => s.claude);
   const penguin = usePenguinVariant();
   return (
     <div className="welcome welcome-v2">
@@ -78,7 +77,7 @@ export function Welcome() {
         {penguin ? <NoziHero size={76} /> : <img className="welcome-logo" src="./icon.png" alt="" aria-hidden onError={(e) => (e.currentTarget.style.display = "none")} />}
         <div>
           <h1>Alexel Studio</h1>
-          <p className="hint">Editor kode dengan Claude di dalamnya.</p>
+          <p className="hint">Editor kode open source untuk macOS, Windows, dan Linux.</p>
         </div>
       </header>
       {isDemo && <p className="hint small">Mode pratinjau browser: backend tiruan. Buka lewat aplikasi Alexel Studio untuk berkas sungguhan.</p>}
@@ -118,8 +117,8 @@ export function Welcome() {
               <button className="walk-card" onClick={() => setLayout({ right: true, rightView: "claude" })}>
                 <CrabMascot size={26} />
                 <span>
-                  <strong>Kerja bareng Claude Code</strong>
-                  <span className="hint">{claude?.installed ? "Panel Claude di kanan: pilih model, effort, dan mode izin. Kamu menyetujui setiap perubahan." : "Pasang Claude Code sekali, lalu masuk dengan akun Claude Pro atau Max kamu."}</span>
+                  <strong>Kerja bareng agen AI</strong>
+                  <span className="hint">Pakai Claude Code, Codex, Gemini, atau agen lain dari panel di kanan. Kamu menyetujui setiap perubahan.</span>
                 </span>
               </button>
               <button className="walk-card" onClick={() => openPalette(">")}>
@@ -207,7 +206,7 @@ export default function Dashboard() {
             <Search size={14} /> Cari
           </button>
           <button className="btn btn-claude" onClick={() => setLayout({ right: true, rightView: "claude" })}>
-            <CrabMascot size={16} /> Tanya Claude
+            <CrabMascot size={16} /> Tanya agen AI
           </button>
         </div>
       </header>

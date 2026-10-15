@@ -39,7 +39,7 @@ export default function AuroraShell() {
           <IconButton label="Panel bawah" keys="Mod+J" active={l.panel} onClick={() => A.togglePanel()}>
             <PanelBottom size={15} />
           </IconButton>
-          <IconButton label="Panel Claude" keys="Mod+Alt+B" active={l.right} onClick={() => A.toggleRight("claude")}>
+          <IconButton label="Panel agen AI" keys="Mod+Alt+B" active={l.right} onClick={() => A.toggleRight("claude")}>
             <Kepi size={18} />
           </IconButton>
         </div>
@@ -107,7 +107,7 @@ export default function AuroraShell() {
                   value={l.rightView}
                   onChange={(v) => setLayout({ rightView: v })}
                   options={[
-                    { id: "claude", label: <><Kepi size={14} /> Claude</> },
+                    { id: "claude", label: <><Kepi size={14} /> Agen AI</> },
                     { id: "git", label: <><GitBranch size={12} /> Git</> },
                   ]}
                 />

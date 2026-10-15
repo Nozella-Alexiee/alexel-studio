@@ -2,7 +2,7 @@
 
 import { create } from "zustand";
 
-export const CHANNELS = ["Alexel Studio", "Claude Code", "Server bahasa", "Git", "Debug"] as const;
+export const CHANNELS = ["Alexel Studio", "Agen AI", "Server bahasa", "Git", "Debug"] as const;
 export type Channel = (typeof CHANNELS)[number];
 
 const MAX = 2000;

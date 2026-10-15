@@ -746,7 +746,7 @@ export async function showAbout() {
   await ask({
     kind: "confirm",
     title: "Alexel Studio",
-    message: "Editor kode gratis dan open source dengan terminal, server bahasa, dan Claude Code bawaan. Lisensi MIT.",
+    message: "Editor kode gratis dan open source untuk macOS, Windows, dan Linux, dengan terminal, server bahasa, debugger, dan agen AI pilihanmu. Lisensi MIT.",
     detail: info ? `Versi ${info.version}\nElectron ${info.electron}${info.chrome ? `\nChromium ${info.chrome}` : ""}${info.node ? `\nNode ${info.node}` : ""}\n${info.platform} ${info.arch ?? ""}` : undefined,
     okLabel: "Tutup",
     cancelLabel: "",

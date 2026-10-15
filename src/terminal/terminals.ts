@@ -92,7 +92,7 @@ function init() {
     if (sess?.kind === "run") void import("../components/PenguinMascot").then((m) => m.flashPenguin(code === 0 ? "sukses" : "error", code === 0 ? 6000 : 9000));
     if (sess?.kind === "run" && code !== 0 && code !== 130 && code !== null) {
       toast(`${sess.title} gagal (kode ${code})`, "error", {
-        label: "Tanya Claude",
+        label: "Tanya agen AI",
         run: () => void import("../claude/claude").then((m) => m.explainTerminal(key)),
       });
     }

@@ -9,7 +9,7 @@ export async function resolveConflict(path: string): Promise<boolean> {
   const choice = await ask({
     kind: "choice",
     title: `${name} berubah di luar Alexel Studio`,
-    message: "Berkas ini diubah program lain (git, formatter, atau Claude CLI) sejak kamu membukanya, dan kamu juga punya editan yang belum disimpan.",
+    message: "Berkas ini diubah program lain (git, formatter, atau agen AI) sejak kamu membukanya, dan kamu juga punya editan yang belum disimpan.",
     choices: [
       { id: "overwrite", label: "Simpan versiku (timpa disk)", danger: true },
       { id: "reload", label: "Pakai versi disk (buang editanku)" },

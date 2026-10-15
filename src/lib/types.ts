@@ -121,6 +121,17 @@ export interface ClaudeInfo {
   plan?: string | null;
 }
 
+/** Status satu agen AI (lihat electron/agents). */
+export interface AgentStatus {
+  installed: boolean;
+  path?: string | null;
+  version?: string | null;
+  loggedIn?: boolean | null;
+  plan?: string | null;
+  source?: "system" | "extension" | null;
+  error?: string | null;
+}
+
 export type ClaudePermMode = "default" | "acceptEdits" | "plan";
 
 export interface ClaudeSessionCfg {

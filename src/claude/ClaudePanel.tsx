@@ -1,4 +1,4 @@
-import { ArrowLeft, History, LogIn, MessageSquarePlus, RefreshCw, TerminalSquare } from "lucide-react";
+import { ArrowLeft, ChevronDown, History, LogIn, MessageSquarePlus, Puzzle, RefreshCw, TerminalSquare } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { openClaudeInteractive } from "../app/run";
 import { CrabMascot, flashKepi, Kepi } from "../components/CrabMascot";
@@ -7,7 +7,9 @@ import { api, errMsg } from "../lib/ipc";
 import type { ClaudeSessionInfo } from "../lib/types";
 import { useStore } from "../state/store";
 import { Message } from "./ChatItems";
-import { detectClaude, installClaude, installCommand, loginClaude, newConversation, resumeSession, sendToClaude } from "./claude";
+import { agentNow, detectAgent, installClaude, installCommand, loginClaude, newConversation, resumeSession, selectAgent, sendToClaude } from "./claude";
+import { AGENTS, agentInfo } from "../agents/registry";
+import { openMenu } from "../components/Overlays";
 import { Composer } from "./Composer";
 
 const QUICK = [
@@ -34,9 +36,9 @@ function SessionHistory({ onClose }: { onClose: () => void }) {
   useEffect(() => {
     if (!root) return setList([]);
     api
-      .claudeSessions(root)
+      .agentSessions(agentNow(), root)
       .then(setList)
-      .catch((e) => setErr(errMsg(e)));
+      .catch((e: unknown) => setErr(errMsg(e)));
   }, [root]);
   const shown = (list ?? []).filter((s) => !q.trim() || s.title.toLowerCase().includes(q.trim().toLowerCase()));
   return (
@@ -75,36 +77,48 @@ function SessionHistory({ onClose }: { onClose: () => void }) {
 }
 
 function Setup() {
-  const info = useStore((s) => s.claude);
-  if (!info) return <p className="hint pad-x">Memeriksa Claude Code…</p>;
+  const agent = useStore((s) => s.settings.agent);
+  const info = useStore((s) => s.agentStatus[s.settings.agent]);
+  const a = agentInfo(agent);
+  if (!info) return <p className="hint pad-x">Memeriksa {a.name}…</p>;
   if (!info.installed)
     return (
       <div className="claude-setup">
         <CrabMascot mood="mikir" size={54} />
-        <h3>Pasang Claude Code</h3>
-        <p>Alexel Studio memakai Claude Code resmi dengan langganan Claude Pro atau Max kamu. Tidak perlu API key.</p>
-        <pre className="claude-setup-cmd">{installCommand()}</pre>
-        <div className="perm-actions">
-          <button className="btn btn-claude btn-sm" onClick={() => void installClaude()}>
-            <TerminalSquare size={13} /> Pasang di terminal
+        <h3>Pasang {a.name}</h3>
+        <p>{a.description}</p>
+        {agent === "acp" ? (
+          <p className="hint">Isi perintah agen ACP di Pengaturan → Agen AI.</p>
+        ) : (
+          <button className="btn btn-claude btn-sm" onClick={() => void import("../app/actions").then((m) => m.toggleSidebar("ext"))}>
+            <Puzzle size={13} /> Pasang dari Ekstensi
           </button>
-          <button className="btn btn-sm" onClick={() => void detectClaude()}>
-            <RefreshCw size={13} /> Periksa ulang
-          </button>
-        </div>
+        )}
+        {agent === "claude" && (
+          <>
+            <p className="hint small">Atau pasang lewat terminal:</p>
+            <pre className="claude-setup-cmd">{installCommand()}</pre>
+            <button className="btn btn-sm" onClick={() => void installClaude()}>
+              <TerminalSquare size={13} /> Pasang di terminal
+            </button>
+          </>
+        )}
+        <button className="btn btn-sm" onClick={() => void detectAgent(agent)}>
+          <RefreshCw size={13} /> Periksa ulang
+        </button>
         {info.error && <p className="hint small">{info.error}</p>}
       </div>
     );
   return (
     <div className="claude-setup">
       <CrabMascot mood="melambai" size={54} />
-      <h3>Masuk ke Claude</h3>
-      <p>Masuk sekali dengan akun Claude kamu. Setelah itu panel ini langsung bisa dipakai.</p>
+      <h3>Masuk ke {a.name}</h3>
+      <p>Masuk sekali dengan akun {a.vendor} kamu. Setelah itu panel ini langsung bisa dipakai.</p>
       <div className="perm-actions">
         <button className="btn btn-claude btn-sm" onClick={() => void loginClaude()}>
           <LogIn size={13} /> Masuk
         </button>
-        <button className="btn btn-sm" onClick={() => void detectClaude()}>
+        <button className="btn btn-sm" onClick={() => void detectAgent(agent)}>
           <RefreshCw size={13} /> Periksa ulang
         </button>
       </div>
@@ -112,10 +126,39 @@ function Setup() {
   );
 }
 
+/** Pemilih agen di header panel (Claude Code, Codex, Gemini, agen ACP). */
+function AgentPicker() {
+  const agent = useStore((s) => s.settings.agent);
+  const status = useStore((s) => s.agentStatus);
+  const running = useStore((s) => !!s.chatRunning);
+  return (
+    <button
+      className="agent-pick"
+      disabled={running}
+      title={running ? "Tunggu jawaban selesai untuk ganti agen" : "Ganti agen AI"}
+      aria-haspopup="menu"
+      onClick={(e) =>
+        openMenu(
+          e,
+          AGENTS.map((a) => ({
+            label: `${a.id === agent ? "✓ " : ""}${a.name}`,
+            keys: status[a.id]?.installed ? a.vendor : status[a.id] ? "belum dipasang" : a.vendor,
+            run: () => void selectAgent(a.id),
+          }))
+        )
+      }
+    >
+      <span className="claude-title">{agentInfo(agent).name}</span>
+      <ChevronDown size={12} aria-hidden />
+    </button>
+  );
+}
+
 export default function ClaudePanel() {
   const chat = useStore((s) => s.chat);
   const running = useStore((s) => s.chatRunning);
-  const info = useStore((s) => s.claude);
+  const agent = useStore((s) => s.settings.agent);
+  const info = useStore((s) => s.agentStatus[s.settings.agent]);
   const hasText = useStore((s) => {
     const g = s.groups[s.focusedGroup];
     const t = g?.active ? s.tabs[g.active] : null;
@@ -127,8 +170,8 @@ export default function ClaudePanel() {
   const list = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (!info) void detectClaude();
-  }, [info]);
+    if (!info) void detectAgent(agent);
+  }, [info, agent]);
   useEffect(() => {
     if (stick.current) list.current?.scrollTo({ top: list.current.scrollHeight });
   }, [chat, running]);
@@ -137,22 +180,26 @@ export default function ClaudePanel() {
   const lastIsStreaming = running && chat.length > 0 && chat[chat.length - 1].role === "assistant" && !!chat[chat.length - 1].text;
 
   return (
-    <section className="claude-panel" aria-label="Claude Code">
+    <section className="claude-panel" aria-label={`Agen AI: ${agentInfo(agent).name}`}>
       <header className="claude-head">
         <button className="claude-kepi" onClick={() => flashKepi("melambai", 2400)} aria-label="Sapa Kepi" title="Kepi, teman Claude Code">
           <Kepi size={22} />
         </button>
-        <span className="claude-title">Claude Code</span>
+        <AgentPicker />
         <span className={`claude-status ${ready ? "ok" : "bad"}`} title={info?.version ?? info?.error ?? ""}>
-          {info === null ? "memeriksa…" : !info.installed ? "belum terpasang" : info.loggedIn === false ? "belum masuk" : info.plan ? info.plan.toUpperCase() : "siap"}
+          {!info ? "memeriksa…" : !info.installed ? "belum terpasang" : info.loggedIn === false ? "belum masuk" : info.plan ? info.plan.toUpperCase() : "siap"}
         </span>
         <span className="spacer" />
-        <IconButton label="Riwayat percakapan" onClick={() => setShowHistory((v) => !v)} active={showHistory}>
-          <History size={14} />
-        </IconButton>
-        <IconButton label="Buka Claude Code di terminal" onClick={() => void openClaudeInteractive()}>
-          <TerminalSquare size={14} />
-        </IconButton>
+        {agentInfo(agent).caps.history && (
+          <IconButton label="Riwayat percakapan" onClick={() => setShowHistory((v) => !v)} active={showHistory}>
+            <History size={14} />
+          </IconButton>
+        )}
+        {agent === "claude" && (
+          <IconButton label="Buka Claude Code di terminal" onClick={() => void openClaudeInteractive()}>
+            <TerminalSquare size={14} />
+          </IconButton>
+        )}
         <IconButton
           label="Percakapan baru"
           onClick={() => {

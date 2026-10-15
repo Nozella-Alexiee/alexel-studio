@@ -6,7 +6,7 @@ import { app, BrowserWindow, ipcMain, Menu, net, protocol, session, shell, type 
 import fs from "node:fs";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
-import { killAllClaude } from "./claude";
+import { killAllAgents } from "./agents";
 import { killAllLsp } from "./lsp";
 import { buildCommands } from "./commands";
 import { pruneUndo } from "./fsOps";
@@ -55,7 +55,7 @@ const pendingOpen: string[] = [];
  * perbandingan path di UI sederhana. Isi berkas & output perintah tidak pernah diubah.
  */
 const CONTENT_KEYS = new Set(["content", "text", "line", "data", "diff", "stdout", "stderr", "message", "result", "body", "command", "before", "after", "error"]);
-const CONTENT_CMDS = new Set(["read_file_text", "history_read", "ext_read_file", "git_head", "git_diff_file", "claude_inline", "claude_session_load"]);
+const CONTENT_CMDS = new Set(["read_file_text", "history_read", "ext_read_file", "git_head", "git_diff_file", "claude_inline", "agent_session_load"]);
 function toUiPaths(v: unknown, key = ""): unknown {
   if (process.platform !== "win32" || CONTENT_KEYS.has(key)) return v;
   if (typeof v === "string") return /^([A-Za-z]:\\|\\\\)/.test(v) && !/[\r\n]/.test(v) ? v.replace(/\\/g, "/").replace(/^[a-z]:/, (d) => d.toUpperCase()) : v;
@@ -71,7 +71,7 @@ function toUiPaths(v: unknown, key = ""): unknown {
 const ctx: Ctx = {
   userData: app.getPath("userData"),
   emit: (event, payload) => {
-    if (win && !win.isDestroyed()) win.webContents.send("nozel:event", event, event === "pty-data" || event === "claude-event" || event === "lsp-message" ? payload : toUiPaths(payload));
+    if (win && !win.isDestroyed()) win.webContents.send("nozel:event", event, event === "pty-data" || event === "agent-event" || event === "lsp-message" ? payload : toUiPaths(payload));
   },
   trash: (p) => shell.trashItem(p),
   reveal: (p) => shell.showItemInFolder(p),
@@ -359,7 +359,7 @@ app.on("before-quit", () => {
 
 app.on("will-quit", () => {
   killAllPtys();
-  killAllClaude();
+  killAllAgents();
   killAllLsp();
   void unwatch();
 });

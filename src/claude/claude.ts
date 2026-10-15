@@ -6,6 +6,7 @@ import * as docs from "../editor/documents";
 import { api, errMsg, on } from "../lib/ipc";
 import { basename, relative } from "../lib/paths";
 import type { ClaudeContent, ClaudePermMode } from "../lib/types";
+import { agentInfo, type AgentId } from "../agents/registry";
 import { activeTab, ask, getState, newChatKey, setLayout, setState, toast, type ChatMessage, type ChatTool, type Problem } from "../state/store";
 
 let listening = false;
@@ -146,7 +147,7 @@ function onControlResponse(key: string, r: any) {
   }
   if (r.subtype === "error") {
     toast(`Claude: ${r.error ?? "permintaan ditolak"}`, "error");
-    void import("../app/output").then((m) => m.logOutput("Claude Code", `Kontrol ditolak: ${r.error ?? "?"}`));
+    void import("../app/output").then((m) => m.logOutput("Agen AI", `Kontrol ditolak: ${r.error ?? "?"}`));
   }
 }
 
@@ -154,7 +155,7 @@ function onControlRequest(key: string, ev: any) {
   const req = ev.request ?? {};
   if (req.subtype !== "can_use_tool") {
     // hook / MCP dari host tidak didukung: jawab supaya CLI tidak menunggu.
-    void api.claudeControl(key, { type: "control_response", response: { subtype: "error", request_id: ev.request_id, error: "Tidak didukung oleh Alexel Studio." } }).catch(() => {});
+    void api.agentControl(agentNow(), key, { type: "control_response", response: { subtype: "error", request_id: ev.request_id, error: "Tidak didukung oleh Alexel Studio." } }).catch(() => {});
     return;
   }
   const c = conv(key);
@@ -281,13 +282,13 @@ function onResult(key: string, c: Conv, ev: any) {
 function ensureListeners() {
   if (listening) return;
   listening = true;
-  void on<{ run_id: string; line: string }>("claude-event", ({ run_id, line }) => handleLine(run_id, line));
-  void on<{ run_id: string; code: number | null; stderr: string; replaced?: boolean }>("claude-done", ({ run_id, code, stderr, replaced }) => {
+  void on<{ run_id: string; line: string }>("agent-event", ({ run_id, line }) => handleLine(run_id, line));
+  void on<{ run_id: string; code: number | null; stderr: string; replaced?: boolean }>("agent-done", ({ run_id, code, stderr, replaced }) => {
     // Proses lama yang digantikan (mis. effort diganti) tidak memengaruhi percakapan.
     if (replaced) return;
     const c = convs.get(run_id);
     if (c?.cancelTimer) clearTimeout(c.cancelTimer);
-    void import("../app/output").then((m) => m.logOutput("Claude Code", `Proses selesai (kode ${code}).${stderr.trim() ? `\n${stderr.trim()}` : ""}`));
+    void import("../app/output").then((m) => m.logOutput("Agen AI", `Proses selesai (kode ${code}).${stderr.trim() ? `\n${stderr.trim()}` : ""}`));
     if (c) {
       c.costBase += c.lastCost;
       c.lastCost = 0;
@@ -304,8 +305,9 @@ function ensureListeners() {
     if (code === 130) {
       if (wasRunning) push({ role: "info", text: "Dihentikan." });
     } else if (code !== 0 && wasRunning && !c?.turn?.errored) {
-      const hint = /login|auth|credential/i.test(stderr) ? " Kamu perlu masuk ke Claude Code dulu." : "";
-      push({ role: "error", text: `Claude Code berhenti (kode ${code}).${hint}\n\n${stderr.trim()}`.trim() });
+      const name = agentInfo(agentNow()).name;
+      const hint = /login|auth|credential/i.test(stderr) ? ` Kamu perlu masuk ke ${name} dulu.` : "";
+      push({ role: "error", text: `${name} berhenti (kode ${code}).${hint}\n\n${stderr.trim()}`.trim() });
     }
   });
 }
@@ -320,6 +322,27 @@ export async function detectClaude() {
   }
 }
 
+/** Periksa status agen (terpasang, versi, login). Claude juga mengisi state.claude. */
+export async function detectAgent(agent: AgentId = agentNow()) {
+  if (agent === "claude") await detectClaude();
+  try {
+    const st = agent === "claude" ? { ...(getState().claude ?? { installed: false }), source: "system" as const } : await api.agentStatus(agent);
+    setState((s) => ({ agentStatus: { ...s.agentStatus, [agent]: st } }));
+  } catch (e) {
+    setState((s) => ({ agentStatus: { ...s.agentStatus, [agent]: { installed: false, error: errMsg(e) } } }));
+  }
+}
+
+/** Ganti agen panel. Percakapan berjalan ditutup; agen baru mulai dari percakapan kosong. */
+export async function selectAgent(agent: AgentId) {
+  if (agent === agentNow()) return;
+  closeCurrent();
+  const { updateSettings } = await import("../app/actions");
+  updateSettings({ agent });
+  setState({ chat: [], chatSession: null, chatRunning: null, chatKey: newChatKey(), chatUsage: null, claudeModels: [], claudeCommands: [], claudeActiveModel: null });
+  await detectAgent(agent);
+}
+
 /** Perintah pemasangan resmi Claude Code untuk OS ini. */
 export function installCommand(): string {
   const p = (window as unknown as { nozel?: { platform?: string } }).nozel?.platform;
@@ -327,11 +350,14 @@ export function installCommand(): string {
 }
 
 /** Buka terminal yang menjalankan `claude auth login`, lalu periksa ulang setelah selesai. */
+const LOGIN_ARGS: Record<AgentId, string> = { claude: "auth login", codex: "login", gemini: "", acp: "" };
+
 export async function loginClaude() {
-  const info = getState().claude;
-  if (!info?.path) return toast("Claude Code belum terpasang.");
+  const agent = agentNow();
+  const info = getState().agentStatus[agent] ?? (agent === "claude" ? getState().claude : null);
+  if (!info?.path) return toast(`${agentInfo(agent).name} belum terpasang.`);
   const { runInTerminal, shellExe } = await import("../app/run");
-  await runInTerminal(`${shellExe(info.path)} auth login`, "Masuk ke Claude");
+  await runInTerminal(`${shellExe(info.path)} ${LOGIN_ARGS[agent]}`.trim(), `Masuk ke ${agentInfo(agent).short}`);
   toast("Ikuti langkah masuk di terminal. Setelah selesai, klik Periksa ulang.", "info");
 }
 
@@ -379,14 +405,27 @@ export function buildPayload(prompt: string, o: SendOptions): { payload: string;
   return { payload, summary: summary.join(", ") };
 }
 
+/** Agen percakapan yang sedang aktif. */
+export const agentNow = (): AgentId => getState().settings.agent;
+
+/** Model / effort / mode yang dipilih untuk agen aktif. */
+export function agentChoice(agent = agentNow()): { model: string; effort: string; mode: string } {
+  const st = getState().settings;
+  if (agent === "claude") return { model: st.claudeModel, effort: st.claudeEffort, mode: st.claudeMode };
+  const p = st.agentPrefs[agent] ?? {};
+  return { model: p.model ?? "default", effort: p.effort ?? "auto", mode: p.mode ?? agentInfo(agent).caps.modes[0]?.id ?? "default" };
+}
+
 const cfgNow = () => {
   const s = getState();
+  const c = agentChoice();
   return {
     cwd: s.root ?? "",
-    model: s.settings.claudeModel === "default" ? null : s.settings.claudeModel,
-    effort: s.settings.claudeEffort === "auto" ? null : s.settings.claudeEffort,
-    mode: s.settings.claudeMode,
+    model: c.model === "default" ? null : c.model,
+    effort: c.effort === "auto" ? null : c.effort,
+    mode: c.mode,
     resume: s.chatSession,
+    command: s.settings.agent === "acp" ? s.settings.acpCommand : undefined,
   };
 };
 
@@ -394,10 +433,10 @@ export async function ensureConsent(): Promise<boolean> {
   if (getState().settings.claudeConsent) return true;
   const ok = await ask({
     kind: "confirm",
-    title: "Pakai Claude Code di Alexel Studio?",
+    title: "Pakai agen AI di Alexel Studio?",
     message:
-      "Pesanmu, berkas yang kamu lampirkan, dan berkas yang dibaca Claude dikirim ke Anthropic lewat Claude Code CLI dengan akunmu sendiri. " +
-      "Di mode Tanya dulu, Claude meminta izin di panel ini sebelum mengubah berkas atau menjalankan perintah. Persetujuan ini cukup sekali.",
+      "Pesanmu, berkas yang kamu lampirkan, dan berkas yang dibaca agen dikirim ke penyedia agen yang kamu pilih (mis. Anthropic, OpenAI, Google) dengan akunmu sendiri. " +
+      "Di mode Tanya dulu, agen meminta izin di panel ini sebelum mengubah berkas atau menjalankan perintah. Persetujuan ini cukup sekali.",
     okLabel: "Setuju",
   });
   if (ok !== true) return false;
@@ -414,15 +453,17 @@ export async function sendToClaude(prompt: string, o: SendOptions = {}): Promise
     return false;
   }
   setLayout({ right: true, rightView: "claude" });
-  if (!s.claude?.installed) {
-    await detectClaude();
-    if (!getState().claude?.installed) {
-      push({ role: "error", text: "Claude Code belum terpasang di komputer ini. Klik **Pasang** di atas panel." });
+  const agent = agentNow();
+  const name = agentInfo(agent).name;
+  if (!getState().agentStatus[agent]?.installed) {
+    await detectAgent(agent);
+    if (!getState().agentStatus[agent]?.installed) {
+      push({ role: "error", text: `${name} belum terpasang. Pasang dari panel Ekstensi → Agen AI.` });
       return false;
     }
   }
-  if (getState().claude?.loggedIn === false) {
-    push({ role: "error", text: "Kamu belum masuk ke Claude Code. Klik **Masuk** di atas panel." });
+  if (getState().agentStatus[agent]?.loggedIn === false) {
+    push({ role: "error", text: `Kamu belum masuk ke ${name}. Klik **Masuk** di panel.` });
     return false;
   }
   if (!(await ensureConsent())) return false;
@@ -430,7 +471,7 @@ export async function sendToClaude(prompt: string, o: SendOptions = {}): Promise
   if (getState().settings.claudeConfirm) {
     const ok = await ask({
       kind: "confirm",
-      title: "Kirim ke Claude Code?",
+      title: `Kirim ke ${name}?`,
       message: summary ? `Ikut dikirim: ${summary}. Isi lengkapnya ada di bawah.` : "Hanya pesanmu yang dikirim.",
       detail: payload,
       okLabel: "Kirim",
@@ -448,7 +489,7 @@ export async function sendToClaude(prompt: string, o: SendOptions = {}): Promise
     { type: "text", text: payload || "(lihat gambar)" },
   ];
   try {
-    await api.claudeSend(key, cfgNow(), content);
+    await api.agentSend(agentNow(), key, cfgNow(), content);
     return true;
   } catch (e) {
     c.turn = null;
@@ -463,11 +504,11 @@ export async function cancelClaude() {
   const key = getState().chatRunning;
   if (!key) return;
   const c = conv(key);
-  const ok = await api.claudeControl(key, { type: "control_request", request: { subtype: "interrupt" } }).catch(() => false);
+  const ok = await api.agentControl(agentNow(), key, { type: "control_request", request: { subtype: "interrupt" } }).catch(() => false);
   c.cancelTimer = setTimeout(() => {
     if (getState().chatRunning !== key) return;
     c.closing = true;
-    void api.claudeClose(key);
+    void api.agentClose(agentNow(), key);
     setState({ chatRunning: null, chatKey: newChatKey() });
     push({ role: "info", text: "Dihentikan." });
   }, ok ? 5000 : 0);
@@ -493,7 +534,7 @@ export async function answerPermission(id: string, decision: PermDecision, opts:
     if (opts.mode) response.updatedPermissions = [{ type: "setMode", mode: opts.mode, destination: "session" }];
     else if (decision === "always" && Array.isArray(p.suggestions) && p.suggestions.length) response.updatedPermissions = p.suggestions;
   }
-  const sent = await api.claudeControl(key, { type: "control_response", response: { subtype: "success", request_id: p.requestId, response } }).catch((e) => {
+  const sent = await api.agentControl(agentNow(), key, { type: "control_response", response: { subtype: "success", request_id: p.requestId, response } }).catch((e: unknown) => {
     toast(errMsg(e), "error");
     return false;
   });
@@ -538,27 +579,35 @@ export async function proposedEdit(input: Record<string, unknown>, toolName: str
 
 // ---------------- Model, mode, effort ----------------
 
-export async function setClaudeMode(mode: ClaudePermMode) {
+async function savePref(key: "model" | "effort" | "mode", value: string) {
   const { updateSettings } = await import("../app/actions");
-  updateSettings({ claudeMode: mode });
-  await api.claudeControl(getState().chatKey, { type: "control_request", request: { subtype: "set_permission_mode", mode } }).catch(() => false);
+  const agent = agentNow();
+  if (agent === "claude") updateSettings(key === "model" ? { claudeModel: value } : key === "effort" ? { claudeEffort: value } : { claudeMode: value as ClaudePermMode });
+  else {
+    const prefs = getState().settings.agentPrefs;
+    updateSettings({ agentPrefs: { ...prefs, [agent]: { ...prefs[agent], [key]: value } } });
+  }
+}
+
+export async function setClaudeMode(mode: string) {
+  await savePref("mode", mode);
+  await api.agentControl(agentNow(), getState().chatKey, { type: "control_request", request: { subtype: "set_permission_mode", mode } }).catch(() => false);
 }
 
 export async function setClaudeModel(model: string) {
-  const { updateSettings } = await import("../app/actions");
-  updateSettings({ claudeModel: model });
-  await api.claudeControl(getState().chatKey, { type: "control_request", request: { subtype: "set_model", model } }).catch(() => false);
+  await savePref("model", model);
+  await api.agentControl(agentNow(), getState().chatKey, { type: "control_request", request: { subtype: "set_model", model } }).catch(() => false);
 }
 
 /** Effort berlaku mulai pesan berikutnya (proses dimulai ulang dan sesi dilanjutkan). */
 export async function setClaudeEffort(effort: string) {
-  const { updateSettings } = await import("../app/actions");
-  updateSettings({ claudeEffort: effort });
+  await savePref("effort", effort);
 }
 
 export function cycleClaudeMode() {
-  const order: ClaudePermMode[] = ["default", "acceptEdits", "plan"];
-  const cur = getState().settings.claudeMode;
+  const order = agentInfo(agentNow()).caps.modes.map((m) => m.id);
+  if (!order.length) return;
+  const cur = agentChoice().mode;
   void setClaudeMode(order[(order.indexOf(cur) + 1) % order.length]);
 }
 
@@ -568,7 +617,7 @@ function closeCurrent() {
   const key = getState().chatKey;
   const c = convs.get(key);
   if (c) c.closing = true;
-  void api.claudeClose(key).catch(() => {});
+  void api.agentClose(agentNow(), key).catch(() => {});
 }
 
 export function newConversation() {
@@ -581,7 +630,7 @@ export async function resumeSession(id: string) {
   const root = getState().root ?? "";
   let lines: string[];
   try {
-    lines = await api.claudeSessionLoad(root, id);
+    lines = await api.agentSessionLoad(agentNow(), root, id);
   } catch (e) {
     toast(errMsg(e), "error");
     return;

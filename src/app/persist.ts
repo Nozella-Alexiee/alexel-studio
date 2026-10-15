@@ -68,6 +68,9 @@ function sanitizeSettings(raw: Partial<Settings> | null): Settings {
   s.claudeConsent = s.claudeConsent === true;
   if (!["off", "delay", "focus"].includes(s.autoSave)) s.autoSave = "off";
   s.showResources = s.showResources === true;
+  if (!["claude", "codex", "gemini", "acp"].includes(s.agent)) s.agent = "claude";
+  if (!s.agentPrefs || typeof s.agentPrefs !== "object") s.agentPrefs = {};
+  if (typeof s.acpCommand !== "string") s.acpCommand = "";
   const kb: Record<string, string> = {};
   if (s.keybindings && typeof s.keybindings === "object") for (const [k, v] of Object.entries(s.keybindings)) if (typeof v === "string" && /^[\w:.-]{1,64}$/.test(k) && v.length < 40) kb[k] = v;
   s.keybindings = kb;

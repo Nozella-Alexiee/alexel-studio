@@ -64,7 +64,7 @@ export default function TerminalPanel({ showTabs = true }: { showTabs?: boolean 
                   <Square size={12} />
                 </IconButton>
               )}
-              <IconButton label="Claude jelaskan output ini" onClick={() => void import("../claude/claude").then((m) => m.explainTerminal(sess.key))}>
+              <IconButton label="Minta agen AI menjelaskan output ini" onClick={() => void import("../claude/claude").then((m) => m.explainTerminal(sess.key))}>
                 <CrabMascot size={15} />
               </IconButton>
               <IconButton label="Bersihkan" onClick={() => T.clearTerminal(sess.key)}>

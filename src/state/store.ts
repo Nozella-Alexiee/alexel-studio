@@ -6,7 +6,8 @@ import type { KepiMood } from "../components/CrabMascot";
 import type { PenguinMood } from "../components/PenguinMascot";
 import { create } from "zustand";
 import type { DesignId } from "../design/designs";
-import type { ClaudeInfo, ClaudeModel, ClaudePermMode, FileEntry, GitStatus, PowerStatus, RunTarget, TodoItem } from "../lib/types";
+import type { AgentId } from "../agents/registry";
+import type { AgentStatus, ClaudeInfo, ClaudeModel, ClaudePermMode, FileEntry, GitStatus, PowerStatus, RunTarget, TodoItem } from "../lib/types";
 
 let chatSeq = 0;
 /** Kunci proses percakapan baru (huruf, angka, "-"). */
@@ -37,6 +38,12 @@ export interface Settings {
   claudeModel: string;
   /** "auto" = bawaan model, atau "low" … "max". */
   claudeEffort: string;
+  /** Agen AI yang dipakai di panel (Claude Code, Codex, Gemini, atau agen ACP). */
+  agent: AgentId;
+  /** Pilihan model / effort / mode per agen selain Claude (Claude memakai claudeModel dsb.). */
+  agentPrefs: Record<string, { model?: string; effort?: string; mode?: string }>;
+  /** Perintah untuk "Agen ACP" kustom, mis. "my-agent --acp". */
+  acpCommand: string;
   /** Shortcut buatan pengguna: id perintah → kombinasi ("" = dilepas). */
   keybindings: Record<string, string>;
   /** Tampilkan RAM & CPU aplikasi di status bar. */
@@ -68,6 +75,9 @@ export const DEFAULT_SETTINGS: Settings = {
   claudeMode: "default",
   claudeModel: "default",
   claudeEffort: "auto",
+  agent: "claude",
+  agentPrefs: {},
+  acpCommand: "",
   keybindings: {},
   showResources: false,
   claudeInlineModel: "fast",
@@ -264,6 +274,8 @@ interface State {
   claudeModels: ClaudeModel[];
   claudeActiveModel: string | null;
   claudeCommands: { name: string; description: string }[];
+  /** Status tiap agen AI (terpasang, login). */
+  agentStatus: Record<string, AgentStatus>;
 
   palette: PaletteState;
   toasts: Toast[];
@@ -312,6 +324,7 @@ export const useStore = create<State>(() => ({
   claudeModels: [],
   claudeActiveModel: null,
   claudeCommands: [],
+  agentStatus: {},
 
   palette: { open: false, initial: "" },
   toasts: [],

@@ -22,7 +22,7 @@ export const DESIGNS: DesignInfo[] = [
   {
     id: "studio",
     name: "Studio Gelap",
-    tagline: "Tata letak seperti VS Code: activity bar, sidebar, panel bawah, dan Claude di sidebar kanan.",
+    tagline: "Tata letak seperti VS Code: activity bar, sidebar, panel bawah, dan agen AI di sidebar kanan.",
     scheme: "dark",
     shell: "studio",
     group: "Klasik",
@@ -40,7 +40,7 @@ export const DESIGNS: DesignInfo[] = [
   {
     id: "aurora",
     name: "Aurora Glass",
-    tagline: "Gelap ala macOS. Sidebar kaca, palette di title bar, agen Claude di kanan, terminal melayang.",
+    tagline: "Gelap ala macOS. Sidebar kaca, palette di title bar, agen AI di kanan, terminal melayang.",
     scheme: "dark",
     shell: "aurora",
     group: "Klasik",
@@ -49,7 +49,7 @@ export const DESIGNS: DesignInfo[] = [
   {
     id: "zen",
     name: "Zen Paper",
-    tagline: "Terang dan hangat. Satu kolom fokus tanpa activity bar, saran Claude inline, omnibar di bawah.",
+    tagline: "Terang dan hangat. Satu kolom fokus tanpa activity bar, saran AI inline, omnibar di bawah.",
     scheme: "light",
     shell: "zen",
     group: "Klasik",

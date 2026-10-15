@@ -2,7 +2,7 @@ import { Suspense, lazy, useEffect } from "react";
 import * as A from "./app/actions";
 import { handleGlobalKey } from "./app/commands";
 import { restoreAll } from "./app/persist";
-import { detectClaude } from "./claude/claude";
+import { detectAgent, detectClaude } from "./claude/claude";
 import { ErrorBoundary } from "./components/ErrorBoundary";
 import { designById } from "./design/designs";
 import { ContextMenuHost, DialogHost, Toasts } from "./components/Overlays";
@@ -25,8 +25,11 @@ function useBackgroundTasks() {
     // StrictMode menjalankan effect dua kali di dev; pemulihan sesi cukup sekali.
     if (!booted) {
       booted = true;
-      void restoreAll().then(() => import("./extensions/registry").then((m) => m.loadExtensions()));
-      void detectClaude();
+      void restoreAll().then(() => {
+        void import("./extensions/registry").then((m) => m.loadExtensions());
+        void detectAgent(getState().settings.agent);
+        if (getState().settings.agent !== "claude") void detectClaude();
+      });
       // Muat semua shell di latar supaya ganti desain pertama kali tidak berkedip.
       setTimeout(() => {
         void import("./shells/AuroraShell");

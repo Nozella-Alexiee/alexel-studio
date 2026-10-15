@@ -7,7 +7,8 @@ import { PenguinMascot, showNoziPeek } from "../components/PenguinMascot";
 import { Segmented } from "../components/ui";
 import { ACCENTS, DESIGNS, type DesignInfo } from "../design/designs";
 import { isSaver, useStore, type Settings } from "../state/store";
-import { detectClaude } from "../claude/claude";
+import { detectClaude, selectAgent } from "../claude/claude";
+import { AGENTS, type AgentId } from "../agents/registry";
 import { isMac } from "../lib/ipc";
 import { EFFORTS, modelChoices, PERM_MODES } from "../claude/options";
 
@@ -239,7 +240,7 @@ export default function SettingsView() {
             Kembalikan bawaan
           </button>
         </Row>
-        <Row label="Tur singkat" hint="Kenalan lagi dengan fitur utama: seret tab, Claude inline, dan maskot.">
+        <Row label="Tur singkat" hint="Kenalan lagi dengan fitur utama: seret tab, AI inline, dan maskot.">
           <button className="btn btn-sm" onClick={() => void import("../components/Tour").then((m) => m.startTour())}>
             Mulai tur
           </button>
@@ -329,7 +330,20 @@ export default function SettingsView() {
       </section>
 
       <section className="set-section">
-        <h2>Claude Code</h2>
+        <h2>Agen AI</h2>
+        <Row label="Agen bawaan" hint="Agen yang dipakai panel Agen AI. Pasang agen lain dari panel Ekstensi → Agen AI.">
+          <select className="input select" value={s.agent} onChange={(e) => void selectAgent(e.target.value as AgentId)} aria-label="Agen AI">
+            {AGENTS.map((a) => (
+              <option key={a.id} value={a.id}>
+                {a.name}
+              </option>
+            ))}
+          </select>
+        </Row>
+        <Row label="Perintah agen ACP" hint="Untuk agen lain yang mendukung Agent Client Protocol, mis. my-agent --acp. Dijalankan di folder project.">
+          <input className="input" value={s.acpCommand} placeholder="perintah --acp" onChange={(e) => set({ acpCommand: e.target.value })} aria-label="Perintah agen ACP" />
+        </Row>
+        <h3 className="set-sub">Claude Code</h3>
         <Row label="Status" hint={claude?.path ?? undefined}>
           <span className={claude?.installed ? "tone-success-fg" : "tone-danger-fg"}>{claude ? (claude.installed ? claude.version : claude.error) : "belum diperiksa"}</span>
           <button className="btn btn-sm" onClick={() => void detectClaude()}>
@@ -368,7 +382,7 @@ export default function SettingsView() {
             ]}
           />
         </Row>
-        <Row label="Tampilkan isi sebelum dikirim" hint="Setiap pesan, kamu melihat dulu persis teks dan berkas yang akan dikirim ke Claude.">
+        <Row label="Tampilkan isi sebelum dikirim" hint="Setiap pesan, kamu melihat dulu persis teks dan berkas yang akan dikirim ke agen.">
           <Toggle label="Konfirmasi kirim" value={s.claudeConfirm} onChange={(v) => set({ claudeConfirm: v })} />
         </Row>
         <Row label="Sertakan berkas aktif secara bawaan">

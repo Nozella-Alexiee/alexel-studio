@@ -1,5 +1,5 @@
 // Jembatan ke Claude Code CLI resmi (langganan Pro/Max, tanpa API key).
-// Prompt lewat stdin; output stream-json diteruskan baris per baris sebagai `claude-event`.
+// Prompt lewat stdin; output stream-json diteruskan baris per baris sebagai `agent-event`.
 
 import { spawn, type ChildProcess } from "node:child_process";
 import fs from "node:fs";
@@ -140,7 +140,7 @@ function startSession(ctx: Ctx, key: string, cfg: SessionCfg): Live {
   });
   const rl = readline.createInterface({ input: child.stdout! });
   rl.on("line", (line) => {
-    if (line.trim()) ctx.emit("claude-event", { run_id: key, line });
+    if (line.trim()) ctx.emit("agent-event", { run_id: key, line });
   });
   let done = false;
   const finish = (code: number | null) => {
@@ -148,7 +148,7 @@ function startSession(ctx: Ctx, key: string, cfg: SessionCfg): Live {
     done = true;
     if (sessions.get(key) === live) sessions.delete(key);
     // replaced: proses baru dengan kunci yang sama sudah berjalan (effort/folder diganti).
-    ctx.emit("claude-done", { run_id: key, code, stderr: stderr.slice(0, 4000), replaced: sessions.has(key) });
+    ctx.emit("agent-done", { run_id: key, code, stderr: stderr.slice(0, 4000), replaced: sessions.has(key) });
   };
   child.on("error", (e) => {
     stderr += e.message;

@@ -29,13 +29,13 @@ interface Item {
 }
 
 const MODES: Record<string, { placeholder: string; label: string }> = {
-  "": { placeholder: "Cari berkas…  (ketik > perintah, : baris, @ simbol, # simbol project, ! run, ? Claude)", label: "Berkas" },
+  "": { placeholder: "Cari berkas…  (ketik > perintah, : baris, @ simbol, # simbol project, ! run, ? agen AI)", label: "Berkas" },
   ">": { placeholder: "Ketik perintah…", label: "Perintah" },
   ":": { placeholder: "Nomor baris, mis. 42 atau 42:10", label: "Pergi ke baris" },
   "@": { placeholder: "Simbol di berkas ini…", label: "Simbol" },
   "#": { placeholder: "Simbol di seluruh project…", label: "Simbol project" },
   "!": { placeholder: "Target Smart Run…", label: "Smart Run" },
-  "?": { placeholder: "Tanya Claude tentang project ini…", label: "Claude" },
+  "?": { placeholder: "Tanya agen AI tentang project ini…", label: "Agen AI" },
 };
 
 export function CommandPalette() {
@@ -132,7 +132,7 @@ export function CommandPalette() {
     }
     if (prefix === "?") {
       if (!query) return [];
-      return [{ key: "ask", icon: <CrabMascot size={15} />, label: `Tanya Claude: ${query}`, detail: "dengan berkas aktif sebagai konteks", run: () => void import("../claude/claude").then((m) => m.sendToClaude(query, { includeFile: s.settings.claudeIncludeFile })) }];
+      return [{ key: "ask", icon: <CrabMascot size={15} />, label: `Tanya agen AI: ${query}`, detail: "dengan berkas aktif sebagai konteks", run: () => void import("../claude/claude").then((m) => m.sendToClaude(query, { includeFile: s.settings.claudeIncludeFile })) }];
     }
     // Berkas: tab terbuka dulu (urutan terbaru), lalu seluruh project.
     const openIds = s.groups.flatMap((g) => g.tabs).filter((id, i, a) => a.indexOf(id) === i && s.tabs[id]?.kind !== "settings");

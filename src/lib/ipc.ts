@@ -7,7 +7,7 @@ import type {
   Branches,
   ClaudeInfo,
   ClaudeContent,
-  ClaudeSessionCfg,
+  AgentStatus,
   ClaudeSessionInfo,
   Commit,
   FileEntry,
@@ -154,11 +154,12 @@ export const api = {
   // Claude
   claudeDetect: () => call<ClaudeInfo>("claude_detect"),
   claudeInline: (runId: string, projectDir: string, prompt: string, model: "fast" | "default" = "fast") => call<string>("claude_inline", { runId, projectDir, prompt, model }),
-  claudeSend: (key: string, cfg: ClaudeSessionCfg, content: ClaudeContent[]) => call<void>("claude_session_send", { key, cfg, content }),
-  claudeControl: (key: string, msg: unknown) => call<boolean>("claude_session_control", { key, msg }),
-  claudeClose: (key: string) => call<void>("claude_session_close", { key }),
-  claudeSessions: (cwd: string) => call<ClaudeSessionInfo[]>("claude_sessions_list", { cwd }),
-  claudeSessionLoad: (cwd: string, id: string) => call<string[]>("claude_session_load", { cwd, id }),
+  agentStatus: (agent: string) => call<AgentStatus>("agent_status", { agent }),
+  agentSend: (agent: string, key: string, cfg: Record<string, unknown>, content: ClaudeContent[]) => call<void>("agent_send", { agent, key, cfg, content }),
+  agentControl: (agent: string, key: string, msg: unknown) => call<boolean>("agent_control", { agent, key, msg }),
+  agentClose: (agent: string, key: string) => call<void>("agent_close", { agent, key }),
+  agentSessions: (agent: string, cwd: string) => call<ClaudeSessionInfo[]>("agent_sessions", { agent, cwd }),
+  agentSessionLoad: (agent: string, cwd: string, id: string) => call<string[]>("agent_session_load", { agent, cwd, id }),
   claudeCancel: (runId: string) => call<void>("claude_cancel", { runId }),
 
   // Sistem
