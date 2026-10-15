@@ -387,11 +387,124 @@ footer a { color: var(--ink-2); }
   .js .reveal.pre { transform: none; opacity: 1; }
   .card { transform: none !important; filter: none !important; }
 }
+
+/* ===================== Animasi penuh ===================== */
+.progress { position: fixed; top: 0; left: 0; height: 3px; width: 100%; transform-origin: 0 50%; transform: scaleX(var(--p, 0)); z-index: 80; background: linear-gradient(90deg, var(--claude), var(--accent), var(--codex), var(--agy)); }
+.glow { position: fixed; left: 0; top: 0; width: 520px; height: 520px; margin: -260px 0 0 -260px; border-radius: 50%; pointer-events: none; z-index: 0; background: radial-gradient(circle, color-mix(in srgb, var(--accent) 22%, transparent), transparent 62%); transform: translate3d(var(--gx, -999px), var(--gy, -999px), 0); transition: opacity .4s ease; opacity: .9; }
+main, footer, .nav { position: relative; z-index: 1; }
+.nav { z-index: 50; }
+.aurora { position: absolute; inset: -20% -10% auto; height: 760px; z-index: 0; pointer-events: none; filter: blur(70px); opacity: .55; }
+.aurora i { position: absolute; width: 46%; height: 60%; border-radius: 50%; mix-blend-mode: normal; animation: drift 22s ease-in-out infinite alternate; }
+.aurora i:nth-child(1) { left: 4%; top: 10%; background: color-mix(in srgb, var(--accent) 70%, transparent); }
+.aurora i:nth-child(2) { right: 2%; top: 0; background: color-mix(in srgb, var(--claude) 55%, transparent); animation-duration: 26s; animation-delay: -6s; }
+.aurora i:nth-child(3) { left: 30%; top: 40%; background: color-mix(in srgb, var(--codex) 45%, transparent); animation-duration: 30s; animation-delay: -12s; }
+@keyframes drift { 0% { transform: translate(0, 0) scale(1); } 50% { transform: translate(8%, 6%) scale(1.12); } 100% { transform: translate(-6%, -4%) scale(.95); } }
+.hero h1 .w.a { background: linear-gradient(100deg, var(--accent), var(--agy), var(--claude), var(--accent)); background-size: 300% 100%; -webkit-background-clip: text; background-clip: text; color: transparent; animation: rise .9s cubic-bezier(.2,.7,.2,1) both, shine 8s linear infinite; }
+.hero h1 .w.a:nth-of-type(3) { animation-delay: .16s, 0s; }
+@keyframes shine { to { background-position: 300% 0; } }
+.stats { display: flex; justify-content: center; gap: 12px; flex-wrap: wrap; margin-top: 30px; }
+.stat { min-width: 120px; padding: 12px 16px; border-radius: 16px; background: color-mix(in srgb, var(--bg-2) 80%, transparent); border: 1px solid var(--line); backdrop-filter: blur(6px); }
+.stat b { display: block; font: 800 30px/1 var(--f-display); letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
+.stat span { font-size: 12.5px; color: var(--ink-3); }
+.btn { position: relative; overflow: hidden; transform: translate(var(--mx, 0px), var(--my, 0px)); transition: transform .25s cubic-bezier(.2,.7,.2,1); }
+.btn:active { transform: translate(var(--mx, 0px), var(--my, 0px)) scale(.97); }
+.ripple { position: absolute; border-radius: 50%; transform: scale(0); background: currentColor; opacity: .25; animation: ripple .6s ease-out forwards; pointer-events: none; }
+@keyframes ripple { to { transform: scale(4); opacity: 0; } }
+.btn-primary-arrow svg { animation: dl 1.6s ease-in-out infinite; }
+@keyframes dl { 0%, 60%, 100% { transform: none; } 30% { transform: translateY(3px); } }
+.split .sw { display: inline-block; transform: translateY(.5em); opacity: .001; transition: transform .7s cubic-bezier(.2,.7,.2,1), opacity .7s ease; transition-delay: calc(var(--i) * 45ms); }
+.split.in .sw { transform: none; opacity: 1; }
+.no-js .split .sw, .split.static .sw { transform: none; opacity: 1; }
+
+/* Panel hidup: pasang agen */
+.live { position: relative; padding: 34px; display: flex; align-items: center; justify-content: center; min-width: 0; overflow: hidden; }
+.live.agents { background: linear-gradient(135deg, color-mix(in srgb, var(--codex) 20%, var(--bg)), color-mix(in srgb, var(--agy) 18%, var(--bg))); }
+.mock { width: 100%; max-width: 520px; background: var(--panel); color: var(--panel-ink); border-radius: 14px; box-shadow: var(--shadow); border: 1px solid #262c38; overflow: hidden; font: 13px/1.45 var(--f-body); }
+.mock-head { height: 34px; display: flex; align-items: center; gap: 8px; padding: 0 12px; border-bottom: 1px solid var(--panel-line); color: var(--panel-ink-2); font-size: 11px; letter-spacing: .07em; text-transform: uppercase; }
+.mx-item { display: flex; gap: 11px; padding: 12px 14px; align-items: center; border-bottom: 1px solid #1c212b; opacity: 0; transform: translateX(-14px); transition: opacity .5s ease, transform .5s cubic-bezier(.2,.7,.2,1); transition-delay: calc(var(--i) * 160ms); }
+.play .mx-item { opacity: 1; transform: none; }
+.mx-item b { width: 30px; height: 30px; border-radius: 8px; display: grid; place-items: center; color: #fff; flex: none; }
+.mx-main { flex: 1; min-width: 0; }
+.mx-main strong { font-weight: 600; }
+.mx-main small { display: block; color: var(--panel-ink-2); font-size: 11.5px; }
+.mx-bar { height: 4px; border-radius: 3px; background: #232a36; margin-top: 7px; overflow: hidden; }
+.mx-bar i { display: block; height: 100%; width: 0; background: var(--c); transition: width 1.6s cubic-bezier(.4,0,.2,1); transition-delay: calc(.4s + var(--i) * 350ms); }
+.play .mx-bar i { width: 100%; }
+.mx-state { font-size: 11.5px; padding: 4px 9px; border-radius: 7px; background: #1e2430; color: var(--panel-ink-2); white-space: nowrap; transition: all .3s ease; transition-delay: calc(2s + var(--i) * 350ms); }
+.play .mx-state { background: color-mix(in srgb, var(--c) 30%, #1e2430); color: #fff; }
+
+/* Panel hidup: debugger */
+.live.debug { background: linear-gradient(135deg, color-mix(in srgb, #cc6633 24%, var(--bg)), var(--bg)); }
+.dbg-mock { display: grid; grid-template-columns: minmax(0, 1fr) 170px; }
+.dbg-code { font: 12px/1.75 var(--f-mono); padding: 10px 0; min-width: 0; }
+.dbg-code div { display: flex; white-space: pre; padding-right: 10px; transition: background .25s ease; }
+.dbg-code div b { width: 34px; text-align: right; padding-right: 12px; color: #4c5568; font-weight: 400; position: relative; }
+.dbg-code div.bp b::before { content: ""; position: absolute; left: 6px; top: 50%; width: 8px; height: 8px; margin-top: -4px; border-radius: 50%; background: #e51400; }
+.dbg-code div.cur { background: rgba(255, 204, 0, .2); box-shadow: inset 2px 0 0 #ffcc00; }
+.dbg-side { border-left: 1px solid var(--panel-line); padding: 10px 12px; font: 11.5px/1.6 var(--f-mono); background: #0d1016; }
+.dbg-side h6 { margin: 0 0 6px; font: 600 10px/1 var(--f-body); letter-spacing: .08em; text-transform: uppercase; color: var(--panel-ink-2); }
+.dbg-side .v { display: flex; justify-content: space-between; gap: 8px; }
+.dbg-side .v span:first-child { color: #9cdcfe; }
+.dbg-side .v span:last-child { color: #ce9178; transition: color .3s ease; }
+.dbg-side .v.flash span:last-child { color: #fff; }
+.dbg-bar { display: flex; gap: 6px; padding: 7px 10px; border-bottom: 1px solid var(--panel-line); }
+.dbg-bar i { width: 22px; height: 18px; border-radius: 5px; background: #1e2430; display: grid; place-items: center; font: 10px/1 var(--f-mono); color: #6b97ff; font-style: normal; }
+.dbg-bar i.on { background: #6b97ff; color: #0b0d12; }
+.dbg-status { height: 22px; background: #cc6633; color: #fff; font-size: 11px; display: flex; align-items: center; padding: 0 10px; gap: 12px; }
+
+/* Panel hidup: terminal */
+.live.term { background: linear-gradient(135deg, color-mix(in srgb, var(--accent) 16%, var(--bg)), color-mix(in srgb, var(--ok) 12%, var(--bg))); }
+.term-body { font: 12.5px/1.65 var(--f-mono); padding: 12px 14px; height: 250px; overflow: hidden; white-space: pre-wrap; }
+.term-body .pr { color: #56d364; }
+.term-body .cm { color: #e6edf3; }
+.term-body .ok { color: #56d364; }
+.term-body .dim { color: #7d8590; }
+.term-body .y { color: #e3b341; }
+.caret { display: inline-block; width: 8px; height: 15px; background: #e6edf3; vertical-align: -2px; animation: blink 1s steps(2) infinite; }
+.term-tabs { display: flex; gap: 2px; padding: 0 8px; border-bottom: 1px solid var(--panel-line); font-size: 11px; }
+.term-tabs span { padding: 8px 10px; color: var(--panel-ink-2); }
+.term-tabs span.on { color: var(--panel-ink); box-shadow: inset 0 -2px 0 var(--accent); }
+
+/* Galeri screenshot */
+.gallery { padding-block: 30px 10px; overflow: hidden; }
+.gallery h2 { text-align: center; font-size: clamp(28px, 4vw, 46px); font-weight: 800; margin-bottom: 26px; }
+.gal-track { display: flex; gap: 22px; width: max-content; animation: slide 60s linear infinite; padding-block: 10px 30px; }
+.gallery:hover .gal-track { animation-play-state: paused; }
+.gal-track button { border: 0; padding: 0; background: none; border-radius: 14px; overflow: hidden; box-shadow: var(--shadow); transition: transform .35s cubic-bezier(.2,.7,.2,1); flex: none; }
+.gal-track button:hover { transform: translateY(-8px) rotate(-.5deg) scale(1.02); }
+.gal-track img { display: block; width: min(520px, 78vw); height: auto; }
+.lightbox { position: fixed; inset: 0; z-index: 90; background: rgba(5, 7, 12, .82); display: grid; place-items: center; padding: 24px; backdrop-filter: blur(6px); animation: fade .25s ease both; }
+.lightbox img { max-width: min(1400px, 100%); max-height: 88vh; height: auto; border-radius: 12px; box-shadow: var(--shadow); animation: zoomin .35s cubic-bezier(.2,.7,.2,1) both; }
+@keyframes fade { from { opacity: 0; } }
+@keyframes zoomin { from { transform: scale(.92); opacity: 0; } }
+
+/* Kartu unduh 3D & konfeti */
+.os-card { transform: perspective(900px) rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg)) translateY(var(--ty, 0px)); transition: transform .2s ease, box-shadow .25s ease; }
+.os-card:hover { --ty: -4px; }
+.file.primary svg { animation: dl 1.6s ease-in-out infinite; }
+#confetti { position: fixed; inset: 0; pointer-events: none; z-index: 95; }
+.dl-toast { position: fixed; left: 50%; bottom: calc(24px + env(safe-area-inset-bottom, 0px)); transform: translate(-50%, 20px); opacity: 0; z-index: 96; background: var(--ink); color: var(--bg); padding: 12px 18px; border-radius: 12px; font-size: 14px; transition: all .35s cubic-bezier(.2,.7,.2,1); max-width: calc(100% - 32px); }
+.dl-toast.on { opacity: 1; transform: translate(-50%, 0); }
+
+/* Tulisan raksasa di bawah */
+.wordmark { padding-block: 40px 0; overflow: hidden; text-align: center; }
+.wordmark h2 { font: 800 clamp(56px, 15vw, 220px)/.85 var(--f-display); letter-spacing: -0.05em; background: linear-gradient(180deg, var(--ink) 30%, color-mix(in srgb, var(--ink) 5%, transparent)); -webkit-background-clip: text; background-clip: text; color: transparent; white-space: nowrap; }
+.wordmark h2 .ch { display: inline-block; transform: translateY(60%); opacity: .001; transition: transform 1s cubic-bezier(.2,.7,.2,1), opacity .8s ease; transition-delay: calc(var(--i) * 40ms); }
+.wordmark.in h2 .ch { transform: none; opacity: 1; }
+@media (max-width: 1020px) { .live { padding: 22px; } .dbg-mock { grid-template-columns: minmax(0, 1fr); } .dbg-side { display: none; } }
+@media (hover: none) { .glow { display: none; } }
+@media (prefers-reduced-motion: reduce) {
+  .aurora, .glow { display: none; }
+  .split .sw, .wordmark h2 .ch, .mx-item { transform: none !important; opacity: 1 !important; }
+  .mx-bar i { width: 100% !important; }
+  .gal-track { animation: none; overflow-x: auto; max-width: 100%; }
+}
 </style>
 </head>
 <body>
 
-
+<div class="progress" id="progress" aria-hidden="true"></div>
+<div class="glow" id="glow" aria-hidden="true"></div>
 <nav class="nav" aria-label="Utama">
   <div class="wrap">
     <a class="brand" href="#top"><img src="img/icon.png" alt="" width="28" height="28">Alexel Studio</a>
@@ -417,6 +530,7 @@ footer a { color: var(--ink-2); }
 
 <main id="top">
   <section class="hero">
+    <div class="aurora" aria-hidden="true"><i></i><i></i><i></i></div>
     <div class="float" aria-hidden="true" id="float">
       <span class="tile" style="left:6%;top:16%;--rot:-8deg">TS</span>
       <span class="tile" style="left:12%;top:52%;--rot:6deg;animation-delay:-2s">py</span>
@@ -431,13 +545,19 @@ footer a { color: var(--ink-2); }
         <h1 data-en-html='<span class="w">Your</span> <span class="w">editor.</span> <span class="w a">Your</span> <span class="w a">agents.</span>' data-id-html='<span class="w">Editormu.</span> <span class="w a">Agen</span> <span class="w a">pilihanmu.</span>'><span class="w">Your</span> <span class="w">editor.</span> <span class="w a">Your</span> <span class="w a">agents.</span></h1>
         <p class="lede" data-en="A fast, open source code editor for macOS, Windows and Linux. Work with Claude Code, Codex, Gemini or Antigravity next to a real terminal, language servers and a debugger. Every change an agent proposes waits for your approval." data-id="Editor kode open source yang ringan untuk macOS, Windows, dan Linux. Kerja bareng Claude Code, Codex, Gemini, atau Antigravity di samping terminal, server bahasa, dan debugger. Setiap perubahan dari agen menunggu persetujuanmu.">A fast, open source code editor for macOS, Windows and Linux. Work with Claude Code, Codex, Gemini or Antigravity next to a real terminal, language servers and a debugger. Every change an agent proposes waits for your approval.</p>
         <div class="cta">
-          <a class="btn" id="hero-dl" href="#download">
+          <a class="btn btn-primary-arrow" id="hero-dl" href="#download">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v12m0 0-5-5m5 5 5-5M5 20h14"/></svg>
             <span id="hero-dl-label">Download for macOS</span>
           </a>
           <a class="btn ghost" href="#download" data-en="Other platforms" data-id="Platform lain">Other platforms</a>
         </div>
         <p class="cta-note" id="hero-note">Apple Silicon · 0.3.0 · free</p>
+        <div class="stats" aria-label="Ringkasan">
+          <div class="stat"><b data-count="5">5</b><span data-en="AI agents" data-id="agen AI">AI agents</span></div>
+          <div class="stat"><b data-count="3">3</b><span data-en="platforms" data-id="platform">platforms</span></div>
+          <div class="stat"><b data-count="4">4</b><span data-en="debuggers" data-id="debugger">debuggers</span></div>
+          <div class="stat"><b data-count="0">0</b><span data-en="telemetry" data-id="telemetri">telemetry</span></div>
+        </div>
         <div class="agents-row" aria-label="Agen yang didukung">
           <span class="chip"><b style="background:var(--claude)">✳</b>Claude Code</span>
           <span class="chip"><b style="background:var(--codex)">◎</b>Codex</span>
@@ -494,7 +614,7 @@ footer a { color: var(--ink-2); }
   <section class="stack" id="features">
     <div class="wrap">
       <div class="stack-intro reveal">
-        <h2 data-en="Everything an IDE needs. Nothing to set up." data-id="Semua yang dibutuhkan IDE. Tanpa repot setel.">Everything an IDE needs. Nothing to set up.</h2>
+        <h2 class="split" data-en="Everything an IDE needs. Nothing to set up." data-id="Semua yang dibutuhkan IDE. Tanpa repot setel.">Everything an IDE needs. Nothing to set up.</h2>
         <p data-en="Menus, command palette, Git, debugger and agents work the way you already know from VS Code." data-id="Menu, palette perintah, Git, debugger, dan agen bekerja seperti yang sudah kamu kenal dari VS Code.">Menus, command palette, Git, debugger and agents work the way you already know from VS Code.</p>
       </div>
 
@@ -511,7 +631,15 @@ footer a { color: var(--ink-2); }
           </div>
           <div class="keys"><span><kbd data-keys="Mod+Escape"></kbd> <span data-en="open the agent" data-id="buka agen">open the agent</span></span><span><kbd data-keys="Shift+Tab"></kbd> <span data-en="switch mode" data-id="ganti mode">switch mode</span></span></div>
         </div>
-        <div class="shot agents"><img src="img/ext.jpg" alt="Panel Ekstensi berisi agen AI Claude Code, Codex, Gemini, dan Antigravity" loading="lazy" width="1680" height="1050"></div>
+        <div class="live agents" data-live="agents">
+          <div class="mock" role="img" aria-label="Agen AI dipasang dari panel Ekstensi">
+            <div class="mock-head">Extensions · AI agents</div>
+            <div class="mx-item" style="--i:0;--c:var(--claude)"><b style="background:var(--claude)">✳</b><div class="mx-main"><strong>Claude Code</strong><small>Anthropic · anthropic.claude-code</small><div class="mx-bar"><i></i></div></div><span class="mx-state" data-en="Installed" data-id="Terpasang">Installed</span></div>
+            <div class="mx-item" style="--i:1;--c:var(--codex)"><b style="background:var(--codex)">◎</b><div class="mx-main"><strong>Codex</strong><small>OpenAI · openai.chatgpt</small><div class="mx-bar"><i></i></div></div><span class="mx-state" data-en="Installed" data-id="Terpasang">Installed</span></div>
+            <div class="mx-item" style="--i:2;--c:var(--gemini)"><b style="background:var(--gemini)">✦</b><div class="mx-main"><strong>Gemini</strong><small>Google · @google/gemini-cli</small><div class="mx-bar"><i></i></div></div><span class="mx-state" data-en="Installed" data-id="Terpasang">Installed</span></div>
+            <div class="mx-item" style="--i:3;--c:var(--agy)"><b style="background:var(--agy)">▲</b><div class="mx-main"><strong>Antigravity</strong><small>Google · agy</small><div class="mx-bar"><i></i></div></div><span class="mx-state" data-en="Detected" data-id="Terdeteksi">Detected</span></div>
+          </div>
+        </div>
       </article>
 
       <article class="card">
@@ -525,7 +653,7 @@ footer a { color: var(--ink-2); }
             <li data-en="Pick up any earlier conversation from history." data-id="Lanjutkan percakapan lama dari riwayat.">Pick up any earlier conversation from history.</li>
           </ul>
         </div>
-        <div class="shot agent"><img src="img/agent.jpg" alt="Kartu izin Claude Code dengan diff perubahan berkas cart.js" loading="lazy" width="1680" height="1050"></div>
+        <div class="shot agent zoom"><img src="img/agent.jpg" alt="Kartu izin Claude Code dengan diff perubahan berkas cart.js" loading="lazy" width="1680" height="1050"></div>
       </article>
 
       <article class="card">
@@ -539,7 +667,16 @@ footer a { color: var(--ink-2); }
           </ul>
           <div class="keys"><span><kbd data-keys="F5"></kbd> <span data-en="start" data-id="mulai">start</span></span><span><kbd data-keys="F9"></kbd> breakpoint</span><span><kbd data-keys="F10"></kbd> step over</span><span><kbd data-keys="F11"></kbd> step into</span></div>
         </div>
-        <div class="shot debug"><img src="img/debug.jpg" alt="Debugger berhenti di breakpoint baris 10 cart.js dengan variabel dan call stack" loading="lazy" width="1680" height="1050"></div>
+        <div class="live debug" data-live="debug">
+          <div class="mock" role="img" aria-label="Debugger melangkah baris demi baris">
+            <div class="dbg-bar" aria-hidden="true"><i class="on">▶</i><i>⤼</i><i>↓</i><i>↑</i><i>⟲</i><i style="color:#f85149">■</i></div>
+            <div class="dbg-mock">
+              <div class="dbg-code" id="dbg-code"></div>
+              <div class="dbg-side"><h6 data-en="Variables" data-id="Variabel">Variables</h6><div id="dbg-vars"></div><h6 style="margin-top:12px">Call stack</h6><div class="v"><span>total</span><span>cart.js</span></div><div class="v"><span>main</span><span>app.js</span></div></div>
+            </div>
+            <div class="dbg-status"><span>⏸ <span data-en="Paused on breakpoint" data-id="Berhenti di breakpoint">Paused on breakpoint</span></span><span>cart.js</span></div>
+          </div>
+        </div>
       </article>
 
       <article class="card">
@@ -553,8 +690,23 @@ footer a { color: var(--ink-2); }
           </ul>
           <div class="keys"><span><kbd data-keys="Ctrl+`"></kbd> terminal</span><span><kbd data-keys="Ctrl+Shift+G"></kbd> Source Control</span></div>
         </div>
-        <div class="shot light"><img src="img/light.jpg" alt="Tema Studio Terang dengan terminal menjalankan node src/app.js" loading="lazy" width="1680" height="1050"></div>
+        <div class="live term" data-live="term">
+          <div class="mock" role="img" aria-label="Terminal menjalankan perintah">
+            <div class="term-tabs" aria-hidden="true"><span class="on">zsh</span><span>npm run dev</span><span>+</span></div>
+            <div class="term-body" id="term-body"></div>
+          </div>
+        </div>
       </article>
+    </div>
+  </section>
+
+  <section class="gallery" aria-label="Screenshot">
+    <div class="wrap"><h2 class="split" data-en="The real app, not a mockup." data-id="Aplikasi aslinya, bukan mockup.">The real app, not a mockup.</h2></div>
+    <div class="gal-track" id="gal-track">
+      <button type="button" data-src="img/agent.jpg"><img src="img/agent.jpg" alt="Kartu izin agen dengan diff" loading="lazy" width="1680" height="1050"></button>
+      <button type="button" data-src="img/debug.jpg"><img src="img/debug.jpg" alt="Debugger berhenti di breakpoint" loading="lazy" width="1680" height="1050"></button>
+      <button type="button" data-src="img/ext.jpg"><img src="img/ext.jpg" alt="Agen AI di panel Ekstensi" loading="lazy" width="1680" height="1050"></button>
+      <button type="button" data-src="img/light.jpg"><img src="img/light.jpg" alt="Tema terang dengan terminal" loading="lazy" width="1680" height="1050"></button>
     </div>
   </section>
 
@@ -562,7 +714,7 @@ footer a { color: var(--ink-2); }
     <div class="wrap os-grid">
       <div class="reveal">
         <span class="tag">macOS, Windows, Linux</span>
-        <h2 data-en="Feels native on every system." data-id="Terasa pas di setiap sistem.">Feels native on every system.</h2>
+        <h2 class="split" data-en="Feels native on every system." data-id="Terasa pas di setiap sistem.">Feels native on every system.</h2>
         <p data-en="A native menu bar on macOS and a menu bar inside the window on Windows and Linux. Shortcuts follow your keyboard: ⌘ on a Mac, Ctrl everywhere else." data-id="Menu bar native di macOS dan menu bar di dalam jendela di Windows dan Linux. Shortcut mengikuti keyboardmu: ⌘ di Mac, Ctrl di sistem lain.">A native menu bar on macOS and a menu bar inside the window on Windows and Linux. Shortcuts follow your keyboard: ⌘ on a Mac, Ctrl everywhere else.</p>
       </div>
       <div class="keytable reveal">
@@ -581,7 +733,7 @@ footer a { color: var(--ink-2); }
   <section class="dl" id="download">
     <div class="wrap">
       <div class="dl-head reveal">
-        <h2 data-en="Download Alexel Studio" data-id="Unduh Alexel Studio">Download Alexel Studio</h2>
+        <h2 class="split" data-en="Download Alexel Studio" data-id="Unduh Alexel Studio">Download Alexel Studio</h2>
         <p data-en="Free for every platform. The file starts downloading as soon as you click." data-id="Gratis untuk semua platform. Berkas langsung terunduh saat kamu klik.">Free for every platform. The file starts downloading as soon as you click.</p>
       </div>
       <div class="dl-grid">
@@ -628,7 +780,7 @@ footer a { color: var(--ink-2); }
 
   <section class="faq" id="faq">
     <div class="wrap">
-      <h2 data-en="Questions" data-id="Tanya jawab">Questions</h2>
+      <h2 class="split" data-en="Questions" data-id="Tanya jawab">Questions</h2>
       <details><summary data-en="Is it really free?" data-id="Benar-benar gratis?">Is it really free?</summary><p data-en="Yes. Alexel Studio is open source under the MIT license. There is no account, no paid tier and no telemetry." data-id="Ya. Alexel Studio open source dengan lisensi MIT. Tanpa akun, tanpa versi berbayar, dan tanpa telemetri.">Yes. Alexel Studio is open source under the MIT license. There is no account, no paid tier and no telemetry.</p></details>
       <details><summary data-en="Do I need an AI subscription?" data-id="Perlu langganan AI?">Do I need an AI subscription?</summary><p data-en="Only for the agent you want to use. Each agent signs in with its own account: Claude Pro or Max for Claude Code, ChatGPT or an OpenAI API key for Codex, a Google account or Gemini API key for Gemini. The editor, terminal and debugger work without any of them." data-id="Hanya untuk agen yang ingin kamu pakai. Setiap agen masuk dengan akunnya sendiri: Claude Pro atau Max untuk Claude Code, ChatGPT atau API key OpenAI untuk Codex, akun Google atau API key Gemini untuk Gemini. Editor, terminal, dan debugger tetap jalan tanpa semuanya.">Only for the agent you want to use. Each agent signs in with its own account: Claude Pro or Max for Claude Code, ChatGPT or an OpenAI API key for Codex, a Google account or Gemini API key for Gemini. The editor, terminal and debugger work without any of them.</p></details>
       <details><summary data-en="Can an agent change files without asking?" data-id="Apakah agen bisa mengubah berkas tanpa bertanya?">Can an agent change files without asking?</summary><p data-en="Not in the default mode. In Ask first, every edit and shell command waits for your approval. You can switch a conversation to automatic edits or plan only, and every save stays in file history." data-id="Tidak di mode bawaan. Di mode Tanya dulu, setiap edit dan perintah shell menunggu persetujuanmu. Kamu bisa mengganti percakapan ke edit otomatis atau hanya rencana, dan setiap simpan tetap tercatat di riwayat berkas.">Not in the default mode. In Ask first, every edit and shell command waits for your approval. You can switch a conversation to automatic edits or plan only, and every save stays in file history.</p></details>
@@ -636,7 +788,10 @@ footer a { color: var(--ink-2); }
       <details><summary data-en="What do I need to run it?" data-id="Apa yang dibutuhkan untuk menjalankannya?">What do I need to run it?</summary><p data-en="macOS 12 or later (Apple Silicon or Intel), Windows 10 or 11 (x64 or ARM64), or 64-bit Linux with glibc 2.31 or later, and about 500 MB of memory." data-id="macOS 12 atau lebih baru (Apple Silicon atau Intel), Windows 10 atau 11 (x64 atau ARM64), atau Linux 64-bit dengan glibc 2.31 atau lebih baru, serta memori sekitar 500 MB.">macOS 12 or later (Apple Silicon or Intel), Windows 10 or 11 (x64 or ARM64), or 64-bit Linux with glibc 2.31 or later, and about 500 MB of memory.</p></details>
     </div>
   </section>
+  <section class="wordmark" id="wordmark" aria-hidden="true"><h2>Alexel Studio</h2></section>
 </main>
+<canvas id="confetti" aria-hidden="true"></canvas>
+<div class="dl-toast" id="dl-toast" role="status"></div>
 
 <footer>
   <div class="wrap">
@@ -922,6 +1077,245 @@ footer a { color: var(--ink-2); }
   window.addEventListener("scroll", () => { if (!ticking) { ticking = true; requestAnimationFrame(onScroll); } }, { passive: true });
   window.addEventListener("resize", onScroll);
   onScroll();
+
+  // ===================== Animasi penuh =====================
+  const fine = matchMedia("(hover: hover) and (pointer: fine)").matches;
+  const seen = (el, cb, opts = { rootMargin: "0px 0px -12% 0px" }) => {
+    if (!("IntersectionObserver" in window)) return cb(true);
+    const io = new IntersectionObserver((es) => es.forEach((e) => cb(e.isIntersecting, e)), opts);
+    io.observe(el);
+    return io;
+  };
+
+  // Garis progres & cahaya kursor
+  const progress = document.getElementById("progress");
+  const glow = document.getElementById("glow");
+  const onProgress = () => {
+    const h = document.documentElement.scrollHeight - innerHeight;
+    progress.style.setProperty("--p", String(h > 0 ? scrollY / h : 0));
+  };
+  window.addEventListener("scroll", onProgress, { passive: true });
+  onProgress();
+  if (fine && !reduce) {
+    window.addEventListener("pointermove", (e) => {
+      glow.style.setProperty("--gx", `${e.clientX}px`);
+      glow.style.setProperty("--gy", `${e.clientY}px`);
+    }, { passive: true });
+    // Tombol tertarik ke kursor
+    document.querySelectorAll(".btn").forEach((b) => {
+      b.addEventListener("pointermove", (e) => {
+        const r = b.getBoundingClientRect();
+        b.style.setProperty("--mx", `${(e.clientX - r.left - r.width / 2) * 0.18}px`);
+        b.style.setProperty("--my", `${(e.clientY - r.top - r.height / 2) * 0.3}px`);
+      });
+      b.addEventListener("pointerleave", () => { b.style.setProperty("--mx", "0px"); b.style.setProperty("--my", "0px"); });
+    });
+  }
+  // Riak saat diklik
+  document.addEventListener("pointerdown", (e) => {
+    const b = e.target.closest?.(".btn, .file, .seg button");
+    if (!b || reduce) return;
+    const r = b.getBoundingClientRect();
+    const d = Math.max(r.width, r.height);
+    const sp = document.createElement("span");
+    sp.className = "ripple";
+    sp.style.cssText = `width:${d}px;height:${d}px;left:${e.clientX - r.left - d / 2}px;top:${e.clientY - r.top - d / 2}px`;
+    if (getComputedStyle(b).position === "static") b.style.position = "relative";
+    b.style.overflow = "hidden";
+    b.appendChild(sp);
+    setTimeout(() => sp.remove(), 650);
+  });
+
+  // Angka menghitung naik (telemetri menghitung turun ke 0)
+  document.querySelectorAll("[data-count]").forEach((el) => {
+    const to = Number(el.dataset.count);
+    if (reduce) return;
+    el.textContent = to === 0 ? "99" : "0";
+    let done = false;
+    seen(el, (vis) => {
+      if (!vis || done) return;
+      done = true;
+      const from = to === 0 ? 99 : 0;
+      const t0 = performance.now();
+      const step = (now) => {
+        const k = Math.min(1, (now - t0) / 1400);
+        const e = 1 - Math.pow(1 - k, 3);
+        el.textContent = String(Math.round(from + (to - from) * e));
+        if (k < 1) requestAnimationFrame(step);
+      };
+      requestAnimationFrame(step);
+    });
+  });
+
+  // Judul muncul per kata
+  function splitHeads() {
+    document.querySelectorAll("h2.split").forEach((h) => {
+      const words = h.textContent.trim().split(/\s+/);
+      h.innerHTML = words.map((w, i) => `<span class="sw" style="--i:${i}">${esc(w)}</span>`).join(" ");
+      if (reduce || h.getBoundingClientRect().top < innerHeight) h.classList.add("in");
+    });
+  }
+  splitHeads();
+  document.querySelectorAll("[data-lang]").forEach((b) => b.addEventListener("click", () => setTimeout(() => { splitHeads(); document.querySelectorAll("h2.split").forEach((h) => h.classList.add("in")); }, 0)));
+  document.querySelectorAll("h2.split").forEach((h) => seen(h, (vis) => vis && h.classList.add("in")));
+
+  // Panel hidup: pemasangan agen
+  const agentsLive = document.querySelector('[data-live="agents"]');
+  seen(agentsLive, (vis) => agentsLive.classList.toggle("play", vis || reduce));
+
+  // Panel hidup: debugger melangkah
+  const DBG_LINES = [
+    "export function total(items) {",
+    "  const sub = subtotal(items);",
+    "  const tax = Math.round(sub * 0.11);",
+    "  return sub + tax;",
+    "}",
+    "",
+    "const amount = total(order);",
+    "console.log(formatRupiah(amount));",
+  ];
+  const DBG_STEPS = [
+    { line: 1, vars: [["items", "Array(3)"], ["sub", "undefined"], ["tax", "undefined"]] },
+    { line: 2, vars: [["items", "Array(3)"], ["sub", "112000"], ["tax", "undefined"]] },
+    { line: 3, vars: [["items", "Array(3)"], ["sub", "112000"], ["tax", "12320"]] },
+    { line: 7, vars: [["amount", "124320"]] },
+  ];
+  const dbgCode = document.getElementById("dbg-code");
+  const dbgVars = document.getElementById("dbg-vars");
+  dbgCode.innerHTML = DBG_LINES.map((l, i) => `<div class="${i === 1 ? "bp" : ""}"><b>${i + 7}</b><span>${hl(l) || " "}</span></div>`).join("");
+  let dbgTimer = 0, dbgIdx = 0;
+  const dbgStep = () => {
+    const st = DBG_STEPS[dbgIdx % DBG_STEPS.length];
+    [...dbgCode.children].forEach((d, i) => d.classList.toggle("cur", i === st.line));
+    dbgVars.innerHTML = st.vars.map(([k, v]) => `<div class="v flash"><span>${k}</span><span>${v}</span></div>`).join("");
+    setTimeout(() => dbgVars.querySelectorAll(".flash").forEach((x) => x.classList.remove("flash")), 400);
+    dbgIdx++;
+  };
+  dbgStep();
+  seen(document.querySelector('[data-live="debug"]'), (vis) => {
+    clearInterval(dbgTimer);
+    if (vis && !reduce) dbgTimer = setInterval(dbgStep, 1500);
+  });
+
+  // Panel hidup: terminal mengetik sendiri
+  const TERM = [
+    ["cmd", "npm run dev"],
+    ["out", '<span class="dim">&gt; toko-kopi@1.0.0 dev</span>'],
+    ["out", '<span class="ok">  VITE v8.0</span>  ready in <span class="y">312 ms</span>'],
+    ["out", '  ➜  Local:   <span class="y">http://localhost:5173/</span>'],
+    ["cmd", "git status --short"],
+    ["out", '<span class="y"> M</span> src/cart.js'],
+    ["cmd", 'git commit -am "Diskon 10% di atas Rp100.000"'],
+    ["out", '[main 4f2a9c1] Diskon 10% di atas Rp100.000'],
+    ["out", ' 1 file changed, 4 insertions(+), 2 deletions(-)'],
+  ];
+  const termBody = document.getElementById("term-body");
+  let termRun = 0;
+  async function playTerm() {
+    const id = ++termRun;
+    const pause = (ms) => new Promise((r) => setTimeout(r, reduce ? 0 : ms));
+    termBody.innerHTML = "";
+    for (const [kind, text] of TERM) {
+      if (id !== termRun) return;
+      const line = document.createElement("div");
+      termBody.appendChild(line);
+      if (kind === "cmd") {
+        line.innerHTML = '<span class="pr">~/toko-kopi ❯</span> <span class="cm"></span><span class="caret"></span>';
+        const cm = line.querySelector(".cm");
+        for (let i = 1; i <= text.length; i++) { if (id !== termRun) return; cm.textContent = text.slice(0, i); await pause(38); }
+        await pause(300);
+        line.querySelector(".caret").remove();
+      } else {
+        line.innerHTML = text;
+        await pause(260);
+      }
+      termBody.scrollTop = termBody.scrollHeight;
+    }
+    const end = document.createElement("div");
+    end.innerHTML = '<span class="pr">~/toko-kopi ❯</span> <span class="caret"></span>';
+    termBody.appendChild(end);
+  }
+  seen(document.querySelector('[data-live="term"]'), (vis) => { if (vis) playTerm(); else termRun++; });
+
+  // Screenshot persetujuan: zoom pelan saat digulir
+  const zoomImg = document.querySelector(".shot.zoom img");
+  const onZoom = () => {
+    if (reduce || !zoomImg) return;
+    const r = zoomImg.closest(".card").getBoundingClientRect();
+    const k = Math.min(1, Math.max(0, 1 - r.top / innerHeight));
+    zoomImg.style.transform = `scale(${1 + 0.18 * k}) translate(${-6 * k}%, ${-4 * k}%)`;
+    zoomImg.style.transformOrigin = "100% 0";
+  };
+  window.addEventListener("scroll", onZoom, { passive: true });
+
+  // Galeri berjalan + lightbox
+  const track = document.getElementById("gal-track");
+  if (!reduce) track.innerHTML += track.innerHTML;
+  track.addEventListener("click", (e) => {
+    const b = e.target.closest("button[data-src]");
+    if (!b) return;
+    const box = document.createElement("div");
+    box.className = "lightbox";
+    box.setAttribute("role", "dialog");
+    box.setAttribute("aria-label", "Screenshot");
+    box.innerHTML = `<img src="${b.dataset.src}" alt="">`;
+    const close = () => { box.remove(); document.removeEventListener("keydown", onKey); };
+    const onKey = (ev) => ev.key === "Escape" && close();
+    box.addEventListener("click", close);
+    document.addEventListener("keydown", onKey);
+    document.body.appendChild(box);
+  });
+
+  // Kartu unduh 3D
+  if (fine && !reduce) document.querySelectorAll(".os-card").forEach((c) => {
+    c.addEventListener("pointermove", (e) => {
+      const r = c.getBoundingClientRect();
+      c.style.setProperty("--ry", `${((e.clientX - r.left) / r.width - 0.5) * 10}deg`);
+      c.style.setProperty("--rx", `${-((e.clientY - r.top) / r.height - 0.5) * 10}deg`);
+    });
+    c.addEventListener("pointerleave", () => { c.style.setProperty("--rx", "0deg"); c.style.setProperty("--ry", "0deg"); });
+  });
+
+  // Konfeti saat unduh
+  const cv = document.getElementById("confetti");
+  const ctx2 = cv.getContext("2d");
+  function confetti(x, y) {
+    if (reduce) return;
+    cv.width = innerWidth * devicePixelRatio; cv.height = innerHeight * devicePixelRatio;
+    cv.style.width = innerWidth + "px"; cv.style.height = innerHeight + "px";
+    ctx2.setTransform(devicePixelRatio, 0, 0, devicePixelRatio, 0, 0);
+    const colors = ["#d97757", "#10a37f", "#4285f4", "#8a5cf6", "#f2b632", "#1f5eff"];
+    const parts = Array.from({ length: 140 }, () => ({ x, y, vx: (Math.random() - 0.5) * 14, vy: -Math.random() * 13 - 4, r: Math.random() * 6 + 3, c: colors[(Math.random() * colors.length) | 0], a: Math.random() * Math.PI, va: (Math.random() - 0.5) * 0.3 }));
+    let t = 0;
+    const tick = () => {
+      ctx2.clearRect(0, 0, innerWidth, innerHeight);
+      for (const p of parts) {
+        p.vy += 0.35; p.x += p.vx; p.y += p.vy; p.vx *= 0.99; p.a += p.va;
+        ctx2.save(); ctx2.translate(p.x, p.y); ctx2.rotate(p.a); ctx2.fillStyle = p.c; ctx2.globalAlpha = Math.max(0, 1 - t / 120);
+        ctx2.fillRect(-p.r / 2, -p.r / 4, p.r, p.r / 2); ctx2.restore();
+      }
+      if (++t < 120) requestAnimationFrame(tick); else ctx2.clearRect(0, 0, innerWidth, innerHeight);
+    };
+    tick();
+  }
+  const dlToast = document.getElementById("dl-toast");
+  document.addEventListener("click", (e) => {
+    const a = e.target.closest?.(".file[data-file], #hero-dl");
+    if (!a || a.getAttribute("href") === "#download") return;
+    confetti(e.clientX, e.clientY);
+    const name = a.dataset.file || a.href.split("/").pop();
+    dlToast.textContent = (lang === "id" ? "Mengunduh " : "Downloading ") + name + "…";
+    dlToast.classList.add("on");
+    setTimeout(() => dlToast.classList.remove("on"), 3200);
+  });
+
+  // Tulisan raksasa
+  const wm = document.getElementById("wordmark");
+  const wmh = wm.querySelector("h2");
+  wmh.innerHTML = [...wmh.textContent].map((c, i) => (c === " " ? " " : `<span class="ch" style="--i:${i}">${c}</span>`)).join("");
+  seen(wm, (vis) => vis && wm.classList.add("in"));
+  if (reduce) wm.classList.add("in");
+
   // Muncul saat digulir: hanya elemen di bawah layar yang menunggu; yang sudah terlihat tetap utuh.
   if ("IntersectionObserver" in window && !reduce) {
     const io = new IntersectionObserver((es) => es.forEach((e) => { if (e.isIntersecting) { e.target.classList.remove("pre"); io.unobserve(e.target); } }), { rootMargin: "0px 0px -8% 0px" });
@@ -931,6 +1325,5 @@ footer a { color: var(--ink-2); }
   }
 })();
 </script>
-
 </body>
 </html>
