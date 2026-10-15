@@ -115,7 +115,7 @@ function useBackgroundTasks() {
           const running = getState().terminals.filter((t) => t.status === "running" && t.kind !== "shell");
           if (dirty.length && !(await A.closeAllTabs())) return;
           if (running.length) {
-            const r = await ask({ kind: "confirm", title: `${running.length} proses masih berjalan`, message: running.map((t) => t.title).join(", ") + " akan dihentikan.", okLabel: tl("Hentikan & keluar"), danger: true });
+            const r = await ask({ kind: "confirm", title: tl("{n} proses masih berjalan", { n: running.length }), message: tl("{list} akan dihentikan.", { list: running.map((t) => t.title).join(", ") }), okLabel: tl("Hentikan & keluar"), danger: true });
             if (r !== true) return;
           }
           await confirmWindowClose();

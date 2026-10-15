@@ -2,6 +2,7 @@
 // Satu definisi untuk menu native macOS (lewat main process) dan menu bar di dalam jendela
 // di Windows/Linux (components/MenuBar.tsx). Setiap item menunjuk ke perintah di COMMANDS.
 
+import { useDebug } from "../debug/state";
 import { DESIGNS } from "../design/designs";
 import { call, isMac, on } from "../lib/ipc";
 import { getState, useStore } from "../state/store";
@@ -285,15 +286,20 @@ export function initMenus() {
     t = setTimeout(syncNativeMenu, 250);
   };
   // State yang memengaruhi menu: folder, tab aktif, pengaturan, project terakhir.
+  // Debug ada di store terpisah; item Run (Stop, Step, Hentikan semua) bergantung padanya.
   let last = "";
-  useStore.subscribe((st) => {
+  const check = () => {
+    const st = getState();
     const g = st.groups[st.focusedGroup];
     const tab = g?.active ? st.tabs[g.active] : null;
-    const key = [st.root, tab?.kind, st.settings.wordWrap, st.settings.minimap, st.settings.autoSave, st.settings.design, st.recents.join("|"), st.groups.length].join("¦");
+    const running = st.terminals.filter((t) => t.kind === "run" && t.status === "running").length;
+    const key = [st.root, tab?.kind, st.settings.wordWrap, st.settings.minimap, st.settings.autoSave, st.settings.design, st.recents.join("|"), st.groups.length, running, useDebug.getState().status].join("¦");
     if (key !== last) {
       last = key;
       schedule();
     }
-  });
+  };
+  useStore.subscribe(check);
+  useDebug.subscribe(check);
   syncNativeMenu();
 }

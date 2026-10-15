@@ -3,6 +3,7 @@
 
 import type { Extension } from "@codemirror/state";
 import { extLanguageFor } from "../extensions/registry";
+import { tl } from "../i18n";
 
 export interface LanguageInfo {
   name: string;
@@ -35,7 +36,7 @@ export function languageFor(filename: string): LanguageInfo {
     case "json":
     case "jsonc":
     case "json5":
-      return L(ext === "json" ? "JSON" : "JSON dengan komentar", ext === "json" && !isJsoncName(lower) ? "json" : "jsonc", () =>
+      return L(ext === "json" ? "JSON" : tl("JSON dengan komentar"), ext === "json" && !isJsoncName(lower) ? "json" : "jsonc", () =>
         import("@codemirror/lang-json").then((m) => m.json())
       );
     case "html":

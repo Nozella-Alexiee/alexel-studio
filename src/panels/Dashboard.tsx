@@ -47,7 +47,7 @@ function ProjectPicker() {
           <Spinner />
         </div>
       ) : shown.length === 0 ? (
-        <p className="hint">{needle ? "Tidak ada project yang cocok." : "Belum ketemu project. Klik Buka folder untuk memilih sendiri."}</p>
+        <p className="hint">{needle ? tl("Tidak ada project yang cocok.") : tl("Belum ketemu project. Klik Buka folder untuk memilih sendiri.")}</p>
       ) : (
         <ul className="project-list">
           {shown.slice(0, 80).map((r) => (
@@ -189,7 +189,7 @@ export default function Dashboard() {
         <section className={`nozi-banner pb-${penguin}`}>
           <NoziHero size={penguin === "kawanan" ? 150 : 132} />
           <div>
-            <h2>{mood === "sukses" ? "Mantap, semua beres!" : mood === "error" ? "Ada yang perlu dibenahi" : mood === "sibuk" ? "Nozi lagi kerja…" : "Halo lagi! Nozi siap ngoding."}</h2>
+            <h2>{mood === "sukses" ? tl("Mantap, semua beres!") : mood === "error" ? tl("Ada yang perlu dibenahi") : mood === "sibuk" ? tl("Nozi lagi kerja…") : tl("Halo lagi! Nozi siap ngoding.")}</h2>
             <p className="hint">{moodLine(mood)}</p>
           </div>
         </section>
@@ -231,7 +231,7 @@ export default function Dashboard() {
         <div className="tile">
           <GitBranch size={16} aria-hidden />
           <div className="tile-num">{git?.is_repo ? git.branch : "—"}</div>
-          <div className="tile-label">{git?.is_repo ? `${git.files.length} perubahan${git.ahead ? ` · ${git.ahead} belum di-push` : ""}` : "bukan repo git"}</div>
+          <div className="tile-label">{git?.is_repo ? `${tl("{n} perubahan", { n: git.files.length })}${git.ahead ? ` · ${tl("{n} belum di-push", { n: git.ahead })}` : ""}` : tl("bukan repo git")}</div>
         </div>
       </div>
 
@@ -246,7 +246,7 @@ export default function Dashboard() {
           <ul className="lang-legend">
             {ov.languages.map((l, i) => (
               <li key={l.ext}>
-                <span className={`lang-dot c${i % 8}`} aria-hidden /> .{l.ext} <span className="hint">{l.files} berkas · {Math.round((l.bytes / totalLang) * 100)}%</span>
+                <span className={`lang-dot c${i % 8}`} aria-hidden /> .{l.ext} <span className="hint">{tl("{n} berkas", { n: l.files })} · {Math.round((l.bytes / totalLang) * 100)}%</span>
               </li>
             ))}
           </ul>

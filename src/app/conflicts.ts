@@ -9,7 +9,7 @@ export async function resolveConflict(path: string): Promise<boolean> {
   const name = basename(path);
   const choice = await ask({
     kind: "choice",
-    title: `${name} berubah di luar Alexel Studio`,
+    title: tl("{name} berubah di luar Alexel Studio", { name }),
     message: tl("Berkas ini diubah program lain (git, formatter, atau agen AI) sejak kamu membukanya, dan kamu juga punya editan yang belum disimpan."),
     choices: [
       { id: "overwrite", label: tl("Simpan versiku (timpa disk)"), danger: true },

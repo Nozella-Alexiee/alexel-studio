@@ -75,10 +75,10 @@ export function PortsPanel() {
   }, []);
 
   const stop = async (p: ListeningPort, force = false) => {
-    if (!(await confirmDialog(`Hentikan ${p.process} (port ${p.port})?`, p.command || `PID ${p.pid}`, force ? "Paksa berhenti" : tl("Hentikan"), true))) return;
+    if (!(await confirmDialog(tl("Hentikan {name} (port {port})?", { name: p.process, port: p.port }), p.command || `PID ${p.pid}`, force ? tl("Paksa berhenti") : tl("Hentikan"), true))) return;
     try {
       await api.kill(p.pid, force);
-      toast(`Proses ${p.pid} dihentikan`, "success");
+      toast(tl("Proses {pid} dihentikan", { pid: p.pid }), "success");
       setTimeout(() => void load(), 600);
     } catch (e) {
       toast(errMsg(e), "error");
@@ -100,7 +100,7 @@ export function PortsPanel() {
       ) : loadErr ? (
         <Empty title={tl("Daftar port tidak bisa dibaca")}>{loadErr}</Empty>
       ) : ports.length === 0 ? (
-        <Empty title={tl("Tidak ada port terbuka")}>Jalankan dev server (mis. npm run dev), lalu muncul di sini.</Empty>
+        <Empty title={tl("Tidak ada port terbuka")}>{tl("Jalankan dev server (mis. npm run dev), lalu muncul di sini.")}</Empty>
       ) : (
         <table className="ports-table">
           <thead>
@@ -124,7 +124,7 @@ export function PortsPanel() {
                   {p.command}
                 </td>
                 <td className="row-actions">
-                  <IconButton label={`Buka http://localhost:${p.port}`} onClick={() => void openExternal(`http://localhost:${p.port}`)}>
+                  <IconButton label={tl("Buka {url}", { url: `http://localhost:${p.port}` })} onClick={() => void openExternal(`http://localhost:${p.port}`)}>
                     <ExternalLink size={13} />
                   </IconButton>
                   <IconButton label={tl("Hentikan")} tone="danger" onClick={() => void stop(p)}>
@@ -170,7 +170,7 @@ export function TodoPanel() {
   return (
     <div className="todos">
       <div className="panel-toolbar">
-        <span className="hint">{todos.length} catatan di project</span>
+        <span className="hint">{tl("{n} catatan di project", { n: todos.length })}</span>
         <Segmented label={tl("Tampilan")} value={view} onChange={setView} options={[{ id: "board", label: tl("Papan") }, { id: "list", label: tl("Daftar") }]} />
         <IconButton label={tl("Pindai ulang")} onClick={() => void refreshTodos()}>
           <RefreshCw size={13} />

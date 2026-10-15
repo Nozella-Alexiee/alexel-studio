@@ -2,6 +2,7 @@
 // permintaan balik dari adapter (runInTerminal, startDebugging). Transport lewat IPC (src/lib/ipc).
 
 import { api, on } from "../lib/ipc";
+import { tl } from "../i18n";
 
 type Handler = (body: any) => void; // eslint-disable-line @typescript-eslint/no-explicit-any
 type ReverseHandler = (command: string, args: any) => Promise<unknown>; // eslint-disable-line @typescript-eslint/no-explicit-any
@@ -43,7 +44,7 @@ export class DapClient {
       if (!p) return;
       this.pending.delete(m.request_seq);
       if (m.success) p.resolve(m.body ?? {});
-      else p.reject(new Error(m.body?.error?.format ?? m.message ?? `${p.command} gagal`));
+      else p.reject(new Error(m.body?.error?.format ?? m.message ?? tl("{cmd} gagal", { cmd: p.command })));
     } else if (m.type === "event") {
       this.handlers.get(m.event)?.forEach((h) => h(m.body ?? {}));
       this.handlers.get("*")?.forEach((h) => h({ event: m.event, body: m.body ?? {} }));
@@ -58,7 +59,7 @@ export class DapClient {
   exited(code: number | null, stderr: string) {
     this.closed = true;
     clients.delete(this.id);
-    for (const p of this.pending.values()) p.reject(new Error("Debug adapter berhenti."));
+    for (const p of this.pending.values()) p.reject(new Error(tl("Debug adapter berhenti.")));
     this.pending.clear();
     this.onExit(code, stderr);
   }
@@ -69,7 +70,7 @@ export class DapClient {
   }
 
   request<T = any>(command: string, args?: unknown): Promise<T> { // eslint-disable-line @typescript-eslint/no-explicit-any
-    if (this.closed) return Promise.reject(new Error("Sesi debug sudah berakhir."));
+    if (this.closed) return Promise.reject(new Error(tl("Sesi debug sudah berakhir.")));
     const seq = ++this.seq;
     return new Promise<T>((resolve, reject) => {
       this.pending.set(seq, { resolve, reject, command });

@@ -49,13 +49,13 @@ export default function HistoryPanel() {
 
   if (!path) return <Empty icon={<History size={22} />} title={tl("Buka berkas dulu")}>{tl("Setiap kali kamu menyimpan, Alexel Studio menyimpan salinannya. Di sini kamu bisa kembali ke versi mana pun.")}</Empty>;
   if (snaps === null) return <div className="pad"><Spinner /></div>;
-  if (!snaps.length) return <Empty icon={<History size={22} />} title={`Belum ada riwayat untuk ${basename(path)}`}>Simpan berkas ini ({prettyKeys("Mod+S")}) dan versinya mulai tercatat.</Empty>;
+  if (!snaps.length) return <Empty icon={<History size={22} />} title={tl("Belum ada riwayat untuk {name}", { name: basename(path) })}>{tl("Simpan berkas ini ({keys}) dan versinya mulai tercatat.", { keys: prettyKeys("Mod+S") })}</Empty>;
 
   const restore = () => {
     if (content === null || !snap) return;
     if (!docs.getDoc(path)) return toast(tl("Buka berkasnya dulu untuk memulihkan."), "error");
     docs.setDocumentText(path, content);
-    toast(`Dipulihkan ke versi ${clockTime(snap.time_ms)}. Simpan untuk menetapkan, atau ${prettyKeys("Mod+Z")} untuk batal.`, "success");
+    toast(tl("Dipulihkan ke versi {time}. Simpan untuk menetapkan, atau {keys} untuk batal.", { time: clockTime(snap.time_ms), keys: prettyKeys("Mod+Z") }), "success");
   };
 
   return (
@@ -103,7 +103,7 @@ export default function HistoryPanel() {
             label={tl("Bandingkan dengan sekarang")}
             onClick={() =>
               content !== null &&
-              openCompare({ title: `${basename(path)}: versi ${clockTime(snap.time_ms)}`, filename: basename(path), leftLabel: `Versi ${clockTime(snap.time_ms)}`, rightLabel: "Sekarang", left: content, right: current, acceptLabel: "Pulihkan versi ini", onAccept: restore })
+              openCompare({ title: `${basename(path)}: ${tl("versi {time}", { time: clockTime(snap.time_ms) })}`, filename: basename(path), leftLabel: tl("Versi {time}", { time: clockTime(snap.time_ms) }), rightLabel: tl("Sekarang"), left: content, right: current, acceptLabel: tl("Pulihkan versi ini"), onAccept: restore })
             }
           >
             <GitCompare size={14} />
@@ -120,7 +120,7 @@ export default function HistoryPanel() {
               <span className="history-dot" aria-hidden />
               <span>{clockTime(s.time_ms)}</span>
               <span className="hint">{timeAgo(s.time_ms)}</span>
-              <span className="hint right">{s.lines} baris</span>
+              <span className="hint right">{tl("{n} baris", { n: s.lines })}</span>
             </button>
           </li>
         ))}

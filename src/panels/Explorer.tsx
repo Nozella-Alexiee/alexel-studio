@@ -33,7 +33,7 @@ function useRows(root: string | null): Row[] {
   }, [root, dirs, expanded]);
 }
 
-const MARK_LABEL: Record<string, string> = { M: "Diubah", U: "Baru (untracked)", A: "Ditambahkan", D: "Dihapus", "!": "Konflik" };
+const MARK_LABEL: Record<string, string> = { M: tl("Diubah"), U: tl("Baru (untracked)"), A: tl("Ditambahkan"), D: tl("Dihapus"), "!": tl("Konflik") };
 
 function TreeRow({ row, active, focused, onFocusRow }: { row: Row; active: boolean; focused: boolean; onFocusRow: () => void }) {
   const { entry, depth } = row;
@@ -67,7 +67,7 @@ function TreeRow({ row, active, focused, onFocusRow }: { row: Row; active: boole
       { label: tl("Duplikat"), run: () => void A.duplicatePath(entry.path) },
       { label: tl("Salin path"), run: () => void A.copyPath(entry.path) },
       { label: tl("Salin path relatif"), run: () => void A.copyPath(entry.path, true) },
-      { label: `Tampilkan di ${fileManagerName()}`, run: () => void import("../lib/ipc").then((m) => m.api.reveal(entry.path)) },
+      { label: tl("Tampilkan di {app}", { app: fileManagerName() }), run: () => void import("../lib/ipc").then((m) => m.api.reveal(entry.path)) },
       ...(entry.is_dir ? [{ label: tl("Buka terminal di sini"), run: () => void import("../terminal/terminals").then((m) => m.newTerminal({ cwd: entry.path, title: basename(entry.path) })) }] : []),
       { separator: true, label: "" },
       { label: tl("Pindahkan ke Trash"), keys: isMac ? "Mod+Backspace" : "Delete", danger: true, run: () => void A.deletePath(entry.path) },

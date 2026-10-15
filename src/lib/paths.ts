@@ -1,6 +1,8 @@
 // Helper path untuk renderer. Semua path dari main process memakai "/" (Windows: "C:/Users/x").
 // Path Windows dibandingkan tanpa membedakan huruf besar/kecil.
 
+import { tl } from "../i18n";
+
 const isDrive = (p: string) => /^[A-Za-z]:\//.test(p);
 const fold = (p: string, root: string) => (isDrive(root) ? p.toLowerCase() : p);
 
@@ -20,7 +22,15 @@ export function dirname(p: string): string {
 
 export function join(...parts: string[]): string {
   const joined = parts.filter(Boolean).join("/");
-  return joined.replace(/\/{2,}/g, "/");
+  // Path UNC/WSL (//server/share, //wsl.localhost/Ubuntu) mempertahankan // di depan.
+  const unc = joined.startsWith("//");
+  return (unc ? "/" : "") + joined.replace(/\/{2,}/g, "/");
+}
+
+/** Path dari agen bisa memakai \\ (Windows); samakan dengan bentuk UI ("C:/Users/x/a.ts"). */
+export function uiPath(p: string): string {
+  if (!/^([A-Za-z]:\\|\\\\)/.test(p)) return p;
+  return p.replace(/\\/g, "/").replace(/^[a-z]:/, (d) => d.toUpperCase());
 }
 
 export function extname(p: string): string {
@@ -45,15 +55,15 @@ export function isInside(root: string, p: string): boolean {
 /** Validasi nama berkas/folder baru dari input pengguna. */
 export function validateName(name: string): string | null {
   const n = name.trim();
-  if (!n) return "Nama tidak boleh kosong.";
-  if (n === "." || n === "..") return "Nama tidak valid.";
-  if (n.includes("/")) return "Nama tidak boleh berisi '/'. Buat folder dulu.";
+  if (!n) return tl("Nama tidak boleh kosong.");
+  if (n === "." || n === "..") return tl("Nama tidak valid.");
+  if (n.includes("/")) return tl("Nama tidak boleh berisi '/'. Buat folder dulu.");
   // Karakter & nama yang tidak sah di Windows: dicegah di semua OS supaya repo tetap bisa di-clone di mana saja.
-  if (/[\\<>:"|?*]/.test(n)) return 'Nama tidak boleh berisi \\ < > : " | ? *';
-  if (/^(con|prn|aux|nul|com\d|lpt\d)(\..*)?$/i.test(n)) return "Nama itu dicadangkan Windows.";
-  if (/[. ]$/.test(n)) return "Nama tidak boleh diakhiri titik atau spasi.";
-  if (n.includes("\0")) return "Nama tidak valid.";
-  if (n.length > 255) return "Nama terlalu panjang.";
+  if (/[\\<>:"|?*]/.test(n)) return tl('Nama tidak boleh berisi \\ < > : " | ? *');
+  if (/^(con|prn|aux|nul|com\d|lpt\d)(\..*)?$/i.test(n)) return tl("Nama itu dicadangkan Windows.");
+  if (/[. ]$/.test(n)) return tl("Nama tidak boleh diakhiri titik atau spasi.");
+  if (n.includes("\0")) return tl("Nama tidak valid.");
+  if (n.length > 255) return tl("Nama terlalu panjang.");
   return null;
 }
 

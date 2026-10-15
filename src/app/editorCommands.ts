@@ -8,6 +8,7 @@ import type { Command, EditorView } from "@codemirror/view";
 import * as docs from "../editor/documents";
 import { call } from "../lib/ipc";
 import { getState, toast } from "../state/store";
+import { tl } from "../i18n";
 
 const view = (): EditorView | null => docs.viewOf(getState().focusedGroup) ?? null;
 
@@ -24,7 +25,7 @@ export function onEditor(cmd: Command): () => void {
 const needLsp = (fn: (v: EditorView) => boolean | void, what: string) => () => {
   const v = view();
   if (!v) return;
-  if (!LSPPlugin.get(v)) return toast(`${what} butuh server bahasa untuk berkas ini. Lihat Pengaturan → Server bahasa.`);
+  if (!LSPPlugin.get(v)) return toast(tl("{what} butuh server bahasa untuk berkas ini. Lihat Pengaturan → Server bahasa.", { what: tl(what) }));
   v.focus();
   fn(v);
 };

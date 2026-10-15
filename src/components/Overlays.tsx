@@ -77,7 +77,7 @@ export function DialogHost() {
 
   const submit = () => {
     if (d.kind === "prompt") {
-      const err = d.validate?.(value) ?? (value.trim() ? null : "Isi dulu.");
+      const err = d.validate?.(value) ?? (value.trim() ? null : tl("Isi dulu."));
       if (err) return setError(err);
       close(value.trim());
     } else close(true);

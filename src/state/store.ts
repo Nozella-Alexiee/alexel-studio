@@ -8,6 +8,7 @@ import { create } from "zustand";
 import type { DesignId } from "../design/designs";
 import type { AgentId } from "../agents/registry";
 import type { AgentStatus, ClaudeInfo, ClaudeModel, ClaudePermMode, FileEntry, GitStatus, PowerStatus, RunTarget, TodoItem } from "../lib/types";
+import { tl } from "../i18n";
 
 let chatSeq = 0;
 /** Kunci proses percakapan baru (huruf, angka, "-"). */
@@ -273,6 +274,8 @@ interface State {
   chatRunning: string | null;
   /** session_id Claude Code (untuk resume & riwayat). */
   chatSession: string | null;
+  /** Daftar riwayat percakapan sedang tampil di panel agen. */
+  chatHistoryOpen: boolean;
   /** Kunci proses CLI percakapan aktif; diganti saat percakapan baru. */
   chatKey: string;
   chatUsage: ChatUsage | null;
@@ -327,6 +330,7 @@ export const useStore = create<State>(() => ({
   chat: [],
   chatRunning: null,
   chatSession: null,
+  chatHistoryOpen: false,
   chatKey: newChatKey(),
   chatUsage: null,
   claudeModels: [],
@@ -402,7 +406,7 @@ export function ask(req: Omit<DialogRequest, "resolve">): Promise<string | boole
   });
 }
 
-export async function confirmDialog(title: string, message: string, okLabel = "Lanjut", danger = false): Promise<boolean> {
+export async function confirmDialog(title: string, message: string, okLabel = tl("Lanjut"), danger = false): Promise<boolean> {
   return (await ask({ kind: "confirm", title, message, okLabel, danger })) === true;
 }
 

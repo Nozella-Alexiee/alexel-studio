@@ -35,7 +35,7 @@ export function lezerDiagnostics(state: EditorState): Diagnostic[] {
         from,
         to,
         severity: "error",
-        message: snippet ? `Sintaks tidak dikenali dekat "${snippet}"` : "Sintaks tidak lengkap di sini.",
+        message: snippet ? tl("Sintaks tidak dikenali dekat \"{snippet}\"", { snippet }) : tl("Sintaks tidak lengkap di sini."),
         source: "Sintaks",
       });
       if (out.length >= 50) return false;
@@ -68,7 +68,7 @@ export function jsonDiagnostics(doc: string): Diagnostic[] {
         from,
         to: Math.min(doc.length, from + 1),
         severity: "error",
-        message: tl("JSON tidak valid: ") + msg.replace(/^JSON\.parse:\s*/i, "").replace(/^Unexpected/, "Tidak terduga"),
+        message: tl("JSON tidak valid: ") + msg.replace(/^JSON\.parse:\s*/i, "").replace(/^Unexpected/, tl("Tidak terduga")),
         source: "JSON",
       },
     ];

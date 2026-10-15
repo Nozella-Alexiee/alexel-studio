@@ -23,12 +23,12 @@ export function openCompare(req: CompareRequest) {
 export async function openDiskCompare(path: string) {
   const disk = await api.readText(path).then((t) => t.content.replace(/\r\n/g, "\n")).catch(() => "");
   openCompare({
-    title: `${basename(path)}: disk vs editor`,
-    leftLabel: "Di disk",
-    rightLabel: "Editanmu",
+    title: `${basename(path)}: ${tl("disk vs editor")}`,
+    leftLabel: tl("Di disk"),
+    rightLabel: tl("Editanmu"),
     left: disk,
     right: docs.currentText(path) ?? "",
-    acceptLabel: "Simpan versiku (timpa disk)",
+    acceptLabel: tl("Simpan versiku (timpa disk)"),
     onAccept: () => {
       setState((s) => (s.tabs[path] ? { tabs: { ...s.tabs, [path]: { ...s.tabs[path], conflict: false } } } : {}));
       void docs.saveDocument(path, { force: true });

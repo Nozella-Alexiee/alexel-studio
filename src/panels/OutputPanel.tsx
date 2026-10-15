@@ -21,7 +21,7 @@ export default function OutputPanel() {
         <select className="input select" value={channel} onChange={(e) => useOutput.setState({ channel: e.target.value as Channel })} aria-label={tl("Saluran output")}>
           {CHANNELS.map((c) => (
             <option key={c} value={c}>
-              {c}
+              {tl(c)}
             </option>
           ))}
         </select>

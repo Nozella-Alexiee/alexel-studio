@@ -18,10 +18,10 @@ interface Step {
 }
 
 const STEPS: Step[] = [
-  { target: ".sidebar, .zen-nav", title: tl("Seret berkas ke editor"), body: () => "Tarik berkas dari Explorer ke editor untuk membukanya. Lepas di tepi kanan editor untuk membuka berdampingan." },
-  { target: ".tabstrip", title: tl("Tab bisa digeser"), body: () => `Seret tab untuk mengurutkan, atau ke tepi kanan editor untuk membelah. Tab yang tertutup bisa dibuka lagi dengan ${prettyKeys("Mod+Shift+T")}.` },
-  { target: ".cm-editor", title: `Seleksi kode, lalu ${prettyKeys("Mod+K")}`, body: () => "Claude mengubah kode langsung di tempat. Setiap perubahan tampil hijau/merah dan bisa diterima atau ditolak satu per satu. Klik kanan untuk aksi lainnya." },
-  { target: ".nozi-status, .sb-claude, .statusbar", title: tl("Nozi & Kepi ikut bereaksi"), body: () => "Nozi senang saat simpan, run, dan commit berhasil, dan ikut panik saat ada error. Kepi menemani Claude. Klik mereka untuk menyapa." },
+  { target: ".sidebar, .zen-nav", title: tl("Seret berkas ke editor"), body: () => tl("Tarik berkas dari Explorer ke editor untuk membukanya. Lepas di tepi kanan editor untuk membuka berdampingan.") },
+  { target: ".tabstrip", title: tl("Tab bisa digeser"), body: () => tl("Seret tab untuk mengurutkan, atau ke tepi kanan editor untuk membelah. Tab yang tertutup bisa dibuka lagi dengan {keys}.", { keys: prettyKeys("Mod+Shift+T") }) },
+  { target: ".cm-editor", title: tl("Seleksi kode, lalu {keys}", { keys: prettyKeys("Mod+K") }), body: () => tl("AI mengubah kode langsung di tempat. Setiap perubahan tampil hijau/merah dan bisa diterima atau ditolak satu per satu. Klik kanan untuk aksi lainnya.") },
+  { target: ".nozi-status, .sb-claude, .statusbar", title: tl("Nozi & Kepi ikut bereaksi"), body: () => tl("Nozi senang saat simpan, run, dan commit berhasil, dan ikut panik saat ada error. Kepi menemani agen AI. Klik mereka untuk menyapa.") },
 ];
 
 const useTour = create<{ step: number }>(() => ({ step: -1 }));
@@ -122,7 +122,7 @@ export function TourHost() {
           {step === 2 ? <CrabMascot mood="melambai" size={34} /> : penguin ? <PenguinMascot variant={penguin} mood="sukses" size={34} /> : <CrabMascot mood="siap" size={34} />}
           <div>
             <div className="tour-step">
-              Langkah {step + 1} dari {STEPS.length}
+              {tl("Langkah {i} dari {n}", { i: step + 1, n: STEPS.length })}
             </div>
             <div className="tour-title" id="tour-title">
               {s.title}
@@ -139,7 +139,7 @@ export function TourHost() {
             {tl("Lewati")}
           </button>
           <button className="btn btn-sm btn-primary" onClick={next} autoFocus>
-            {step >= STEPS.length - 1 ? tl("Selesai") : "Berikutnya"}
+            {step >= STEPS.length - 1 ? tl("Selesai") : tl("Berikutnya")}
           </button>
         </div>
       </div>

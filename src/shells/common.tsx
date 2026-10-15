@@ -227,7 +227,7 @@ export function StatusBar({ variant }: { variant: "aurora" | "zen" | "control" |
       <span className="spacer" />
       {saver && (
         <button className="status-item tone-success-fg" onClick={() => A.openSettings()} title={tl("Mode hemat daya aktif")}>
-          <Leaf size={12} aria-hidden /> {zen ? "" : "Hemat daya"}
+          <Leaf size={12} aria-hidden /> {zen ? "" : tl("Hemat daya")}
         </button>
       )}
       {tab?.kind === "text" && (
@@ -240,7 +240,7 @@ export function StatusBar({ variant }: { variant: "aurora" | "zen" | "control" |
             <button
               className="status-item"
               title={tl("Ukuran indentasi")}
-              onClick={(e) => openMenu(e, [2, 4, 8].map((n) => ({ label: `${n === tabSize ? "✓ " : ""}Spasi: ${n}`, run: () => A.updateSettings({ tabSize: n }) })))}
+              onClick={(e) => openMenu(e, [2, 4, 8].map((n) => ({ label: `${n === tabSize ? "✓ " : ""}${tl("Spasi: {n}", { n })}`, run: () => A.updateSettings({ tabSize: n }) })))}
             >
               Spasi: {tabSize}
             </button>
@@ -262,8 +262,8 @@ export function StatusBar({ variant }: { variant: "aurora" | "zen" | "control" |
           )}
           <button
             className="status-item sb-lang"
-            title={`Bahasa: ${tab.lang}${doc?.lspName ? ` · server bahasa ${doc.lspName}` : ""}. Klik untuk mengganti.`}
-            onClick={(e) => openMenu(e, LANG_CHOICES.map(([label, ext]) => ({ label, run: () => docs.setDocLanguage(tab.id, ext) })))}
+            title={`${tl("Bahasa: {lang}", { lang: tab.lang })}${doc?.lspName ? ` · ${tl("server bahasa {name}", { name: doc.lspName })}` : ""}. ${tl("Klik untuk mengganti.")}`}
+            onClick={(e) => openMenu(e, LANG_CHOICES.map(([label, ext]) => ({ label: tl(label), run: () => docs.setDocLanguage(tab.id, ext) })))}
           >
             {tab.lang}
             {doc?.lspName && <span className="sb-lsp" aria-label={tl("Server bahasa aktif")} />}
@@ -276,7 +276,7 @@ export function StatusBar({ variant }: { variant: "aurora" | "zen" | "control" |
         </span>
       )}
       {!zen && (
-        <button className={`status-item sb-claude ${agent !== "claude" || claude?.installed ? "" : "is-off"}`} onClick={() => A.toggleRight("claude")} title={`Agen AI: ${agentInfo(agent).name}`}>
+        <button className={`status-item sb-claude ${agent !== "claude" || claude?.installed ? "" : "is-off"}`} onClick={() => A.toggleRight("claude")} title={`${tl("Agen AI")}: ${agentInfo(agent).name}`}>
           <Kepi size={14} /> {agentInfo(agent).short}
         </button>
       )}

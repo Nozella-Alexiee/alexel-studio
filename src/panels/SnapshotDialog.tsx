@@ -46,12 +46,12 @@ export function SnapshotDialog() {
     try {
       if (isNative) await call("clipboard_write_image", { dataUrl: c.toDataURL("image/png") });
       else {
-        const blob: Blob = await new Promise((res, rej) => c.toBlob((b) => (b ? res(b) : rej(new Error("Gagal membuat gambar"))), "image/png"));
+        const blob: Blob = await new Promise((res, rej) => c.toBlob((b) => (b ? res(b) : rej(new Error(tl("Gagal membuat gambar")))), "image/png"));
         await navigator.clipboard.write([new ClipboardItem({ "image/png": blob })]);
       }
       toast(tl("Gambar disalin ke clipboard"), "success");
     } catch (e) {
-      toast(`Tidak bisa menyalin gambar: ${errMsg(e)}. Coba Simpan PNG.`, "error");
+      toast(tl("Tidak bisa menyalin gambar: {error}. Coba Simpan PNG.", { error: errMsg(e) }), "error");
     }
   };
 
@@ -76,7 +76,7 @@ export function SnapshotDialog() {
       <div className="snapshot" role="dialog" aria-modal="true" aria-label={tl("Snapshot kode")}>
         <div className="compare-head">
           <strong>{tl("Snapshot kode")}</strong>
-          <span className="hint">{docs.selectionText(getState().focusedGroup).trim() ? "dari seleksi" : "seluruh berkas (maks 400 baris)"}</span>
+          <span className="hint">{docs.selectionText(getState().focusedGroup).trim() ? tl("dari seleksi") : tl("seluruh berkas (maks 400 baris)")}</span>
           <span className="spacer" />
           <IconButton label={tl("Tutup")} onClick={close}>
             <X size={15} />

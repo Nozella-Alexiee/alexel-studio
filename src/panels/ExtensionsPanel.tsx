@@ -32,7 +32,7 @@ function Installed({ ext }: { ext: InstalledExt }) {
   const active = useStore((s) => s.settings.extTheme);
   const activeIcons = useStore((s) => s.settings.iconTheme);
   const remove = async () => {
-    if (!(await confirmDialog(`Hapus ${ext.displayName}?`, "Tema, tema ikon, snippet, dan grammar dari ekstensi ini tidak dipakai lagi.", "Hapus", true))) return;
+    if (!(await confirmDialog(tl("Hapus {name}?", { name: ext.displayName }), tl("Tema, tema ikon, snippet, dan grammar dari ekstensi ini tidak dipakai lagi."), tl("Hapus"), true))) return;
     if (active?.ext === ext.id) A.updateSettings({ extTheme: null });
     if (activeIcons?.ext === ext.id) A.updateSettings({ iconTheme: null });
     await call("ext_remove", { id: ext.id }).catch((e) => toast(errMsg(e), "error"));
@@ -67,7 +67,7 @@ function Installed({ ext }: { ext: InstalledExt }) {
           <button
             key={t.path}
             className={`ext-theme ${on ? "is-on" : ""}`}
-            title={on ? "Klik untuk melepas tema ini" : `Pakai tema ${t.label}`}
+            title={on ? tl("Klik untuk melepas tema ini") : tl("Pakai tema {name}", { name: t.label })}
             aria-pressed={on}
             onClick={() => A.updateSettings({ extTheme: on ? null : { ext: ext.id, path: t.path, label: t.label, uiTheme: t.uiTheme } })}
           >
@@ -83,7 +83,7 @@ function Installed({ ext }: { ext: InstalledExt }) {
           <button
             key={t.path}
             className={`ext-theme ${on ? "is-on" : ""}`}
-            title={on ? "Klik untuk melepas tema ikon ini" : `Pakai tema ikon ${t.label}`}
+            title={on ? tl("Klik untuk melepas tema ikon ini") : tl("Pakai tema ikon {name}", { name: t.label })}
             aria-pressed={on}
             onClick={() => A.updateSettings({ iconTheme: on ? null : { ext: ext.id, path: t.path, label: t.label } })}
           >
@@ -118,7 +118,7 @@ export default function ExtensionsPanel() {
       } catch (e) {
         if (id === seq.current) {
           setRes([]);
-          toast(`Gagal menghubungi Open VSX: ${errMsg(e)}`, "error");
+          toast(tl("Gagal menghubungi Open VSX: {error}", { error: errMsg(e) }), "error");
         }
       } finally {
         if (id === seq.current) setBusy(false);
@@ -143,10 +143,10 @@ export default function ExtensionsPanel() {
       const m = await call<InstalledExt>("ext_install", { namespace: r.namespace, name: r.name });
       await loadExtensions();
       toast(`${m.displayName} terpasang`, "success");
-      if (m.themes[0] && (await confirmDialog(`Pakai tema ${m.themes[0].label}?`, "Warnanya diterapkan di atas desain yang sedang dipakai. Tata letak dan Nozi tetap.", "Pakai"))) {
+      if (m.themes[0] && (await confirmDialog(tl("Pakai tema {name}?", { name: m.themes[0].label }), tl("Warnanya diterapkan di atas desain yang sedang dipakai. Tata letak dan Nozi tetap."), tl("Pakai")))) {
         A.updateSettings({ extTheme: { ext: m.id, path: m.themes[0].path, label: m.themes[0].label, uiTheme: m.themes[0].uiTheme } });
       }
-      if (m.iconThemes[0] && (await confirmDialog(`Pakai tema ikon ${m.iconThemes[0].label}?`, "Ikon berkas & folder di Explorer, tab, dan pencarian ikut berganti.", "Pakai"))) {
+      if (m.iconThemes[0] && (await confirmDialog(tl("Pakai tema ikon {name}?", { name: m.iconThemes[0].label }), tl("Ikon berkas & folder di Explorer, tab, dan pencarian ikut berganti."), tl("Pakai")))) {
         A.updateSettings({ iconTheme: { ext: m.id, path: m.iconThemes[0].path, label: m.iconThemes[0].label } });
       }
     } catch (e) {
@@ -213,7 +213,7 @@ export default function ExtensionsPanel() {
                     {installedIds.has(r.id) ? (
                       <span className="hint">{tl("Terpasang")}</span>
                     ) : (
-                      <button className="btn btn-sm btn-primary" onClick={() => void install(r)} disabled={!!installing} aria-label={`Pasang ${r.displayName}`}>
+                      <button className="btn btn-sm btn-primary" onClick={() => void install(r)} disabled={!!installing} aria-label={tl("Pasang {name}", { name: r.displayName })}>
                         {installing === r.id ? <Spinner size={11} /> : tl("Pasang")}
                       </button>
                     )}

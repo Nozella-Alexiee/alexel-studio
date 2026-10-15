@@ -9,6 +9,7 @@ import DOMPurify from "dompurify";
 import { call, isNative, on } from "../lib/ipc";
 import { extname, isInside } from "../lib/paths";
 import { getState, setState, type Problem } from "../state/store";
+import { tl } from "../i18n";
 
 export interface ServerStatus {
   id: string;
@@ -167,7 +168,7 @@ async function getClient(serverId: string, root: string): Promise<LSPClient | nu
         return client;
       } catch (e) {
         console.warn("LSP gagal dimulai", serverId, e);
-        void import("../app/output").then((m) => m.logOutput("Server bahasa", `${serverId} gagal dimulai: ${e instanceof Error ? e.message : String(e)}`));
+        void import("../app/output").then((m) => m.logOutput("Server bahasa", tl("{name} gagal dimulai: {error}", { name: serverId, error: e instanceof Error ? e.message : String(e) })));
         return null;
       }
     })();

@@ -4,7 +4,7 @@
 
 import * as docs from "../editor/documents";
 import { api, errMsg, on } from "../lib/ipc";
-import { basename, relative } from "../lib/paths";
+import { basename, relative, uiPath } from "../lib/paths";
 import type { ClaudeContent, ClaudePermMode } from "../lib/types";
 import { agentInfo, type AgentId } from "../agents/registry";
 import { activeTab, ask, getState, newChatKey, setLayout, setState, toast, type ChatMessage, type ChatTool, type Problem } from "../state/store";
@@ -71,19 +71,20 @@ const newTurn = (): Turn => ({ started: Date.now(), streamed: new Map(), blocks:
 
 export function toolTarget(name: string, input: Record<string, unknown> | undefined): string {
   const root = getState().root ?? "";
-  const f = (input?.file_path ?? input?.notebook_path ?? input?.path ?? input?.pattern ?? input?.url ?? input?.query ?? "") as string;
+  const raw = (input?.file_path ?? input?.notebook_path ?? input?.path ?? input?.pattern ?? input?.url ?? input?.query ?? "") as string;
   if (name === "Bash") return String(input?.command ?? "");
-  return typeof f === "string" && f ? (f.startsWith("/") || /^[A-Za-z]:/.test(f) ? relative(root, f) : f) : "";
+  const f = typeof raw === "string" ? uiPath(raw) : "";
+  return f ? (f.startsWith("/") || /^[A-Za-z]:/.test(f) ? relative(root, f) : f) : "";
 }
 
 export function describeTool(name: string, input: Record<string, unknown> | undefined): string {
   const verbs: Record<string, string> = {
-    Read: "Membaca", Grep: "Mencari", Glob: "Mencari berkas", Bash: "Menjalankan", Edit: "Mengedit", MultiEdit: "Mengedit", Write: "Menulis",
-    NotebookEdit: "Mengedit notebook", WebFetch: "Membuka", WebSearch: "Mencari di web", Task: "Menjalankan sub-agen", Agent: "Menjalankan sub-agen",
-    TodoWrite: "Mencatat rencana", ExitPlanMode: "Menyerahkan rencana", AskUserQuestion: "Bertanya", ApplyPatch: "Mengubah", MCP: "Memakai alat",
+    Read: tl("Membaca"), Grep: tl("Mencari"), Glob: tl("Mencari berkas"), Bash: tl("Menjalankan"), Edit: tl("Mengedit"), MultiEdit: tl("Mengedit"), Write: tl("Menulis"),
+    NotebookEdit: tl("Mengedit notebook"), WebFetch: tl("Membuka"), WebSearch: tl("Mencari di web"), Task: tl("Menjalankan sub-agen"), Agent: tl("Menjalankan sub-agen"),
+    TodoWrite: tl("Mencatat rencana"), ExitPlanMode: tl("Menyerahkan rencana"), AskUserQuestion: tl("Bertanya"), ApplyPatch: tl("Mengubah"), MCP: tl("Memakai alat"),
   };
   const target = name === "Bash" ? "" : toolTarget(name, input);
-  return `${verbs[name] ?? `Memakai ${name}`}${target ? ` ${target}` : ""}`;
+  return `${verbs[name] ?? tl("Memakai {name}", { name })}${target ? ` ${target}` : ""}`;
 }
 
 function resultText(content: unknown): string {
@@ -148,8 +149,8 @@ function onControlResponse(key: string, r: any) {
     return;
   }
   if (r.subtype === "error") {
-    toast(`Claude: ${r.error ?? "permintaan ditolak"}`, "error");
-    void import("../app/output").then((m) => m.logOutput("Agen AI", `Kontrol ditolak: ${r.error ?? "?"}`));
+    toast(`Claude: ${r.error ?? tl("permintaan ditolak")}`, "error");
+    void import("../app/output").then((m) => m.logOutput("Agen AI", tl("Kontrol ditolak: {error}", { error: r.error ?? "?" })));
   }
 }
 
@@ -157,7 +158,7 @@ function onControlRequest(key: string, ev: any) {
   const req = ev.request ?? {};
   if (req.subtype !== "can_use_tool") {
     // hook / MCP dari host tidak didukung: jawab supaya CLI tidak menunggu.
-    void api.agentControl(agentNow(), key, { type: "control_response", response: { subtype: "error", request_id: ev.request_id, error: "Tidak didukung oleh Alexel Studio." } }).catch(() => {});
+    void api.agentControl(agentNow(), key, { type: "control_response", response: { subtype: "error", request_id: ev.request_id, error: "Not supported by Alexel Studio." } }).catch(() => {});
     return;
   }
   const c = conv(key);
@@ -248,9 +249,16 @@ function onUser(c: Conv, message: any) {
   }
 }
 
+/** Turn/proses selesai: izin yang belum dijawab kedaluwarsa, alat yang belum selesai ditutup. */
+function settleCards(ok = false) {
+  for (const m of getState().chat) if (m.perm?.state === "pending") update(m.id, { perm: { ...m.perm, state: "expired" } });
+  for (const m of getState().chat) if (m.tool?.status === "running") update(m.id, ok ? { tool: { ...m.tool, status: "ok" } } : { tool: { ...m.tool, status: "error" }, meta: tl("terhenti") });
+}
+
 function onResult(key: string, c: Conv, ev: any) {
   const t = c.turn;
   c.turn = null;
+  if (key === getState().chatKey) settleCards(!(ev.is_error || String(ev.subtype ?? "").startsWith("error")));
   if (c.cancelTimer) clearTimeout(c.cancelTimer);
   if (getState().chatRunning === key) setState({ chatRunning: null });
   if (ev.session_id) setState({ chatSession: ev.session_id });
@@ -261,14 +269,14 @@ function onResult(key: string, c: Conv, ev: any) {
   const window = mu?.contextWindow ?? getState().chatUsage?.window ?? 200_000;
   setState({ chatUsage: { cost: c.costBase + c.lastCost, context: t?.context || getState().chatUsage?.context || 0, window } });
   const secs = ((ev.duration_ms ?? Date.now() - (t?.started ?? Date.now())) / 1000).toFixed(1);
-  const meta = `${secs} dtk${ev.num_turns ? ` · ${ev.num_turns} langkah` : ""}`;
+  const meta = `${tl("{n} dtk", { n: secs })}${ev.num_turns ? ` · ${tl("{n} langkah", { n: ev.num_turns })}` : ""}`;
   if (ev.is_error || String(ev.subtype ?? "").startsWith("error")) {
     if (ev.subtype === "error_during_execution" && /interrupt/i.test(String(ev.result ?? "")) ) {
-      push({ role: "info", text: "Dihentikan." });
+      push({ role: "info", text: tl("Dihentikan.") });
       return;
     }
-    const text = ev.result || (ev.subtype === "error_max_turns" ? `${agentInfo(agentNow()).short} berhenti: batas langkah tercapai.` : `${agentInfo(agentNow()).short} berhenti dengan error.`);
-    const hint = /login|auth|credential|api key|401/i.test(text) ? "\n\nKamu perlu masuk ke Claude Code dulu. Klik **Masuk** di atas panel." : "";
+    const text = ev.result || (ev.subtype === "error_max_turns" ? tl("{name} berhenti: batas langkah tercapai.", { name: agentInfo(agentNow()).short }) : tl("{name} berhenti dengan error.", { name: agentInfo(agentNow()).short }));
+    const hint = /login|auth|credential|api key|401/i.test(text) ? "\n\n" + tl("Kamu perlu masuk ke {name} dulu. Klik **Masuk** di atas panel.", { name: agentInfo(agentNow()).name }) : "";
     push({ role: "error", text: text + hint, meta });
     void import("../components/PenguinMascot").then((m) => m.flashPenguin("error", 6000));
     void import("../components/CrabMascot").then((m) => m.flashKepi("error", 5000));
@@ -290,7 +298,7 @@ function ensureListeners() {
     if (replaced) return;
     const c = convs.get(run_id);
     if (c?.cancelTimer) clearTimeout(c.cancelTimer);
-    void import("../app/output").then((m) => m.logOutput("Agen AI", `Proses selesai (kode ${code}).${stderr.trim() ? `\n${stderr.trim()}` : ""}`));
+    void import("../app/output").then((m) => m.logOutput("Agen AI", `${tl("Proses selesai (kode {code}).", { code: String(code) })}${stderr.trim() ? `\n${stderr.trim()}` : ""}`));
     if (c) {
       c.costBase += c.lastCost;
       c.lastCost = 0;
@@ -299,17 +307,16 @@ function ensureListeners() {
       convs.delete(run_id);
       return;
     }
-    for (const m of getState().chat) if (m.perm?.state === "pending") update(m.id, { perm: { ...m.perm, state: "expired" } });
-    for (const m of getState().chat) if (m.tool?.status === "running") update(m.id, { tool: { ...m.tool, status: "error" }, meta: "terhenti" });
+    settleCards();
     const wasRunning = getState().chatRunning === run_id;
     if (wasRunning) setState({ chatRunning: null });
     if (c?.closing) return;
     if (code === 130) {
-      if (wasRunning) push({ role: "info", text: "Dihentikan." });
+      if (wasRunning) push({ role: "info", text: tl("Dihentikan.") });
     } else if (code !== 0 && wasRunning && !c?.turn?.errored) {
       const name = agentInfo(agentNow()).name;
-      const hint = /login|auth|credential/i.test(stderr) ? ` Kamu perlu masuk ke ${name} dulu.` : "";
-      push({ role: "error", text: `${name} berhenti (kode ${code}).${hint}\n\n${stderr.trim()}`.trim() });
+      const hint = /login|auth|credential/i.test(stderr) ? ` ${tl("Kamu perlu masuk ke {name} dulu.", { name })}` : "";
+      push({ role: "error", text: `${tl("{name} berhenti (kode {code}).", { name, code: String(code) })}${hint}\n\n${stderr.trim()}`.trim() });
     }
   });
 }
@@ -340,7 +347,7 @@ export async function selectAgent(agent: AgentId) {
   if (agent === agentNow()) return;
   closeCurrent();
   const { updateSettings } = await import("../app/actions");
-  updateSettings({ agent });
+  updateSettings({ agent }, { agentSwitched: true });
   setState({ chat: [], chatSession: null, chatRunning: null, chatKey: newChatKey(), chatUsage: null, claudeModels: [], claudeCommands: [], claudeActiveModel: null, agentModes: [] });
   await detectAgent(agent);
 }
@@ -360,7 +367,7 @@ export async function loginClaude() {
     toast(tl("Browser akan terbuka untuk masuk. Selesaikan di sana lalu kembali ke sini."), "info");
     try {
       const how = await api.agentLogin(agent, agent === "acp" ? { command: getState().settings.acpCommand } : undefined);
-      toast(`Berhasil masuk (${how}).`, "success");
+      toast(tl("Berhasil masuk ({how}).", { how }), "success");
     } catch (e) {
       toast(errMsg(e), "error");
     }
@@ -368,15 +375,15 @@ export async function loginClaude() {
     return;
   }
   const info = getState().agentStatus[agent] ?? (agent === "claude" ? getState().claude : null);
-  if (!info?.path) return toast(`${agentInfo(agent).name} belum terpasang.`);
+  if (!info?.path) return toast(tl("{name} belum terpasang.", { name: agentInfo(agent).name }));
   const { runInTerminal, shellExe } = await import("../app/run");
-  await runInTerminal(`${shellExe(info.path)} ${LOGIN_ARGS[agent]}`.trim(), `Masuk ke ${agentInfo(agent).short}`);
+  await runInTerminal(`${shellExe(info.path)} ${LOGIN_ARGS[agent]}`.trim(), tl("Masuk ke {name}", { name: agentInfo(agent).short }));
   toast(tl("Ikuti langkah masuk di terminal. Setelah selesai, klik Periksa ulang."), "info");
 }
 
 export async function installClaude() {
   const { runInTerminal } = await import("../app/run");
-  await runInTerminal(installCommand(), "Pasang Claude Code");
+  await runInTerminal(installCommand(), tl("Pasang Claude Code"));
 }
 
 // ---------------- Kirim ----------------
@@ -404,17 +411,17 @@ export function buildPayload(prompt: string, o: SendOptions): { payload: string;
     const rel = s.root ? relative(s.root, tab.id) : tab.id;
     const sel = docs.selectionInfo(s.focusedGroup);
     if (o.includeSelection && sel?.text.trim()) {
-      parts.push(`### Seleksi dari ${rel} (baris ${sel.from}–${sel.to})\n\`\`\`\n${sel.text}\n\`\`\``);
+      parts.push(`### ${tl("Seleksi dari {file} (baris {from}–{to})", { file: rel, from: sel.from, to: sel.to })}\n\`\`\`\n${sel.text}\n\`\`\``);
       summary.push(`${rel}:${sel.from}-${sel.to}`);
     } else if (o.includeFile) {
       const text = docs.currentText(tab.id) ?? "";
       const cut = text.length > MAX_FILE_CHARS;
-      parts.push(`### Berkas ${rel}${tab.dirty ? " (belum disimpan)" : ""}\n\`\`\`\n${cut ? text.slice(0, MAX_FILE_CHARS) + "\n…(dipotong)" : text}\n\`\`\``);
-      summary.push(`${rel}${cut ? " (dipotong)" : ""}`);
+      parts.push(`### ${tl("Berkas {file}", { file: rel })}${tab.dirty ? ` ${tl("(belum disimpan)")}` : ""}\n\`\`\`\n${cut ? text.slice(0, MAX_FILE_CHARS) + `\n…${tl("(dipotong)")}` : text}\n\`\`\``);
+      summary.push(`${rel}${cut ? ` ${tl("(dipotong)")}` : ""}`);
     }
   }
-  if (o.images?.length) summary.push(`${o.images.length} gambar`);
-  const payload = parts.length ? `${parts.join("\n\n")}\n\n### Permintaan\n${prompt}` : prompt;
+  if (o.images?.length) summary.push(tl("{n} gambar", { n: o.images.length }));
+  const payload = parts.length ? `${parts.join("\n\n")}\n\n### ${tl("Permintaan")}\n${prompt}` : prompt;
   return { payload, summary: summary.join(", ") };
 }
 
@@ -447,9 +454,9 @@ export async function ensureConsent(): Promise<boolean> {
   const ok = await ask({
     kind: "confirm",
     title: tl("Pakai agen AI di Alexel Studio?"),
-    message:
-      "Pesanmu, berkas yang kamu lampirkan, dan berkas yang dibaca agen dikirim ke penyedia agen yang kamu pilih (mis. Anthropic, OpenAI, Google) dengan akunmu sendiri. " +
-      "Di mode Tanya dulu, agen meminta izin di panel ini sebelum mengubah berkas atau menjalankan perintah. Persetujuan ini cukup sekali.",
+    message: tl(
+      "Pesanmu, berkas yang kamu lampirkan, dan berkas yang dibaca agen dikirim ke penyedia agen yang kamu pilih (mis. Anthropic, OpenAI, Google) dengan akunmu sendiri. Di mode Tanya dulu, agen meminta izin di panel ini sebelum mengubah berkas atau menjalankan perintah. Persetujuan ini cukup sekali."
+    ),
     okLabel: tl("Setuju"),
   });
   if (ok !== true) return false;
@@ -462,7 +469,7 @@ export async function sendToClaude(prompt: string, o: SendOptions = {}): Promise
   const s = getState();
   if (!prompt.trim() && !o.images?.length) return false;
   if (s.chatRunning) {
-    toast(`${agentInfo(agentNow()).short} masih menjawab. Tunggu atau hentikan dulu.`);
+    toast(tl("{name} masih menjawab. Tunggu atau hentikan dulu.", { name: agentInfo(agentNow()).short }));
     return false;
   }
   setLayout({ right: true, rightView: "claude" });
@@ -471,12 +478,12 @@ export async function sendToClaude(prompt: string, o: SendOptions = {}): Promise
   if (!getState().agentStatus[agent]?.installed) {
     await detectAgent(agent);
     if (!getState().agentStatus[agent]?.installed) {
-      push({ role: "error", text: `${name} belum terpasang. Pasang dari panel Ekstensi → Agen AI.` });
+      push({ role: "error", text: tl("{name} belum terpasang. Pasang dari panel Ekstensi → Agen AI.", { name }) });
       return false;
     }
   }
   if (getState().agentStatus[agent]?.loggedIn === false) {
-    push({ role: "error", text: `Kamu belum masuk ke ${name}. Klik **Masuk** di panel.` });
+    push({ role: "error", text: tl("Kamu belum masuk ke {name}. Klik **Masuk** di panel.", { name }) });
     return false;
   }
   if (!(await ensureConsent())) return false;
@@ -484,8 +491,8 @@ export async function sendToClaude(prompt: string, o: SendOptions = {}): Promise
   if (getState().settings.claudeConfirm) {
     const ok = await ask({
       kind: "confirm",
-      title: `Kirim ke ${name}?`,
-      message: summary ? `Ikut dikirim: ${summary}. Isi lengkapnya ada di bawah.` : "Hanya pesanmu yang dikirim.",
+      title: tl("Kirim ke {name}?", { name }),
+      message: summary ? tl("Ikut dikirim: {summary}. Isi lengkapnya ada di bawah.", { summary }) : tl("Hanya pesanmu yang dikirim."),
       detail: payload,
       okLabel: tl("Kirim"),
     });
@@ -541,7 +548,7 @@ export async function answerPermission(id: string, decision: PermDecision, opts:
   if (!m?.perm || m.perm.state !== "pending") return;
   const p = m.perm;
   let response: Record<string, unknown>;
-  if (decision === "deny") response = { behavior: "deny", message: opts.reason?.trim() || "Pengguna menolak permintaan ini." };
+  if (decision === "deny") response = { behavior: "deny", message: opts.reason?.trim() || "The user denied this request." };
   else {
     response = { behavior: "allow", updatedInput: opts.updatedInput ?? p.input };
     if (opts.mode) response.updatedPermissions = [{ type: "setMode", mode: opts.mode, destination: "session" }];
@@ -567,7 +574,7 @@ export async function answerPermission(id: string, decision: PermDecision, opts:
 
 /** Isi berkas setelah edit yang diminta Claude (untuk pratinjau diff sebelum diizinkan). */
 export async function proposedEdit(input: Record<string, unknown>, toolName: string): Promise<{ path: string; before: string; after: string } | null> {
-  const path = String(input.file_path ?? "");
+  const path = uiPath(String(input.file_path ?? ""));
   if (!path) return null;
   let before = docs.currentText(path);
   if (before == null) {
@@ -666,14 +673,15 @@ export async function resumeSession(id: string) {
       const images = Array.isArray(content) ? content.filter((p: any) => p?.type === "image").length : 0;
       if (texts.length && !/^<(command|local-command|system)/.test(texts[0].trim())) {
         const text = texts[texts.length - 1];
-        const mark = text.lastIndexOf("### Permintaan\n");
-        push({ role: "user", text: mark >= 0 ? text.slice(mark + 15) : text, context: mark >= 0 ? "konteks" : undefined, images: images || undefined });
+        // Penanda permintaan ditulis dalam bahasa UI saat dikirim (sesi lama: Indonesia).
+        const m = /### (?:Permintaan|Request)\n(?![\s\S]*### (?:Permintaan|Request)\n)/.exec(text);
+        push({ role: "user", text: m ? text.slice(m.index + m[0].length) : text, context: m ? tl("konteks") : undefined, images: images || undefined });
       }
       if (Array.isArray(content) && content.some((p: any) => p?.type === "tool_result")) onUser(c, ev.message);
     }
   }
   for (const m of getState().chat) if (m.tool?.status === "running") update(m.id, { tool: { ...m.tool, status: "ok" } });
-  push({ role: "info", text: "Percakapan dilanjutkan. Pesan berikutnya meneruskan sesi ini." });
+  push({ role: "info", text: tl("Percakapan dilanjutkan. Pesan berikutnya meneruskan sesi ini.") });
 }
 
 // ---------------- Pintasan dari bagian lain aplikasi ----------------
@@ -694,8 +702,8 @@ export async function explainProblem(path: string, p: Problem) {
   const root = getState().root ?? "";
   const text = docs.currentText(path) ?? "";
   const rel = relative(root, path);
-  await sendToClaude(`Jelaskan kenapa error ini muncul dan beri perbaikan yang tepat.\n\nError di ${rel}:${p.line}:${p.col} — ${p.message}`, {
-    extraContext: { label: `Potongan ${rel} sekitar baris ${p.line}`, body: "```\n" + excerpt(text, p.line) + "\n```" },
+  await sendToClaude(`${tl("Jelaskan kenapa error ini muncul dan beri perbaikan yang tepat.")}\n\n${tl("Error di {loc}", { loc: `${rel}:${p.line}:${p.col}` })} — ${p.message}`, {
+    extraContext: { label: tl("Potongan {file} sekitar baris {line}", { file: rel, line: p.line }), body: "```\n" + excerpt(text, p.line) + "\n```" },
   });
 }
 
@@ -705,9 +713,9 @@ export async function explainTerminal(key: string) {
   const sess = getState().terminals.find((t) => t.key === key);
   const out = recentOutput(key, 6000);
   if (!out) return toast(tl("Belum ada output untuk dijelaskan."));
-  await sendToClaude("Jelaskan error di output terminal ini dan cara memperbaikinya.", {
+  await sendToClaude(tl("Jelaskan error di output terminal ini dan cara memperbaikinya."), {
     extraContext: {
-      label: `Output terminal${sess?.command ? ` dari \`${sess.command}\`` : ""}${sess?.exitCode != null ? ` (kode keluar ${sess.exitCode})` : ""}`,
+      label: `${tl("Output terminal")}${sess?.command ? ` ${tl("dari {cmd}", { cmd: `\`${sess.command}\`` })}` : ""}${sess?.exitCode != null ? ` ${tl("(kode keluar {code})", { code: sess.exitCode })}` : ""}`,
       body: "```\n" + out + "\n```",
     },
     includeFile: false,
@@ -717,7 +725,7 @@ export async function explainTerminal(key: string) {
 export function explainSelection() {
   const tab = activeTab();
   if (!tab) return;
-  void sendToClaude(`Jelaskan kode ini secara singkat dan beri saran perbaikan kalau ada.`, { includeSelection: true, includeFile: true });
+  void sendToClaude(tl("Jelaskan kode ini secara singkat dan beri saran perbaikan kalau ada."), { includeSelection: true, includeFile: true });
 }
 
 /** Ganti seluruh isi berkas aktif dengan kode dari jawaban Claude (dibandingkan dulu). */
@@ -726,12 +734,12 @@ export async function applyCodeToActive(code: string) {
   if (!tab || tab.kind !== "text") return toast(tl("Buka berkas tujuan dulu."));
   const { openCompare } = await import("../panels/compare");
   openCompare({
-    title: `Terapkan kode Claude ke ${basename(tab.id)}?`,
-    leftLabel: "Sekarang",
-    rightLabel: "Usulan Claude",
+    title: tl("Terapkan kode agen ke {file}?", { file: basename(tab.id) }),
+    leftLabel: tl("Sekarang"),
+    rightLabel: tl("Usulan agen"),
     left: docs.currentText(tab.id) ?? "",
     right: code,
-    acceptLabel: "Terapkan",
+    acceptLabel: tl("Terapkan"),
     onAccept: () => docs.setDocumentText(tab.id, code),
   });
 }

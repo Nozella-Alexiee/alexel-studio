@@ -33,6 +33,7 @@ import { minimap } from "./minimap";
 import { snippetExtension } from "./snippets";
 import { nozelEditorTheme } from "./theme";
 import { debugExtension } from "../debug/editor";
+import { tl } from "../i18n";
 
 const syncAnno = Annotation.define<boolean>();
 
@@ -465,7 +466,7 @@ export async function saveDocument(path: string, opts: { quiet?: boolean; force?
     return true;
   } catch (e) {
     const { toast } = await import("../state/store");
-    toast(`Gagal menyimpan ${basename(path)}: ${errMsg(e)}`, "error");
+    toast(tl("Gagal menyimpan {name}: {error}", { name: basename(path), error: errMsg(e) }), "error");
     return false;
   }
 }

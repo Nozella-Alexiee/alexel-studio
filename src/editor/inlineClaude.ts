@@ -87,8 +87,8 @@ class PanelWidget extends WidgetType {
     if (this.st.phase === "prompt") {
       const input = document.createElement("input");
       input.className = "cm-ai-input";
-      input.placeholder = "Mau diubah jadi apa? (Enter kirim · Esc batal)";
-      input.setAttribute("aria-label", "Perintah untuk Claude");
+      input.placeholder = tl("Mau diubah jadi apa? (Enter kirim · Esc batal)");
+      input.setAttribute("aria-label", tl("Perintah untuk AI"));
       input.value = this.st.prompt;
       input.addEventListener("keydown", (e) => {
         e.stopPropagation();
@@ -102,13 +102,13 @@ class PanelWidget extends WidgetType {
     } else if (this.st.phase === "busy") {
       const t = document.createElement("span");
       t.className = "cm-ai-note";
-      t.textContent = `Claude lagi menulis perubahan untuk: “${this.st.prompt}”`;
+      t.textContent = tl("AI lagi menulis perubahan untuk: “{prompt}”", { prompt: this.st.prompt });
       box.appendChild(t);
       box.appendChild(button("Batal", "cm-ai-btn", () => cancelInline(view)));
     } else {
       const t = document.createElement("span");
       t.className = "cm-ai-note";
-      t.textContent = `${this.st.hunks.length} perubahan menunggu`;
+      t.textContent = tl("{n} perubahan menunggu", { n: this.st.hunks.length });
       box.appendChild(t);
       box.appendChild(button("Terima semua", "cm-ai-btn is-primary", () => acceptAll(view), prettyKeys("Mod+Enter")));
       box.appendChild(button("Tolak semua", "cm-ai-btn", () => cancelInline(view), "Esc"));
@@ -144,7 +144,7 @@ class AddedWidget extends WidgetType {
     const bar = document.createElement("div");
     bar.className = "cm-ai-bar";
     const label = document.createElement("span");
-    label.textContent = `Perubahan ${this.index + 1} dari ${this.total}`;
+    label.textContent = tl("Perubahan {i} dari {n}", { i: this.index + 1, n: this.total });
     bar.appendChild(label);
     bar.appendChild(button("Terima", "cm-ai-chip is-ok", () => acceptHunk(view, this.hunk.id)));
     bar.appendChild(button("Tolak", "cm-ai-chip is-no", () => rejectHunk(view, this.hunk.id)));
@@ -159,7 +159,7 @@ class AddedWidget extends WidgetType {
 function button(text: string, cls: string, run: () => void, kbd?: string) {
   const b = document.createElement("button");
   b.className = cls;
-  b.textContent = text;
+  b.textContent = tl(text);
   if (kbd) b.title = kbd;
   b.addEventListener("mousedown", (e) => e.preventDefault());
   b.addEventListener("click", run);
@@ -217,14 +217,14 @@ async function runInline(view: EditorView, prompt: string) {
   const startLine = view.state.doc.lineAt(st.from).number;
   const endLine = view.state.doc.lineAt(st.to).number;
   if (!(await import("../claude/claude").then((m) => m.ensureConsent()))) return;
-  if (s.settings.claudeConfirm && !(await confirmDialog(tl("Kirim ke Claude?"), `Baris ${startLine}–${endLine} dari ${rel || "berkas ini"} (plus isi berkas sebagai konteks) dan permintaanmu akan dikirim ke Claude Code. Claude tidak mengubah berkas apa pun; kamu yang memilih perubahan.`, "Kirim"))) return;
+  if (s.settings.claudeConfirm && !(await confirmDialog(tl("Kirim ke Claude?"), tl("Baris {from}–{to} dari {file} (plus isi berkas sebagai konteks) dan permintaanmu akan dikirim ke Claude Code. Claude tidak mengubah berkas apa pun; kamu yang memilih perubahan.", { from: startLine, to: endLine, file: rel || tl("berkas ini") }), tl("Kirim")))) return;
   const full = view.state.doc.toString();
   const context = full.length > 40_000 ? full.slice(0, 40_000) + "\n…(dipotong)" : full;
   const payload = [
-    `Kamu membantu mengedit berkas ${rel || "(tanpa nama)"}. Ganti HANYA bagian yang ditandai sesuai permintaan.`,
-    "Balas dengan kode pengganti untuk bagian itu saja: tanpa penjelasan, tanpa ``` dan tanpa baris di luar bagian itu. Pertahankan gaya indentasi.",
-    `### Isi berkas (konteks)\n${context}`,
-    `### Bagian yang diganti (baris ${startLine}–${endLine})\n${original}`,
+    `You are helping edit the file ${rel || "(untitled)"}. Replace ONLY the marked part, as requested.`,
+    "Reply with the replacement code for that part only: no explanation, no ``` fences and no lines outside that part. Keep the indentation style.",
+    `### File contents (context)\n${context}`,
+    `### Part to replace (lines ${startLine}–${endLine})\n${original}`,
     `### Permintaan\n${prompt}`,
   ].join("\n\n");
   const runId = `inline-${Date.now()}-${++seq}`;
@@ -286,7 +286,7 @@ function finish(view: EditorView, total: number) {
   if (total) {
     flashKepi("sukses", 3000);
     void import("../components/PenguinMascot").then((m) => m.flashPenguin("jempol", 2600));
-    toast(`${total} perubahan dari Claude diterapkan. ${prettyKeys("Mod+Z")} untuk membatalkan.`, "success");
+    toast(tl("{n} perubahan dari AI diterapkan. {keys} untuk membatalkan.", { n: total, keys: prettyKeys("Mod+Z") }), "success");
   }
 }
 

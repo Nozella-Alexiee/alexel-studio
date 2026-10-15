@@ -11,7 +11,7 @@ export const PERM_MODES: { id: ClaudePermMode; label: string; hint: string }[] =
 
 /** Dipakai sebelum CLI melaporkan daftar modelnya sendiri. */
 export const FALLBACK_MODELS: ClaudeModel[] = [
-  { value: "default", displayName: "Bawaan", description: tl("Model bawaan akunmu") },
+  { value: "default", displayName: tl("Bawaan"), description: tl("Model bawaan akunmu") },
   { value: "opus", displayName: "Opus", description: tl("Untuk tugas sehari-hari yang rumit") },
   { value: "sonnet", displayName: "Sonnet", description: tl("Efisien untuk tugas rutin") },
   { value: "haiku", displayName: "Haiku", description: tl("Paling cepat untuk jawaban singkat") },
@@ -31,7 +31,7 @@ export const EFFORTS: { id: string; label: string }[] = [
 /** Hanya alias (bukan id bertanggal) yang ditawarkan di pemilih; "default" selalu di depan. */
 export function modelChoices(fromCli: ClaudeModel[]): ClaudeModel[] {
   const list = fromCli.length ? fromCli.filter((m) => m.value === "default" || /^[a-z]+(\[1m\])?$/.test(m.value)) : FALLBACK_MODELS;
-  return list.map((m) => (m.value === "default" ? { ...m, displayName: "Bawaan", description: m.description } : m));
+  return list.map((m) => (m.value === "default" ? { ...m, displayName: tl("Bawaan"), description: m.description } : m));
 }
 
 export const modeLabel = (id: string) => PERM_MODES.find((m) => m.id === id)?.label ?? id;

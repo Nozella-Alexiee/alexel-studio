@@ -94,7 +94,7 @@ export function CommandPalette() {
       const m = query.match(/^(\d+)(?::(\d+))?/);
       const tab = activeTab();
       if (!m || tab?.kind !== "text") return [];
-      return [{ key: "line", icon: <Hash size={14} aria-hidden />, label: `Pergi ke baris ${m[1]}${m[2] ? `, kolom ${m[2]}` : ""}`, run: () => docs.revealPosition(s.focusedGroup, Number(m[1]), Number(m[2] ?? 1)) }];
+      return [{ key: "line", icon: <Hash size={14} aria-hidden />, label: m[2] ? tl("Pergi ke baris {line}, kolom {col}", { line: m[1], col: m[2] }) : tl("Pergi ke baris {line}", { line: m[1] }), run: () => docs.revealPosition(s.focusedGroup, Number(m[1]), Number(m[2] ?? 1)) }];
     }
     if (prefix === "@") {
       const tab = activeTab();
@@ -133,7 +133,7 @@ export function CommandPalette() {
     }
     if (prefix === "?") {
       if (!query) return [];
-      return [{ key: "ask", icon: <CrabMascot size={15} />, label: `Tanya agen AI: ${query}`, detail: "dengan berkas aktif sebagai konteks", run: () => void import("../claude/claude").then((m) => m.sendToClaude(query, { includeFile: s.settings.claudeIncludeFile })) }];
+      return [{ key: "ask", icon: <CrabMascot size={15} />, label: `${tl("Tanya agen AI")}: ${query}`, detail: tl("dengan berkas aktif sebagai konteks"), run: () => void import("../claude/claude").then((m) => m.sendToClaude(query, { includeFile: s.settings.claudeIncludeFile })) }];
     }
     // Berkas: tab terbuka dulu (urutan terbaru), lalu seluruh project.
     const openIds = s.groups.flatMap((g) => g.tabs).filter((id, i, a) => a.indexOf(id) === i && s.tabs[id]?.kind !== "settings");
@@ -227,13 +227,13 @@ export function CommandPalette() {
               {it.keys && <kbd className="kbd">{prettyKeys(it.keys)}</kbd>}
             </div>
           ))}
-          {!items.length && <div className="pal-empty">{prefix === ":" ? "Ketik nomor baris." : prefix === "?" ? "Ketik pertanyaanmu." : !root && !prefix ? "Buka folder dulu untuk mencari berkas." : tl("Tidak ada hasil.")}</div>}
+          {!items.length && <div className="pal-empty">{prefix === ":" ? tl("Ketik nomor baris.") : prefix === "?" ? tl("Ketik pertanyaanmu.") : !root && !prefix ? tl("Buka folder dulu untuk mencari berkas.") : tl("Tidak ada hasil.")}</div>}
         </div>
         <div className="pal-foot">
           <span>
             <CornerDownLeft size={11} aria-hidden /> pilih
           </span>
-          <span>{prettyKeys("Mod+Enter")} buka di kanan</span>
+          <span>{tl("{keys} buka di kanan", { keys: prettyKeys("Mod+Enter") })}</span>
           <span>{tl("esc tutup")}</span>
         </div>
       </div>

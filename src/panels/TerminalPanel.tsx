@@ -39,7 +39,7 @@ export default function TerminalPanel({ showTabs = true }: { showTabs?: boolean 
               {t.status === "exited" && t.kind !== "shell" && <span className={`term-code ${t.exitCode === 0 ? "ok" : "bad"}`}>{t.exitCode ?? "?"}</span>}
               <button
                 className="term-x"
-                aria-label={`Tutup ${t.title}`}
+                aria-label={tl("Tutup {name}", { name: t.title })}
                 onClick={(e) => {
                   e.stopPropagation();
                   void T.closeTerminal(t.key);
@@ -56,7 +56,7 @@ export default function TerminalPanel({ showTabs = true }: { showTabs?: boolean 
           {sess && (
             <>
               {sess.kind === "run" && (
-                <IconButton label={sess.status === "running" ? "Jalankan ulang" : "Jalankan lagi"} onClick={() => void T.rerun(sess.key)}>
+                <IconButton label={sess.status === "running" ? tl("Jalankan ulang") : tl("Jalankan lagi")} onClick={() => void T.rerun(sess.key)}>
                   <RotateCw size={13} />
                 </IconButton>
               )}

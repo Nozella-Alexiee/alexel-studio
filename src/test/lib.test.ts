@@ -63,8 +63,9 @@ describe("format", () => {
   it("memformat ukuran, waktu, dan membuang ANSI", () => {
     expect(formatBytes(512)).toBe("512 B");
     expect(formatBytes(2048)).toBe("2.0 KB");
-    expect(timeAgo(Date.now())).toBe("baru saja");
-    expect(timeAgo(Date.now() - 3 * 60_000)).toBe("3 mnt lalu");
+    // Tes berjalan di Node (navigator.language en-US): teks Inggris.
+    expect(timeAgo(Date.now())).toBe("just now");
+    expect(timeAgo(Date.now() - 3 * 60_000)).toBe("3 min ago");
     expect(stripAnsi("\x1b[32mok\x1b[0m\r\n")).toBe("ok\r\n");
   });
 });

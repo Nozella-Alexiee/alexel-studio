@@ -4,43 +4,43 @@ import { openClaudeInteractive } from "../app/run";
 import { CrabMascot, flashKepi, Kepi } from "../components/CrabMascot";
 import { IconButton } from "../components/ui";
 import { api, errMsg } from "../lib/ipc";
+import { timeAgo } from "../lib/format";
 import type { ClaudeSessionInfo } from "../lib/types";
-import { useStore } from "../state/store";
+import { getState, setState, useStore } from "../state/store";
 import { Message } from "./ChatItems";
-import { agentNow, detectAgent, installClaude, installCommand, loginClaude, newConversation, resumeSession, selectAgent, sendToClaude } from "./claude";
+import { detectAgent, installClaude, installCommand, loginClaude, newConversation, resumeSession, selectAgent, sendToClaude } from "./claude";
 import { AGENTS, agentInfo } from "../agents/registry";
 import { openMenu } from "../components/Overlays";
 import { Composer } from "./Composer";
 import { tl } from "../i18n";
 
 const QUICK = [
-  { label: tl("Jelaskan berkas ini"), prompt: "Jelaskan apa yang dilakukan berkas ini secara singkat." },
-  { label: tl("Cari bug"), prompt: "Periksa berkas ini dan sebutkan bug atau risiko yang nyata. Beri perbaikannya." },
-  { label: tl("Tulis test"), prompt: "Tulis unit test untuk berkas ini memakai framework test yang dipakai project." },
+  { label: tl("Jelaskan berkas ini"), prompt: tl("Jelaskan apa yang dilakukan berkas ini secara singkat.") },
+  { label: tl("Cari bug"), prompt: tl("Periksa berkas ini dan sebutkan bug atau risiko yang nyata. Beri perbaikannya.") },
+  { label: tl("Tulis test"), prompt: tl("Tulis unit test untuk berkas ini memakai framework test yang dipakai project.") },
 ];
 
-function ago(ms: number): string {
-  const s = Math.max(1, Math.round((Date.now() - ms) / 1000));
-  if (s < 60) return "baru saja";
-  if (s < 3600) return `${Math.round(s / 60)} mnt lalu`;
-  if (s < 86400) return `${Math.round(s / 3600)} jam lalu`;
-  if (s < 86400 * 30) return `${Math.round(s / 86400)} hari lalu`;
-  return new Date(ms).toLocaleDateString();
-}
 
 function SessionHistory({ onClose }: { onClose: () => void }) {
   const root = useStore((s) => s.root);
   const current = useStore((s) => s.chatSession);
+  const agent = useStore((s) => s.settings.agent);
   const [list, setList] = useState<ClaudeSessionInfo[] | null>(null);
   const [err, setErr] = useState<string | null>(null);
   const [q, setQ] = useState("");
   useEffect(() => {
+    setList(null);
+    setErr(null);
     if (!root) return setList([]);
+    let alive = true;
     api
-      .agentSessions(agentNow(), root)
-      .then(setList)
-      .catch((e: unknown) => setErr(errMsg(e)));
-  }, [root]);
+      .agentSessions(agent, root)
+      .then((l) => alive && setList(l))
+      .catch((e: unknown) => alive && setErr(errMsg(e)));
+    return () => {
+      alive = false;
+    };
+  }, [root, agent]);
   const shown = (list ?? []).filter((s) => !q.trim() || s.title.toLowerCase().includes(q.trim().toLowerCase()));
   return (
     <div className="claude-history">
@@ -52,7 +52,7 @@ function SessionHistory({ onClose }: { onClose: () => void }) {
       </div>
       <input className="input" placeholder={tl("Cari percakapan…")} value={q} onChange={(e) => setQ(e.target.value)} aria-label={tl("Cari percakapan")} autoFocus />
       {err && <p className="tone-danger-fg">{err}</p>}
-      {!root && <p className="hint">{tl("Buka folder project untuk melihat percakapan Claude Code di folder itu.")}</p>}
+      {!root && <p className="hint">{tl("Buka folder project untuk melihat percakapan di folder itu.")}</p>}
       {list && root && !shown.length && <p className="hint">{tl("Belum ada percakapan di folder ini.")}</p>}
       {!list && root && !err && <p className="hint">{tl("Memuat…")}</p>}
       <ul className="claude-history-list">
@@ -67,7 +67,8 @@ function SessionHistory({ onClose }: { onClose: () => void }) {
             >
               <span className="claude-history-title">{s.title}</span>
               <span className="claude-history-meta">
-                {ago(s.time_ms)} · {s.messages} pesan
+                {timeAgo(s.time_ms)}
+                {s.messages ? ` · ${tl("{n} pesan", { n: s.messages })}` : ""}
               </span>
             </button>
           </li>
@@ -81,18 +82,18 @@ function Setup() {
   const agent = useStore((s) => s.settings.agent);
   const info = useStore((s) => s.agentStatus[s.settings.agent]);
   const a = agentInfo(agent);
-  if (!info) return <p className="hint pad-x">Memeriksa {a.name}…</p>;
+  if (!info) return <p className="hint pad-x">{tl("Memeriksa {name}…", { name: a.name })}</p>;
   if (!info.installed)
     return (
       <div className="claude-setup">
         <CrabMascot mood="mikir" size={54} />
-        <h3>Pasang {a.name}</h3>
+        <h3>{tl("Pasang {name}", { name: a.name })}</h3>
         <p>{a.description}</p>
         {agent === "acp" ? (
           <p className="hint">{tl("Isi perintah agen ACP di Pengaturan → Agen AI.")}</p>
         ) : (
           <button className="btn btn-claude btn-sm" onClick={() => void import("../app/actions").then((m) => m.toggleSidebar("ext"))}>
-            <Puzzle size={13} /> Pasang dari Ekstensi
+            <Puzzle size={13} /> {tl("Pasang dari Ekstensi")}
           </button>
         )}
         {agent === "claude" && (
@@ -100,12 +101,12 @@ function Setup() {
             <p className="hint small">{tl("Atau pasang lewat terminal:")}</p>
             <pre className="claude-setup-cmd">{installCommand()}</pre>
             <button className="btn btn-sm" onClick={() => void installClaude()}>
-              <TerminalSquare size={13} /> Pasang di terminal
+              <TerminalSquare size={13} /> {tl("Pasang di terminal")}
             </button>
           </>
         )}
         <button className="btn btn-sm" onClick={() => void detectAgent(agent)}>
-          <RefreshCw size={13} /> Periksa ulang
+          <RefreshCw size={13} /> {tl("Periksa ulang")}
         </button>
         {info.error && <p className="hint small">{info.error}</p>}
       </div>
@@ -113,14 +114,14 @@ function Setup() {
   return (
     <div className="claude-setup">
       <CrabMascot mood="melambai" size={54} />
-      <h3>Masuk ke {a.name}</h3>
-      <p>Masuk sekali dengan akun {a.vendor} kamu. Setelah itu panel ini langsung bisa dipakai.</p>
+      <h3>{tl("Masuk ke {name}", { name: a.name })}</h3>
+      <p>{tl("Masuk sekali dengan akun {vendor} kamu. Setelah itu panel ini langsung bisa dipakai.", { vendor: a.vendor })}</p>
       <div className="perm-actions">
         <button className="btn btn-claude btn-sm" onClick={() => void loginClaude()}>
-          <LogIn size={13} /> Masuk
+          <LogIn size={13} /> {tl("Masuk")}
         </button>
         <button className="btn btn-sm" onClick={() => void detectAgent(agent)}>
-          <RefreshCw size={13} /> Periksa ulang
+          <RefreshCw size={13} /> {tl("Periksa ulang")}
         </button>
       </div>
     </div>
@@ -136,14 +137,14 @@ function AgentPicker() {
     <button
       className="agent-pick"
       disabled={running}
-      title={running ? "Tunggu jawaban selesai untuk ganti agen" : "Ganti agen AI"}
+      title={running ? tl("Tunggu jawaban selesai untuk ganti agen") : tl("Ganti agen AI")}
       aria-haspopup="menu"
       onClick={(e) =>
         openMenu(
           e,
           AGENTS.map((a) => ({
             label: `${a.id === agent ? "✓ " : ""}${a.name}`,
-            keys: status[a.id]?.installed ? a.vendor : status[a.id] ? "belum dipasang" : a.vendor,
+            keys: status[a.id]?.installed ? a.vendor : status[a.id] ? tl("belum dipasang") : a.vendor,
             run: () => void selectAgent(a.id),
           }))
         )
@@ -165,7 +166,8 @@ export default function ClaudePanel() {
     const t = g?.active ? s.tabs[g.active] : null;
     return t?.kind === "text";
   });
-  const [showHistory, setShowHistory] = useState(false);
+  const showHistory = useStore((s) => s.chatHistoryOpen);
+  const setShowHistory = (v: boolean | ((v: boolean) => boolean)) => setState({ chatHistoryOpen: typeof v === "function" ? v(getState().chatHistoryOpen) : v });
   // Ikuti chat ke bawah hanya bila pengguna memang sedang di bawah (tidak sedang membaca ke atas).
   const stick = useRef(true);
   const list = useRef<HTMLDivElement>(null);
@@ -173,6 +175,10 @@ export default function ClaudePanel() {
   useEffect(() => {
     if (!info) void detectAgent(agent);
   }, [info, agent]);
+  // Riwayat milik agen sebelumnya tidak berlaku untuk agen baru.
+  useEffect(() => {
+    if (!agentInfo(agent).caps.history) setState({ chatHistoryOpen: false });
+  }, [agent]);
   useEffect(() => {
     if (stick.current) list.current?.scrollTo({ top: list.current.scrollHeight });
   }, [chat, running]);
@@ -181,14 +187,14 @@ export default function ClaudePanel() {
   const lastIsStreaming = running && chat.length > 0 && chat[chat.length - 1].role === "assistant" && !!chat[chat.length - 1].text;
 
   return (
-    <section className="claude-panel" aria-label={`Agen AI: ${agentInfo(agent).name}`}>
+    <section className="claude-panel" aria-label={`${tl("Agen AI")}: ${agentInfo(agent).name}`}>
       <header className="claude-head">
-        <button className="claude-kepi" onClick={() => flashKepi("melambai", 2400)} aria-label={tl("Sapa Kepi")} title={tl("Kepi, teman Claude Code")}>
+        <button className="claude-kepi" onClick={() => flashKepi("melambai", 2400)} aria-label={tl("Sapa Kepi")} title={tl("Kepi, teman agen AI")}>
           <Kepi size={22} />
         </button>
         <AgentPicker />
         <span className={`claude-status ${ready ? "ok" : "bad"}`} title={info?.version ?? info?.error ?? ""}>
-          {!info ? "memeriksa…" : !info.installed ? "belum terpasang" : info.loggedIn === false ? "belum masuk" : info.plan ? info.plan.toUpperCase() : "siap"}
+          {!info ? tl("memeriksa…") : !info.installed ? tl("belum terpasang") : info.loggedIn === false ? tl("belum masuk") : info.plan ? info.plan.toUpperCase() : tl("siap")}
         </span>
         <span className="spacer" />
         {agentInfo(agent).caps.history && (
@@ -243,7 +249,7 @@ export default function ClaudePanel() {
           )}
           {running && !lastIsStreaming && (
             <div className="chat-typing">
-              <CrabMascot mood="mikir" size={20} /> {agentInfo(agent).short} sedang bekerja…
+              <CrabMascot mood="mikir" size={20} /> {tl("{name} sedang bekerja…", { name: agentInfo(agent).short })}
             </div>
           )}
         </div>

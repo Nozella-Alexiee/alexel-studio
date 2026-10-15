@@ -13,7 +13,7 @@ import { confirmDialog, promptDialog, toast, useStore } from "../state/store";
 import { prettyKeys, modKey } from "../lib/keys";
 import { tl } from "../i18n";
 
-const STATUS: Record<string, string> = { M: "Diubah", A: "Ditambahkan", D: "Dihapus", R: "Diganti nama", C: "Disalin", U: "Konflik", "?": "Baru" };
+const STATUS: Record<string, string> = { M: tl("Diubah"), A: tl("Ditambahkan"), D: tl("Dihapus"), R: tl("Diganti nama"), C: tl("Disalin"), U: tl("Konflik"), "?": tl("Baru") };
 
 function letter(f: GitFile, staged: boolean): string {
   if (f.untracked) return "U";
@@ -61,7 +61,7 @@ export default function GitPanel() {
   if (!git) return <div className="pad"><Spinner /></div>;
   if (!git.is_repo) {
     return (
-      <Empty icon={<GitBranch size={26} />} title={tl("Bukan repository git")} action={<button className="btn btn-primary" onClick={() => void run("init", () => api.gitInit(root), "Repo dibuat")}>{tl("Inisialisasi git")}</button>}>
+      <Empty icon={<GitBranch size={26} />} title={tl("Bukan repository git")} action={<button className="btn btn-primary" onClick={() => void run("init", () => api.gitInit(root), tl("Repo dibuat"))}>{tl("Inisialisasi git")}</button>}>
         {tl("Folder ini belum memakai git.")}
       </Empty>
     );
@@ -75,10 +75,10 @@ export default function GitPanel() {
     if (!msg.trim()) return toast(tl("Tulis pesan commit dulu."), "error");
     if (!staged.length) {
       if (!changes.length) return toast(tl("Tidak ada perubahan untuk di-commit."));
-      if (!(await confirmDialog(tl("Belum ada yang di-stage"), "Stage semua perubahan lalu commit?", "Stage semua & commit"))) return;
+      if (!(await confirmDialog(tl("Belum ada yang di-stage"), tl("Stage semua perubahan lalu commit?"), tl("Stage semua & commit")))) return;
       if (!(await run("stage", () => api.gitStage(repo, [])))) return;
     }
-    const ok = await run("commit", () => api.gitCommit(repo, msg.trim()), "Commit dibuat");
+    const ok = await run("commit", () => api.gitCommit(repo, msg.trim()), tl("Commit dibuat"));
     if (ok) {
       setMsg("");
       refreshHeads();
@@ -89,13 +89,13 @@ export default function GitPanel() {
     const path = join(repo, f.path);
     const [head, cur] = await Promise.all([api.gitHead(repo, path).catch(() => null), api.readText(path).then((t) => t.content).catch(() => "")]);
     const { openCompare } = await import("./compare");
-    openCompare({ title: f.path, leftLabel: "HEAD", rightLabel: "Sekarang", left: head ?? "", right: cur });
+    openCompare({ title: f.path, leftLabel: "HEAD", rightLabel: tl("Sekarang"), left: head ?? "", right: cur });
   };
 
   const discard = async (fs: GitFile[]) => {
     if (!fs.length) return;
-    const names = fs.length === 1 ? fs[0].path : `${fs.length} berkas`;
-    if (!(await confirmDialog(`Buang perubahan di ${names}?`, "Perubahan yang belum di-commit akan hilang. Berkas baru dipindah ke Trash.", "Buang", true))) return;
+    const names = fs.length === 1 ? fs[0].path : tl("{n} berkas", { n: fs.length });
+    if (!(await confirmDialog(tl("Buang perubahan di {names}?", { names }), tl("Perubahan yang belum di-commit akan hilang. Berkas baru dipindah ke Trash."), tl("Buang"), true))) return;
     const tracked = fs.filter((f) => !f.untracked).map((f) => f.path);
     const untracked = fs.filter((f) => f.untracked).map((f) => f.path);
     await run("discard", () => api.gitDiscard(repo, tracked, untracked));
@@ -106,12 +106,12 @@ export default function GitPanel() {
     const b = await api.gitBranches(repo).catch(() => null);
     if (!b) return;
     openMenu(ev, [
-      ...b.local.map((name) => ({ label: name === b.current ? `✓ ${name}` : name, disabled: name === b.current, run: () => void run("checkout", () => api.gitCheckout(repo, name), `Pindah ke ${name}`).then(refreshHeads) })),
+      ...b.local.map((name) => ({ label: name === b.current ? `✓ ${name}` : name, disabled: name === b.current, run: () => void run("checkout", () => api.gitCheckout(repo, name), tl("Pindah ke {name}", { name })).then(refreshHeads) })),
       { separator: true, label: "" },
       {
         label: tl("Branch baru…"),
         run: async () => {
-          const n = await promptDialog(tl("Branch baru"), { placeholder: "fitur/nama", validate: (v) => (/^[\w./-]+$/.test(v) && !v.startsWith("-") ? null : "Nama branch tidak valid.") });
+          const n = await promptDialog(tl("Branch baru"), { placeholder: tl("fitur/nama"), validate: (v) => (/^[\w./-]+$/.test(v) && !v.startsWith("-") ? null : tl("Nama branch tidak valid.")) });
           if (n) await run("checkout", () => api.gitCheckout(repo, n, true), `Branch ${n} dibuat`);
         },
       },
@@ -124,7 +124,7 @@ export default function GitPanel() {
     const dir = f.path.split("/").slice(0, -1).join("/");
     return (
       <div className={`git-row git-${l}`} onContextMenu={(e) => openMenu(e, [{ label: tl("Buka berkas"), run: () => void A.openFile(join(repo, f.path)) }, { label: tl("Lihat perubahan"), run: () => void showDiff(f) }, ...(!isStaged ? [{ label: tl("Buang perubahan"), danger: true, run: () => void discard([f]) }] : [])])}>
-        <button className="git-file" onClick={() => void showDiff(f)} title={`${STATUS[l] ?? l} — klik untuk melihat perubahan`}>
+        <button className="git-file" onClick={() => void showDiff(f)} title={`${STATUS[l] ?? l} — ${tl("klik untuk melihat perubahan")}`}>
           <FileIcon filename={name} size={14} />
           <span className="git-name">{name}</span>
           <span className="git-dir">{dir}</span>
@@ -153,11 +153,11 @@ export default function GitPanel() {
           <ChevronDown size={12} />
         </button>
         <div className="side-actions">
-          <IconButton label={`Pull${git.behind ? ` (${git.behind} di belakang)` : ""}`} onClick={() => void run("pull", () => api.gitPull(repo), "Pull selesai").then(refreshHeads)} disabled={!!busy}>
+          <IconButton label={`Pull${git.behind ? ` (${tl("{n} di belakang", { n: git.behind })})` : ""}`} onClick={() => void run("pull", () => api.gitPull(repo), tl("Pull selesai")).then(refreshHeads)} disabled={!!busy}>
             <ArrowDown size={14} />
             {git.behind > 0 && <span className="mini-count">{git.behind}</span>}
           </IconButton>
-          <IconButton label={`Push${git.ahead ? ` (${git.ahead} commit)` : ""}`} onClick={() => void run("push", () => api.gitPush(repo), "Push berhasil")} disabled={!!busy}>
+          <IconButton label={`Push${git.ahead ? ` (${git.ahead} commit)` : ""}`} onClick={() => void run("push", () => api.gitPush(repo), tl("Push berhasil"))} disabled={!!busy}>
             <ArrowUp size={14} />
             {git.ahead > 0 && <span className="mini-count">{git.ahead}</span>}
           </IconButton>
@@ -170,7 +170,7 @@ export default function GitPanel() {
       <div className="git-commit">
         <textarea
           className="input textarea"
-          placeholder={`Pesan commit (${prettyKeys("Mod+Enter")} untuk commit ke ${git.branch})`}
+          placeholder={tl("Pesan commit ({keys} untuk commit ke {branch})", { keys: prettyKeys("Mod+Enter"), branch: git.branch })}
           value={msg}
           rows={2}
           onChange={(e) => setMsg(e.target.value)}
@@ -183,9 +183,9 @@ export default function GitPanel() {
           aria-label={tl("Pesan commit")}
         />
         <button className="btn btn-primary btn-block" onClick={() => void commit()} disabled={busy === "commit"}>
-          <Check size={14} /> Commit{staged.length ? ` ${staged.length} berkas` : ""}
+          <Check size={14} /> Commit{staged.length ? ` ${tl("{n} berkas", { n: staged.length })}` : ""}
         </button>
-        {gitBot !== "off" && <div className="hint">Git Bot aktif: tiap simpan → {gitBot === "push" ? "commit & push" : "commit"} berkas itu.</div>}
+        {gitBot !== "off" && <div className="hint">{tl("Git Bot aktif: tiap simpan → {what} berkas itu.", { what: gitBot === "push" ? "commit & push" : "commit" })}</div>}
       </div>
 
       {staged.length > 0 && (

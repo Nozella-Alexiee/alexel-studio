@@ -8,6 +8,9 @@ import { isMac } from "../lib/ipc";
 import { prettyKeys } from "../lib/keys";
 import { tl } from "../i18n";
 
+/** Klik menu tidak boleh mengambil fokus: Edit → Tempel/Urungkan harus bekerja di kolom yang sedang dipakai. */
+const keepFocus = (e: { preventDefault: () => void }) => e.preventDefault();
+
 function Items({ items, onDone }: { items: ResolvedItem[]; onDone: () => void }) {
   const [sub, setSub] = useState<number | null>(null);
   return (
@@ -17,7 +20,7 @@ function Items({ items, onDone }: { items: ResolvedItem[]; onDone: () => void })
           <div key={i} className="mb-sep" role="separator" />
         ) : it.kind === "sub" ? (
           <div key={i} className="mb-subwrap" onMouseEnter={() => setSub(i)} onMouseLeave={() => setSub((v) => (v === i ? null : v))}>
-            <button className="mb-item" role="menuitem" aria-haspopup="menu" aria-expanded={sub === i} onClick={() => setSub(i)}>
+            <button className="mb-item" role="menuitem" aria-haspopup="menu" aria-expanded={sub === i} onMouseDown={keepFocus} onClick={() => setSub(i)}>
               <span className="mb-check" />
               <span className="mb-label">{it.label}</span>
               <ChevronRight size={12} aria-hidden />
@@ -36,6 +39,7 @@ function Items({ items, onDone }: { items: ResolvedItem[]; onDone: () => void })
             aria-checked={it.checked}
             disabled={it.enabled === false}
             onMouseEnter={() => setSub(null)}
+            onMouseDown={keepFocus}
             onClick={() => {
               onDone();
               if (it.id) runMenuCommand(it.id);
@@ -64,12 +68,14 @@ export function MenuBar() {
       else if (e.key === "ArrowRight") setOpen((v) => (v === null ? v : (v + 1) % MENUS.length));
       else if (e.key === "ArrowLeft") setOpen((v) => (v === null ? v : (v + MENUS.length - 1) % MENUS.length));
     };
+    const blur = () => setOpen(null);
     document.addEventListener("mousedown", close);
     window.addEventListener("keydown", key);
-    window.addEventListener("blur", () => setOpen(null), { once: true });
+    window.addEventListener("blur", blur);
     return () => {
       document.removeEventListener("mousedown", close);
       window.removeEventListener("keydown", key);
+      window.removeEventListener("blur", blur);
     };
   }, [open]);
   if (isMac) return null;
@@ -82,6 +88,7 @@ export function MenuBar() {
             role="menuitem"
             aria-haspopup="menu"
             aria-expanded={open === i}
+            onMouseDown={keepFocus}
             onClick={() => setOpen((v) => (v === i ? null : i))}
             onMouseEnter={() => open !== null && setOpen(i)}
           >

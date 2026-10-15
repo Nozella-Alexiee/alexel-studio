@@ -62,7 +62,7 @@ function LanguageServers() {
   return (
     <section className="set-section">
       <h2>Server bahasa (autocomplete & go-to-definition)</h2>
-      <p className="hint">TypeScript/JavaScript sudah dibundel. Bahasa lain memakai server yang terpasang di komputermu. Pintasan: F12 ke definisi (atau {isMac ? "⌘" : "Ctrl"}+klik), F2 rename, {prettyKeys("Shift+Alt+F")} format, ⇧F12 referensi.</p>
+      <p className="hint">{tl("TypeScript/JavaScript sudah dibundel. Bahasa lain memakai server yang terpasang di komputermu. Pintasan: F12 ke definisi (atau {mod}+klik), F2 rename, {fmt} format, {refs} referensi.", { mod: isMac ? "⌘" : "Ctrl", fmt: prettyKeys("Shift+Alt+F"), refs: prettyKeys("Shift+F12") })}</p>
       {list === null ? (
         <p className="hint">{tl("Memeriksa…")}</p>
       ) : list.length === 0 ? (
@@ -77,7 +77,7 @@ function LanguageServers() {
                 className="btn btn-sm"
                 onClick={() =>
                   void import("../terminal/terminals").then(async (m) => {
-                    await m.newTerminal({ kind: "run", title: `Pasang ${s.id}`, command: s.install! });
+                    await m.newTerminal({ kind: "run", title: tl("Pasang {name}", { name: s.id }), command: s.install! });
                   })
                 }
               >
@@ -113,7 +113,7 @@ function Keybindings() {
         const combo = recordCombo(e);
         if (!combo) return;
         const other = commandWithKeys(combo);
-        setWarn(other && other.id !== editing ? `${prettyKeys(combo)} sebelumnya dipakai "${other.label}" dan dilepas dari perintah itu.` : null);
+        setWarn(other && other.id !== editing ? tl("{keys} sebelumnya dipakai \"{cmd}\" dan dilepas dari perintah itu.", { keys: prettyKeys(combo), cmd: other.label }) : null);
         if (other && other.id !== editing) next[other.id] = "";
         next[editing] = combo;
       }
@@ -207,7 +207,7 @@ export default function SettingsView() {
           {tl("Buka settings.json")}
         </button>
       </div>
-      {q && noHits && <p className="hint">Tidak ada pengaturan yang cocok dengan "{q}".</p>}
+      {q && noHits && <p className="hint">{tl("Tidak ada pengaturan yang cocok dengan \"{q}\".", { q })}</p>}
 
       <section className="set-section">
         <h2>{tl("Desain")}</h2>
@@ -325,7 +325,7 @@ export default function SettingsView() {
         </Row>
         <div className={`power-state ${saver ? "on" : ""}`}>
           {saver ? <Leaf size={14} /> : power?.on_battery ? <BatteryCharging size={14} /> : <Plug size={14} />}
-          {saver ? "Hemat daya sedang aktif" : "Performa penuh"}
+          {saver ? tl("Hemat daya sedang aktif") : tl("Performa penuh")}
         </div>
       </section>
 
@@ -361,7 +361,7 @@ export default function SettingsView() {
         </Row>
         <h3 className="set-sub">Claude Code</h3>
         <Row label="Status" hint={claude?.path ?? undefined}>
-          <span className={claude?.installed ? "tone-success-fg" : "tone-danger-fg"}>{claude ? (claude.installed ? claude.version : claude.error) : "belum diperiksa"}</span>
+          <span className={claude?.installed ? "tone-success-fg" : "tone-danger-fg"}>{claude ? (claude.installed ? claude.version : claude.error) : tl("belum diperiksa")}</span>
           <button className="btn btn-sm" onClick={() => void detectClaude()}>
             {tl("Periksa ulang")}
           </button>

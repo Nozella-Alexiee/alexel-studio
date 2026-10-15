@@ -4,7 +4,7 @@
 
 import * as docs from "../editor/documents";
 import { api, errMsg, isWindows } from "../lib/ipc";
-import { basename, dirname, join, relative } from "../lib/paths";
+import { basename, dirname, isInside, join, relative } from "../lib/paths";
 import { activeTab, confirmDialog, getState, setLayout, toast } from "../state/store";
 import { DapClient } from "./client";
 import { setBpsEffect, setDebugLineEffect } from "./editor";
@@ -123,7 +123,7 @@ async function ensureAdapter(kind: Kind): Promise<boolean> {
   const st = await api.dapStatus(kind);
   if (st.available) return true;
   if (kind === "node" && st.installable) {
-    if (!(await confirmDialog(tl("Pasang debugger JavaScript?"), "Alexel Studio akan mengunduh js-debug resmi dari GitHub Microsoft (sekitar 1,2 MB, checksum diperiksa). Cukup sekali.", "Pasang"))) return false;
+    if (!(await confirmDialog(tl("Pasang debugger JavaScript?"), tl("Alexel Studio akan mengunduh js-debug resmi dari GitHub Microsoft (sekitar 1,2 MB, checksum diperiksa). Cukup sekali."), tl("Pasang")))) return false;
     try {
       await api.dapInstallJsDebug();
       toast(tl("Debugger JavaScript terpasang."), "success");
@@ -134,9 +134,9 @@ async function ensureAdapter(kind: Kind): Promise<boolean> {
     }
   }
   const what = kind === "python" ? "debugpy" : kind === "go" ? "Delve (dlv)" : "lldb-dap";
-  if (st.install && (await confirmDialog(`${what} belum terpasang`, `Pasang lewat terminal dengan perintah:\n${st.install}`, "Buka terminal"))) {
+  if (st.install && (await confirmDialog(tl("{name} belum terpasang", { name: what }), `${tl("Pasang lewat terminal dengan perintah:")}\n${st.install}`, tl("Buka terminal")))) {
     const { runInTerminal } = await import("../app/run");
-    await runInTerminal(st.install, `Pasang ${what}`);
+    await runInTerminal(st.install, tl("Pasang {name}", { name: what }));
   }
   return false;
 }
@@ -155,7 +155,7 @@ export async function startDebug(config?: LaunchConfig) {
   let cfg = config ?? (await launchJsonConfigs())[0] ?? autoConfig();
   if (!cfg) return toast(tl("Buka berkas JavaScript, TypeScript, Python, C/C++, atau Go, atau tambahkan .vscode/launch.json."));
   const kind = kindOf(cfg.type);
-  if (!kind) return toast(`Tipe debug "${cfg.type}" belum didukung.`);
+  if (!kind) return toast(tl("Tipe debug \"{type}\" belum didukung.", { type: cfg.type }));
   if (!(await ensureAdapter(kind))) return;
   for (const t of Object.values(getState().tabs)) if (t.dirty && t.kind === "text") await docs.saveDocument(t.id, { quiet: true });
   cfg = substitute(cfg, varsNow());
@@ -240,7 +240,7 @@ function wire(c: DapClient, isRoot: boolean) {
     if (!path || !bp?.line) return;
     setDbg((s) => ({ breakpoints: { ...s.breakpoints, [path]: (s.breakpoints[path] ?? []).map((x) => (x.line === bp.line ? { ...x, verified: !!bp.verified } : x)) } }));
   });
-  c.on("exited", (b) => consoleLine("info", `Program selesai (kode keluar ${b.exitCode ?? "?"}).`));
+  c.on("exited", (b) => consoleLine("info", tl("Program selesai (kode keluar {code}).", { code: b.exitCode ?? "?" })));
   c.on("terminated", () => {
     if (isRoot) void stopDebug();
     else {
@@ -286,8 +286,8 @@ async function onStopped(c: DapClient, b: { reason?: string; threadId?: number; 
   setDbg({ frames });
   const first = frames.find((f) => f.path) ?? frames[0];
   if (first) await selectFrame(first);
-  const why: Record<string, string> = { breakpoint: "breakpoint", step: "langkah", exception: "exception", pause: "dijeda", entry: "awal program" };
-  consoleLine("info", `Berhenti (${why[b.reason ?? ""] ?? b.reason ?? "?"})${b.text ? `: ${b.text}` : ""}${first?.path ? ` di ${basename(first.path)}:${first.line}` : ""}`);
+  const why: Record<string, string> = { breakpoint: "breakpoint", step: tl("langkah"), exception: "exception", pause: tl("dijeda"), entry: tl("awal program") };
+  consoleLine("info", `${tl("Berhenti ({why})", { why: why[b.reason ?? ""] ?? b.reason ?? "?" })}${b.text ? `: ${b.text}` : ""}${first?.path ? ` ${tl("di {loc}", { loc: `${basename(first.path)}:${first.line}` })}` : ""}`);
   void refreshWatch();
 }
 
@@ -342,7 +342,7 @@ async function endDebug() {
   rootId = null;
   resetSessionState();
   setDbg({ status: "idle" });
-  consoleLine("info", "Sesi debug selesai.");
+  consoleLine("info", tl("Sesi debug selesai."));
 }
 
 export async function stopDebug() {
@@ -416,7 +416,7 @@ function persistBreakpoints() {
     const root = getState().root;
     if (!root) return;
     const all = JSON.parse(localStorage.getItem(BP_KEY) || "{}");
-    all[root] = Object.fromEntries(Object.entries(dbg().breakpoints).filter(([p, l]) => l.length && p.startsWith(root)).map(([p, l]) => [p, l.map((b) => ({ line: b.line, condition: b.condition }))]));
+    all[root] = Object.fromEntries(Object.entries(dbg().breakpoints).filter(([p, l]) => l.length && isInside(root, p)).map(([p, l]) => [p, l.map((b) => ({ line: b.line, condition: b.condition }))]));
     localStorage.setItem(BP_KEY, JSON.stringify(all));
   } catch {
     /* localStorage tidak tersedia */
@@ -467,7 +467,7 @@ export async function evaluateRepl(expression: string) {
   if (!expr) return;
   consoleLine("in", expr);
   const c = activeClient();
-  if (!c) return consoleLine("err", "Tidak ada sesi debug.");
+  if (!c) return consoleLine("err", tl("Tidak ada sesi debug."));
   try {
     const r = await c.request<{ result: string }>("evaluate", { expression: expr, frameId: dbg().frameId ?? undefined, context: "repl" });
     consoleLine("result", r.result);

@@ -5,6 +5,7 @@ import { StreamLanguage } from "@codemirror/language";
 import type { Extension } from "@codemirror/state";
 import type { IGrammar, IToken, StateStack } from "vscode-textmate";
 import onigUrl from "vscode-oniguruma/release/onig.wasm?url";
+import { tl } from "../i18n";
 
 type Reader = (scopeName: string) => Promise<{ content: string; path: string } | null>;
 
@@ -116,7 +117,7 @@ function streamLanguage(name: string, grammar: IGrammar, initial: StateStack) {
 export async function textmateLanguage(name: string, scopeName: string): Promise<Extension> {
   const reg = await registry();
   const grammar = await reg.loadGrammar(scopeName);
-  if (!grammar) throw new Error(`Grammar ${scopeName} tidak bisa dimuat.`);
+  if (!grammar) throw new Error(tl("Grammar {name} tidak bisa dimuat.", { name: scopeName }));
   const { INITIAL } = await import("vscode-textmate");
   return streamLanguage(name, grammar, INITIAL);
 }

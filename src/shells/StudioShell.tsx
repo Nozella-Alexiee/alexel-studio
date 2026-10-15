@@ -10,6 +10,7 @@ import { useDebug } from "../debug/state";
 import { MenuBar } from "../components/MenuBar";
 import { openMenu } from "../components/Overlays";
 import { IconButton } from "../components/ui";
+import { isMac } from "../lib/ipc";
 import { prettyKeys } from "../lib/keys";
 import { basename } from "../lib/paths";
 import { BottomPanel } from "../panels/BottomPanel";
@@ -37,7 +38,7 @@ export default function StudioShell() {
         <div className="traffic-space" />
         <MenuBar />
         <div className="st-center">
-          <button className="st-command" onClick={() => openPalette("")} title={`Cari berkas (${prettyKeys("Mod+P")}) · perintah (${prettyKeys("Mod+Shift+P")})`}>
+          <button className="st-command" onClick={() => openPalette("")} title={tl("Cari berkas ({a}) · perintah ({b})", { a: prettyKeys("Mod+P"), b: prettyKeys("Mod+Shift+P") })}>
             <Search size={13} aria-hidden />
             <span>{root ? basename(root) : "Alexel Studio"}</span>
           </button>
@@ -63,7 +64,7 @@ export default function StudioShell() {
               {count ? <span className="ab-count">{count > 99 ? "99+" : count}</span> : null}
             </button>
           ))}
-          <button className={l.right && l.rightView === "claude" ? "is-on" : ""} onClick={() => A.toggleRight("claude")} title={`Agen AI (${prettyKeys("Mod+Escape")})`} aria-label={tl("Agen AI")} aria-pressed={l.right}>
+          <button className={l.right && l.rightView === "claude" ? "is-on" : ""} onClick={() => A.toggleRight("claude")} title={`${tl("Agen AI")} (${prettyKeys(isMac ? "Mod+Escape" : "Ctrl+Alt+I")})`} aria-label={tl("Agen AI")} aria-pressed={l.right}>
             <Kepi size={22} />
           </button>
           <span className="spacer" />
@@ -75,7 +76,7 @@ export default function StudioShell() {
                 { label: tl("Shortcut keyboard"), run: () => A.openSettings(undefined, "keys") },
                 { label: tl("Ganti desain"), keys: "Ctrl+Mod+T", run: A.cycleDesign },
                 { label: "", separator: true },
-                { label: root ? "Ganti project…" : tl("Buka folder…"), run: () => void A.openProjectDialog() },
+                { label: root ? tl("Ganti project…") : tl("Buka folder…"), run: () => void A.openProjectDialog() },
               ])
             }
             title={tl("Kelola")}

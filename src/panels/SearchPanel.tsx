@@ -80,7 +80,7 @@ export default function SearchPanel() {
   const replaceAll = async () => {
     if (!res?.matches.length || !root) return;
     const files = byFile.map(([p]) => p);
-    if (!(await confirmDialog(`Ganti ${res.matches.length} kecocokan di ${files.length} berkas?`, "Berkas yang sedang terbuka akan dimuat ulang. Versi lama tersimpan di time-travel.", "Ganti semua", true))) return;
+    if (!(await confirmDialog(tl("Ganti {n} kecocokan di {files} berkas?", { n: res.matches.length, files: files.length }), tl("Berkas yang sedang terbuka akan dimuat ulang. Versi lama tersimpan di time-travel."), tl("Ganti semua"), true))) return;
     try {
       const dirtyOpen = files.filter((f) => useStore.getState().tabs[f]?.dirty);
       if (dirtyOpen.length) return toast(tl("Simpan dulu berkas yang sedang diedit sebelum mengganti."), "error");
@@ -100,7 +100,7 @@ export default function SearchPanel() {
     <div className="search-panel">
       <div className="search-form">
         <div className="search-row">
-          <IconButton label={showRep ? "Sembunyikan ganti" : "Tampilkan ganti"} onClick={() => setShowRep((v) => !v)} className="search-rep-toggle">
+          <IconButton label={showRep ? tl("Sembunyikan ganti") : tl("Tampilkan ganti")} onClick={() => setShowRep((v) => !v)} className="search-rep-toggle">
             {showRep ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
           </IconButton>
           <div className="input-wrap">
@@ -132,7 +132,7 @@ export default function SearchPanel() {
       </div>
       <div className="search-meta">
         {busy && <Spinner size={12} />}
-        {err ? <span className="tone-danger-fg">{err}</span> : res && q ? <span>{res.matches.length}{res.truncated ? "+" : ""} hasil di {byFile.length} berkas</span> : null}
+        {err ? <span className="tone-danger-fg">{err}</span> : res && q ? <span>{tl("{n} hasil di {files} berkas", { n: `${res.matches.length}${res.truncated ? "+" : ""}`, files: byFile.length })}</span> : null}
       </div>
       <div className="search-results" role="tree" aria-label={tl("Hasil pencarian")} aria-busy={busy}>
         {busy && !res && (

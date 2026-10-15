@@ -21,7 +21,7 @@ function RunConfig() {
   const [sel, setSel] = useState<string>("file");
   const runningCount = useStore((s) => s.terminals.filter((t) => t.kind === "run" && t.status === "running").length);
   const current = targets.find((t) => t.id === sel);
-  const label = current ? current.label : "Berkas aktif";
+  const label = current ? current.label : tl("Berkas aktif");
   const run = () => (current ? void runTarget(current) : void runActiveFile());
   const stop = async () => {
     const T = await import("../terminal/terminals");
@@ -33,7 +33,7 @@ function RunConfig() {
         className="run-select"
         onClick={(e) =>
           openMenu(e, [
-            { label: `${sel === "file" ? "✓ " : ""}Berkas aktif`, run: () => setSel("file") },
+            { label: `${sel === "file" ? "✓ " : ""}${tl("Berkas aktif")}`, run: () => setSel("file") },
             ...(targets.length ? [{ separator: true, label: "" }] : []),
             ...targets.map((t) => ({ label: `${sel === t.id ? "✓ " : ""}${t.label}`, keys: t.kind, run: () => setSel(t.id) })),
           ])
@@ -44,7 +44,7 @@ function RunConfig() {
         <span>{label}</span>
         <ChevronDown size={12} aria-hidden />
       </button>
-      <IconButton label={`Jalankan ${label}`} keys={current ? undefined : "Mod+R"} tone="run" onClick={run}>
+      <IconButton label={tl("Jalankan {name}", { name: label })} keys={current ? undefined : "Mod+R"} tone="run" onClick={run}>
         <Play size={14} />
       </IconButton>
       <IconButton label={tl("Hentikan semua run")} tone="danger" onClick={() => void stop()} disabled={!runningCount}>
@@ -68,7 +68,7 @@ export default function ControlShell() {
     ["todo", <ListTodo size={19} />, "TODO", () => A.toggleSidebar("todo"), l.sidebar && l.sideView === "todo"],
     ["ext", <Puzzle size={19} />, "Ekstensi", () => A.toggleSidebar("ext"), l.sidebar && l.sideView === "ext"],
     ["ports", <Network size={19} />, "Port & proses", () => A.togglePanel("ports"), l.panel && l.panelTab === "ports"],
-    ["claude", <Kepi size={21} />, `Agen AI (${prettyKeys("Mod+Alt+B")})`, () => A.toggleRight("claude"), l.right && l.rightView === "claude"],
+    ["claude", <Kepi size={21} />, `${tl("Agen AI")} (${prettyKeys("Mod+Alt+B")})`, () => A.toggleRight("claude"), l.right && l.rightView === "claude"],
   ];
 
   return (
@@ -79,10 +79,10 @@ export default function ControlShell() {
         <RunConfig />
         <div className="ctl-center">
           <button className="ctl-project" onClick={openProjectMenu} title={tl("Ganti project")} aria-haspopup="menu">
-            <FolderOpen size={12} aria-hidden /> {root ? root.split("/").pop() : "Buka project"}
+            <FolderOpen size={12} aria-hidden /> {root ? root.split("/").pop() : tl("Buka project")}
             {git?.is_repo && <span className="ctl-branch">· {git.branch}</span>}
           </button>
-          <button className="ctl-search" onClick={() => openPalette("")} title={`Cari berkas (${prettyKeys("Mod+P")})`} aria-label={tl("Cari berkas")}>
+          <button className="ctl-search" onClick={() => openPalette("")} title={`${tl("Cari berkas")} (${prettyKeys("Mod+P")})`} aria-label={tl("Cari berkas")}>
             <Search size={12} aria-hidden /> <span>{tl("Cari berkas")}</span> <kbd>{prettyKeys("Mod+P")}</kbd>
           </button>
         </div>
@@ -113,7 +113,7 @@ export default function ControlShell() {
           <button onClick={() => A.togglePanel("terminal")} title={`Terminal (${prettyKeys("Ctrl+`")})`} aria-label="Terminal" className={l.panel && l.panelTab === "terminal" ? "is-on" : ""}>
             <TerminalSquare size={19} />
           </button>
-          <button onClick={() => A.openSettings()} title={`Pengaturan (${prettyKeys("Mod+,")})`} aria-label={tl("Pengaturan")}>
+          <button onClick={() => A.openSettings()} title={`${tl("Pengaturan")} (${prettyKeys("Mod+,")})`} aria-label={tl("Pengaturan")}>
             <Settings size={19} />
           </button>
         </nav>

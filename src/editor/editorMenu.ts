@@ -26,8 +26,8 @@ export function openEditorMenu(e: MouseEvent): boolean {
     void call("edit_action", { action });
   };
   const items: MenuItem[] = [
-    { label: hasSel ? "Minta Claude ubah seleksi…" : "Minta Claude ubah baris ini…", keys: prettyKeys("Mod+K"), run: () => void import("./inlineClaude").then((m) => m.openInline(view)) },
-    { label: hasSel ? "Tanya Claude tentang seleksi" : "Tanya Claude tentang berkas ini", keys: prettyKeys("Mod+L"), run: () => void import("../claude/claude").then((m) => m.explainSelection()) },
+    { label: hasSel ? tl("Ubah seleksi dengan AI…") : tl("Ubah baris ini dengan AI…"), keys: prettyKeys("Mod+K"), run: () => void import("./inlineClaude").then((m) => m.openInline(view)) },
+    { label: hasSel ? tl("Tanya agen AI tentang seleksi") : tl("Tanya agen AI tentang berkas ini"), keys: prettyKeys("Mod+L"), run: () => void import("../claude/claude").then((m) => m.explainSelection()) },
     { label: "", separator: true },
     { label: tl("Ke definisi"), keys: "F12", disabled: !lsp, run: () => jumpToDefinition(view) },
     { label: tl("Cari semua referensi"), keys: prettyKeys("Shift+F12"), disabled: !lsp, run: () => findReferences(view) },

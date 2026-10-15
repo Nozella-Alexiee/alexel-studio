@@ -88,7 +88,10 @@ async function isRepo(dir: string): Promise<boolean> {
 export async function gitStatus(dir: string): Promise<GitStatus> {
   if (!fs.existsSync(dir) || !(await isRepo(dir))) return none();
   const st = parseStatus(await git(dir, ["status", "--porcelain=v1", "-b", "-z", "--untracked-files=all"], "git status"));
-  st.root = (await git(dir, ["rev-parse", "--show-toplevel"], "rev-parse")).trim();
+  // Dari folder project + --show-cdup (bukan --show-toplevel): git me-resolve symlink (/tmp → /private/tmp)
+  // dan di Windows bisa beda huruf besar/kecil, sehingga path tidak cocok dengan path di Explorer.
+  const cdup = (await git(dir, ["rev-parse", "--show-cdup"], "rev-parse")).trim();
+  st.root = cdup ? path.resolve(dir, cdup) : dir;
   return st;
 }
 

@@ -4,6 +4,7 @@
 import { RangeSet, StateEffect, StateField, type Extension } from "@codemirror/state";
 import { Decoration, EditorView, gutter, GutterMarker, hoverTooltip, type DecorationSet } from "@codemirror/view";
 import { dbg, setDbg, type Breakpoint } from "./state";
+import { tl } from "../i18n";
 
 class BpMarker extends GutterMarker {
   constructor(readonly verified: boolean, readonly conditional: boolean) {
@@ -15,7 +16,7 @@ class BpMarker extends GutterMarker {
   toDOM() {
     const el = document.createElement("span");
     el.className = `cm-bp ${this.verified ? "" : "is-unverified"} ${this.conditional ? "is-cond" : ""}`;
-    el.title = this.conditional ? "Breakpoint bersyarat" : this.verified ? "Breakpoint" : "Breakpoint (belum terikat)";
+    el.title = this.conditional ? tl("Breakpoint bersyarat") : this.verified ? "Breakpoint" : tl("Breakpoint (belum terikat)");
     return el;
   }
 }

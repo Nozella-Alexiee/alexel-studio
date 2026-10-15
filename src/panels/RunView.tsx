@@ -175,7 +175,7 @@ export default function RunView() {
             )
           }
         >
-          {bpList.length === 0 && <p className="hint pad-x">Belum ada. Klik di kiri nomor baris atau tekan {prettyKeys("F9")}.</p>}
+          {bpList.length === 0 && <p className="hint pad-x">{tl("Belum ada. Klik di kiri nomor baris atau tekan {keys}.", { keys: prettyKeys("F9") })}</p>}
           {bpList.map((b) => (
             <div key={`${b.path}:${b.line}`} className="dbg-bp">
               <Circle size={9} className={b.verified === false ? "is-unverified" : ""} fill="currentColor" aria-hidden />

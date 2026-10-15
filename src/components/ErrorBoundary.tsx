@@ -17,7 +17,7 @@ export class ErrorBoundary extends Component<{ children: ReactNode; label?: stri
     if (!this.state.error) return this.props.children;
     return (
       <div className="empty" role="alert">
-        <div className="empty-title">{this.props.label ?? "Bagian ini mengalami error"}</div>
+        <div className="empty-title">{this.props.label ?? tl("Bagian ini mengalami error")}</div>
         <div className="empty-body mono">{this.state.error.message}</div>
         <div className="empty-action">
           <button

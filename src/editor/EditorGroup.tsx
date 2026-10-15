@@ -66,7 +66,7 @@ function TabItem({ tab, group, active, drop }: { tab: Tab; group: number; active
       <span className="tab-name">{tab.name}</span>
       <button
         className="tab-close"
-        aria-label={tab.dirty ? `${tab.name} belum disimpan — tutup` : `Tutup ${tab.name}`}
+        aria-label={tab.dirty ? tl("{name} belum disimpan — tutup", { name: tab.name }) : tl("Tutup {name}", { name: tab.name })}
         onClick={(e) => {
           e.stopPropagation();
           void A.closeTab(tab.id, group);

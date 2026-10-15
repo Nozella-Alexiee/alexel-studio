@@ -51,7 +51,7 @@ function readImage(file: File): Promise<Img | null> {
   return new Promise((resolve) => {
     if (!/^image\/(png|jpeg|gif|webp)$/.test(file.type)) return resolve(null);
     if (file.size > MAX_IMAGE_BYTES) {
-      toast(`${file.name || "Gambar"} lebih dari 5 MB.`, "error");
+      toast(tl("{name} lebih dari 5 MB.", { name: file.name || tl("Gambar") }), "error");
       return resolve(null);
     }
     const r = new FileReader();
@@ -220,7 +220,7 @@ export function Composer({ onShowHistory }: { onShowHistory: () => void }) {
   const relTab =
     tab?.kind === "text" && root ? relative(root, tab.id) : fileName;
 
-  const modelList = agent === "claude" ? modelChoices(models) : [{ value: "default", displayName: "Bawaan", description: tl("Model bawaan agen") }, ...models.filter((m) => m.value !== "default")];
+  const modelList = agent === "claude" ? modelChoices(models) : [{ value: "default", displayName: tl("Bawaan"), description: tl("Model bawaan agen") }, ...models.filter((m) => m.value !== "default")];
   const modelValue = modelList.some((m) => m.value === model)
     ? model
     : "default";
@@ -237,6 +237,8 @@ export function Composer({ onShowHistory }: { onShowHistory: () => void }) {
     const at = /(^|\s)@([^\s@]*)$/.exec(before);
     if (at && root) {
       const q = at[2];
+      // Baru mengetik "@": muat ulang daftar berkas (berkas baru, termasuk buatan agen).
+      if (!q) void projectFiles(root).then((f) => (files.current = f));
       const start = caret - q.length - 1;
       const hits = fuzzyFilter(q, files.current, (f) => f, 8);
       setSuggest({
@@ -265,7 +267,7 @@ export function Composer({ onShowHistory }: { onShowHistory: () => void }) {
     if (slash) {
       const q = slash[1].toLowerCase();
       const all = [
-        ...LOCAL_CMDS.map((c) => ({ ...c, local: true })),
+        ...LOCAL_CMDS.filter((c) => (c.name === "resume" ? caps.history : c.name === "effort" ? caps.effort : c.name === "mode" ? caps.modes.length > 0 : c.name === "model" ? caps.models : true)).map((c) => ({ ...c, local: true })),
         ...cliCommands
           .filter((c) => !LOCAL_CMDS.some((l) => l.name === c.name))
           .map((c) => ({ ...c, local: false })),
@@ -322,6 +324,10 @@ export function Composer({ onShowHistory }: { onShowHistory: () => void }) {
   };
 
   const addFiles = async (list: FileList | File[]) => {
+    if (!caps.images) {
+      toast(tl("Agen ini belum menerima gambar."), "info");
+      return;
+    }
     const got = (await Promise.all([...list].map(readImage))).filter(
       Boolean,
     ) as Img[];
@@ -393,7 +399,7 @@ export function Composer({ onShowHistory }: { onShowHistory: () => void }) {
             <span key={i} className="cz-thumb" title={im.name}>
               <img src={im.url} alt={im.name} />
               <button
-                aria-label={`Hapus ${im.name}`}
+                aria-label={tl("Hapus {name}", { name: im.name })}
                 onClick={() =>
                   setImages((cur) => cur.filter((_, j) => j !== i))
                 }
@@ -442,8 +448,8 @@ export function Composer({ onShowHistory }: { onShowHistory: () => void }) {
           className="cz-input"
           placeholder={
             running
-              ? `${agentInfo(agent).short} sedang menjawab…`
-              : `Tanya ${agentInfo(agent).short}, @ untuk berkas, / untuk perintah`
+              ? tl("{name} sedang menjawab…", { name: agentInfo(agent).short })
+              : tl("Tanya {name}, @ untuk berkas, / untuk perintah", { name: agentInfo(agent).short })
           }
           value={text}
           rows={2}
@@ -503,7 +509,7 @@ export function Composer({ onShowHistory }: { onShowHistory: () => void }) {
             <Picker
               className="pick-mode"
               label={tl("Mode izin")}
-              title={`Mode izin (${prettyKeys("Shift+Tab")} untuk ganti)`}
+              title={tl("Mode izin ({keys} untuk ganti)", { keys: prettyKeys("Shift+Tab") })}
               icon={MODE_ICON[mode]}
               value={mode}
               choices={caps.modes.map((m) => ({
@@ -539,13 +545,14 @@ export function Composer({ onShowHistory }: { onShowHistory: () => void }) {
               choices={effortChoices.map((e) => ({
                 id: e.id,
                 label: effortLabel(e.id),
-                hint: e.id === "auto" ? "Bawaan model" : undefined,
+                hint: e.id === "auto" ? tl("Bawaan model") : undefined,
               }))}
               onPick={(v) => void setClaudeEffort(v)}
             />
             )}
           </div>
           <div className="cz-actions">
+            {caps.images && (
             <label className="cz-icon-btn" title={tl("Lampirkan gambar")}>
               <ImagePlus size={14} aria-hidden />
               <input
@@ -559,6 +566,7 @@ export function Composer({ onShowHistory }: { onShowHistory: () => void }) {
                 aria-label={tl("Lampirkan gambar")}
               />
             </label>
+            )}
             <button
               className="cz-icon-btn"
               title={tl("Sebut berkas (@)")}
@@ -587,7 +595,7 @@ export function Composer({ onShowHistory }: { onShowHistory: () => void }) {
                 onClick={() => void send()}
                 disabled={!text.trim() && !images.length}
                 aria-label={tl("Kirim")}
-                title={`Kirim (Enter)`}
+                title={`${tl("Kirim")} (Enter)`}
               >
                 <ArrowUp size={15} />
               </button>
@@ -600,9 +608,9 @@ export function Composer({ onShowHistory }: { onShowHistory: () => void }) {
         <span className="spacer" />
         {ctxPct != null && (
           <span
-            title={`${usage!.context.toLocaleString()} dari ${usage!.window.toLocaleString()} token konteks · setara $${usage!.cost.toFixed(3)} harga API`}
+            title={tl("{used} dari {total} token konteks · setara ${cost} harga API", { used: usage!.context.toLocaleString(), total: usage!.window.toLocaleString(), cost: usage!.cost.toFixed(3) })}
           >
-            {ctxPct}% konteks
+            {tl("{pct}% konteks", { pct: ctxPct })}
           </span>
         )}
       </div>

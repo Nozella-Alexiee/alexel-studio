@@ -86,13 +86,13 @@ function init() {
     if (rt) {
       rt.ptyId = null;
       const ok = code === 0;
-      const label = sess?.kind === "shell" ? "Shell selesai" : ok ? "Selesai" : "Berhenti";
-      rt.term.write(`\r\n\x1b[2m── ${label} · kode ${code ?? "?"} · ${formatDuration(elapsed_ms)} ──\x1b[0m\r\n`);
+      const label = sess?.kind === "shell" ? tl("Shell selesai") : ok ? tl("Selesai") : tl("Berhenti");
+      rt.term.write(`\r\n\x1b[2m── ${label} · ${tl("kode {code}", { code: code ?? "?" })} · ${formatDuration(elapsed_ms)} ──\x1b[0m\r\n`);
     }
     patch(key, { status: "exited", exitCode: code, elapsedMs: elapsed_ms, ptyId: null });
     if (sess?.kind === "run") void import("../components/PenguinMascot").then((m) => m.flashPenguin(code === 0 ? "sukses" : "error", code === 0 ? 6000 : 9000));
     if (sess?.kind === "run" && code !== 0 && code !== 130 && code !== null) {
-      toast(`${sess.title} gagal (kode ${code})`, "error", {
+      toast(tl("{name} gagal (kode {code})", { name: sess.title, code: String(code) }), "error", {
         label: tl("Tanya agen AI"),
         run: () => void import("../claude/claude").then((m) => m.explainTerminal(key)),
       });

@@ -3,10 +3,11 @@
 
 import { memo, useEffect, useState } from "react";
 import { setState, useStore } from "../state/store";
+import { tl } from "../i18n";
 
 export type KepiMood = "siap" | "mikir" | "sukses" | "error" | "melambai";
 
-export const KEPI_LABEL: Record<KepiMood, string> = { siap: "siap", mikir: "lagi mikir", sukses: "beres!", error: "nemu masalah", melambai: "halo!" };
+export const KEPI_LABEL: Record<KepiMood, string> = { siap: tl("siap"), mikir: tl("lagi mikir"), sukses: tl("beres!"), error: tl("nemu masalah"), melambai: tl("halo!") };
 
 const SHELL = "#d97757";
 const SHADE = "#b9583a";

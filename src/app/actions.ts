@@ -102,7 +102,7 @@ export async function loadDir(dir: string) {
       delete ex[dir];
       return { dirs: d, expanded: ex };
     });
-    if (dir === getState().root) toast(`Gagal membuka folder: ${errMsg(e)}`, "error");
+    if (dir === getState().root) toast(tl("Gagal membuka folder: {error}", { error: errMsg(e) }), "error");
   }
 }
 
@@ -195,7 +195,7 @@ async function createTab(path: string, opts: { quiet?: boolean; preview?: Tab["p
   } catch (e) {
     const msg = errMsg(e);
     if (!opts.quiet) {
-      if (msg.startsWith("BINARY")) toast(`${name} adalah berkas biner, tidak dibuka di editor.`, "info");
+      if (msg.startsWith("BINARY")) toast(tl("{name} adalah berkas biner, tidak dibuka di editor.", { name }), "info");
       else toast(msg.replace(/^(ENCODING|BINARY): /, ""), "error");
     }
     return false;
@@ -278,7 +278,7 @@ export async function closeTab(id: string, g = getState().focusedGroup): Promise
   if (tab.dirty && !openElsewhere) {
     const choice = await ask({
       kind: "choice",
-      title: `Simpan perubahan di ${tab.name}?`,
+      title: tl("Simpan perubahan di {name}?", { name: tab.name }),
       message: tl("Kalau tidak disimpan, perubahanmu akan hilang."),
       choices: [
         { id: "save", label: tl("Simpan") },
@@ -349,7 +349,7 @@ export async function closeAllTabs(): Promise<boolean> {
   if (dirty.length) {
     const choice = await ask({
       kind: "choice",
-      title: dirty.length === 1 ? `Simpan perubahan di ${dirty[0].name}?` : `Simpan perubahan di ${dirty.length} berkas?`,
+      title: dirty.length === 1 ? tl("Simpan perubahan di {name}?", { name: dirty[0].name }) : tl("Simpan perubahan di {n} berkas?", { n: dirty.length }),
       message: dirty.map((t) => t.name).join(", "),
       choices: [
         { id: "save", label: tl("Simpan semua") },
@@ -410,7 +410,7 @@ export async function saveAll() {
 
 let gitTimer = 0;
 export function afterSave(path: string, quiet?: boolean) {
-  if (!quiet) toast(`${basename(path)} tersimpan`, "success");
+  if (!quiet) toast(tl("{name} tersimpan", { name: basename(path) }), "success");
   void import("./persist").then((m) => m.settingsFileSaved(path));
   const s = getState();
   clearTimeout(gitTimer);
@@ -439,7 +439,7 @@ function targetDir(path?: string | null): string | null {
 export async function newFile(inPath?: string | null) {
   const dir = targetDir(inPath);
   if (!dir) return toast(tl("Buka folder project dulu."));
-  const name = await promptDialog(tl("Berkas baru"), { message: `Di ${relative(getState().root ?? "", dir) || "akar project"}`, placeholder: "nama-berkas.ts", validate: validateName, okLabel: tl("Buat") });
+  const name = await promptDialog(tl("Berkas baru"), { message: tl("Di {dir}", { dir: relative(getState().root ?? "", dir) || tl("akar project") }), placeholder: tl("nama-berkas.ts"), validate: validateName, okLabel: tl("Buat") });
   if (!name) return;
   const path = join(dir, name.trim());
   try {
@@ -511,7 +511,7 @@ export async function movePath(path: string, toDir: string) {
 
 export async function deletePath(path: string) {
   const name = basename(path);
-  if (getState().settings.confirmDelete && !(await confirmDialog(`Pindahkan "${name}" ke Trash?`, "Bisa diurungkan sesaat setelahnya, atau dikembalikan dari Trash sistem.", "Pindahkan ke Trash", true))) return;
+  if (getState().settings.confirmDelete && !(await confirmDialog(tl("Pindahkan \"{name}\" ke Trash?", { name }), tl("Bisa diurungkan sesaat setelahnya, atau dikembalikan dari Trash sistem."), tl("Pindahkan ke Trash"), true))) return;
   try {
     const token = await api.trash(path);
     // Tutup tab berkas itu dan semua isi folder (tanpa tanya; isinya sudah di Trash).
@@ -521,7 +521,7 @@ export async function deletePath(path: string) {
     }
     await loadDir(dirname(path));
     toast(
-      `${name} dipindah ke Trash`,
+      tl("{name} dipindah ke Trash", { name }),
       "success",
       token
         ? {
@@ -530,7 +530,7 @@ export async function deletePath(path: string) {
               try {
                 await api.restoreDeleted(token, path);
                 await loadDir(dirname(path));
-                toast(`${name} dikembalikan`, "success");
+                toast(tl("{name} dikembalikan", { name }), "success");
               } catch (e) {
                 toast(errMsg(e), "error");
               }
@@ -562,34 +562,52 @@ export async function copyPath(path: string, rel = false) {
 // ---------------- Git & data project ----------------
 
 let gitBusy: Promise<void> | null = null;
+/** Ada permintaan baru selama git status berjalan (berkas berubah / project berganti): ulangi. */
+let gitAgain = false;
 export async function refreshGit() {
-  const root = getState().root;
-  if (!root) return;
-  if (gitBusy) return gitBusy;
+  if (!getState().root) return;
+  if (gitBusy) {
+    gitAgain = true;
+    return gitBusy;
+  }
   gitBusy = (async () => {
     try {
-      const st = await api.gitStatus(root);
-      if (getState().root !== root) return;
-      const marks: Record<string, string> = {};
-      if (st.is_repo) for (const f of st.files) marks[join(st.root, f.path)] = f.untracked ? "U" : f.conflicted ? "!" : f.xy.includes("D") ? "D" : f.xy.trim()[0] === "A" ? "A" : "M";
-      const gitDirs: Record<string, true> = {};
-      for (const f of Object.keys(marks)) {
-        let d = dirname(f);
-        while (d.length > 1 && !gitDirs[d]) {
-          gitDirs[d] = true;
-          d = dirname(d);
-        }
-      }
-      const hadRepo = getState().git?.is_repo;
-      setState({ git: st, gitMarks: marks, gitDirs });
-      if (!hadRepo && st.is_repo) docs.refreshHeads();
-    } catch (e) {
-      console.warn("git status", e);
+      do {
+        gitAgain = false;
+        await refreshGitOnce();
+      } while (gitAgain && getState().root);
     } finally {
       gitBusy = null;
     }
   })();
   return gitBusy;
+}
+
+async function refreshGitOnce() {
+  const root = getState().root;
+  if (!root) return;
+  try {
+    const st = await api.gitStatus(root);
+    if (getState().root !== root) {
+      gitAgain = true;
+      return;
+    }
+    const marks: Record<string, string> = {};
+    if (st.is_repo) for (const f of st.files) marks[join(st.root, f.path)] = f.untracked ? "U" : f.conflicted ? "!" : f.xy.includes("D") ? "D" : f.xy.trim()[0] === "A" ? "A" : "M";
+    const gitDirs: Record<string, true> = {};
+    for (const f of Object.keys(marks)) {
+      let d = dirname(f);
+      while (d.length > 1 && !gitDirs[d]) {
+        gitDirs[d] = true;
+        d = dirname(d);
+      }
+    }
+    const hadRepo = getState().git?.is_repo;
+    setState({ git: st, gitMarks: marks, gitDirs });
+    if (!hadRepo && st.is_repo) docs.refreshHeads();
+  } catch (e) {
+    console.warn("git status", e);
+  }
 }
 
 export async function refreshRunTargets() {
@@ -617,8 +635,8 @@ export async function onFsChanged(paths: string[], git: boolean) {
   for (const p of paths) {
     if (!getState().tabs[p] || getState().tabs[p].kind !== "text") continue;
     const r = await docs.externalChange(p);
-    if (r === "conflict") toast(`${basename(p)} berubah di disk saat ada editan yang belum disimpan.`, "error", { label: tl("Bandingkan"), run: () => void import("./conflicts").then((m) => m.resolveConflict(p)) });
-    if (r === "missing") toast(`${basename(p)} dihapus dari luar Alexel Studio.`, "info");
+    if (r === "conflict") toast(tl("{name} berubah di disk saat ada editan yang belum disimpan.", { name: basename(p) }), "error", { label: tl("Bandingkan"), run: () => void import("./conflicts").then((m) => m.resolveConflict(p)) });
+    if (r === "missing") toast(tl("{name} dihapus dari luar Alexel Studio.", { name: basename(p) }), "info");
   }
   if (git || paths.length) {
     clearTimeout(gitTimer);
@@ -643,8 +661,15 @@ export function cycleDesign() {
   setDesign(order[(cur + 1) % order.length]);
 }
 
-export function updateSettings(patch: Partial<Settings>) {
+export function updateSettings(patch: Partial<Settings>, opts: { agentSwitched?: boolean } = {}) {
   const prev = getState().settings;
+  // Ganti agen (dari settings.json / reset) harus lewat selectAgent: proses & percakapan agen lama ditutup.
+  if (!opts.agentSwitched && patch.agent !== undefined && patch.agent !== prev.agent) {
+    const { agent, ...rest } = patch;
+    if (Object.keys(rest).length) updateSettings(rest);
+    void import("../claude/claude").then((m) => m.selectAgent(agent));
+    return;
+  }
   const next = { ...prev, ...patch };
   setState({ settings: next });
   if (patch.design !== undefined || patch.accent !== undefined) {
@@ -711,10 +736,8 @@ export function toggleRight(view?: Layout["rightView"]) {
 }
 
 export function resetSettings() {
-  setState({ settings: DEFAULT_SETTINGS });
-  applyDesign(DEFAULT_SETTINGS.design, null);
-  docs.applyEditorSettings();
-  persistSettings();
+  // Lewat updateSettings supaya shortcut, tema, ikon & agen ikut diterapkan; persetujuan agen tetap.
+  updateSettings({ ...DEFAULT_SETTINGS, claudeConsent: getState().settings.claudeConsent });
 }
 
 export const demoMode = isDemo;
@@ -725,7 +748,7 @@ export async function cloneRepo() {
     message: tl("Tempel URL repositori (https:// atau git@…). Kamu akan memilih folder tujuan setelah ini."),
     placeholder: "https://github.com/user/repo.git",
     okLabel: tl("Pilih folder…"),
-    validate: (v) => (/^(https:\/\/|ssh:\/\/|git@[\w.-]+:|file:\/\/)\S+$/.test(v.trim()) ? null : "Pakai URL https://… atau git@host:user/repo.git"),
+    validate: (v) => (/^(https:\/\/|ssh:\/\/|git@[\w.-]+:|file:\/\/)\S+$/.test(v.trim()) ? null : tl("Pakai URL https://… atau git@host:user/repo.git")),
   });
   if (!url) return;
   const parent = await pickFolder();
@@ -734,7 +757,7 @@ export async function cloneRepo() {
   try {
     const dest = await api.gitClone(url.trim(), parent);
     done();
-    toast(`Selesai di-clone ke ${dest}`, "success");
+    toast(tl("Selesai di-clone ke {dest}", { dest }), "success");
     await openProject(dest);
   } catch (e) {
     done();
@@ -765,8 +788,8 @@ export async function openLaunchJson() {
     const template = {
       version: "0.2.0",
       configurations: [
-        { name: "Node: berkas aktif", type: "pwa-node", request: "launch", program: "${file}", cwd: "${workspaceFolder}", console: "internalConsole" },
-        { name: "Python: berkas aktif", type: "debugpy", request: "launch", program: "${file}", cwd: "${workspaceFolder}", console: "internalConsole" },
+        { name: tl("Node: berkas aktif"), type: "pwa-node", request: "launch", program: "${file}", cwd: "${workspaceFolder}", console: "internalConsole" },
+        { name: tl("Python: berkas aktif"), type: "debugpy", request: "launch", program: "${file}", cwd: "${workspaceFolder}", console: "internalConsole" },
       ],
     };
     try {
@@ -788,10 +811,10 @@ export async function checkForUpdates(manual = false) {
       if (manual) toast(tl("Pemeriksaan pembaruan belum tersedia di build ini."), "info");
       return;
     }
-    if (r.newer && r.latest && r.url) toast(`Alexel Studio ${r.latest} sudah tersedia (kamu memakai ${r.current}).`, "info", { label: tl("Lihat"), run: () => void openExternal(r.url!) });
-    else if (manual) toast(`Kamu sudah memakai versi terbaru (${r.current}).`, "success");
+    if (r.newer && r.latest && r.url) toast(tl("Alexel Studio {latest} sudah tersedia (kamu memakai {current}).", { latest: r.latest, current: r.current }), "info", { label: tl("Lihat"), run: () => void openExternal(r.url!) });
+    else if (manual) toast(tl("Kamu sudah memakai versi terbaru ({current}).", { current: r.current }), "success");
   } catch (e) {
-    if (manual) toast(`Gagal memeriksa pembaruan: ${errMsg(e)}`, "error");
+    if (manual) toast(tl("Gagal memeriksa pembaruan: {error}", { error: errMsg(e) }), "error");
   }
 }
 
@@ -800,7 +823,7 @@ export async function reportIssue() {
   const repo = await api.appRepo().catch(() => null);
   if (!repo) return toast(tl("Alamat repositori belum diatur di build ini."), "info");
   const info = await api.appInfo().catch(() => null);
-  const body = encodeURIComponent(`**Versi:** ${info?.version ?? "?"}\n**OS:** ${info?.platform ?? "?"} ${info?.arch ?? ""}\n\n**Yang terjadi:**\n\n**Yang diharapkan:**\n\n**Langkah:**\n1. `);
+  const body = encodeURIComponent(`**Version:** ${info?.version ?? "?"}\n**OS:** ${info?.platform ?? "?"} ${info?.arch ?? ""}\n\n**What happened:**\n\n**What you expected:**\n\n**Steps:**\n1. `);
   void openExternal(`https://github.com/${repo}/issues/new?body=${body}`);
 }
 

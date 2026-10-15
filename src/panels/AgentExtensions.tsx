@@ -36,14 +36,14 @@ export async function installAgent(agent: AgentId) {
   if (agent === "codex" && isWindows) {
     toast(tl("Codex untuk Windows belum ada di Open VSX. Pasang lewat terminal: npm install -g @openai/codex"), "info");
     const { runInTerminal } = await import("../app/run");
-    await runInTerminal("npm install -g @openai/codex", "Pasang Codex");
+    await runInTerminal("npm install -g @openai/codex", tl("Pasang {name}", { name: "Codex" }));
     return;
   }
   try {
     const r = await api.agentInstall(agent);
     toast(`${info.name} ${r.version} terpasang`, "success");
     await detectAgent(agent);
-    if (useStore.getState().settings.agent !== agent && (await confirmDialog(`Pakai ${info.name} sekarang?`, "Panel Agen AI akan beralih ke agen ini.", "Pakai"))) await selectAgent(agent);
+    if (useStore.getState().settings.agent !== agent && (await confirmDialog(tl("Pakai {name} sekarang?", { name: info.name }), tl("Panel Agen AI akan beralih ke agen ini."), tl("Pakai")))) await selectAgent(agent);
   } catch (e) {
     toast(`${info.name}: ${errMsg(e)}`, "error");
   } finally {
@@ -89,7 +89,7 @@ function AgentCard({ id }: { id: AgentId }) {
           ) : ready ? (
             <span className="tone-success-fg">
               <CheckCircle2 size={11} aria-hidden /> {status?.source === "extension" || installed ? `${tl("Terpasang")} ${installed?.version ?? status?.version ?? ""}` : `${tl("Sudah ada di komputer")}${status?.version ? ` (${status.version.split(" ")[0]})` : ""}`}
-              {status?.loggedIn === false ? " · belum masuk" : ""}
+              {status?.loggedIn === false ? ` · ${tl("belum masuk")}` : ""}
             </span>
           ) : (
             <span className="hint">{id === "acp" ? tl("Atur perintahnya di Pengaturan") : id === "antigravity" ? tl("Pasang aplikasi Antigravity dulu") : tl("Belum dipasang")}</span>
@@ -112,7 +112,7 @@ function AgentCard({ id }: { id: AgentId }) {
           </button>
         ) : installable ? (
           <button className="btn btn-sm btn-primary" disabled={!!prog} onClick={() => void installAgent(id)}>
-            <Download size={12} /> Pasang
+            <Download size={12} /> {tl("Pasang")}
           </button>
         ) : (
           <button className="btn btn-sm" onClick={() => void import("../app/actions").then((m) => m.openSettings(undefined, "agents"))}>
@@ -122,10 +122,10 @@ function AgentCard({ id }: { id: AgentId }) {
         {installed && !prog && (
           <button
             className="icon-btn"
-            title={`Hapus ${a.name}`}
-            aria-label={`Hapus ${a.name}`}
+            title={tl("Hapus {name}", { name: a.name })}
+            aria-label={tl("Hapus {name}", { name: a.name })}
             onClick={async () => {
-              if (!(await confirmDialog(`Hapus ${a.name}?`, "Biner agen yang dipasang dari Open VSX dihapus. Login dan riwayat percakapan tidak ikut terhapus.", "Hapus", true))) return;
+              if (!(await confirmDialog(tl("Hapus {name}?", { name: a.name }), tl("Biner agen yang dipasang dari Open VSX dihapus. Login dan riwayat percakapan tidak ikut terhapus."), tl("Hapus"), true))) return;
               await api.agentUninstall(id).catch((e) => toast(errMsg(e), "error"));
               setInstalled(null);
               await detectAgent(id);

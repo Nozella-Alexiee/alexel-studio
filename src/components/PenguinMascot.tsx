@@ -32,7 +32,7 @@ const PALETTES: Record<PenguinVariant, Palette> = {
   kawanan: { body: "#2b3a55", belly: "#ffffff", face: "#ffffff", beak: "#ff8a3d", beakLine: "#c85d17", eye: "#1c2433", cheek: "#ff9fb2", extra: "#ff8a3d", extra2: "#ffd166", accent: "#ff8a3d", shadow: "rgba(43,58,85,.18)" },
 };
 
-export const MOOD_LABEL: Record<PenguinMood, string> = { idle: "santai", sibuk: "lagi kerja", error: "nemu error", sukses: "senang!", jempol: "kasih jempol", hati: "dielus", semangat: "semangat!" };
+export const MOOD_LABEL: Record<PenguinMood, string> = { idle: tl("santai"), sibuk: tl("lagi kerja"), error: tl("nemu error"), sukses: tl("senang!"), jempol: tl("kasih jempol"), hati: tl("dielus"), semangat: tl("semangat!") };
 
 export const PenguinMascot = memo(function PenguinMascot({
   variant,
@@ -173,14 +173,14 @@ export function usePenguinMood(): PenguinMood {
 }
 
 const TIPS = [
-  `Tekan ${prettyKeys("Mod+P")} untuk lompat ke berkas mana saja.`,
-  `${prettyKeys("Mod+Shift+P")} membuka semua perintah. Ketik ? untuk tanya Claude.`,
-  "Klik kanan berkas untuk rename, duplikat, atau buka terminal di situ.",
-  "Setiap simpan tercatat. Buka panel Riwayat untuk kembali ke versi lama.",
-  `${prettyKeys("Mod+R")} menjalankan berkas aktif. Smart Run membaca package.json dan Cargo.toml.`,
-  `Seret folder dari ${fileManagerName()} ke jendela untuk membukanya.`,
-  `${prettyKeys("Ctrl+Mod+T")} mengganti desain. Ada enam, tiga di antaranya pinguin.`,
-  "Error di panel Masalah? Klik Jelaskan dan Claude yang bantu.",
+  tl("Tekan {keys} untuk lompat ke berkas mana saja.", { keys: prettyKeys("Mod+P") }),
+  tl("{keys} membuka semua perintah. Ketik ? untuk tanya agen AI.", { keys: prettyKeys("Mod+Shift+P") }),
+  tl("Klik kanan berkas untuk rename, duplikat, atau buka terminal di situ."),
+  tl("Setiap simpan tercatat. Buka panel Riwayat untuk kembali ke versi lama."),
+  tl("{keys} menjalankan berkas aktif. Smart Run membaca package.json dan Cargo.toml.", { keys: prettyKeys("Mod+R") }),
+  tl("Seret folder dari {app} ke jendela untuk membukanya.", { app: fileManagerName() }),
+  tl("Ada enam desain, tiga di antaranya pinguin. Ganti lewat palette perintah: Ganti ke desain berikutnya."),
+  tl("Error di panel Masalah? Klik Jelaskan dan agen AI yang bantu."),
 ];
 
 export function nextTip(): string {
@@ -196,19 +196,19 @@ export function useTip(): string {
 export function moodLine(mood: PenguinMood): string {
   switch (mood) {
     case "sibuk":
-      return "Nozi lagi nungguin proses yang jalan. Kamu tetap bisa ngedit.";
+      return tl("Nozi lagi nungguin proses yang jalan. Kamu tetap bisa ngedit.");
     case "error":
-      return "Ada error di berkas ini. Buka panel Masalah dan klik Jelaskan biar Claude bantu.";
+      return tl("Ada error di berkas ini. Buka panel Masalah dan klik Jelaskan biar agen AI bantu.");
     case "sukses":
-      return "Berhasil! Semua beres.";
+      return tl("Berhasil! Semua beres.");
     case "jempol":
-      return "Tersimpan! Versi ini masuk time-travel.";
+      return tl("Tersimpan! Versi ini masuk time-travel.");
     case "hati":
-      return "Hehe, makasih dielus!";
+      return tl("Hehe, makasih dielus!");
     case "semangat":
-      return "Wuih, ngebut! Nozi ikut semangat.";
+      return tl("Wuih, ngebut! Nozi ikut semangat.");
     default:
-      return `Semua tenang. Buka berkas dengan ${prettyKeys("Mod+P")} atau cari perintah dengan ${prettyKeys("Mod+Shift+P")}.`;
+      return tl("Semua tenang. Buka berkas dengan {a} atau cari perintah dengan {b}.", { a: prettyKeys("Mod+P"), b: prettyKeys("Mod+Shift+P") });
   }
 }
 
@@ -356,7 +356,7 @@ export function NoziProcesses() {
       ))}
       <li key="claude">
         <Kepi size={20} />
-        <span>{claudeBusy ? "Claude · bekerja" : "Claude · siap"}</span>
+        <span>{claudeBusy ? tl("Agen AI · bekerja") : tl("Agen AI · siap")}</span>
       </li>
     </ul>
   );

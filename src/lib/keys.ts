@@ -1,6 +1,7 @@
 // Notasi shortcut lintas OS. Perintah ditulis "Mod+Shift+P"; Mod = ⌘ di macOS, Ctrl di Windows/Linux.
 
 import { isMac, isWindows } from "./ipc";
+import { tl } from "../i18n";
 
 /** Notasi COMMANDS → notasi platform: di Windows/Linux "Mod" jadi Ctrl, "Ctrl+Mod" jadi Ctrl+Alt. */
 export function normalizeKeys(keys: string, mac = isMac): string {
@@ -32,7 +33,7 @@ export function prettyKeys(keys?: string, mac = isMac): string {
 export const modKey = (e: { metaKey: boolean; ctrlKey: boolean }) => (isMac ? e.metaKey : e.ctrlKey);
 
 /** Nama pengelola berkas bawaan OS. */
-export const fileManagerName = () => (isMac ? "Finder" : isWindows ? "File Explorer" : "pengelola berkas");
+export const fileManagerName = () => (isMac ? "Finder" : isWindows ? "File Explorer" : tl("pengelola berkas"));
 
 /** Nama shell bawaan terminal di OS ini (lihat electron/pty.ts). */
 export const shellName = () => (isMac ? "zsh" : isWindows ? "PowerShell" : "bash");

@@ -146,16 +146,16 @@ export const COMMANDS: Command[] = [
   { id: "stopRun", label: tl("Hentikan semua yang berjalan"), group: "Run", run: () => void import("../terminal/terminals").then(async (T) => { for (const t of getState().terminals) if (t.kind === "run" && t.status === "running") await T.stopTerminal(t.key); }), when: () => getState().terminals.some((t) => t.kind === "run" && t.status === "running") },
 
   { id: "claude", label: tl("Panel Agen AI"), group: tl("Agen AI"), keys: "Mod+Alt+B", run: () => A.toggleRight("claude") },
-  { id: "askClaude", label: tl("Agen AI: buka & fokus"), group: tl("Agen AI"), keys: "Mod+Escape", run: focusClaude },
+  { id: "askClaude", label: tl("Agen AI: buka & fokus"), group: tl("Agen AI"), keys: isMac ? "Mod+Escape" : "Ctrl+Alt+I", run: focusClaude }, // Ctrl+Esc membuka menu Start di Windows
   { id: "askClaude2", label: tl("Tanya agen AI"), group: tl("Agen AI"), keys: "Mod+L", run: focusClaude, hidden: true },
-  { id: "claudeHistory", label: tl("Agen AI: riwayat percakapan"), group: tl("Agen AI"), run: () => { focusClaude(); requestAnimationFrame(() => (document.querySelector('.claude-head [aria-label="Riwayat percakapan"]') as HTMLButtonElement | null)?.click()); } },
+  { id: "claudeHistory", label: tl("Agen AI: riwayat percakapan"), group: tl("Agen AI"), run: () => { focusClaude(); setState({ chatHistoryOpen: true }); } },
   { id: "claudeMode", label: tl("Agen AI: ganti mode izin"), group: tl("Agen AI"), run: () => void claude().then((m) => m.cycleClaudeMode()) },
   { id: "explainSel", label: tl("Agen AI: jelaskan seleksi"), group: tl("Agen AI"), run: () => void claude().then((m) => m.explainSelection()), when: hasText },
   { id: "claudeTerm", label: tl("Agen AI di terminal"), group: tl("Agen AI"), run: openClaudeInteractive },
   { id: "newChat", label: tl("Agen AI: percakapan baru"), group: tl("Agen AI"), run: () => void claude().then((m) => m.newConversation()) },
 
   { id: "settings", label: tl("Pengaturan"), group: tl("Umum"), keys: "Mod+,", run: () => A.openSettings() },
-  { id: "cycleDesign", label: tl("Ganti ke desain berikutnya"), group: tl("Desain"), keys: "Ctrl+Mod+T", run: A.cycleDesign },
+  { id: "cycleDesign", label: tl("Ganti ke desain berikutnya"), group: tl("Desain"), keys: isMac ? "Ctrl+Mod+T" : undefined, run: A.cycleDesign }, // Ctrl+Alt+T membuka terminal di GNOME
   ...DESIGNS.map((d) => ({ id: `design:${d.id}`, label: `Desain: ${d.name}`, group: tl("Desain"), run: () => A.setDesign(d.id) })),
   { id: "resetLayout", label: tl("Kembalikan tata letak desain ini"), group: tl("Desain"), run: A.resetLayout },
   { id: "power", label: tl("Mode hemat daya: ganti (otomatis / nyala / mati)"), group: tl("Umum"), run: () => { const m = getState().settings.powerMode; A.updateSettings({ powerMode: m === "auto" ? "on" : m === "on" ? "off" : "auto" }); } },
@@ -228,11 +228,13 @@ export function recordCombo(e: KeyboardEvent): string | null {
 }
 
 /** Perintah yang tetap boleh dipakai saat fokus di terminal; sisanya diteruskan ke shell. */
-const TERMINAL_SAFE = new Set(["debugStart", "debugStop", "debugStepOver", "debugStepInto", "debugStepOut", "debugPause", "askClaude", "askClaude2", "quickOpen", "palette2", "sidebar", "panel", "terminal", "newTerminal", "settings", "cycleDesign", "explorer", "search", "git", "extensions"]);
+const TERMINAL_SAFE = new Set(["palette", "debugStart", "debugStop", "debugStepOver", "debugStepInto", "debugStepOut", "debugPause", "askClaude", "askClaude2", "quickOpen", "palette2", "sidebar", "panel", "terminal", "newTerminal", "settings", "cycleDesign", "explorer", "search", "git", "extensions"]);
 
 /** Global key handler (fase capture, supaya didahulukan dari CodeMirror). */
 export function handleGlobalKey(e: KeyboardEvent) {
   if (e.isComposing) return;
+  // Windows/Linux: AltGr dilaporkan sebagai Ctrl+Alt; itu karakter ([ { ś …), bukan shortcut.
+  if (!isMac && e.getModifierState?.("AltGraph")) return;
   // Sedang merekam shortcut baru di Pengaturan.
   if (document.querySelector(".kbd.is-recording")) return;
   if (!(e.metaKey || e.ctrlKey || e.altKey || /^F\d{1,2}$/.test(e.key))) return;

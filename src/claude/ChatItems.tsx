@@ -9,9 +9,10 @@ import * as docs from "../editor/documents";
 import { IconButton } from "../components/ui";
 import { diffRows, unifiedRows } from "../lib/diff";
 import { openExternal } from "../lib/ipc";
-import { basename, relative } from "../lib/paths";
+import { basename, relative, uiPath } from "../lib/paths";
 import { getState, type ChatMessage } from "../state/store";
 import { answerPermission, applyCodeToActive, proposedEdit, toolTarget } from "./claude";
+import { agentInfo } from "../agents/registry";
 import { tl } from "../i18n";
 
 function CodeBlock({ lang, code }: { lang: string; code: string }) {
@@ -88,7 +89,7 @@ export function Markdown({ text }: { text: string }) {
 function DiffView({ before, after, unified }: { before?: string; after?: string; unified?: string }) {
   const d = useMemo(() => (unified !== undefined ? unifiedRows(unified) : diffRows(before ?? "", after ?? "")), [before, after, unified]);
   return (
-    <div className="chat-diff" role="group" aria-label={`Perubahan: ${d.added} baris ditambah, ${d.removed} dihapus`}>
+    <div className="chat-diff" role="group" aria-label={tl("Perubahan: {added} baris ditambah, {removed} dihapus", { added: d.added, removed: d.removed })}>
       {d.rows.map((r, i) => (
         <div key={i} className={`chat-diff-row k-${r.k === "+" ? "add" : r.k === "-" ? "del" : r.k === "…" ? "gap" : "ctx"}`}>
           <span className="chat-diff-sign" aria-hidden>
@@ -97,7 +98,7 @@ function DiffView({ before, after, unified }: { before?: string; after?: string;
           <span className="chat-diff-text">{r.t}</span>
         </div>
       ))}
-      {d.more > 0 && <div className="chat-diff-more">+{d.more} baris lagi</div>}
+      {d.more > 0 && <div className="chat-diff-more">{tl("+{n} baris lagi", { n: d.more })}</div>}
     </div>
   );
 }
@@ -117,7 +118,7 @@ function useProposed(toolName: string, input: Record<string, unknown>, active: b
 
 function openDiff(p: { path: string; before: string; after: string }, title: string, onAccept?: () => void) {
   void import("../panels/compare").then((m) =>
-    m.openCompare({ title, filename: basename(p.path), leftLabel: "Sekarang", rightLabel: "Usulan Claude", left: p.before, right: p.after, acceptLabel: onAccept ? tl("Izinkan") : undefined, onAccept })
+    m.openCompare({ title, filename: basename(p.path), leftLabel: tl("Sekarang"), rightLabel: tl("Usulan agen"), left: p.before, right: p.after, acceptLabel: onAccept ? tl("Izinkan") : undefined, onAccept })
   );
 }
 
@@ -134,9 +135,9 @@ function ToolCard({ m }: { m: ChatMessage }) {
   const [open, setOpen] = useState(false);
   const proposed = useProposed(t.name, t.input, open && isEdit(t.name));
   const status =
-    t.status === "running" ? <Loader2 size={12} className="spin" aria-label="berjalan" /> : t.status === "ok" ? <Check size={12} aria-label="selesai" /> : t.status === "denied" ? <X size={12} aria-label={tl("ditolak")} /> : <AlertCircle size={12} aria-label="gagal" />;
+    t.status === "running" ? <Loader2 size={12} className="spin" aria-label={tl("berjalan")} /> : t.status === "ok" ? <Check size={12} aria-label={tl("selesai")} /> : t.status === "denied" ? <X size={12} aria-label={tl("ditolak")} /> : <AlertCircle size={12} aria-label={tl("gagal")} />;
   const icon = t.name === "Bash" ? <TerminalSquare size={12} aria-hidden /> : isEdit(t.name) ? <FileDiff size={12} aria-hidden /> : <Wrench size={12} aria-hidden />;
-  const file = typeof t.input.file_path === "string" ? (t.input.file_path as string) : null;
+  const file = typeof t.input.file_path === "string" ? uiPath(t.input.file_path as string) : null;
   return (
     <div className={`chat-tool is-${t.status}`}>
       <button className="chat-tool-head" onClick={() => setOpen((v) => !v)} aria-expanded={open}>
@@ -156,7 +157,7 @@ function ToolCard({ m }: { m: ChatMessage }) {
           {t.result && !isEdit(t.name) && <pre className="chat-tool-result">{t.result.slice(0, 3000)}</pre>}
           {file && (
             <button className="btn btn-sm" onClick={() => void A.openFile(file)}>
-              Buka {basename(file)}
+              {tl("Buka {name}", { name: basename(file) })}
             </button>
           )}
         </div>
@@ -202,14 +203,14 @@ function AskQuestions({ m }: { m: ChatMessage }) {
               </button>
             );
           })}
-          <input className="input" placeholder={tl("Jawaban lain…")} value={other[q.question] ?? ""} onChange={(e) => setOther((s) => ({ ...s, [q.question]: e.target.value }))} aria-label={`Jawaban lain untuk: ${q.question}`} />
+          <input className="input" placeholder={tl("Jawaban lain…")} value={other[q.question] ?? ""} onChange={(e) => setOther((s) => ({ ...s, [q.question]: e.target.value }))} aria-label={tl("Jawaban lain untuk: {q}", { q: q.question })} />
         </fieldset>
       ))}
       <div className="perm-actions">
         <button className="btn btn-claude btn-sm" disabled={!done} onClick={submit}>
           {tl("Kirim jawaban")}
         </button>
-        <button className="btn btn-sm" onClick={() => void answerPermission(m.id, "deny", { reason: "Pengguna memilih tidak menjawab." })}>
+        <button className="btn btn-sm" onClick={() => void answerPermission(m.id, "deny", { reason: "The user chose not to answer." })}>
           {tl("Lewati")}
         </button>
       </div>
@@ -227,13 +228,13 @@ function PermissionCard({ m }: { m: ChatMessage }) {
   const target = toolTarget(p.toolName, p.input);
   const canAlways = Array.isArray(p.suggestions) && p.suggestions.length > 0;
   const done =
-    p.state === "allowed" ? tl("Diizinkan") : p.state === "always" ? tl("Diizinkan selama sesi ini") : p.state === "denied" ? `Ditolak${p.reason ? `: ${p.reason}` : ""}` : p.state === "expired" ? tl("Kedaluwarsa") : null;
+    p.state === "allowed" ? tl("Diizinkan") : p.state === "always" ? tl("Diizinkan selama sesi ini") : p.state === "denied" ? `${tl("Ditolak")}${p.reason ? `: ${p.reason}` : ""}` : p.state === "expired" ? tl("Kedaluwarsa") : null;
 
   if (p.toolName === "ExitPlanMode")
     return (
       <div className={`chat-perm is-plan ${pending ? "is-pending" : ""}`}>
         <div className="chat-perm-head">
-          <ListChecks size={14} aria-hidden /> Rencana Claude
+          <ListChecks size={14} aria-hidden /> {tl("Rencana {name}", { name: agentInfo(getState().settings.agent).short })}
         </div>
         <div className="chat-perm-plan">
           <Markdown text={String(p.input.plan ?? "")} />
@@ -253,7 +254,7 @@ function PermissionCard({ m }: { m: ChatMessage }) {
         ) : (
           <div className="chat-perm-done">{done}</div>
         )}
-        {pending && denying && <DenyBox reason={reason} setReason={setReason} onSend={() => void answerPermission(m.id, "deny", { reason: reason || "Belum setuju, lanjutkan merencanakan." })} />}
+        {pending && denying && <DenyBox reason={reason} setReason={setReason} onSend={() => void answerPermission(m.id, "deny", { reason: reason || "Not approved yet. Keep planning." })} />}
       </div>
     );
 
@@ -261,24 +262,24 @@ function PermissionCard({ m }: { m: ChatMessage }) {
     return (
       <div className={`chat-perm is-question ${pending ? "is-pending" : ""}`}>
         <div className="chat-perm-head">
-          <Info size={14} aria-hidden /> Claude bertanya
+          <Info size={14} aria-hidden /> {tl("{name} bertanya", { name: agentInfo(getState().settings.agent).short })}
         </div>
         {pending ? <AskQuestions m={m} /> : <div className="chat-perm-done">{p.state === "allowed" ? tl("Terjawab") : done}</div>}
       </div>
     );
 
   return (
-    <div className={`chat-perm ${pending ? "is-pending" : `is-${p.state}`}`} role={pending ? "alertdialog" : undefined} aria-label={pending ? `Izin: ${m.text}` : undefined}>
+    <div className={`chat-perm ${pending ? "is-pending" : `is-${p.state}`}`} role={pending ? "alertdialog" : undefined} aria-label={pending ? `${tl("Izin")}: ${m.text}` : undefined}>
       <div className="chat-perm-head">
         <ShieldAlert size={14} aria-hidden />
         <span>
           {p.toolName === "Bash"
             ? tl("Jalankan perintah?")
             : p.toolName === "ApplyPatch"
-              ? `Ubah ${Array.isArray(p.input.changes) && p.input.changes.length > 1 ? `${p.input.changes.length} berkas` : target ? relative(root, String(p.input.file_path ?? target)) : tl("berkas")}?`
+              ? tl("Ubah {target}?", { target: Array.isArray(p.input.changes) && p.input.changes.length > 1 ? tl("{n} berkas", { n: p.input.changes.length }) : target ? relative(root, uiPath(String(p.input.file_path ?? target))) : tl("berkas") })
               : isEdit(p.toolName)
-                ? `${p.toolName === "Write" ? "Tulis" : "Edit"} ${target ? relative(root, String(p.input.file_path ?? target)) : tl("berkas")}?`
-                : `Izinkan ${m.text}?`}
+                ? tl(p.toolName === "Write" ? "Tulis {target}?" : "Edit {target}?", { target: target ? relative(root, uiPath(String(p.input.file_path ?? target))) : tl("berkas") })
+                : tl("Izinkan {what}?", { what: m.text })}
         </span>
       </div>
       {p.toolName === "Bash" && (
@@ -292,7 +293,7 @@ function PermissionCard({ m }: { m: ChatMessage }) {
       {isEdit(p.toolName) && !patchOf(p.input) && !pairOf(p.input) && proposed && (
         <>
           <DiffView before={proposed.before} after={proposed.after} />
-          <button className="link-btn" onClick={() => openDiff(proposed, `Usulan Claude untuk ${basename(proposed.path)}`, pending ? () => void answerPermission(m.id, "allow") : undefined)}>
+          <button className="link-btn" onClick={() => openDiff(proposed, tl("Usulan agen untuk {file}", { file: basename(proposed.path) }), pending ? () => void answerPermission(m.id, "allow") : undefined)}>
             {tl("Buka diff lengkap")}
           </button>
         </>
@@ -372,7 +373,7 @@ function TodoCard({ m }: { m: ChatMessage }) {
       <ul>
         {todos.map((t, i) => (
           <li key={i} className={`is-${t.status}`}>
-            {t.status === "completed" ? <CheckCircle2 size={12} aria-label="selesai" /> : t.status === "in_progress" ? <CircleDot size={12} aria-label="dikerjakan" /> : <Circle size={12} aria-label="belum" />}
+            {t.status === "completed" ? <CheckCircle2 size={12} aria-label={tl("selesai")} /> : t.status === "in_progress" ? <CircleDot size={12} aria-label={tl("dikerjakan")} /> : <Circle size={12} aria-label={tl("belum")} />}
             <span>{t.content}</span>
           </li>
         ))}

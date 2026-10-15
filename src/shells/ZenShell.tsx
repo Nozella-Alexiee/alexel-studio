@@ -41,7 +41,7 @@ function OpenFiles() {
   const focused = useStore((s) => s.focusedGroup);
   const ids = [...new Set(groups.flatMap((g) => g.tabs))];
   const active = groups[focused]?.active;
-  if (!ids.length) return <div className="hint pad-x">Belum ada. Tekan {prettyKeys("Mod+P")}.</div>;
+  if (!ids.length) return <div className="hint pad-x">{tl("Belum ada. Tekan {keys}.", { keys: prettyKeys("Mod+P") })}</div>;
   return (
     <ul className="zen-open">
       {ids.map((id) => {
@@ -52,7 +52,7 @@ function OpenFiles() {
             <div className={`zen-item ${id === active ? "is-on" : ""} ${t.dirty ? "is-dirty" : ""}`} role="button" tabIndex={0} onClick={() => A.activateTab(id, groups.findIndex((g) => g.tabs.includes(id)))} onKeyDown={(e) => e.key === "Enter" && A.activateTab(id)}>
               <FileIcon filename={t.name} size={14} />
               <span className="zen-name">{t.name}</span>
-              <button className="zen-x" aria-label={`Tutup ${t.name}`} onClick={(e) => { e.stopPropagation(); void A.closeTab(id, groups.findIndex((g) => g.tabs.includes(id))); }}>
+              <button className="zen-x" aria-label={tl("Tutup {name}", { name: t.name })} onClick={(e) => { e.stopPropagation(); void A.closeTab(id, groups.findIndex((g) => g.tabs.includes(id))); }}>
                 {t.dirty ? <span className="tab-dot" /> : <X size={12} />}
               </button>
             </div>
@@ -79,7 +79,7 @@ export default function ZenShell() {
         <NoziBrand />
         <div className="zen-crumb">
           <button className="zen-root" onClick={openProjectMenu} title={tl("Ganti project")} aria-haspopup="menu">
-            {root ? root.split("/").pop() : "Buka project"}
+            {root ? root.split("/").pop() : tl("Buka project")}
           </button>
           {rel && (
             <>
@@ -90,13 +90,13 @@ export default function ZenShell() {
           )}
         </div>
         <div className="titlebar-actions">
-          <button className="tbtn tone-run" onClick={() => void runActiveFile()} title={`Jalankan (${prettyKeys("Mod+R")})`}>
+          <button className="tbtn tone-run" onClick={() => void runActiveFile()} title={`${tl("Jalankan")} (${prettyKeys("Mod+R")})`}>
             <Play size={14} /> Jalankan
           </button>
           <button className={`tbtn ${l.panel ? "is-on" : ""}`} onClick={() => A.togglePanel("terminal")} title={`Terminal (${prettyKeys("Ctrl+`")})`}>
             <TerminalSquare size={14} /> Terminal
           </button>
-          <button className={`tbtn ${l.right ? "is-on" : ""}`} onClick={() => A.toggleRight("claude")} title={`Agen AI (${prettyKeys("Mod+Alt+B")})`}>
+          <button className={`tbtn ${l.right ? "is-on" : ""}`} onClick={() => A.toggleRight("claude")} title={`${tl("Agen AI")} (${prettyKeys("Mod+Alt+B")})`}>
             <Kepi size={16} /> Agen AI
           </button>
           <IconButton label={tl("Mode fokus")} active={!l.sidebar && !l.right} onClick={() => setLayout(!l.sidebar && !l.right ? { sidebar: true } : { sidebar: false, right: false, panel: false })}>
@@ -173,7 +173,7 @@ export default function ZenShell() {
           )}
           <button className="omnibar" onClick={() => openPalette("")}>
             <TerminalSquare size={15} aria-hidden />
-            <span>Tanya agen AI (?), jalankan perintah (&gt;), atau buka berkas…</span>
+            <span>{tl("Tanya agen AI (?), jalankan perintah (>), atau buka berkas…")}</span>
             <Kbd keys="Mod+K" />
           </button>
         </main>

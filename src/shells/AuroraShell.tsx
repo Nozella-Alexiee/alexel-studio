@@ -27,7 +27,7 @@ export default function AuroraShell() {
         <NoziBrand />
         <button className="palette-pill" onClick={() => openPalette("")}>
           <Search size={14} aria-hidden />
-          <span>{name ? `Cari di ${name}…` : "Cari berkas, perintah…"}</span>
+          <span>{name ? tl("Cari di {name}…", { name }) : tl("Cari berkas, perintah…")}</span>
           <Kbd keys="Mod+P" />
         </button>
         <div className="titlebar-actions">
@@ -56,7 +56,7 @@ export default function AuroraShell() {
                 </div>
                 <div className="ws-text">
                   <button className="ws-name" onClick={openProjectMenu} title={tl("Ganti project")} aria-haspopup="menu">
-                    {name ?? "Belum ada folder"}
+                    {name ?? tl("Belum ada folder")}
                   </button>
                   {git?.is_repo && (
                     <div className="ws-sub">
