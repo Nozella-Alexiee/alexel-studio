@@ -331,7 +331,20 @@ function DenyBox({ reason, setReason, onSend }: { reason: string; setReason: (v:
         onSend();
       }}
     >
-      <input className="input" autoFocus placeholder="Beri tahu Claude apa yang sebaiknya dilakukan (opsional)" value={reason} onChange={(e) => setReason(e.target.value)} aria-label="Alasan menolak" />
+      <input
+        className="input"
+        autoFocus
+        placeholder="Beri tahu agen apa yang sebaiknya dilakukan (opsional)"
+        value={reason}
+        onChange={(e) => setReason(e.target.value)}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" && !e.nativeEvent.isComposing) {
+            e.preventDefault();
+            onSend();
+          }
+        }}
+        aria-label="Alasan menolak"
+      />
       <button className="btn btn-sm" type="submit">
         Kirim
       </button>
