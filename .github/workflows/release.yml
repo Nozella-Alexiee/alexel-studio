@@ -47,6 +47,8 @@ jobs:
       - run: npm test
       - run: npm run build
       - name: Build & unggah ke draft rilis
+        # bash juga di Windows: PowerShell memecah argumen -c.publish.* jadi nama berkas.
+        shell: bash
         run: npx electron-builder ${{ matrix.target }} --publish always -c.publish.provider=github -c.publish.releaseType=draft
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
