@@ -276,6 +276,8 @@ interface State {
   claudeCommands: { name: string; description: string }[];
   /** Status tiap agen AI (terpasang, login). */
   agentStatus: Record<string, AgentStatus>;
+  /** Mode yang ditawarkan agen ACP sendiri (bila ada). */
+  agentModes: { id: string; label: string; hint: string }[];
 
   palette: PaletteState;
   toasts: Toast[];
@@ -325,6 +327,7 @@ export const useStore = create<State>(() => ({
   claudeActiveModel: null,
   claudeCommands: [],
   agentStatus: {},
+  agentModes: [],
 
   palette: { open: false, initial: "" },
   toasts: [],

@@ -6,13 +6,14 @@ import { useEffect, useState } from "react";
 import { AGENTS, agentInfo, type AgentId } from "../agents/registry";
 import { detectAgent, selectAgent } from "../claude/claude";
 import { CrabMascot } from "../components/CrabMascot";
-import { api, errMsg, isWindows, on } from "../lib/ipc";
+import { api, errMsg, isWindows, on, openExternal } from "../lib/ipc";
 import { confirmDialog, toast, useStore } from "../state/store";
 
 const LOGO: Record<AgentId, { mark: string; bg: string }> = {
   claude: { mark: "✳", bg: "#d97757" },
   codex: { mark: "◎", bg: "#10a37f" },
   gemini: { mark: "✦", bg: "#4285f4" },
+  antigravity: { mark: "▲", bg: "#1a73e8" },
   acp: { mark: "⇄", bg: "#6e7681" },
 };
 
@@ -63,11 +64,11 @@ function AgentCard({ id }: { id: AgentId }) {
   }, []);
   useEffect(() => {
     if (!status) void detectAgent(id);
-    if (a.openVsx) void api.agentInstalled(id).then(setInstalled).catch(() => setInstalled(null));
+    if (a.openVsx || id === "gemini") void api.agentInstalled(id).then(setInstalled).catch(() => setInstalled(null));
   }, [id, status, a.openVsx]);
   const prog = progress[id];
   const ready = !!status?.installed;
-  const soon = id === "gemini" || id === "acp" ? !ready : false;
+  const installable = !!a.openVsx || id === "gemini";
   return (
     <div className={`agent-card ${current ? "is-current" : ""}`}>
       <span className="agent-logo" style={{ background: LOGO[id].bg }} aria-hidden>
@@ -90,7 +91,7 @@ function AgentCard({ id }: { id: AgentId }) {
               {status?.loggedIn === false ? " · belum masuk" : ""}
             </span>
           ) : (
-            <span className="hint">{soon ? "Segera hadir" : "Belum dipasang"}</span>
+            <span className="hint">{id === "acp" ? "Atur perintahnya di Pengaturan" : id === "antigravity" ? "Pasang aplikasi Antigravity dulu" : "Belum dipasang"}</span>
           )}
         </div>
         {prog?.pct != null && (
@@ -104,11 +105,19 @@ function AgentCard({ id }: { id: AgentId }) {
           <button className={`btn btn-sm ${current ? "" : "btn-primary"}`} disabled={current} onClick={() => void selectAgent(id)}>
             {current ? "Dipakai" : "Pakai"}
           </button>
-        ) : a.openVsx ? (
+        ) : id === "antigravity" ? (
+          <button className="btn btn-sm" onClick={() => void openExternal("https://antigravity.google/download")}>
+            <Download size={12} /> Unduh
+          </button>
+        ) : installable ? (
           <button className="btn btn-sm btn-primary" disabled={!!prog} onClick={() => void installAgent(id)}>
             <Download size={12} /> Pasang
           </button>
-        ) : null}
+        ) : (
+          <button className="btn btn-sm" onClick={() => void import("../app/actions").then((m) => m.openSettings(undefined, "agents"))}>
+            Atur
+          </button>
+        )}
         {installed && !prog && (
           <button
             className="icon-btn"

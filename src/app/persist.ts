@@ -68,7 +68,7 @@ function sanitizeSettings(raw: Partial<Settings> | null): Settings {
   s.claudeConsent = s.claudeConsent === true;
   if (!["off", "delay", "focus"].includes(s.autoSave)) s.autoSave = "off";
   s.showResources = s.showResources === true;
-  if (!["claude", "codex", "gemini", "acp"].includes(s.agent)) s.agent = "claude";
+  if (!["claude", "codex", "gemini", "antigravity", "acp"].includes(s.agent)) s.agent = "claude";
   if (!s.agentPrefs || typeof s.agentPrefs !== "object") s.agentPrefs = {};
   if (typeof s.acpCommand !== "string") s.acpCommand = "";
   const kb: Record<string, string> = {};

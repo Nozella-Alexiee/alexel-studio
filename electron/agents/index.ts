@@ -3,11 +3,13 @@
 // panel di renderer cukup memahami satu format (teks, alat, kartu izin, hasil).
 
 import * as claude from "../claude";
+import { agyClose, agyControl, agySend, agyStatus, killAllAgy } from "./antigravity";
+import { acpClose, acpControl, acpLogin, acpSend, acpStatus, killAllAcp } from "./acp";
 import { codexClose, codexControl, codexSend, codexSessionLoad, codexSessions, codexStatus, killAllCodex } from "./codex";
-import { installAgentPackage, installedAgent, removeAgentPackage } from "./install";
+import { installAgentPackage, installedAgent, installNpmAgent, NPM_PACKAGES, removeAgentPackage, removeNpmAgent } from "./install";
 import type { Ctx } from "../util";
 
-export type AgentId = "claude" | "codex" | "gemini" | "acp";
+export type AgentId = "claude" | "codex" | "gemini" | "antigravity" | "acp";
 
 export interface AgentStatus {
   installed: boolean;
@@ -22,7 +24,7 @@ export interface AgentStatus {
 }
 
 export interface AgentDriver {
-  status(ctx: Ctx): Promise<AgentStatus>;
+  status(ctx: Ctx, cfg?: Record<string, unknown>): Promise<AgentStatus>;
   send(ctx: Ctx, key: string, cfg: Record<string, unknown>, content: unknown): void | Promise<void>;
   control(ctx: Ctx, key: string, msg: unknown): boolean | Promise<boolean>;
   close(key: string): void;
@@ -65,6 +67,24 @@ drivers.codex = {
   killAll: () => killAllCodex(),
 };
 
+for (const id of ["gemini", "acp"] as const) {
+  drivers[id] = {
+    status: (ctx, cfg) => acpStatus(ctx, id, cfg?.command as string | undefined),
+    send: (ctx, key, cfg, content) => acpSend(ctx, id, key, cfg, content),
+    control: (_ctx, key, msg) => acpControl(key, msg),
+    close: (key) => acpClose(key),
+    killAll: () => killAllAcp(),
+  };
+}
+
+drivers.antigravity = {
+  status: () => agyStatus(),
+  send: (ctx, key, cfg, content) => agySend(ctx, key, cfg, content),
+  control: (_ctx, key, msg) => agyControl(key, msg),
+  close: (key) => agyClose(key),
+  killAll: () => killAllAgy(),
+};
+
 export function registerDriver(id: AgentId, d: AgentDriver) {
   drivers[id] = d;
 }
@@ -75,8 +95,8 @@ function driver(id: unknown): AgentDriver {
   return d;
 }
 
-export const agentStatus = (ctx: Ctx, id: unknown) =>
-  drivers[id as AgentId] ? driver(id).status(ctx) : Promise.resolve<AgentStatus>({ installed: false, error: "Agen ini belum tersedia." });
+export const agentStatus = (ctx: Ctx, id: unknown, cfg?: Record<string, unknown>) =>
+  drivers[id as AgentId] ? driver(id).status(ctx, cfg) : Promise.resolve<AgentStatus>({ installed: false, error: "Agen ini belum tersedia." });
 export const agentSend = (ctx: Ctx, id: unknown, key: string, cfg: Record<string, unknown>, content: unknown) => driver(id).send(ctx, key, cfg ?? {}, content);
 export const agentControl = (ctx: Ctx, id: unknown, key: string, msg: unknown) => (drivers[id as AgentId] ? driver(id).control(ctx, key, msg) : false);
 export const agentClose = (id: unknown, key: string) => drivers[id as AgentId]?.close(key);
@@ -90,6 +110,11 @@ export function killAllAgents() {
   for (const d of Object.values(drivers)) d?.killAll();
 }
 
-export const agentInstall = (ctx: Ctx, id: unknown) => installAgentPackage(ctx, String(id));
-export const agentUninstall = (ctx: Ctx, id: unknown) => removeAgentPackage(ctx, String(id));
+export const agentInstall = (ctx: Ctx, id: unknown) => (NPM_PACKAGES[String(id)] ? installNpmAgent(ctx, String(id)) : installAgentPackage(ctx, String(id)));
+export const agentUninstall = (ctx: Ctx, id: unknown) => (NPM_PACKAGES[String(id)] ? removeNpmAgent(ctx, String(id)) : removeAgentPackage(ctx, String(id)));
+/** Masuk ke agen ACP (Gemini) lewat metode autentikasinya sendiri. */
+export const agentLogin = (ctx: Ctx, id: unknown, cfg?: Record<string, unknown>) => {
+  if (id !== "gemini" && id !== "acp") throw new Error("Masuk untuk agen ini dilakukan lewat terminal.");
+  return acpLogin(ctx, id, cfg?.command as string | undefined);
+};
 export const agentInstalled = (ctx: Ctx, id: unknown) => installedAgent(ctx, String(id));

@@ -211,3 +211,101 @@ export function removeAgentPackage(ctx: Ctx, agent: string) {
   fs.rmSync(agentRoot(ctx, agent), { recursive: true, force: true });
 }
 
+
+// ---------------- Paket npm (Gemini CLI) ----------------
+
+export interface NpmAgent {
+  pkg: string;
+  /** Berkas yang dijalankan dengan Node bawaan Electron, relatif terhadap folder paket. */
+  entry: string;
+}
+
+export const NPM_PACKAGES: Record<string, NpmAgent> = {
+  gemini: { pkg: "@google/gemini-cli", entry: "bundle/gemini.js" },
+};
+
+/** Baca arsip tar (sudah di-gunzip) dan tulis entri yang lolos filter. Path aman saja. */
+export function extractTar(buf: Buffer, dest: string, keep: (name: string) => boolean): number {
+  let p = 0;
+  let n = 0;
+  let longName: string | null = null;
+  while (p + 512 <= buf.length) {
+    const h = buf.subarray(p, p + 512);
+    if (h.every((b) => b === 0)) break;
+    const str = (a: number, b: number) => h.subarray(a, b).toString("utf8").replace(/\0.*$/s, "");
+    const size = parseInt(str(124, 136).trim() || "0", 8);
+    const type = String.fromCharCode(h[156] || 48);
+    const prefix = str(345, 500);
+    let name = longName ?? (prefix ? `${prefix}/${str(0, 100)}` : str(0, 100));
+    longName = null;
+    const body = buf.subarray(p + 512, p + 512 + size);
+    p += 512 + Math.ceil(size / 512) * 512;
+    if (type === "L") {
+      longName = body.toString("utf8").replace(/\0.*$/s, "");
+      continue;
+    }
+    if (type === "x" || type === "g") {
+      const m = /\d+ path=([^\n]+)\n/.exec(body.toString("utf8"));
+      if (m) longName = m[1];
+      continue;
+    }
+    if (type !== "0" && type !== "\0") continue; // hanya berkas biasa (tanpa symlink/hardlink)
+    name = name.replace(/^\.\//, "");
+    if (!name || name.startsWith("/") || name.split("/").includes("..") || !keep(name)) continue;
+    const out = path.join(dest, name);
+    fs.mkdirSync(path.dirname(out), { recursive: true });
+    fs.writeFileSync(out, body);
+    n++;
+  }
+  return n;
+}
+
+export async function installNpmAgent(ctx: Ctx, agent: string): Promise<InstalledAgent> {
+  const def = NPM_PACKAGES[agent];
+  if (!def) throw new Error("Agen ini tidak dipasang dari npm.");
+  if (busy.has(agent)) throw new Error("Pemasangan sedang berjalan.");
+  busy.add(agent);
+  const progress = (phase: string, pct?: number) => ctx.emit("agent-install-progress", { agent, phase, pct: pct ?? null });
+  const root = agentRoot(ctx, agent);
+  try {
+    progress("Mencari paket…");
+    const metaRes = await fetch(`https://registry.npmjs.org/${def.pkg.replace("/", "%2F")}/latest`, { headers: { Accept: "application/json" }, signal: AbortSignal.timeout(20_000) });
+    if (!metaRes.ok) throw new Error(`Registry npm menjawab ${metaRes.status}.`);
+    const meta = (await metaRes.json()) as { version: string; dist: { tarball: string; integrity?: string } };
+    if (!/^https:\/\/registry\.npmjs\.org\//.test(meta.dist.tarball)) throw new Error("Alamat unduhan tidak dikenal.");
+    const integrity = /^sha512-(.+)$/.exec(meta.dist.integrity ?? "")?.[1];
+    if (!integrity) throw new Error("Checksum paket tidak tersedia; pemasangan dibatalkan.");
+    const res = await fetch(meta.dist.tarball, { signal: AbortSignal.timeout(10 * 60_000) });
+    if (!res.ok || !res.body) throw new Error(`Unduhan gagal (${res.status}).`);
+    const total = Number(res.headers.get("content-length")) || 0;
+    const chunks: Buffer[] = [];
+    let got = 0;
+    let last = -1;
+    for await (const c of res.body as unknown as AsyncIterable<Uint8Array>) {
+      chunks.push(Buffer.from(c));
+      got += c.length;
+      const pct = total ? Math.floor((got / total) * 100) : null;
+      if (pct !== null && pct !== last) progress("Mengunduh…", (last = pct));
+    }
+    const tgz = Buffer.concat(chunks);
+    if (createHash("sha512").update(tgz).digest("base64") !== integrity) throw new Error("Checksum paket tidak cocok; berkas dibuang.");
+    progress("Memasang…");
+    const dir = path.join(root, meta.version);
+    fs.rmSync(dir, { recursive: true, force: true });
+    const count = extractTar(zlib.gunzipSync(tgz), dir, (n) => n === "package/package.json" || n.startsWith("package/bundle/") || n === "package/LICENSE");
+    const entry = path.join(dir, "package", def.entry);
+    if (!count || !fs.existsSync(entry)) throw new Error("Berkas agen tidak ditemukan di paket.");
+    const info: InstalledAgent = { version: meta.version, target: "node", binary: entry, installedAt: Date.now() };
+    fs.writeFileSync(path.join(root, "current.json"), JSON.stringify(info, null, 2));
+    for (const d of fs.readdirSync(root)) if (d !== meta.version && d !== "current.json") fs.rmSync(path.join(root, d), { recursive: true, force: true });
+    progress("Selesai", 100);
+    return info;
+  } finally {
+    busy.delete(agent);
+  }
+}
+
+export function removeNpmAgent(ctx: Ctx, agent: string) {
+  if (!NPM_PACKAGES[agent]) throw new Error("Agen ini tidak dipasang dari npm.");
+  fs.rmSync(agentRoot(ctx, agent), { recursive: true, force: true });
+}

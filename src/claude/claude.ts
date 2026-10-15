@@ -138,7 +138,8 @@ function onControlResponse(key: string, r: any) {
     const res = r.response ?? {};
     const models = Array.isArray(res.models) ? res.models.filter((m: any) => typeof m?.value === "string" && typeof m?.displayName === "string") : [];
     const commands = Array.isArray(res.commands) ? res.commands.filter((x: any) => typeof x?.name === "string").map((x: any) => ({ name: x.name, description: String(x.description ?? "") })) : [];
-    setState({ claudeModels: models, claudeCommands: commands });
+    const modes = Array.isArray(res.modes) ? res.modes.filter((m: any) => typeof m?.id === "string").map((m: any) => ({ id: m.id, label: String(m.label ?? m.id), hint: String(m.hint ?? "") })) : [];
+    setState({ claudeModels: models, claudeCommands: commands, agentModes: modes });
     // Proses baru (sesi dilanjutkan) menghitung biaya dari nol lagi.
     const c = conv(key);
     c.costBase += c.lastCost;
@@ -324,9 +325,9 @@ export async function detectClaude() {
 
 /** Periksa status agen (terpasang, versi, login). Claude juga mengisi state.claude. */
 export async function detectAgent(agent: AgentId = agentNow()) {
-  if (agent === "claude") await detectClaude();
   try {
-    const st = agent === "claude" ? { ...(getState().claude ?? { installed: false }), source: "system" as const } : await api.agentStatus(agent);
+    const st = await api.agentStatus(agent, agent === "acp" ? { command: getState().settings.acpCommand } : undefined);
+    if (agent === "claude") setState({ claude: st });
     setState((s) => ({ agentStatus: { ...s.agentStatus, [agent]: st } }));
   } catch (e) {
     setState((s) => ({ agentStatus: { ...s.agentStatus, [agent]: { installed: false, error: errMsg(e) } } }));
@@ -339,7 +340,7 @@ export async function selectAgent(agent: AgentId) {
   closeCurrent();
   const { updateSettings } = await import("../app/actions");
   updateSettings({ agent });
-  setState({ chat: [], chatSession: null, chatRunning: null, chatKey: newChatKey(), chatUsage: null, claudeModels: [], claudeCommands: [], claudeActiveModel: null });
+  setState({ chat: [], chatSession: null, chatRunning: null, chatKey: newChatKey(), chatUsage: null, claudeModels: [], claudeCommands: [], claudeActiveModel: null, agentModes: [] });
   await detectAgent(agent);
 }
 
@@ -350,10 +351,21 @@ export function installCommand(): string {
 }
 
 /** Buka terminal yang menjalankan `claude auth login`, lalu periksa ulang setelah selesai. */
-const LOGIN_ARGS: Record<AgentId, string> = { claude: "auth login", codex: "login", gemini: "", acp: "" };
+const LOGIN_ARGS: Record<AgentId, string> = { claude: "auth login", codex: "login", gemini: "", antigravity: "", acp: "" };
 
 export async function loginClaude() {
   const agent = agentNow();
+  if (agent === "gemini" || agent === "acp") {
+    toast("Browser akan terbuka untuk masuk. Selesaikan di sana lalu kembali ke sini.", "info");
+    try {
+      const how = await api.agentLogin(agent, agent === "acp" ? { command: getState().settings.acpCommand } : undefined);
+      toast(`Berhasil masuk (${how}).`, "success");
+    } catch (e) {
+      toast(errMsg(e), "error");
+    }
+    await detectAgent(agent);
+    return;
+  }
   const info = getState().agentStatus[agent] ?? (agent === "claude" ? getState().claude : null);
   if (!info?.path) return toast(`${agentInfo(agent).name} belum terpasang.`);
   const { runInTerminal, shellExe } = await import("../app/run");

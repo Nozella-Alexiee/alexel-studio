@@ -125,6 +125,8 @@ function openDiff(p: { path: string; before: string; after: string }, title: str
 const isEdit = (n: string) => n === "Edit" || n === "MultiEdit" || n === "Write" || n === "ApplyPatch";
 /** Diff siap pakai (Codex ApplyPatch mengirim unified diff). */
 const patchOf = (input: Record<string, unknown>) => (typeof input.diff === "string" && input.diff ? input.diff : null);
+/** Agen ACP mengirim isi lama & baru. */
+const pairOf = (input: Record<string, unknown>) => (typeof input.after === "string" ? { before: String(input.before ?? ""), after: input.after } : null);
 
 function ToolCard({ m }: { m: ChatMessage }) {
   const t = m.tool!;
@@ -147,7 +149,8 @@ function ToolCard({ m }: { m: ChatMessage }) {
       {open && (
         <div className="chat-tool-body">
           {patchOf(t.input) && <DiffView unified={patchOf(t.input)!} />}
-          {isEdit(t.name) && !patchOf(t.input) && proposed && t.status !== "ok" && <DiffView before={proposed.before} after={proposed.after} />}
+          {pairOf(t.input) && <DiffView before={pairOf(t.input)!.before} after={pairOf(t.input)!.after} />}
+          {isEdit(t.name) && !patchOf(t.input) && !pairOf(t.input) && proposed && t.status !== "ok" && <DiffView before={proposed.before} after={proposed.after} />}
           {isEdit(t.name) && t.name !== "Write" && t.status === "ok" && typeof t.input.old_string === "string" && <DiffView before={String(t.input.old_string)} after={String(t.input.new_string ?? "")} />}
           {t.result && !isEdit(t.name) && <pre className="chat-tool-result">{t.result.slice(0, 3000)}</pre>}
           {file && (
@@ -284,7 +287,8 @@ function PermissionCard({ m }: { m: ChatMessage }) {
         </>
       )}
       {patchOf(p.input) && <DiffView unified={patchOf(p.input)!} />}
-      {isEdit(p.toolName) && !patchOf(p.input) && proposed && (
+      {pairOf(p.input) && <DiffView before={pairOf(p.input)!.before} after={pairOf(p.input)!.after} />}
+      {isEdit(p.toolName) && !patchOf(p.input) && !pairOf(p.input) && proposed && (
         <>
           <DiffView before={proposed.before} after={proposed.after} />
           <button className="link-btn" onClick={() => openDiff(proposed, `Usulan Claude untuk ${basename(proposed.path)}`, pending ? () => void answerPermission(m.id, "allow") : undefined)}>

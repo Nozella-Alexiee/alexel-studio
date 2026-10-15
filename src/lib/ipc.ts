@@ -154,7 +154,8 @@ export const api = {
   // Claude
   claudeDetect: () => call<ClaudeInfo>("claude_detect"),
   claudeInline: (runId: string, projectDir: string, prompt: string, model: "fast" | "default" = "fast") => call<string>("claude_inline", { runId, projectDir, prompt, model }),
-  agentStatus: (agent: string) => call<AgentStatus>("agent_status", { agent }),
+  agentStatus: (agent: string, cfg?: Record<string, unknown>) => call<AgentStatus>("agent_status", { agent, cfg: cfg ?? null }),
+  agentLogin: (agent: string, cfg?: Record<string, unknown>) => call<string>("agent_login", { agent, cfg: cfg ?? null }),
   agentInstall: (agent: string) => call<{ version: string; target: string; binary: string }>("agent_install", { agent }),
   agentUninstall: (agent: string) => call<void>("agent_uninstall", { agent }),
   agentInstalled: (agent: string) => call<{ version: string; target: string } | null>("agent_installed", { agent }),

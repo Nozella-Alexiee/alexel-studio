@@ -4,7 +4,7 @@
 
 import type { ClaudePermMode } from "../lib/types";
 
-export type AgentId = "claude" | "codex" | "gemini" | "acp";
+export type AgentId = "claude" | "codex" | "gemini" | "antigravity" | "acp";
 
 export interface AgentMode {
   id: string;
@@ -43,6 +43,12 @@ export const CODEX_MODES: AgentMode[] = [
   { id: "read-only", label: "Hanya baca", hint: "Codex hanya membaca dan menjawab, tanpa mengubah apa pun." },
 ];
 
+export const ANTIGRAVITY_MODES: AgentMode[] = [
+  { id: "accept-edits", label: "Edit otomatis", hint: "Antigravity boleh mengedit berkas. Mode headless tidak bisa bertanya; aksi lain yang butuh izin ditolak." },
+  { id: "plan", label: "Rencana", hint: "Antigravity hanya membaca dan menyusun rencana." },
+  { id: "strict", label: "Ketat", hint: "Semua aksi yang butuh izin ditolak otomatis." },
+];
+
 export const AGENTS: AgentInfo[] = [
   {
     id: "claude",
@@ -67,8 +73,16 @@ export const AGENTS: AgentInfo[] = [
     name: "Gemini",
     short: "Gemini",
     vendor: "Google",
-    description: "Agen coding dari Google (Gemini CLI). Masuk dengan akun Google.",
+    description: "Agen coding dari Google (Gemini CLI). Masuk dengan akun Google atau API key Gemini.",
     caps: { models: true, effort: false, modes: [], history: false, images: true },
+  },
+  {
+    id: "antigravity",
+    name: "Antigravity",
+    short: "Antigravity",
+    vendor: "Google",
+    description: "Agen dari Google Antigravity (CLI agy). Bisa memakai model Gemini, Claude, dan GPT-OSS.",
+    caps: { models: true, effort: true, modes: ANTIGRAVITY_MODES, history: false, images: false },
   },
   {
     id: "acp",

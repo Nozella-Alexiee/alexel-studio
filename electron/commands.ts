@@ -80,7 +80,8 @@ export function buildCommands(ctx: Ctx, hooks: { confirmClose: (win: BrowserWind
     // Claude
     claude_detect: () => claude.claudeDetect(),
     claude_inline: (a) => claude.claudeOnce(String(a.runId), String(a.projectDir ?? ""), String(a.prompt ?? ""), a.model === "default" ? "default" : "fast"),
-    agent_status: (a) => agents.agentStatus(ctx, a.agent),
+    agent_status: (a) => agents.agentStatus(ctx, a.agent, a.cfg ?? undefined),
+    agent_login: (a) => agents.agentLogin(ctx, a.agent, a.cfg ?? undefined),
     agent_install: (a) => agents.agentInstall(ctx, a.agent),
     agent_uninstall: (a) => agents.agentUninstall(ctx, a.agent),
     agent_installed: (a) => agents.agentInstalled(ctx, a.agent),

@@ -330,7 +330,7 @@ export default function SettingsView() {
       </section>
 
       <section className="set-section">
-        <h2>Agen AI</h2>
+        <h2 id="set-agents">Agen AI</h2>
         <Row label="Agen bawaan" hint="Agen yang dipakai panel Agen AI. Pasang agen lain dari panel Ekstensi → Agen AI.">
           <select className="input select" value={s.agent} onChange={(e) => void selectAgent(e.target.value as AgentId)} aria-label="Agen AI">
             {AGENTS.map((a) => (

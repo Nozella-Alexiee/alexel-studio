@@ -179,7 +179,9 @@ export function Composer({ onShowHistory }: { onShowHistory: () => void }) {
   const root = useStore((s) => s.root);
   const includeDefault = useStore((s) => s.settings.claudeIncludeFile);
   const agent = useStore((s) => s.settings.agent);
-  const caps = agentInfo(agent).caps;
+  const dynModes = useStore((s) => s.agentModes);
+  const baseCaps = agentInfo(agent).caps;
+  const caps = useMemo(() => ({ ...baseCaps, modes: baseCaps.modes.length ? baseCaps.modes : dynModes }), [baseCaps, dynModes]);
   // Pilihan per agen (Claude memakai claudeModel dsb., agen lain agentPrefs).
   const choice = useStore((s) => (s.settings.agent === "claude" ? `${s.settings.claudeModel}|${s.settings.claudeEffort}|${s.settings.claudeMode}` : JSON.stringify(s.settings.agentPrefs[s.settings.agent] ?? {})));
   const { model, effort, mode } = useMemo(() => agentChoice(agent), [agent, choice]);
