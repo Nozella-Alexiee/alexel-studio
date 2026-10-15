@@ -1,8 +1,11 @@
 {
-  "name": "nozel-code",
+  "name": "alexel-studio",
   "private": true,
   "version": "0.2.0",
   "type": "module",
+  "description": "Alexel Studio — free, open source code editor with a real terminal, language servers and Claude Code built in",
+  "author": "Alexel",
+  "main": "dist-electron/main.cjs",
   "scripts": {
     "dev": "vite",
     "app": "node scripts/electron/dev.mjs",
@@ -84,13 +87,10 @@
     "@parcel/watcher@2.6.0": true,
     "esbuild@0.28.2": true
   },
-  "main": "dist-electron/main.cjs",
-  "description": "Nozel Code — editor kode dengan terminal sungguhan, Claude Code bawaan, dan maskot Nozi",
-  "author": "Nozel",
   "build": {
-    "appId": "com.nozel.code",
-    "productName": "Nozel Code",
-    "copyright": "© Nozel",
+    "appId": "dev.alexel.studio",
+    "productName": "Alexel Studio",
+    "copyright": "© Alexel",
     "directories": {
       "output": "release",
       "buildResources": "build"
@@ -123,7 +123,7 @@
       "hardenedRuntime": false
     },
     "dmg": {
-      "title": "Nozel Code"
+      "title": "Alexel Studio"
     },
     "win": {
       "target": [
@@ -154,6 +154,7 @@
     "electronLanguages": [
       "en",
       "id"
-    ]
+    ],
+    "artifactName": "Alexel-Studio-${os}-${arch}.${ext}"
   }
 }

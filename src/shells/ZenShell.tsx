@@ -17,6 +17,7 @@ import { PanelContent, PanelTabs } from "../panels/BottomPanel";
 import { FileTree } from "../panels/Explorer";
 import { activeTab, getState, setLayout, useLayout, useStore } from "../state/store";
 import { EditorGroups, RightContent, SideContent, SideResizer, StatusBar, openProjectMenu } from "./common";
+import { prettyKeys } from "../lib/keys";
 
 function Section({ title, children, defaultOpen = true, action }: { title: string; children: ReactNode; defaultOpen?: boolean; action?: ReactNode }) {
   const [open, setOpen] = useState(defaultOpen);
@@ -40,7 +41,7 @@ function OpenFiles() {
   const focused = useStore((s) => s.focusedGroup);
   const ids = [...new Set(groups.flatMap((g) => g.tabs))];
   const active = groups[focused]?.active;
-  if (!ids.length) return <div className="hint pad-x">Belum ada. Tekan ⌘P.</div>;
+  if (!ids.length) return <div className="hint pad-x">Belum ada. Tekan {prettyKeys("Mod+P")}.</div>;
   return (
     <ul className="zen-open">
       {ids.map((id) => {
@@ -132,13 +133,13 @@ export default function ZenShell() {
           )}
         </div>
         <div className="titlebar-actions">
-          <button className="tbtn tone-run" onClick={() => void runActiveFile()} title="Jalankan (⌘R)">
+          <button className="tbtn tone-run" onClick={() => void runActiveFile()} title={`Jalankan (${prettyKeys("Mod+R")})`}>
             <Play size={14} /> Jalankan
           </button>
-          <button className={`tbtn ${l.panel ? "is-on" : ""}`} onClick={() => A.togglePanel("terminal")} title="Terminal (⌃`)">
+          <button className={`tbtn ${l.panel ? "is-on" : ""}`} onClick={() => A.togglePanel("terminal")} title={`Terminal (${prettyKeys("Ctrl+`")})`}>
             <TerminalSquare size={14} /> Terminal
           </button>
-          <button className={`tbtn ${l.right ? "is-on" : ""}`} onClick={() => A.toggleRight("claude")} title="Claude (⌘⌥B)">
+          <button className={`tbtn ${l.right ? "is-on" : ""}`} onClick={() => A.toggleRight("claude")} title={`Claude (${prettyKeys("Mod+Alt+B")})`}>
             <Kepi size={16} /> Claude
           </button>
           <IconButton label="Mode fokus" active={!l.sidebar && !l.right} onClick={() => setLayout(!l.sidebar && !l.right ? { sidebar: true } : { sidebar: false, right: false, panel: false })}>

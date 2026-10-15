@@ -1,118 +1,14 @@
-import DOMPurify from "dompurify";
-import { marked } from "marked";
-import { Check, Copy, CornerDownLeft, FileCode2, Plus, Square, TerminalSquare, Wrench, AlertCircle, TextCursorInput } from "lucide-react";
-import { memo, useEffect, useMemo, useRef, useState } from "react";
-import * as A from "../app/actions";
+import { ArrowLeft, History, LogIn, MessageSquarePlus, RefreshCw, TerminalSquare } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
 import { openClaudeInteractive } from "../app/run";
-import * as docs from "../editor/documents";
 import { CrabMascot, flashKepi, Kepi } from "../components/CrabMascot";
 import { IconButton } from "../components/ui";
-import { openExternal } from "../lib/ipc";
-import { activeTab, getState, useStore, type ChatMessage } from "../state/store";
-import { applyCodeToActive, cancelClaude, detectClaude, newConversation, sendToClaude } from "./claude";
-
-function CodeBlock({ lang, code }: { lang: string; code: string }) {
-  const [copied, setCopied] = useState(false);
-  return (
-    <div className="chat-code">
-      <div className="chat-code-bar">
-        <span>{lang || "kode"}</span>
-        <span className="spacer" />
-        <IconButton
-          label="Salin"
-          onClick={() => {
-            void navigator.clipboard.writeText(code);
-            setCopied(true);
-            setTimeout(() => setCopied(false), 1200);
-          }}
-        >
-          {copied ? <Check size={12} /> : <Copy size={12} />}
-        </IconButton>
-        <IconButton label="Sisipkan di kursor" onClick={() => docs.insertAtCursor(getState().focusedGroup, code)}>
-          <TextCursorInput size={12} />
-        </IconButton>
-        <IconButton label="Ganti isi berkas aktif (dibandingkan dulu)" onClick={() => void applyCodeToActive(code)}>
-          <FileCode2 size={12} />
-        </IconButton>
-      </div>
-      <pre>
-        <code>{code}</code>
-      </pre>
-    </div>
-  );
-}
-
-function Markdown({ text }: { text: string }) {
-  const parts = useMemo(() => {
-    const out: ({ t: "md"; v: string } | { t: "code"; lang: string; v: string })[] = [];
-    const re = /```([\w+#.-]*)[^\n]*\n([\s\S]*?)(?:```|$)/g;
-    let last = 0;
-    let m;
-    while ((m = re.exec(text))) {
-      if (m.index > last) out.push({ t: "md", v: text.slice(last, m.index) });
-      out.push({ t: "code", lang: m[1], v: m[2].replace(/\n$/, "") });
-      last = re.lastIndex;
-    }
-    if (last < text.length) out.push({ t: "md", v: text.slice(last) });
-    return out;
-  }, [text]);
-  return (
-    <>
-      {parts.map((p, i) =>
-        p.t === "code" ? (
-          <CodeBlock key={i} lang={p.lang} code={p.v} />
-        ) : (
-          <div
-            key={i}
-            className="chat-md"
-            onClick={(e) => {
-              const a = (e.target as HTMLElement).closest("a");
-              if (a) {
-                e.preventDefault();
-                void openExternal(a.getAttribute("href") ?? "");
-              }
-            }}
-            dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(marked.parse(p.v, { async: false, gfm: true }) as string, { FORBID_ATTR: ["style"], FORBID_TAGS: ["style", "img", "form", "input"] }) }}
-          />
-        )
-      )}
-    </>
-  );
-}
-
-// memo: pesan lama tidak di-render ulang (marked + DOMPurify) setiap ada pesan baru.
-const Message = memo(function Message({ m }: { m: ChatMessage }) {
-  if (m.role === "tool")
-    return (
-      <div className={`chat-tool ${m.meta ? "has-note" : ""}`}>
-        <Wrench size={12} aria-hidden /> {m.text}
-        {m.meta && <span className="chat-tool-note">{m.meta}</span>}
-      </div>
-    );
-  if (m.role === "error")
-    return (
-      <div className="chat-msg chat-error" role="alert">
-        <AlertCircle size={14} aria-hidden />
-        <div>
-          <Markdown text={m.text} />
-          {m.meta && <div className="chat-meta">{m.meta}</div>}
-        </div>
-      </div>
-    );
-  if (m.role === "user")
-    return (
-      <div className="chat-msg chat-user">
-        <div className="chat-user-text">{m.text}</div>
-        {m.context && <div className="chat-ctx">+ {m.context}</div>}
-      </div>
-    );
-  return (
-    <div className="chat-msg chat-assistant">
-      <Markdown text={m.text} />
-      {m.meta && <div className="chat-meta">{m.meta}</div>}
-    </div>
-  );
-});
+import { api, errMsg } from "../lib/ipc";
+import type { ClaudeSessionInfo } from "../lib/types";
+import { useStore } from "../state/store";
+import { Message } from "./ChatItems";
+import { detectClaude, installClaude, installCommand, loginClaude, newConversation, resumeSession, sendToClaude } from "./claude";
+import { Composer } from "./Composer";
 
 const QUICK = [
   { label: "Jelaskan berkas ini", prompt: "Jelaskan apa yang dilakukan berkas ini secara singkat." },
@@ -120,131 +16,192 @@ const QUICK = [
   { label: "Tulis test", prompt: "Tulis unit test untuk berkas ini memakai framework test yang dipakai project." },
 ];
 
+function ago(ms: number): string {
+  const s = Math.max(1, Math.round((Date.now() - ms) / 1000));
+  if (s < 60) return "baru saja";
+  if (s < 3600) return `${Math.round(s / 60)} mnt lalu`;
+  if (s < 86400) return `${Math.round(s / 3600)} jam lalu`;
+  if (s < 86400 * 30) return `${Math.round(s / 86400)} hari lalu`;
+  return new Date(ms).toLocaleDateString();
+}
+
+function SessionHistory({ onClose }: { onClose: () => void }) {
+  const root = useStore((s) => s.root);
+  const current = useStore((s) => s.chatSession);
+  const [list, setList] = useState<ClaudeSessionInfo[] | null>(null);
+  const [err, setErr] = useState<string | null>(null);
+  const [q, setQ] = useState("");
+  useEffect(() => {
+    if (!root) return setList([]);
+    api
+      .claudeSessions(root)
+      .then(setList)
+      .catch((e) => setErr(errMsg(e)));
+  }, [root]);
+  const shown = (list ?? []).filter((s) => !q.trim() || s.title.toLowerCase().includes(q.trim().toLowerCase()));
+  return (
+    <div className="claude-history">
+      <div className="claude-history-head">
+        <IconButton label="Kembali ke percakapan" onClick={onClose}>
+          <ArrowLeft size={14} />
+        </IconButton>
+        <strong>Riwayat percakapan</strong>
+      </div>
+      <input className="input" placeholder="Cari percakapan…" value={q} onChange={(e) => setQ(e.target.value)} aria-label="Cari percakapan" autoFocus />
+      {err && <p className="tone-danger-fg">{err}</p>}
+      {!root && <p className="hint">Buka folder project untuk melihat percakapan Claude Code di folder itu.</p>}
+      {list && root && !shown.length && <p className="hint">Belum ada percakapan di folder ini.</p>}
+      {!list && root && !err && <p className="hint">Memuat…</p>}
+      <ul className="claude-history-list">
+        {shown.map((s) => (
+          <li key={s.id}>
+            <button
+              className={`claude-history-item ${s.id === current ? "is-current" : ""}`}
+              onClick={() => {
+                onClose();
+                void resumeSession(s.id);
+              }}
+            >
+              <span className="claude-history-title">{s.title}</span>
+              <span className="claude-history-meta">
+                {ago(s.time_ms)} · {s.messages} pesan
+              </span>
+            </button>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+function Setup() {
+  const info = useStore((s) => s.claude);
+  if (!info) return <p className="hint pad-x">Memeriksa Claude Code…</p>;
+  if (!info.installed)
+    return (
+      <div className="claude-setup">
+        <CrabMascot mood="mikir" size={54} />
+        <h3>Pasang Claude Code</h3>
+        <p>Alexel Studio memakai Claude Code resmi dengan langganan Claude Pro atau Max kamu. Tidak perlu API key.</p>
+        <pre className="claude-setup-cmd">{installCommand()}</pre>
+        <div className="perm-actions">
+          <button className="btn btn-claude btn-sm" onClick={() => void installClaude()}>
+            <TerminalSquare size={13} /> Pasang di terminal
+          </button>
+          <button className="btn btn-sm" onClick={() => void detectClaude()}>
+            <RefreshCw size={13} /> Periksa ulang
+          </button>
+        </div>
+        {info.error && <p className="hint small">{info.error}</p>}
+      </div>
+    );
+  return (
+    <div className="claude-setup">
+      <CrabMascot mood="melambai" size={54} />
+      <h3>Masuk ke Claude</h3>
+      <p>Masuk sekali dengan akun Claude kamu. Setelah itu panel ini langsung bisa dipakai.</p>
+      <div className="perm-actions">
+        <button className="btn btn-claude btn-sm" onClick={() => void loginClaude()}>
+          <LogIn size={13} /> Masuk
+        </button>
+        <button className="btn btn-sm" onClick={() => void detectClaude()}>
+          <RefreshCw size={13} /> Periksa ulang
+        </button>
+      </div>
+    </div>
+  );
+}
+
 export default function ClaudePanel() {
   const chat = useStore((s) => s.chat);
   const running = useStore((s) => s.chatRunning);
   const info = useStore((s) => s.claude);
-  const includeDefault = useStore((s) => s.settings.claudeIncludeFile);
-  const tab = useStore((s) => activeTab(s));
-  const [text, setText] = useState("");
-  const [includeFile, setIncludeFile] = useState(includeDefault);
-  const mode = useStore((s) => s.settings.claudeMode);
+  const hasText = useStore((s) => {
+    const g = s.groups[s.focusedGroup];
+    const t = g?.active ? s.tabs[g.active] : null;
+    return t?.kind === "text";
+  });
+  const [showHistory, setShowHistory] = useState(false);
   // Ikuti chat ke bawah hanya bila pengguna memang sedang di bawah (tidak sedang membaca ke atas).
   const stick = useRef(true);
-  useEffect(() => setIncludeFile(includeDefault), [includeDefault]);
-  const [useSelection, setUseSelection] = useState(false);
   const list = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (!info) void detectClaude();
   }, [info]);
   useEffect(() => {
-    if (stick.current) list.current?.scrollTo({ top: list.current.scrollHeight, behavior: "smooth" });
+    if (stick.current) list.current?.scrollTo({ top: list.current.scrollHeight });
   }, [chat, running]);
 
-  const send = async (prompt = text) => {
-    const ok = await sendToClaude(prompt, { includeFile: includeFile && !useSelection, includeSelection: useSelection });
-    if (ok && prompt === text) setText("");
-  };
-
-  const fileName = tab?.kind === "text" ? tab.name : null;
+  const ready = !!info?.installed && info.loggedIn !== false;
+  const lastIsStreaming = running && chat.length > 0 && chat[chat.length - 1].role === "assistant" && !!chat[chat.length - 1].text;
 
   return (
     <section className="claude-panel" aria-label="Claude Code">
       <header className="claude-head">
         <button className="claude-kepi" onClick={() => flashKepi("melambai", 2400)} aria-label="Sapa Kepi" title="Kepi, teman Claude Code">
-          <Kepi size={24} />
+          <Kepi size={22} />
         </button>
         <span className="claude-title">Claude Code</span>
-        <span className={`claude-status ${info?.installed ? "ok" : "bad"}`} title={info?.version ?? info?.error ?? ""}>
-          {info === null ? "memeriksa…" : info.installed ? "terhubung" : "belum terpasang"}
+        <span className={`claude-status ${ready ? "ok" : "bad"}`} title={info?.version ?? info?.error ?? ""}>
+          {info === null ? "memeriksa…" : !info.installed ? "belum terpasang" : info.loggedIn === false ? "belum masuk" : info.plan ? info.plan.toUpperCase() : "siap"}
         </span>
         <span className="spacer" />
-        <IconButton label="Claude interaktif di terminal" onClick={() => void openClaudeInteractive()}>
+        <IconButton label="Riwayat percakapan" onClick={() => setShowHistory((v) => !v)} active={showHistory}>
+          <History size={14} />
+        </IconButton>
+        <IconButton label="Buka Claude Code di terminal" onClick={() => void openClaudeInteractive()}>
           <TerminalSquare size={14} />
         </IconButton>
-        <IconButton label="Percakapan baru" onClick={newConversation} disabled={!!running}>
-          <Plus size={14} />
+        <IconButton
+          label="Percakapan baru"
+          onClick={() => {
+            setShowHistory(false);
+            newConversation();
+          }}
+        >
+          <MessageSquarePlus size={14} />
         </IconButton>
       </header>
 
-      <div
-        className="claude-list"
-        ref={list}
-        aria-live="polite"
-        onScroll={(e) => {
-          const el = e.currentTarget;
-          stick.current = el.scrollHeight - el.scrollTop - el.clientHeight < 60;
-        }}
-      >
-        {chat.length === 0 ? (
-          <div className="claude-empty">
-            <CrabMascot mood="melambai" size={58} />
-            <p>Tanya apa saja tentang kode di project ini. Claude Code memakai langganan Pro/Max kamu lewat CLI resmi, tanpa API key.</p>
-            {info && !info.installed && <p className="tone-danger-fg">{info.error}</p>}
-            <div className="claude-quick">
-              {QUICK.map((q) => (
-                <button key={q.label} className="chip" onClick={() => void sendToClaude(q.prompt, { includeFile: true })} disabled={!fileName || !!running}>
-                  {q.label}
-                </button>
-              ))}
-            </div>
-          </div>
-        ) : (
-          chat.map((m) => <Message key={m.id} m={m} />)
-        )}
-        {running && (
-          <div className="chat-typing">
-            <CrabMascot mood="mikir" size={22} /> Claude sedang bekerja…
-          </div>
-        )}
-      </div>
-
-      <div className="claude-composer">
-        <div className="claude-chips">
-          <button className={`chip ${includeFile && !useSelection ? "is-on" : ""}`} onClick={() => { setIncludeFile((v) => !v); setUseSelection(false); }} disabled={!fileName} aria-pressed={includeFile && !useSelection}>
-            <FileCode2 size={12} /> {fileName ?? "tidak ada berkas"}
-          </button>
-          <button className={`chip ${useSelection ? "is-on" : ""}`} onClick={() => setUseSelection((v) => !v)} disabled={!fileName} aria-pressed={useSelection}>
-            <TextCursorInput size={12} /> Seleksi saja
-          </button>
-          <button
-            className={`chip claude-mode ${mode === "edit" ? "is-edit" : ""}`}
-            onClick={() => A.updateSettings({ claudeMode: mode === "edit" ? "read" : "edit" })}
-            title={mode === "edit" ? "Claude boleh mengubah berkas di folder project. Klik untuk kembali ke Baca saja." : "Claude hanya membaca dan menyarankan. Klik agar Claude boleh mengubah berkas."}
-            aria-pressed={mode === "edit"}
-          >
-            {mode === "edit" ? "Boleh edit" : "Baca saja"}
-          </button>
-        </div>
-        <textarea
-          id="claude-input"
-          className="input textarea claude-input"
-          placeholder="Tanya Claude… (⌘↵ kirim)"
-          value={text}
-          rows={3}
-          onChange={(e) => setText(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
-              e.preventDefault();
-              void send();
-            }
+      {showHistory ? (
+        <SessionHistory onClose={() => setShowHistory(false)} />
+      ) : !ready ? (
+        <Setup />
+      ) : (
+        <div
+          className="claude-list"
+          ref={list}
+          aria-live="polite"
+          onScroll={(e) => {
+            const el = e.currentTarget;
+            stick.current = el.scrollHeight - el.scrollTop - el.clientHeight < 60;
           }}
-          aria-label="Pesan untuk Claude"
-        />
-        <div className="claude-send">
-          <span className="hint">{getState().settings.claudeConfirm ? "Kamu akan melihat isi yang dikirim sebelum terkirim." : "Konfirmasi kirim dimatikan di Pengaturan."}</span>
-          {running ? (
-            <button className="btn btn-danger btn-sm" onClick={() => void cancelClaude()}>
-              <Square size={12} /> Batalkan
-            </button>
+        >
+          {chat.length === 0 ? (
+            <div className="claude-empty">
+              <CrabMascot mood="melambai" size={54} />
+              <p>Tanya apa saja tentang project ini, minta Claude mengubah kode, atau menjalankan perintah. Kamu yang menyetujui setiap perubahan.</p>
+              <div className="claude-quick">
+                {QUICK.map((q) => (
+                  <button key={q.label} className="chip" onClick={() => void sendToClaude(q.prompt, { includeFile: true })} disabled={!hasText || !!running}>
+                    {q.label}
+                  </button>
+                ))}
+              </div>
+            </div>
           ) : (
-            <button className="btn btn-claude btn-sm" onClick={() => void send()} disabled={!text.trim()}>
-              Kirim <CornerDownLeft size={12} />
-            </button>
+            chat.map((m) => <Message key={m.id} m={m} />)
+          )}
+          {running && !lastIsStreaming && (
+            <div className="chat-typing">
+              <CrabMascot mood="mikir" size={20} /> Claude sedang bekerja…
+            </div>
           )}
         </div>
-      </div>
+      )}
+
+      {ready && !showHistory && <Composer onShowHistory={() => setShowHistory(true)} />}
     </section>
   );
 }

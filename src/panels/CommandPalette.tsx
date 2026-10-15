@@ -11,10 +11,11 @@ import { FileIcon } from "../components/FileIcon";
 import { Highlighted } from "../components/ui";
 import * as docs from "../editor/documents";
 import { extractSymbols } from "../editor/symbols";
-import { api, on } from "../lib/ipc";
 import { fuzzyFilter } from "../lib/fuzzy";
 import { join } from "../lib/paths";
 import { activeTab, getState, setState, useStore } from "../state/store";
+import { modKey } from "../lib/keys";
+import { projectFiles } from "../lib/projectFiles";
 
 interface Item {
   key: string;
@@ -24,18 +25,6 @@ interface Item {
   detail?: string;
   keys?: string;
   run: (side?: boolean) => void;
-}
-
-let fileCache: { root: string; files: string[] } | null = null;
-let fileStale = true;
-void on("fs-changed", () => (fileStale = true));
-
-async function projectFiles(root: string): Promise<string[]> {
-  if (fileCache?.root === root && !fileStale) return fileCache.files;
-  const files = await api.listFiles(root).catch(() => []);
-  fileCache = { root, files };
-  fileStale = false;
-  return files;
 }
 
 const MODES: Record<string, { placeholder: string; label: string }> = {
@@ -170,7 +159,7 @@ export function CommandPalette() {
       setSel((v) => Math.max(0, v - 1));
     } else if (e.key === "Enter") {
       e.preventDefault();
-      choose(sel, e.metaKey);
+      choose(sel, modKey(e));
     } else if (e.key === "Backspace" && value.length === 1 && prefix) {
       e.preventDefault();
       setValue("");
@@ -200,7 +189,7 @@ export function CommandPalette() {
         </div>
         <div className="pal-list" id="pal-list" role="listbox" ref={list}>
           {items.map((it, i) => (
-            <div key={it.key} id={`pal-${i}`} role="option" aria-selected={i === sel} className={`pal-item ${i === sel ? "is-sel" : ""}`} onMouseMove={() => setSel(i)} onMouseDown={(e) => { e.preventDefault(); choose(i, e.metaKey); }}>
+            <div key={it.key} id={`pal-${i}`} role="option" aria-selected={i === sel} className={`pal-item ${i === sel ? "is-sel" : ""}`} onMouseMove={() => setSel(i)} onMouseDown={(e) => { e.preventDefault(); choose(i, modKey(e)); }}>
               {it.icon}
               <span className="pal-label">{it.positions ? <Highlighted text={it.label} positions={it.positions} /> : it.label}</span>
               {it.detail && <span className="pal-detail">{it.detail}</span>}
@@ -213,7 +202,7 @@ export function CommandPalette() {
           <span>
             <CornerDownLeft size={11} aria-hidden /> pilih
           </span>
-          <span>⌘↵ buka di kanan</span>
+          <span>{prettyKeys("Mod+Enter")} buka di kanan</span>
           <span>esc tutup</span>
         </div>
       </div>

@@ -21,7 +21,7 @@ function TabItem({ tab, group, active, drop }: { tab: Tab; group: number; active
   const errors = useStore((s) => s.problems[tab.id]?.filter((p) => p.severity === "error").length ?? 0);
   const onMenu = (e: React.MouseEvent) =>
     openMenu(e, [
-      { label: "Tutup", keys: "⌘W", run: () => void A.closeTab(tab.id, group) },
+      { label: "Tutup", keys: "Mod+W", run: () => void A.closeTab(tab.id, group) },
       { label: "Tutup tab lain", run: () => void A.closeOtherTabs(tab.id, group) },
       { label: "Tutup semua", run: () => void A.closeAllTabs() },
       { separator: true, label: "" },
@@ -32,7 +32,7 @@ function TabItem({ tab, group, active, drop }: { tab: Tab; group: number; active
             { label: "Tampilkan di Explorer", run: () => void A.revealInTree(tab.id) },
             { label: "Time-travel berkas ini", disabled: tab.kind !== "text", run: () => { setState({ historyFor: tab.id }); A.togglePanel("history"); } },
             { separator: true, label: "" },
-            { label: "Belah ke kanan", keys: "⌘\\", run: () => { A.activateTab(tab.id, group); A.splitEditor(); } },
+            { label: "Belah ke kanan", keys: "Mod+\\", run: () => { A.activateTab(tab.id, group); A.splitEditor(); } },
           ]
         : []),
     ]);

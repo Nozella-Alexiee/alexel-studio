@@ -7,6 +7,8 @@ import { IconButton } from "../components/ui";
 import { basename, dirname } from "../lib/paths";
 import type { FileEntry } from "../lib/types";
 import { activeTabId, getState, setState, useStore } from "../state/store";
+import { fileManagerName } from "../lib/keys";
+import { isMac } from "../lib/ipc";
 
 interface Row {
   entry: FileEntry;
@@ -64,10 +66,10 @@ function TreeRow({ row, active, focused, onFocusRow }: { row: Row; active: boole
       { label: "Duplikat", run: () => void A.duplicatePath(entry.path) },
       { label: "Salin path", run: () => void A.copyPath(entry.path) },
       { label: "Salin path relatif", run: () => void A.copyPath(entry.path, true) },
-      { label: "Tampilkan di Finder", run: () => void import("../lib/ipc").then((m) => m.api.reveal(entry.path)) },
+      { label: `Tampilkan di ${fileManagerName()}`, run: () => void import("../lib/ipc").then((m) => m.api.reveal(entry.path)) },
       ...(entry.is_dir ? [{ label: "Buka terminal di sini", run: () => void import("../terminal/terminals").then((m) => m.newTerminal({ cwd: entry.path, title: basename(entry.path) })) }] : []),
       { separator: true, label: "" },
-      { label: "Pindahkan ke Trash", keys: "⌘⌫", danger: true, run: () => void A.deletePath(entry.path) },
+      { label: "Pindahkan ke Trash", keys: isMac ? "Mod+Backspace" : "Delete", danger: true, run: () => void A.deletePath(entry.path) },
     ]);
   };
 
@@ -157,7 +159,7 @@ export function FileTree() {
         e.preventDefault();
         if (row.entry.is_dir) void A.toggleDir(row.entry.path);
         else void A.openFile(row.entry.path);
-      } else if (e.key === "Backspace" && e.metaKey) {
+      } else if ((e.key === "Backspace" && e.metaKey && isMac) || (e.key === "Delete" && !isMac)) {
         e.preventDefault();
         void A.deletePath(row.entry.path);
       }

@@ -6,7 +6,11 @@ import type { KepiMood } from "../components/CrabMascot";
 import type { PenguinMood } from "../components/PenguinMascot";
 import { create } from "zustand";
 import type { DesignId } from "../design/designs";
-import type { ClaudeInfo, FileEntry, GitStatus, PowerStatus, RunTarget, TodoItem } from "../lib/types";
+import type { ClaudeInfo, ClaudeModel, ClaudePermMode, FileEntry, GitStatus, PowerStatus, RunTarget, TodoItem } from "../lib/types";
+
+let chatSeq = 0;
+/** Kunci proses percakapan baru (huruf, angka, "-"). */
+export const newChatKey = () => `c-${Date.now().toString(36)}-${++chatSeq}`;
 
 export type PanelId = "terminal" | "problems" | "ports" | "todo" | "history";
 export type SideView = "files" | "search" | "git" | "todo" | "ext";
@@ -22,10 +26,17 @@ export interface Settings {
   minimap: boolean;
   powerMode: "auto" | "on" | "off";
   gitBot: "off" | "commit" | "push";
+  /** Tampilkan isi lengkap yang akan dikirim sebelum setiap pesan. */
   claudeConfirm: boolean;
+  /** Pengguna sudah menyetujui (sekali) bahwa pesan & konteks dikirim lewat Claude Code. */
+  claudeConsent: boolean;
   claudeIncludeFile: boolean;
-  /** "read": Claude hanya membaca & menyarankan; "edit": boleh mengubah berkas project. */
-  claudeMode: "read" | "edit";
+  /** Mode izin: tanya dulu, terima edit otomatis, atau hanya merencanakan. */
+  claudeMode: ClaudePermMode;
+  /** "default" = model bawaan akun, atau alias seperti "opus" / "sonnet". */
+  claudeModel: string;
+  /** "auto" = bawaan model, atau "low" … "max". */
+  claudeEffort: string;
   /** Model untuk ⌘K inline: "fast" (Sonnet, effort rendah) atau model bawaan Claude Code. */
   claudeInlineModel: "fast" | "default";
   terminalFontSize: number;
@@ -46,9 +57,12 @@ export const DEFAULT_SETTINGS: Settings = {
   minimap: true,
   powerMode: "auto",
   gitBot: "off",
-  claudeConfirm: true,
+  claudeConfirm: false,
+  claudeConsent: false,
   claudeIncludeFile: true,
-  claudeMode: "read",
+  claudeMode: "default",
+  claudeModel: "default",
+  claudeEffort: "auto",
   claudeInlineModel: "fast",
   terminalFontSize: 12,
   autoSave: "off",
@@ -70,12 +84,12 @@ export interface Layout {
 }
 
 export const DEFAULT_LAYOUTS: Record<DesignId, Layout> = {
-  aurora: { sidebar: true, sidebarW: 248, sideView: "files", panel: false, panelH: 220, panelTab: "terminal", right: false, rightW: 320, rightView: "claude" },
-  zen: { sidebar: true, sidebarW: 232, sideView: "files", panel: false, panelH: 180, panelTab: "terminal", right: false, rightW: 340, rightView: "claude" },
-  control: { sidebar: true, sidebarW: 252, sideView: "files", panel: false, panelH: 220, panelTab: "terminal", right: false, rightW: 296, rightView: "git" },
-  antartika: { sidebar: true, sidebarW: 236, sideView: "files", panel: false, panelH: 220, panelTab: "terminal", right: false, rightW: 300, rightView: "claude" },
-  tuxedo: { sidebar: true, sidebarW: 224, sideView: "files", panel: false, panelH: 220, panelTab: "terminal", right: false, rightW: 290, rightView: "claude" },
-  kawanan: { sidebar: true, sidebarW: 240, sideView: "files", panel: false, panelH: 190, panelTab: "terminal", right: false, rightW: 330, rightView: "claude" },
+  aurora: { sidebar: true, sidebarW: 248, sideView: "files", panel: false, panelH: 220, panelTab: "terminal", right: true, rightW: 340, rightView: "claude" },
+  zen: { sidebar: true, sidebarW: 232, sideView: "files", panel: false, panelH: 180, panelTab: "terminal", right: true, rightW: 340, rightView: "claude" },
+  control: { sidebar: true, sidebarW: 252, sideView: "files", panel: false, panelH: 220, panelTab: "terminal", right: true, rightW: 340, rightView: "claude" },
+  antartika: { sidebar: true, sidebarW: 236, sideView: "files", panel: false, panelH: 220, panelTab: "terminal", right: true, rightW: 340, rightView: "claude" },
+  tuxedo: { sidebar: true, sidebarW: 224, sideView: "files", panel: false, panelH: 220, panelTab: "terminal", right: true, rightW: 340, rightView: "claude" },
+  kawanan: { sidebar: true, sidebarW: 240, sideView: "files", panel: false, panelH: 190, panelTab: "terminal", right: true, rightW: 340, rightView: "claude" },
 };
 
 export type TabKind = "text" | "image" | "settings" | "dashboard";
@@ -120,14 +134,44 @@ export interface TermSession {
   startedAt: number;
 }
 
+export interface ChatTool {
+  /** id tool_use dari Claude. */
+  useId?: string;
+  name: string;
+  input: Record<string, unknown>;
+  status: "running" | "ok" | "error" | "denied";
+  result?: string;
+}
+
+export interface ChatPermission {
+  requestId: string;
+  toolName: string;
+  input: Record<string, unknown>;
+  suggestions?: unknown[];
+  state: "pending" | "allowed" | "always" | "denied" | "expired";
+  reason?: string;
+}
+
 export interface ChatMessage {
   id: string;
-  role: "user" | "assistant" | "tool" | "error";
+  role: "user" | "assistant" | "tool" | "error" | "permission" | "todo" | "info";
   text: string;
   /** Ringkasan konteks yang ikut dikirim (untuk transparansi). */
   context?: string;
   time: number;
   meta?: string;
+  tool?: ChatTool;
+  perm?: ChatPermission;
+  /** Jumlah gambar yang dilampirkan pengguna. */
+  images?: number;
+}
+
+export interface ChatUsage {
+  /** Total biaya setara API (USD) sepanjang percakapan. */
+  cost: number;
+  /** Token konteks pada giliran terakhir. */
+  context: number;
+  window: number;
 }
 
 export interface Toast {
@@ -200,8 +244,17 @@ interface State {
   activeTerminal: string | null;
 
   chat: ChatMessage[];
+  /** Kunci proses percakapan yang sedang menjawab (null = diam). */
   chatRunning: string | null;
+  /** session_id Claude Code (untuk resume & riwayat). */
   chatSession: string | null;
+  /** Kunci proses CLI percakapan aktif; diganti saat percakapan baru. */
+  chatKey: string;
+  chatUsage: ChatUsage | null;
+  /** Model yang dilaporkan CLI (initialize) dan model yang sedang dipakai. */
+  claudeModels: ClaudeModel[];
+  claudeActiveModel: string | null;
+  claudeCommands: { name: string; description: string }[];
 
   palette: PaletteState;
   toasts: Toast[];
@@ -245,6 +298,11 @@ export const useStore = create<State>(() => ({
   chat: [],
   chatRunning: null,
   chatSession: null,
+  chatKey: newChatKey(),
+  chatUsage: null,
+  claudeModels: [],
+  claudeActiveModel: null,
+  claudeCommands: [],
 
   palette: { open: false, initial: "" },
   toasts: [],

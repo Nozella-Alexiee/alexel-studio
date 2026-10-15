@@ -115,10 +115,41 @@ export interface ClaudeInfo {
   path?: string | null;
   version?: string | null;
   error?: string | null;
+  /** null = tidak diketahui (CLI lama). */
+  loggedIn?: boolean | null;
+  /** "pro", "max", … */
+  plan?: string | null;
+}
+
+export type ClaudePermMode = "default" | "acceptEdits" | "plan";
+
+export interface ClaudeSessionCfg {
+  cwd: string;
+  model?: string | null;
+  effort?: string | null;
+  mode: ClaudePermMode;
+  resume?: string | null;
+}
+
+export type ClaudeContent = { type: "text"; text: string } | { type: "image"; source: { type: "base64"; media_type: string; data: string } };
+
+export interface ClaudeSessionInfo {
+  id: string;
+  title: string;
+  time_ms: number;
+  messages: number;
+}
+
+/** Model dari balasan initialize CLI. */
+export interface ClaudeModel {
+  value: string;
+  displayName: string;
+  description?: string;
+  supportedEffortLevels?: string[];
 }
 
 export interface Footprint {
-  /** Total RAM semua proses Nozel (main + renderer + GPU + helper), dalam MB. */
+  /** Total RAM semua proses Alexel Studio (main + renderer + GPU + helper), dalam MB. */
   core_mb: number;
   processes?: number;
   cpu_percent: number;

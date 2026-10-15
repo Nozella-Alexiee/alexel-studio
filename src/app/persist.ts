@@ -54,7 +54,14 @@ function sanitizeSettings(raw: Partial<Settings> | null): Settings {
   s.fontSize = Math.min(28, Math.max(9, Number(s.fontSize) || 13));
   s.tabSize = [2, 4, 8].includes(Number(s.tabSize)) ? Number(s.tabSize) : 2;
   s.terminalFontSize = Math.min(24, Math.max(9, Number(s.terminalFontSize) || 12));
-  if (s.claudeMode !== "edit") s.claudeMode = "read";
+  // Pengaturan lama: "read" → plan, "edit" → acceptEdits.
+  const mode = s.claudeMode as string;
+  s.claudeMode = mode === "edit" ? "acceptEdits" : mode === "read" ? "plan" : mode === "acceptEdits" || mode === "plan" ? mode : "default";
+  if (typeof s.claudeModel !== "string" || !/^[A-Za-z0-9._[\]-]{1,80}$/.test(s.claudeModel)) s.claudeModel = "default";
+  if (!["auto", "low", "medium", "high", "xhigh", "max"].includes(s.claudeEffort)) s.claudeEffort = "auto";
+  // Versi lama menampilkan dialog di setiap pesan; sekarang cukup persetujuan sekali.
+  if (raw && !("claudeConsent" in raw)) s.claudeConfirm = false;
+  s.claudeConsent = s.claudeConsent === true;
   if (s.claudeInlineModel !== "default") s.claudeInlineModel = "fast";
   return s;
 }

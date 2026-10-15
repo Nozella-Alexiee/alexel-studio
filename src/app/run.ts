@@ -1,7 +1,7 @@
 // Jalankan berkas aktif atau target Smart Run di terminal PTY.
 
 import * as docs from "../editor/documents";
-import { api, errMsg } from "../lib/ipc";
+import { api, errMsg, isWindows } from "../lib/ipc";
 import { basename } from "../lib/paths";
 import type { RunTarget } from "../lib/types";
 import { activeTab, getState, setState, toast } from "../state/store";
@@ -36,12 +36,22 @@ export async function openShell() {
   await newTerminal({ kind: "shell" });
 }
 
+/** Path program sebagai perintah shell: PowerShell di Windows, sh di macOS/Linux. */
+export function shellExe(path: string): string {
+  return isWindows ? `& '${path.replace(/'/g, "''")}'` : `'${path.replace(/'/g, "'\\''")}'`;
+}
+
 export async function openClaudeInteractive() {
   const info = getState().claude ?? (await api.claudeDetect().catch(() => null));
-  if (!info?.installed || !info.path) return toast("Claude Code CLI belum terpasang. Jalankan: npm install -g @anthropic-ai/claude-code", "error");
+  if (!info?.installed || !info.path) return toast("Claude Code belum terpasang. Buka panel Claude untuk memasangnya.", "error");
   const { newTerminal } = await import("../terminal/terminals");
-  const q = `'${info.path.replace(/'/g, "'\\''")}'`;
-  await newTerminal({ kind: "claude", title: "Claude", command: q });
+  await newTerminal({ kind: "claude", title: "Claude", command: shellExe(info.path) });
+}
+
+/** Jalankan satu perintah di tab terminal baru (folder project, atau folder rumah). */
+export async function runInTerminal(command: string, title: string) {
+  const { runCommand } = await import("../terminal/terminals");
+  await runCommand(command, getState().root ?? "", title);
 }
 
 /**

@@ -12,6 +12,7 @@ import { diffStats } from "../lib/diff";
 import type { Snapshot } from "../lib/types";
 import { activeTab, setState, toast, useStore } from "../state/store";
 import { openCompare } from "./compare";
+import { prettyKeys } from "../lib/keys";
 
 export default function HistoryPanel() {
   const historyFor = useStore((s) => s.historyFor);
@@ -45,15 +46,15 @@ export default function HistoryPanel() {
   const current = path ? docs.currentText(path) ?? "" : "";
   const stats = useMemo(() => (content !== null ? diffStats(content, current) : null), [content, current]);
 
-  if (!path) return <Empty icon={<History size={22} />} title="Buka berkas dulu">Setiap kali kamu menyimpan, Nozel menyimpan salinannya. Di sini kamu bisa kembali ke versi mana pun.</Empty>;
+  if (!path) return <Empty icon={<History size={22} />} title="Buka berkas dulu">Setiap kali kamu menyimpan, Alexel Studio menyimpan salinannya. Di sini kamu bisa kembali ke versi mana pun.</Empty>;
   if (snaps === null) return <div className="pad"><Spinner /></div>;
-  if (!snaps.length) return <Empty icon={<History size={22} />} title={`Belum ada riwayat untuk ${basename(path)}`}>Simpan berkas ini (⌘S) dan versinya mulai tercatat.</Empty>;
+  if (!snaps.length) return <Empty icon={<History size={22} />} title={`Belum ada riwayat untuk ${basename(path)}`}>Simpan berkas ini ({prettyKeys("Mod+S")}) dan versinya mulai tercatat.</Empty>;
 
   const restore = () => {
     if (content === null || !snap) return;
     if (!docs.getDoc(path)) return toast("Buka berkasnya dulu untuk memulihkan.", "error");
     docs.setDocumentText(path, content);
-    toast(`Dipulihkan ke versi ${clockTime(snap.time_ms)}. Simpan untuk menetapkan, atau ⌘Z untuk batal.`, "success");
+    toast(`Dipulihkan ke versi ${clockTime(snap.time_ms)}. Simpan untuk menetapkan, atau ${prettyKeys("Mod+Z")} untuk batal.`, "success");
   };
 
   return (

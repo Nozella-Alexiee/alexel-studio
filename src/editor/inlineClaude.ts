@@ -11,6 +11,7 @@ import { api, errMsg } from "../lib/ipc";
 import { lineHunks } from "../lib/diff";
 import { relative } from "../lib/paths";
 import { confirmDialog, getState, setState, toast } from "../state/store";
+import { prettyKeys } from "../lib/keys";
 
 interface InlineHunk {
   id: number;
@@ -108,7 +109,7 @@ class PanelWidget extends WidgetType {
       t.className = "cm-ai-note";
       t.textContent = `${this.st.hunks.length} perubahan menunggu`;
       box.appendChild(t);
-      box.appendChild(button("Terima semua", "cm-ai-btn is-primary", () => acceptAll(view), "⌘↵"));
+      box.appendChild(button("Terima semua", "cm-ai-btn is-primary", () => acceptAll(view), prettyKeys("Mod+Enter")));
       box.appendChild(button("Tolak semua", "cm-ai-btn", () => cancelInline(view), "Esc"));
     }
     return wrap;
@@ -214,6 +215,7 @@ async function runInline(view: EditorView, prompt: string) {
   const original = view.state.sliceDoc(st.from, st.to);
   const startLine = view.state.doc.lineAt(st.from).number;
   const endLine = view.state.doc.lineAt(st.to).number;
+  if (!(await import("../claude/claude").then((m) => m.ensureConsent()))) return;
   if (s.settings.claudeConfirm && !(await confirmDialog("Kirim ke Claude?", `Baris ${startLine}–${endLine} dari ${rel || "berkas ini"} (plus isi berkas sebagai konteks) dan permintaanmu akan dikirim ke Claude Code. Claude tidak mengubah berkas apa pun; kamu yang memilih perubahan.`, "Kirim"))) return;
   const full = view.state.doc.toString();
   const context = full.length > 40_000 ? full.slice(0, 40_000) + "\n…(dipotong)" : full;
@@ -283,7 +285,7 @@ function finish(view: EditorView, total: number) {
   if (total) {
     flashKepi("sukses", 3000);
     void import("../components/PenguinMascot").then((m) => m.flashPenguin("jempol", 2600));
-    toast(`${total} perubahan dari Claude diterapkan. ⌘Z untuk membatalkan.`, "success");
+    toast(`${total} perubahan dari Claude diterapkan. ${prettyKeys("Mod+Z")} untuk membatalkan.`, "success");
   }
 }
 

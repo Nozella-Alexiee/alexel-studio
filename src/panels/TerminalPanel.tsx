@@ -5,6 +5,7 @@ import { openShell } from "../app/run";
 import { Empty, IconButton } from "../components/ui";
 import { setState, useStore } from "../state/store";
 import * as T from "../terminal/terminals";
+import { prettyKeys, shellName } from "../lib/keys";
 
 export default function TerminalPanel({ showTabs = true }: { showTabs?: boolean }) {
   const terminals = useStore((s) => s.terminals);
@@ -21,7 +22,7 @@ export default function TerminalPanel({ showTabs = true }: { showTabs?: boolean 
   if (!terminals.length) {
     return (
       <Empty icon={<TerminalSquare size={22} />} title="Belum ada terminal" action={<button className="btn btn-primary" onClick={() => void openShell()}>Buka terminal</button>}>
-        Terminal sungguhan (zsh) di folder project. <kbd className="kbd">⌃`</kbd>
+        Terminal sungguhan ({shellName()}) di folder project. <kbd className="kbd">{prettyKeys("Ctrl+`")}</kbd>
       </Empty>
     );
   }

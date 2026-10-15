@@ -3,6 +3,7 @@
 
 import type { FileEntry, GitFile, RunTarget, SearchMatch, Snapshot, TodoItem } from "./types";
 
+const demoPending = new Map<string, () => void>();
 const ROOT = "/Users/demo/nozel-project";
 
 const SEED: Record<string, string> = {
@@ -76,12 +77,12 @@ if __name__ == "__main__":
 <html lang="id">
 <head>
   <meta charset="utf-8" />
-  <title>Halo Nozel</title>
+  <title>Halo Alexel</title>
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
   <main class="card">
-    <h1>Halo dari Nozel Code</h1>
+    <h1>Halo dari Alexel Studio</h1>
     <p>Edit berkas ini, pratinjau ikut berubah.</p>
   </main>
 </body>
@@ -102,9 +103,9 @@ if __name__ == "__main__":
   background: white;
 }
 `,
-  "README.md": `# Nozel Project
+  "README.md": `# Alexel Project
 
-Contoh project untuk mencoba **Nozel Code** di browser.
+Contoh project untuk mencoba **Alexel Studio** di browser.
 
 - Tekan \`⌘P\` untuk membuka berkas
 - Tekan \`⌘K\` untuk palette perintah
@@ -220,7 +221,7 @@ export function createMockBackend(emit: (event: string, payload: unknown) => voi
     read_file_image: () => ({
       data_url:
         "data:image/svg+xml;base64," +
-        btoa(`<svg xmlns="http://www.w3.org/2000/svg" width="320" height="200"><rect width="320" height="200" rx="16" fill="#7aa2f7"/><text x="160" y="110" font-size="28" text-anchor="middle" fill="#0e1016" font-family="sans-serif">Nozel</text></svg>`),
+        btoa(`<svg xmlns="http://www.w3.org/2000/svg" width="320" height="200"><rect width="320" height="200" rx="16" fill="#7aa2f7"/><text x="160" y="110" font-size="28" text-anchor="middle" fill="#0e1016" font-family="sans-serif">Alexel</text></svg>`),
       size_bytes: 1200,
       format: "svg",
     }),
@@ -375,7 +376,7 @@ export function createMockBackend(emit: (event: string, payload: unknown) => voi
       const id = ptyNext++;
       ptys.set(id, { cwd: ROOT, line: "" });
       setTimeout(() => {
-        emit("pty-data", { id, data: "\x1b[2mMode pratinjau browser: terminal tiruan. Di aplikasi Nozel ini shell zsh sungguhan.\x1b[0m" });
+        emit("pty-data", { id, data: "\x1b[2mMode pratinjau browser: terminal tiruan. Di aplikasi Alexel Studio ini shell zsh sungguhan.\x1b[0m" });
         if (command) {
           emit("pty-data", { id, data: `\r\n\x1b[36m$ ${command}\x1b[0m\r\nVITE v8.0.16  ready in 312 ms\r\n➜  Local: http://localhost:1420/\r\n` });
           if (!/dev|serve|watch/.test(command)) {
@@ -434,21 +435,53 @@ export function createMockBackend(emit: (event: string, payload: unknown) => voi
       { id: "cargo:run", label: "cargo run", command: "cargo run", cwd: ROOT, kind: "cargo", detail: "Cargo.toml" },
       { id: "cargo:test", label: "cargo test", command: "cargo test", cwd: ROOT, kind: "cargo", detail: "Cargo.toml" },
     ],
-    claude_detect: () => ({ installed: true, path: "/Users/demo/.local/bin/claude", version: "2.1.0 (Claude Code) — pratinjau", error: null }),
-    claude_run: ({ runId, prompt }) => {
+    claude_detect: () => ({ installed: true, path: "/Users/demo/.local/bin/claude", version: "2.1.0 (Claude Code) — pratinjau", error: null, loggedIn: true, plan: "pro" }),
+    claude_session_send: ({ key, content }) => {
       const sid = "demo-session";
-      const reply =
-        "Ini jawaban tiruan dari mode pratinjau browser.\n\n" +
-        `Kamu mengirim ${prompt.length} karakter. Di aplikasi Nozel, permintaan ini dijalankan oleh Claude Code CLI dengan langganan Pro/Max kamu.\n\n` +
-        "```ts\nconst debounced = useDebounce(doc, 2000);\n```";
-      const send = (o: unknown) => emit("claude-event", { run_id: runId, line: JSON.stringify(o) });
+      const text = (content as { type: string; text?: string }[]).map((c) => c.text ?? "").join("");
+      const send = (o: unknown) => emit("claude-event", { run_id: key, line: JSON.stringify(o) });
+      const reply = `Ini jawaban tiruan dari mode pratinjau browser. Kamu mengirim ${text.length} karakter. Di aplikasi Alexel Studio, Claude Code CLI menjawab dengan langganan Pro/Max kamu.`;
+      setTimeout(() => send({ type: "control_response", response: { subtype: "success", request_id: `init-${key}`, response: { models: [
+        { value: "default", displayName: "Default (recommended)", description: "Opus 5.5", supportedEffortLevels: ["low", "medium", "high", "xhigh", "max"] },
+        { value: "opus", displayName: "Opus 5.5", description: "Untuk tugas sehari-hari yang rumit", supportedEffortLevels: ["low", "medium", "high", "xhigh", "max"] },
+        { value: "sonnet", displayName: "Sonnet 5.5", description: "Efisien untuk tugas rutin", supportedEffortLevels: ["low", "medium", "high", "xhigh", "max"] },
+        { value: "haiku", displayName: "Haiku 5.5", description: "Paling cepat", supportedEffortLevels: ["low", "medium", "high", "xhigh", "max"] },
+      ], commands: [{ name: "compact", description: "Ringkas percakapan" }, { name: "review", description: "Tinjau perubahan" }] } } }), 50);
       setTimeout(() => send({ type: "system", subtype: "init", session_id: sid, model: "claude-opus-5-5" }), 100);
-      setTimeout(() => send({ type: "assistant", message: { content: [{ type: "tool_use", name: "Read", input: { file_path: "src/index.tsx" } }] } }), 500);
-      setTimeout(() => send({ type: "assistant", message: { content: [{ type: "text", text: reply }] } }), 1200);
-      setTimeout(() => send({ type: "result", subtype: "success", session_id: sid, duration_ms: 1300, result: reply }), 1300);
-      setTimeout(() => emit("claude-done", { run_id: runId, code: 0, stderr: "" }), 1350);
+      setTimeout(() => send({ type: "assistant", message: { id: "a1", content: [{ type: "tool_use", id: "t1", name: "Read", input: { file_path: `${ROOT}/src/App.tsx` } }] } }), 400);
+      setTimeout(() => send({ type: "user", message: { content: [{ type: "tool_result", tool_use_id: "t1", content: "ok" }] } }), 600);
+      setTimeout(() => send({ type: "assistant", message: { id: "a2", content: [{ type: "tool_use", id: "t2", name: "Edit", input: { file_path: `${ROOT}/README.md`, old_string: "# Alexel Project", new_string: "# Alexel Project\n\nDicoba dari panel Claude." } }] } }), 800);
+      setTimeout(() => send({ type: "control_request", request_id: "perm1", request: { subtype: "can_use_tool", tool_name: "Edit", tool_use_id: "t2", input: { file_path: `${ROOT}/README.md`, old_string: "# Alexel Project", new_string: "# Alexel Project\n\nDicoba dari panel Claude." }, permission_suggestions: [{ type: "setMode", mode: "acceptEdits", destination: "session" }] } }), 900);
+      demoPending.set(key, () => {
+        send({ type: "user", message: { content: [{ type: "tool_result", tool_use_id: "t2", content: "ok" }] } });
+        let i = 0;
+        const words = reply.split(" ");
+        send({ type: "stream_event", event: { type: "message_start", message: { id: "a3", usage: { input_tokens: 12000 } } } });
+        const tick = setInterval(() => {
+          send({ type: "stream_event", event: { type: "content_block_delta", index: 0, delta: { type: "text_delta", text: (i ? " " : "") + words[i] } } });
+          if (++i >= words.length) {
+            clearInterval(tick);
+            send({ type: "assistant", message: { id: "a3", content: [{ type: "text", text: reply }] } });
+            send({ type: "result", subtype: "success", session_id: sid, duration_ms: 2100, num_turns: 3, total_cost_usd: 0.012, result: reply, modelUsage: { "claude-opus-5-5": { contextWindow: 200000 } } });
+          }
+        }, 40);
+      });
     },
-    claude_cancel: ({ runId }) => emit("claude-done", { run_id: runId, code: 130, stderr: "dibatalkan" }),
+    claude_session_control: ({ key, msg }) => {
+      const m = msg as { type: string; request?: { subtype?: string } };
+      if (m.type === "control_response") demoPending.get(key)?.();
+      if (m.type === "control_request" && m.request?.subtype === "interrupt") emit("claude-event", { run_id: key, line: JSON.stringify({ type: "result", subtype: "error_during_execution", is_error: true, result: "interrupted" }) });
+      return true;
+    },
+    claude_session_close: () => undefined,
+    claude_sessions_list: () => [
+      { id: "demo-1", title: "Rapikan komponen Dashboard", time_ms: Date.now() - 3600e3, messages: 14 },
+      { id: "demo-2", title: "Kenapa test fuzzy gagal?", time_ms: Date.now() - 86400e3 * 2, messages: 6 },
+    ],
+    claude_session_load: () => [
+      JSON.stringify({ type: "user", message: { role: "user", content: "Rapikan komponen Dashboard" } }),
+      JSON.stringify({ type: "assistant", message: { id: "x", content: [{ type: "text", text: "Sudah kurapikan: tiga bagian dipisah jadi komponen kecil." }] } }),
+    ],
     discover_projects: () => [
       { path: "/Users/demo/Projects/toko-online", name: "toko-online", kind: "Laravel", mtimeMs: Date.now() - 3600e3, git: true },
       { path: "/Users/demo/Projects/portofolio", name: "portofolio", kind: "Node", mtimeMs: Date.now() - 86400e3, git: true },

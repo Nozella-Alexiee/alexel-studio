@@ -2,6 +2,7 @@ import { AlertTriangle, CheckCircle2, Info, X } from "lucide-react";
 import React, { useEffect, useRef, useState } from "react";
 import { create } from "zustand";
 import { getState, setState, useStore } from "../state/store";
+import { prettyKeys } from "../lib/keys";
 
 // ---------------- Dialog (confirm / prompt / pilihan) ----------------
 
@@ -250,7 +251,7 @@ export function ContextMenuHost() {
             }}
           >
             <span>{it.label}</span>
-            {it.keys && <span className="ctx-keys">{it.keys}</span>}
+            {it.keys && <span className="ctx-keys">{prettyKeys(it.keys)}</span>}
           </button>
         )
       )}

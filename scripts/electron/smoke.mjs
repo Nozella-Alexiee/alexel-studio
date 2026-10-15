@@ -8,11 +8,13 @@ import { buildAll } from "./build.mjs";
 
 const [script, shot] = process.argv.slice(2);
 await buildAll();
-const server = await createServer({ server: { port: 1420, strictPort: true }, logLevel: "error" });
+// Port terpisah dari `npm run dev` (1420) supaya uji bisa jalan saat server dev aktif.
+const port = Number(process.env.NOZEL_SMOKE_PORT) || 1421;
+const server = await createServer({ server: { port, strictPort: true }, logLevel: "error" });
 await server.listen();
 const child = spawn(electronPath, ["."], {
   stdio: ["ignore", "pipe", "pipe"],
-  env: { ...process.env, VITE_DEV_SERVER_URL: "http://localhost:1420", NOZEL_SMOKE: path.resolve(script), NOZEL_SMOKE_SHOT: shot ? path.resolve(shot) : "" },
+  env: { ...process.env, VITE_DEV_SERVER_URL: `http://localhost:${port}`, NOZEL_SMOKE: path.resolve(script), NOZEL_SMOKE_SHOT: shot ? path.resolve(shot) : "" },
 });
 child.stdout.on("data", (d) => process.stdout.write(d));
 child.stderr.on("data", (d) => {

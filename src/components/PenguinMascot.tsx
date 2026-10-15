@@ -5,6 +5,7 @@ import { memo, useEffect, useState } from "react";
 import { designById } from "../design/designs";
 import { Kepi } from "./CrabMascot";
 import { getState, setState, toast, useStore } from "../state/store";
+import { prettyKeys, fileManagerName } from "../lib/keys";
 
 export type PenguinVariant = "antartika" | "tuxedo" | "kawanan";
 export type PenguinMood = "idle" | "sibuk" | "error" | "sukses" | "jempol" | "hati" | "semangat";
@@ -171,13 +172,13 @@ export function usePenguinMood(): PenguinMood {
 }
 
 const TIPS = [
-  "Tekan ⌘P untuk lompat ke berkas mana saja.",
-  "⌘K membuka semua perintah. Ketik ? untuk tanya Claude.",
+  `Tekan ${prettyKeys("Mod+P")} untuk lompat ke berkas mana saja.`,
+  `${prettyKeys("Mod+Shift+P")} membuka semua perintah. Ketik ? untuk tanya Claude.`,
   "Klik kanan berkas untuk rename, duplikat, atau buka terminal di situ.",
   "Setiap simpan tercatat. Buka panel Riwayat untuk kembali ke versi lama.",
-  "⌘R menjalankan berkas aktif. Smart Run membaca package.json dan Cargo.toml.",
-  "Seret folder dari Finder ke jendela untuk membukanya.",
-  "⌃⌘T mengganti desain. Ada enam, tiga di antaranya pinguin.",
+  `${prettyKeys("Mod+R")} menjalankan berkas aktif. Smart Run membaca package.json dan Cargo.toml.`,
+  `Seret folder dari ${fileManagerName()} ke jendela untuk membukanya.`,
+  `${prettyKeys("Ctrl+Mod+T")} mengganti desain. Ada enam, tiga di antaranya pinguin.`,
   "Error di panel Masalah? Klik Jelaskan dan Claude yang bantu.",
 ];
 
@@ -206,7 +207,7 @@ export function moodLine(mood: PenguinMood): string {
     case "semangat":
       return "Wuih, ngebut! Nozi ikut semangat.";
     default:
-      return "Semua tenang. Buka berkas dengan ⌘P atau ketik apa saja di ⌘K.";
+      return `Semua tenang. Buka berkas dengan ${prettyKeys("Mod+P")} atau cari perintah dengan ${prettyKeys("Mod+Shift+P")}.`;
   }
 }
 
@@ -225,7 +226,7 @@ export function NoziBrand() {
   return (
     <div className="nozi-brand">
       <PenguinMascot variant={v} mood={mood} size={22} />
-      <span>{v === "tuxedo" ? "NOZEL" : v === "kawanan" ? "nozel" : "Nozel"}</span>
+      <span>{v === "tuxedo" ? "ALEXEL" : v === "kawanan" ? "alexel" : "Alexel"}</span>
     </div>
   );
 }

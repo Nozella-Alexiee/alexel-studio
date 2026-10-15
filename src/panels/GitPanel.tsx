@@ -10,6 +10,7 @@ import { join } from "../lib/paths";
 import { timeAgo } from "../lib/format";
 import type { Commit, GitFile } from "../lib/types";
 import { confirmDialog, promptDialog, toast, useStore } from "../state/store";
+import { prettyKeys, modKey } from "../lib/keys";
 
 const STATUS: Record<string, string> = { M: "Diubah", A: "Ditambahkan", D: "Dihapus", R: "Diganti nama", C: "Disalin", U: "Konflik", "?": "Baru" };
 
@@ -168,12 +169,12 @@ export default function GitPanel() {
       <div className="git-commit">
         <textarea
           className="input textarea"
-          placeholder={`Pesan commit (⌘↵ untuk commit ke ${git.branch})`}
+          placeholder={`Pesan commit (${prettyKeys("Mod+Enter")} untuk commit ke ${git.branch})`}
           value={msg}
           rows={2}
           onChange={(e) => setMsg(e.target.value)}
           onKeyDown={(e) => {
-            if (e.key === "Enter" && e.metaKey) {
+            if (e.key === "Enter" && modKey(e)) {
               e.preventDefault();
               void commit();
             }

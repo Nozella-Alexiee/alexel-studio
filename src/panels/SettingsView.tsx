@@ -8,6 +8,8 @@ import { Segmented } from "../components/ui";
 import { ACCENTS, DESIGNS, type DesignInfo } from "../design/designs";
 import { isSaver, useStore, type Settings } from "../state/store";
 import { detectClaude } from "../claude/claude";
+import { isMac } from "../lib/ipc";
+import { EFFORTS, modelChoices, PERM_MODES } from "../claude/options";
 
 function Row({ label, hint, children }: { label: string; hint?: string; children: React.ReactNode }) {
   return (
@@ -58,14 +60,14 @@ function LanguageServers() {
   return (
     <section className="set-section">
       <h2>Server bahasa (autocomplete & go-to-definition)</h2>
-      <p className="hint">TypeScript/JavaScript sudah dibundel. Bahasa lain memakai server yang terpasang di Mac-mu. Pintasan: F12 ke definisi (atau ⌘+klik), F2 rename, ⇧⌥F format, ⇧F12 referensi.</p>
+      <p className="hint">TypeScript/JavaScript sudah dibundel. Bahasa lain memakai server yang terpasang di komputermu. Pintasan: F12 ke definisi (atau {isMac ? "⌘" : "Ctrl"}+klik), F2 rename, {prettyKeys("Shift+Alt+F")} format, ⇧F12 referensi.</p>
       {list === null ? (
         <p className="hint">Memeriksa…</p>
       ) : list.length === 0 ? (
         <p className="hint">Hanya tersedia di aplikasi desktop.</p>
       ) : (
         list.map((s) => (
-          <Row key={s.id} label={s.name} hint={s.bundled ? "Dibundel bersama Nozel" : s.available ? "Terpasang" : s.install ?? undefined}>
+          <Row key={s.id} label={s.name} hint={s.bundled ? "Dibundel bersama Alexel Studio" : s.available ? "Terpasang" : s.install ?? undefined}>
             {s.available ? (
               <span className="tone-success-fg">Aktif</span>
             ) : (
@@ -97,6 +99,7 @@ export default function SettingsView() {
   const power = useStore((st) => st.power);
   const saver = useStore((st) => isSaver(st));
   const claude = useStore((st) => st.claude);
+  const models = useStore((st) => st.claudeModels);
   const set = (p: Partial<Settings>) => A.updateSettings(p);
   const shortcuts = COMMANDS.filter((c) => c.keys && !c.hidden);
 
@@ -136,7 +139,7 @@ export default function SettingsView() {
             Kembalikan bawaan
           </button>
         </Row>
-        <Row label="Tur singkat" hint="Kenalan lagi dengan fitur utama: seret tab, ⌘K Claude, dan maskot.">
+        <Row label="Tur singkat" hint="Kenalan lagi dengan fitur utama: seret tab, Claude inline, dan maskot.">
           <button className="btn btn-sm" onClick={() => void import("../components/Tour").then((m) => m.startTour())}>
             Mulai tur
           </button>
@@ -178,7 +181,7 @@ export default function SettingsView() {
         <h2>
           <Leaf size={16} aria-hidden /> Mode hemat daya
         </h2>
-        <p className="hint">Mengurangi polling, animasi, minimap, dan pemindaian di latar saat MacBook memakai baterai.</p>
+        <p className="hint">Mengurangi polling, animasi, minimap, dan pemindaian di latar saat laptop memakai baterai.</p>
         <Row label="Aktifkan" hint={power ? `Sekarang: ${power.on_battery ? "baterai" : "listrik"}${power.percent != null ? ` ${power.percent}%` : ""}${power.low_power_mode ? " · Low Power Mode" : ""}` : undefined}>
           <Segmented
             label="Mode hemat daya"
@@ -221,20 +224,30 @@ export default function SettingsView() {
             Periksa ulang
           </button>
         </Row>
-        <Row label="Izin Claude di panel" hint="Baca saja: Claude hanya membaca dan menyarankan. Boleh edit: Claude boleh mengubah berkas di folder project (tetap tercatat di time-travel).">
-          <Segmented
-            label="Izin Claude"
-            value={s.claudeMode}
-            onChange={(v) => set({ claudeMode: v })}
-            options={[
-              { id: "read", label: "Baca saja" },
-              { id: "edit", label: "Boleh edit" },
-            ]}
-          />
+        <Row label="Mode izin bawaan" hint={PERM_MODES.find((m) => m.id === s.claudeMode)?.hint}>
+          <Segmented label="Mode izin" value={s.claudeMode} onChange={(v) => set({ claudeMode: v })} options={PERM_MODES.map((m) => ({ id: m.id, label: m.label }))} />
         </Row>
-        <Row label="Model untuk ⌘K di editor" hint="Cepat memakai Sonnet dengan effort rendah (±15 detik). Bawaan mengikuti model Claude Code kamu, bisa beberapa menit.">
+        <Row label="Model bawaan" hint="Bisa diganti per percakapan dari bawah kotak pesan.">
+          <select className="input select" value={s.claudeModel} onChange={(e) => set({ claudeModel: e.target.value })} aria-label="Model Claude">
+            {modelChoices(models).map((m) => (
+              <option key={m.value} value={m.value}>
+                {m.displayName}
+              </option>
+            ))}
+          </select>
+        </Row>
+        <Row label="Effort bawaan" hint="Effort lebih tinggi = berpikir lebih lama dan lebih teliti.">
+          <select className="input select" value={s.claudeEffort} onChange={(e) => set({ claudeEffort: e.target.value })} aria-label="Effort Claude">
+            {EFFORTS.map((e) => (
+              <option key={e.id} value={e.id}>
+                {e.label}
+              </option>
+            ))}
+          </select>
+        </Row>
+        <Row label="Model untuk Claude inline" hint="Cepat memakai Sonnet dengan effort rendah (±15 detik). Bawaan mengikuti model Claude Code kamu, bisa beberapa menit.">
           <Segmented
-            label="Model ⌘K"
+            label="Model Claude inline"
             value={s.claudeInlineModel}
             onChange={(v) => set({ claudeInlineModel: v })}
             options={[
@@ -243,7 +256,7 @@ export default function SettingsView() {
             ]}
           />
         </Row>
-        <Row label="Tampilkan isi sebelum dikirim" hint="Kamu melihat persis teks dan berkas yang akan dikirim ke Claude.">
+        <Row label="Tampilkan isi sebelum dikirim" hint="Setiap pesan, kamu melihat dulu persis teks dan berkas yang akan dikirim ke Claude.">
           <Toggle label="Konfirmasi kirim" value={s.claudeConfirm} onChange={(v) => set({ claudeConfirm: v })} />
         </Row>
         <Row label="Sertakan berkas aktif secara bawaan">

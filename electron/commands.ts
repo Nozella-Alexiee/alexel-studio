@@ -77,7 +77,11 @@ export function buildCommands(ctx: Ctx, hooks: { confirmClose: (win: BrowserWind
     // Claude
     claude_detect: () => claude.claudeDetect(),
     claude_inline: (a) => claude.claudeOnce(String(a.runId), String(a.projectDir ?? ""), String(a.prompt ?? ""), a.model === "default" ? "default" : "fast"),
-    claude_run: (a) => claude.claudeRun(ctx, a.runId, a.projectDir, a.prompt, a.resumeSession, a.mode === "edit" ? "edit" : "read"),
+    claude_session_send: (a) => claude.claudeSessionSend(ctx, String(a.key ?? ""), a.cfg ?? {}, a.content),
+    claude_session_control: (a) => claude.claudeSessionControl(String(a.key ?? ""), a.msg),
+    claude_session_close: (a) => claude.claudeSessionClose(String(a.key ?? "")),
+    claude_sessions_list: (a) => claude.claudeSessionsList(String(a.cwd ?? "")),
+    claude_session_load: (a) => claude.claudeSessionLoad(String(a.cwd ?? ""), String(a.id ?? "")),
     claude_cancel: (a) => claude.claudeCancel(a.runId),
 
     // Ekstensi (Open VSX, data saja)
@@ -126,7 +130,7 @@ export function buildCommands(ctx: Ctx, hooks: { confirmClose: (win: BrowserWind
     open_external: (a) => {
       if (typeof a.url === "string" && /^(https?:|mailto:)/i.test(a.url)) return shell.openExternal(a.url);
     },
-    window_set_title: (a, win) => win?.setTitle(String(a.title ?? "Nozel Code")),
+    window_set_title: (a, win) => win?.setTitle(String(a.title ?? "Alexel Studio")),
     window_set_traffic_lights: (a, win) => {
       if (process.platform === "darwin" && win && typeof a.y === "number") win.setWindowButtonPosition({ x: 16, y: Math.max(6, Math.round(a.y)) });
     },

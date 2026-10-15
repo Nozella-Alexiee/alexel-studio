@@ -134,3 +134,33 @@ export function lineHunks(prev: string, next: string): Hunk[] {
     return { oldStart, oldCount: e.a, newLines: b.slice(e.posNew, e.posNew + e.b) };
   });
 }
+
+export interface DiffRow {
+  k: " " | "-" | "+" | "…";
+  t: string;
+}
+
+/** Diff gabungan (unified) dengan 2 baris konteks, maksimal `limit` baris. */
+export function diffRows(before: string, after: string, limit = 80): { rows: DiffRow[]; added: number; removed: number; more: number } {
+  const a = splitLines(before);
+  const hunks = lineHunks(before, after);
+  const rows: DiffRow[] = [];
+  let added = 0;
+  let removed = 0;
+  let total = 0;
+  let lastEnd = -1;
+  for (const h of hunks) {
+    const ctxFrom = Math.max(0, h.oldStart - 2, lastEnd);
+    if (lastEnd >= 0 && ctxFrom > lastEnd) rows.push({ k: "…", t: "" });
+    for (let i = ctxFrom; i < h.oldStart; i++) rows.push({ k: " ", t: a[i] });
+    for (let i = 0; i < h.oldCount; i++) rows.push({ k: "-", t: a[h.oldStart + i] });
+    for (const l of h.newLines) rows.push({ k: "+", t: l });
+    removed += h.oldCount;
+    added += h.newLines.length;
+    const end = Math.min(a.length, h.oldStart + h.oldCount + 2);
+    for (let i = h.oldStart + h.oldCount; i < end; i++) rows.push({ k: " ", t: a[i] });
+    lastEnd = end;
+  }
+  total = rows.length;
+  return { rows: rows.slice(0, limit), added, removed, more: Math.max(0, total - limit) };
+}

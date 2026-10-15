@@ -46,7 +46,20 @@ export async function claudeDetect() {
   if (!p) return { installed: false, path: null, version: null, error: "Claude Code CLI belum terpasang. Pasang: npm install -g @anthropic-ai/claude-code" };
   try {
     const r = await runCapture(p, ["--version"], { timeoutMs: 10_000 });
-    if (r.success) return { installed: true, path: p, version: r.stdout.trim(), error: null };
+    if (r.success) {
+      // Status login (tanpa email): supaya panel bisa menawarkan tombol "Masuk" sebelum pengguna mengirim pesan.
+      let loggedIn: boolean | null = null;
+      let plan: string | null = null;
+      try {
+        const a = await runCapture(p, ["auth", "status", "--json"], { timeoutMs: 10_000 });
+        const j = JSON.parse(a.stdout.trim() || "{}") as { loggedIn?: boolean; subscriptionType?: string };
+        if (typeof j.loggedIn === "boolean") loggedIn = j.loggedIn;
+        if (typeof j.subscriptionType === "string") plan = j.subscriptionType;
+      } catch {
+        /* versi CLI lama tanpa `auth status` */
+      }
+      return { installed: true, path: p, version: r.stdout.trim(), error: null, loggedIn, plan };
+    }
     return { installed: false, path: p, version: null, error: `claude ditemukan tapi gagal jalan: ${r.timedOut ? "timeout" : r.stderr.trim()}` };
   } catch (e) {
     return { installed: false, path: p, version: null, error: (e as Error).message };
@@ -54,39 +67,277 @@ export async function claudeDetect() {
 }
 
 /**
- * Mode izin: "read" = Claude hanya membaca & menyarankan (`plan`), "edit" = boleh mengubah berkas
- * di folder project (`acceptEdits`). Perintah shell tetap ditolak di mode non-interaktif.
+ * Mode izin yang bisa dipilih di panel:
+ * "default" = tanya dulu sebelum mengedit atau menjalankan perintah (kartu izin di panel),
+ * "acceptEdits" = edit berkas langsung, perintah lain tetap ditanyakan,
+ * "plan" = hanya membaca dan menyusun rencana.
  */
-export function claudeRun(ctx: Ctx, runId: string, projectDir: string, prompt: string, resume?: string | null, mode: "read" | "edit" = "read") {
-  if (Buffer.byteLength(prompt) > MAX_PROMPT_BYTES) throw new Error("Konteks terlalu besar untuk dikirim (maks 400 KB).");
+export type PermMode = "default" | "acceptEdits" | "plan";
+export const PERM_MODES: PermMode[] = ["default", "acceptEdits", "plan"];
+const EFFORTS = ["low", "medium", "high", "xhigh", "max"];
+
+export interface SessionCfg {
+  cwd: string;
+  /** Alias ("opus", "sonnet", "haiku", "fable") atau nama model lengkap; kosong = bawaan akun. */
+  model?: string | null;
+  /** "low" … "max"; kosong = bawaan model. */
+  effort?: string | null;
+  mode: PermMode;
+  /** session_id Claude Code untuk dilanjutkan. */
+  resume?: string | null;
+}
+
+interface Live {
+  child: ChildProcess;
+  cfg: SessionCfg;
+  seq: number;
+}
+/** Satu proses CLI per percakapan, tetap hidup di antara giliran (stdin stream-json). */
+const sessions = new Map<string, Live>();
+
+const MAX_CONTENT_BYTES = 24 * 1024 * 1024;
+const validId = (s: unknown): s is string => typeof s === "string" && /^[A-Za-z0-9-]{1,80}$/.test(s);
+const validModel = (s: unknown): s is string => typeof s === "string" && /^[A-Za-z0-9._[\]-]{1,80}$/.test(s) && s !== "default";
+
+export function sanitizeCfg(raw: Partial<SessionCfg> | undefined): SessionCfg {
+  const r = raw ?? {};
+  return {
+    cwd: typeof r.cwd === "string" ? r.cwd : "",
+    model: validModel(r.model) ? r.model : null,
+    effort: typeof r.effort === "string" && EFFORTS.includes(r.effort) ? r.effort : null,
+    mode: PERM_MODES.includes(r.mode as PermMode) ? (r.mode as PermMode) : "default",
+    resume: validId(r.resume) ? r.resume : null,
+  };
+}
+
+/** Argumen CLI untuk sesi stream-json; permintaan izin dijawab pengguna lewat panel. */
+export function sessionArgs(cfg: SessionCfg): string[] {
+  const args = [
+    "-p", "--input-format", "stream-json", "--output-format", "stream-json", "--verbose", "--include-partial-messages",
+    "--permission-prompts", "host", "--permission-prompt-tool", "stdio",
+    "--permission-mode", cfg.mode,
+  ];
+  if (cfg.model) args.push("--model", cfg.model);
+  if (cfg.effort) args.push("--effort", cfg.effort);
+  if (cfg.resume) args.push("--resume", cfg.resume);
+  return args;
+}
+
+function writeLine(live: Live, obj: unknown) {
+  if (live.child.stdin && !live.child.stdin.destroyed) live.child.stdin.write(JSON.stringify(obj) + "\n");
+}
+
+function startSession(ctx: Ctx, key: string, cfg: SessionCfg): Live {
   const cli = findClaude();
   if (!cli) throw new Error("Claude Code CLI belum terpasang.");
-  const args = ["-p", "--output-format", "stream-json", "--verbose", "--permission-mode", mode === "edit" ? "acceptEdits" : "plan"];
-  if (resume && /^[A-Za-z0-9-]+$/.test(resume)) args.push("--resume", resume);
-  const cwd = projectDir && fs.existsSync(projectDir) ? projectDir : os.homedir();
-  const child = spawnCli(cli, args, cwd);
-  runs.set(runId, child);
-  child.stdin?.end(prompt);
+  const cwd = cfg.cwd && fs.existsSync(cfg.cwd) ? cfg.cwd : os.homedir();
+  const child = spawnCli(cli, sessionArgs(cfg), cwd);
+  const live: Live = { child, cfg, seq: 0 };
+  sessions.set(key, live);
   let stderr = "";
   child.stderr?.on("data", (b: Buffer) => {
     if (stderr.length < 8000) stderr += b.toString("utf8");
   });
   const rl = readline.createInterface({ input: child.stdout! });
   rl.on("line", (line) => {
-    if (line.trim()) ctx.emit("claude-event", { run_id: runId, line });
+    if (line.trim()) ctx.emit("claude-event", { run_id: key, line });
   });
   let done = false;
   const finish = (code: number | null) => {
     if (done) return;
     done = true;
-    runs.delete(runId);
-    ctx.emit("claude-done", { run_id: runId, code, stderr: stderr.slice(0, 4000) });
+    if (sessions.get(key) === live) sessions.delete(key);
+    // replaced: proses baru dengan kunci yang sama sudah berjalan (effort/folder diganti).
+    ctx.emit("claude-done", { run_id: key, code, stderr: stderr.slice(0, 4000), replaced: sessions.has(key) });
   };
   child.on("error", (e) => {
     stderr += e.message;
     finish(null);
   });
   child.on("close", (code, signal) => finish(signal ? 130 : code));
+  child.stdin?.on("error", () => {});
+  // initialize: CLI membalas daftar model, akun, dan slash command (diteruskan ke renderer).
+  writeLine(live, { type: "control_request", request_id: `init-${key}`, request: { subtype: "initialize" } });
+  return live;
+}
+
+/**
+ * Kirim satu pesan pengguna. Proses dibuat bila belum ada; model & mode izin diganti langsung
+ * lewat control request, sedangkan folder/effort yang berubah memulai ulang proses (sesi dilanjutkan).
+ */
+export function claudeSessionSend(ctx: Ctx, key: string, rawCfg: Partial<SessionCfg>, content: unknown) {
+  if (!validId(key)) throw new Error("Sesi tidak valid.");
+  const blocks = typeof content === "string" ? [{ type: "text", text: content }] : content;
+  if (!Array.isArray(blocks) || !blocks.length) throw new Error("Pesan kosong.");
+  for (const b of blocks as { type?: string; text?: unknown; source?: { type?: string; media_type?: string; data?: unknown } }[]) {
+    const okText = b?.type === "text" && typeof b.text === "string";
+    const okImage = b?.type === "image" && b.source?.type === "base64" && /^image\/(png|jpeg|gif|webp)$/.test(b.source.media_type ?? "") && typeof b.source.data === "string";
+    if (!okText && !okImage) throw new Error("Isi pesan tidak didukung.");
+  }
+  if (Buffer.byteLength(JSON.stringify(blocks)) > MAX_CONTENT_BYTES) throw new Error("Pesan terlalu besar untuk dikirim (maks 24 MB).");
+  const cfg = sanitizeCfg(rawCfg);
+  let live = sessions.get(key);
+  if (live && (live.cfg.cwd !== cfg.cwd || (live.cfg.effort ?? null) !== (cfg.effort ?? null))) {
+    claudeSessionClose(key);
+    live = undefined;
+  }
+  if (!live) live = startSession(ctx, key, cfg);
+  else {
+    if ((live.cfg.model ?? null) !== (cfg.model ?? null)) writeLine(live, { type: "control_request", request_id: `m-${key}-${++live.seq}`, request: { subtype: "set_model", model: cfg.model ?? "default" } });
+    if (live.cfg.mode !== cfg.mode) writeLine(live, { type: "control_request", request_id: `p-${key}-${++live.seq}`, request: { subtype: "set_permission_mode", mode: cfg.mode } });
+    live.cfg = { ...cfg, resume: live.cfg.resume };
+  }
+  writeLine(live, { type: "user", message: { role: "user", content: blocks }, parent_tool_use_id: null, session_id: "" });
+}
+
+/**
+ * Pesan kontrol dari renderer ke CLI: jawaban izin (control_response) atau interrupt /
+ * set_model / set_permission_mode (control_request). Mengembalikan false bila sesi tidak hidup.
+ */
+export function claudeSessionControl(key: string, msg: unknown): boolean {
+  const live = sessions.get(key);
+  if (!live) return false;
+  const m = msg as { type?: string; request_id?: string; request?: { subtype?: string; mode?: string; model?: string }; response?: { request_id?: string } };
+  if (m?.type === "control_response") {
+    if (typeof m.response?.request_id !== "string") throw new Error("Jawaban izin tidak valid.");
+  } else if (m?.type === "control_request") {
+    const sub = m.request?.subtype;
+    if (sub === "set_permission_mode") {
+      if (!PERM_MODES.includes(m.request?.mode as PermMode)) throw new Error("Mode izin tidak valid.");
+      live.cfg.mode = m.request!.mode as PermMode;
+    } else if (sub === "set_model") {
+      if (m.request?.model !== "default" && !validModel(m.request?.model)) throw new Error("Model tidak valid.");
+      live.cfg.model = m.request?.model === "default" ? null : (m.request?.model ?? null);
+    } else if (sub !== "interrupt") throw new Error("Permintaan kontrol tidak didukung.");
+    m.request_id ??= `c-${key}-${++live.seq}`;
+  } else throw new Error("Pesan kontrol tidak valid.");
+  writeLine(live, m);
+  return true;
+}
+
+/** Tutup proses sesi (stdin ditutup, lalu dimatikan bila belum keluar). */
+export function claudeSessionClose(key: string) {
+  const live = sessions.get(key);
+  if (!live) return;
+  sessions.delete(key);
+  try {
+    live.child.stdin?.end();
+  } catch {
+    /* sudah tertutup */
+  }
+  const t = setTimeout(() => killTree(live.child), 1500);
+  live.child.once("close", () => clearTimeout(t));
+}
+
+// ---------------- Riwayat sesi (~/.claude/projects) ----------------
+
+const configDir = () => process.env.CLAUDE_CONFIG_DIR || path.join(os.homedir(), ".claude");
+
+/** Folder sesi Claude Code sebuah project: path dengan semua karakter non-alfanumerik jadi "-". */
+export function projectSessionDirs(cwd: string, base = path.join(configDir(), "projects")): string[] {
+  const enc = cwd.replace(/[^A-Za-z0-9]/g, "-");
+  let names: string[] = [];
+  try {
+    names = fs.readdirSync(base);
+  } catch {
+    return [];
+  }
+  // Path panjang dipotong dan diberi akhiran hash oleh CLI; cocokkan awalannya.
+  return names.filter((n) => n === enc || (enc.length > 180 && n.startsWith(enc.slice(0, 180)))).map((n) => path.join(base, n));
+}
+
+/** Teks permintaan pengguna dari sebuah pesan (tanpa blok konteks yang ditambahkan Alexel Studio). */
+export function promptTitle(content: unknown): string {
+  let text = "";
+  if (typeof content === "string") text = content;
+  else if (Array.isArray(content)) {
+    const texts = content.filter((c) => c?.type === "text" && typeof c.text === "string").map((c) => c.text as string);
+    if (!texts.length) return "";
+    text = texts[texts.length - 1];
+  }
+  const marker = text.lastIndexOf("### Permintaan\n");
+  if (marker >= 0) text = text.slice(marker + 15);
+  if (/^<(command|local-command|system)/.test(text.trim())) return "";
+  return text.replace(/\s+/g, " ").trim().slice(0, 120);
+}
+
+export interface SessionInfo {
+  id: string;
+  title: string;
+  time_ms: number;
+  messages: number;
+}
+
+/** Daftar sesi Claude Code untuk folder ini, terbaru dulu. */
+export function claudeSessionsList(cwd: string, base?: string): SessionInfo[] {
+  const out: SessionInfo[] = [];
+  for (const dir of projectSessionDirs(cwd, base)) {
+    let files: string[] = [];
+    try {
+      files = fs.readdirSync(dir).filter((f) => f.endsWith(".jsonl"));
+    } catch {
+      continue;
+    }
+    for (const f of files) {
+      const id = f.slice(0, -6);
+      if (!validId(id)) continue;
+      const full = path.join(dir, f);
+      let mtime = 0;
+      let head = "";
+      try {
+        const st = fs.statSync(full);
+        mtime = st.mtimeMs;
+        const fd = fs.openSync(full, "r");
+        const buf = Buffer.alloc(Math.min(st.size, 256 * 1024));
+        fs.readSync(fd, buf, 0, buf.length, 0);
+        fs.closeSync(fd);
+        head = buf.toString("utf8");
+      } catch {
+        continue;
+      }
+      let title = "";
+      let custom = "";
+      let messages = 0;
+      for (const line of head.split("\n")) {
+        if (!line) continue;
+        let d: { type?: string; isSidechain?: boolean; message?: { content?: unknown }; title?: string; customTitle?: string };
+        try {
+          d = JSON.parse(line);
+        } catch {
+          continue;
+        }
+        if (d.type === "custom-title" && (d.customTitle || d.title)) custom = String(d.customTitle || d.title);
+        if (d.isSidechain) continue;
+        if (d.type === "user" || d.type === "assistant") messages++;
+        if (!title && d.type === "user") title = promptTitle(d.message?.content);
+      }
+      if (!messages) continue;
+      out.push({ id, title: custom || title || "Percakapan tanpa judul", time_ms: mtime, messages });
+    }
+  }
+  return out.sort((a, b) => b.time_ms - a.time_ms).slice(0, 100);
+}
+
+/** Baris user/assistant sebuah sesi (maks 600 terakhir) untuk ditampilkan ulang di panel. */
+export function claudeSessionLoad(cwd: string, id: string, base?: string): string[] {
+  if (!validId(id)) throw new Error("Sesi tidak valid.");
+  for (const dir of projectSessionDirs(cwd, base)) {
+    const full = path.join(dir, `${id}.jsonl`);
+    if (!fs.existsSync(full)) continue;
+    const keep: string[] = [];
+    for (const line of fs.readFileSync(full, "utf8").split("\n")) {
+      if (!line.includes('"type":"user"') && !line.includes('"type":"assistant"')) continue;
+      try {
+        const d = JSON.parse(line);
+        if (d.isSidechain || (d.type !== "user" && d.type !== "assistant")) continue;
+        keep.push(JSON.stringify({ type: d.type, message: d.message }));
+      } catch {
+        /* baris rusak dilewati */
+      }
+    }
+    return keep.slice(-600);
+  }
+  throw new Error("Sesi tidak ditemukan.");
 }
 
 /**
@@ -140,4 +391,6 @@ export function claudeCancel(runId: string) {
 export function killAllClaude() {
   for (const c of runs.values()) killTree(c);
   runs.clear();
+  for (const l of sessions.values()) killTree(l.child);
+  sessions.clear();
 }

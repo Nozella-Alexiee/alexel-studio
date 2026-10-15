@@ -81,7 +81,7 @@ function Welcome() {
           </div>
         )}
         <div className="welcome-hero-text">
-          <h1>{penguin ? "Halo! Nozi siap ngoding." : "Nozel Code"}</h1>
+          <h1>{penguin ? "Halo! Nozi siap ngoding." : "Alexel Studio"}</h1>
           <p className="hint">Pilih project di bawah, atau buka folder lain.</p>
           <div className="welcome-actions">
             <button className="btn btn-primary" onClick={() => void A.openProjectDialog()}>
@@ -93,7 +93,7 @@ function Welcome() {
           </div>
         </div>
       </div>
-      {isDemo && <p className="hint small">Mode pratinjau browser: backend tiruan. Buka lewat aplikasi Nozel untuk berkas sungguhan.</p>}
+      {isDemo && <p className="hint small">Mode pratinjau browser: backend tiruan. Buka lewat aplikasi Alexel Studio untuk berkas sungguhan.</p>}
       <div className="welcome-grid">
         <ProjectPicker />
         <section className="card">
@@ -233,7 +233,7 @@ export default function Dashboard() {
               ))}
             </div>
           ) : (
-            <p className="hint">Tidak ada script terdeteksi. Nozel membaca package.json, Cargo.toml, Makefile, composer.json, go.mod, dan lainnya.</p>
+            <p className="hint">Tidak ada script terdeteksi. Alexel Studio membaca package.json, Cargo.toml, Makefile, composer.json, go.mod, dan lainnya.</p>
           )}
         </section>
         <section className="card">

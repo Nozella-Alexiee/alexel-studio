@@ -3,6 +3,9 @@
 import { DESIGNS, designById } from "../design/designs";
 import * as docs from "../editor/documents";
 import { isMac } from "../lib/ipc";
+import { normalizeKeys, prettyKeys } from "../lib/keys";
+
+export { normalizeKeys, prettyKeys };
 import { getState, setState, activeTab, setLayout } from "../state/store";
 import * as A from "./actions";
 import { openClaudeInteractive, openShell, runActiveFile, toggleTerminal } from "./run";
@@ -29,12 +32,18 @@ export function openPalette(initial = "") {
 
 const claude = () => import("../claude/claude");
 
+/** Buka panel Claude dan fokus ke kotak pesan (⌘⎋ / Ctrl+Esc, seperti ekstensi VS Code). */
+function focusClaude() {
+  setLayout({ right: true, rightView: "claude" });
+  requestAnimationFrame(() => requestAnimationFrame(() => document.getElementById("claude-input")?.focus()));
+}
+
 export const COMMANDS: Command[] = [
   { id: "quickOpen", label: "Buka berkas…", group: "Berkas", keys: "Mod+P", run: () => openPalette("") },
   { id: "palette", label: "Palette perintah", group: "Umum", keys: "Mod+K", run: () => openPalette(">") },
-  { id: "tour", label: "Tur singkat Nozel", group: "Bantuan", run: () => void import("../components/Tour").then((m) => m.startTour()) },
+  { id: "tour", label: "Tur singkat Alexel Studio", group: "Bantuan", run: () => void import("../components/Tour").then((m) => m.startTour()) },
   { id: "reopenTab", label: "Buka lagi tab yang ditutup", group: "Berkas", keys: "Mod+Shift+T", run: () => void A.reopenClosedTab() },
-  { id: "inlineClaude", label: "Claude: ubah seleksi di tempat (⌘K di editor)", group: "Claude", run: () => void openInlineClaude(), when: () => !!activeTab() && activeTab()!.kind === "text" },
+  { id: "inlineClaude", label: "Claude: ubah seleksi di tempat", group: "Claude", run: () => void openInlineClaude(), when: () => !!activeTab() && activeTab()!.kind === "text" },
   { id: "palette2", label: "Palette perintah", group: "Umum", keys: "Mod+Shift+P", run: () => openPalette(">"), hidden: true },
   { id: "gotoLine", label: "Pergi ke baris…", group: "Editor", keys: "Ctrl+G", run: () => openPalette(":"), when: hasText },
   { id: "gotoSymbol", label: "Pergi ke simbol di berkas…", group: "Editor", keys: "Mod+Shift+O", run: () => openPalette("@"), when: hasText },
@@ -81,7 +90,10 @@ export const COMMANDS: Command[] = [
   { id: "runTarget", label: "Smart Run: pilih target…", group: "Run", run: () => openPalette("!"), when: hasRoot },
 
   { id: "claude", label: "Panel Claude", group: "Claude", keys: "Mod+Alt+B", run: () => A.toggleRight("claude") },
-  { id: "askClaude", label: "Tanya Claude", group: "Claude", keys: "Mod+L", run: () => { setLayout({ right: true, rightView: "claude" }); requestAnimationFrame(() => document.getElementById("claude-input")?.focus()); } },
+  { id: "askClaude", label: "Claude: buka & fokus", group: "Claude", keys: "Mod+Escape", run: focusClaude },
+  { id: "askClaude2", label: "Tanya Claude", group: "Claude", keys: "Mod+L", run: focusClaude, hidden: true },
+  { id: "claudeHistory", label: "Claude: riwayat percakapan", group: "Claude", run: () => { focusClaude(); requestAnimationFrame(() => (document.querySelector('.claude-head [aria-label="Riwayat percakapan"]') as HTMLButtonElement | null)?.click()); } },
+  { id: "claudeMode", label: "Claude: ganti mode izin", group: "Claude", run: () => void claude().then((m) => m.cycleClaudeMode()) },
   { id: "explainSel", label: "Claude: jelaskan seleksi", group: "Claude", run: () => void claude().then((m) => m.explainSelection()), when: hasText },
   { id: "claudeTerm", label: "Claude interaktif di terminal", group: "Claude", run: openClaudeInteractive },
   { id: "newChat", label: "Claude: percakapan baru", group: "Claude", run: () => void claude().then((m) => m.newConversation()) },
@@ -126,34 +138,11 @@ function comboOf(e: KeyboardEvent): string {
   return parts.join("+");
 }
 
-/** Notasi COMMANDS → notasi platform: di Windows/Linux "Mod" jadi Ctrl, "Ctrl+Mod" jadi Ctrl+Alt. */
-export function normalizeKeys(keys: string): string {
-  if (isMac) return keys;
-  const parts = keys.split("+");
-  const hasCtrl = parts.includes("Ctrl");
-  const hasMod = parts.includes("Mod");
-  const out = parts.filter((p) => p !== "Mod" && p !== "Ctrl");
-  const mods: string[] = [];
-  if (hasCtrl || hasMod) mods.push("Ctrl");
-  if (hasCtrl && hasMod && !out.includes("Alt")) mods.push("Alt");
-  return [...mods, ...out].join("+");
-}
-
 const byKeys = new Map<string, Command>();
 for (const c of COMMANDS) if (c.keys) byKeys.set(normalizeKeys(c.keys), c);
 
-/** Teks shortcut untuk ditampilkan: mac "⌘⇧P", Windows/Linux "Ctrl+Shift+P". */
-export function prettyKeys(keys?: string): string {
-  if (!keys) return "";
-  if (!isMac) return normalizeKeys(keys);
-  return keys
-    .split("+")
-    .map((k) => ({ Mod: "⌘", Shift: "⇧", Alt: "⌥", Ctrl: "⌃", Tab: "⇥" })[k] ?? k)
-    .join("");
-}
-
 /** Perintah yang tetap boleh dipakai saat fokus di terminal; sisanya diteruskan ke shell. */
-const TERMINAL_SAFE = new Set(["quickOpen", "palette2", "sidebar", "panel", "terminal", "newTerminal", "settings", "cycleDesign", "explorer", "search", "git", "extensions"]);
+const TERMINAL_SAFE = new Set(["askClaude", "askClaude2", "quickOpen", "palette2", "sidebar", "panel", "terminal", "newTerminal", "settings", "cycleDesign", "explorer", "search", "git", "extensions"]);
 
 /** Global key handler (fase capture, supaya didahulukan dari CodeMirror). */
 export function handleGlobalKey(e: KeyboardEvent) {

@@ -1,4 +1,4 @@
-# Nozel Code: integrasi Claude Code & cara mengukur performa
+# Alexel Studio: integrasi Claude Code & cara mengukur performa
 
 ## 1. Claude Code lewat CLI resmi (bukan API key)
 
@@ -29,12 +29,12 @@ Setelah itu buka Nozel; status bar menampilkan **Claude** dan panel Claude berst
 
 ## 2. Cara mengukur performa
 
-### Hasil ukur Nozel Code 0.2.0 (Electron 44, MacBook Air M1, arm64)
+### Hasil ukur Alexel Studio 0.2.0 (Electron 44, MacBook Air M1, arm64)
 
 | Ukuran | Hasil |
 |---|---|
 | `.dmg` | 123 MB |
-| `Nozel Code.app` | 283 MB |
+| `Alexel Studio.app` | 283 MB |
 | RAM, project terbuka (4 proses Electron) | ~420 MB |
 | RAM + language server TypeScript (seluruh pohon proses) | ~490 MB |
 
@@ -45,7 +45,7 @@ ekstensi.
 ### RAM (RSS seluruh pohon proses)
 
 ```bash
-pgrep -f "Nozel Code.app" | xargs ps -o rss= -p | awk '{s+=$1} END {printf "%.0f MB\n", s/1024}'
+pgrep -f "Alexel Studio.app" | xargs ps -o rss= -p | awk '{s+=$1} END {printf "%.0f MB\n", s/1024}'
 ```
 
 Untuk VS Code, ganti pola dengan `"Visual Studio Code.app"`. Bandingkan di mesin yang sama
@@ -63,7 +63,7 @@ top -l 5 -stats pid,command,cpu | grep -i nozel
 ### Ukuran paket
 
 ```bash
-du -sh "release/mac-arm64/Nozel Code.app" release/*.dmg
+du -sh "release/mac-arm64/Alexel Studio.app" release/*.dmg
 ```
 
 ---

@@ -125,7 +125,7 @@ export default function ExtensionsPanel() {
     return () => clearTimeout(t);
   }, [q, cat]);
 
-  if (!isNative) return <Empty icon={<Puzzle size={24} />} title="Ekstensi">Pasang tema & snippet dari Open VSX di aplikasi desktop Nozel.</Empty>;
+  if (!isNative) return <Empty icon={<Puzzle size={24} />} title="Ekstensi">Pasang tema & snippet dari Open VSX di aplikasi desktop Alexel Studio.</Empty>;
 
   const install = async (r: Result) => {
     setInstalling(r.id);
@@ -158,7 +158,7 @@ export default function ExtensionsPanel() {
           <div className="input-tools">{busy ? <Spinner size={12} /> : <Search size={13} aria-hidden style={{ margin: 6, color: "var(--fg-subtle)" }} />}</div>
         </div>
         <Segmented label="Kategori" value={cat} onChange={setCat} options={CATS.map((c) => ({ id: c.id, label: c.label }))} />
-        <p className="hint ext-note">Nozel memakai tema, tema ikon, snippet, dan grammar dari ekstensi. Kode JavaScript ekstensi tidak pernah dijalankan.</p>
+        <p className="hint ext-note">Alexel Studio memakai tema, tema ikon, snippet, dan grammar dari ekstensi. Kode JavaScript ekstensi tidak pernah dijalankan.</p>
       </div>
       <div className="ext-scroll">
         {installed.length > 0 && (

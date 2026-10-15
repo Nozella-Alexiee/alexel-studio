@@ -1,4 +1,4 @@
-// Nozel Code — main process Electron.
+// Alexel Studio — main process Electron.
 // Keamanan: contextIsolation + sandbox, tanpa nodeIntegration, CSP ketat, navigasi & popup diblok,
 // semua command lewat satu pintu IPC dengan whitelist (lihat commands.ts).
 
@@ -13,7 +13,7 @@ import { pruneUndo } from "./fsOps";
 import { extAsset } from "./extensions";
 import { resolvePreview } from "./preview";
 import { killAllPtys } from "./pty";
-import { migrateFromTauri } from "./store";
+import { migrateOldData } from "./store";
 import { warmPath, type Ctx } from "./util";
 import { unwatch } from "./watcher";
 
@@ -55,7 +55,7 @@ const pendingOpen: string[] = [];
  * perbandingan path di UI sederhana. Isi berkas & output perintah tidak pernah diubah.
  */
 const CONTENT_KEYS = new Set(["content", "text", "line", "data", "diff", "stdout", "stderr", "message", "result", "body", "command", "before", "after", "error"]);
-const CONTENT_CMDS = new Set(["read_file_text", "history_read", "ext_read_file", "git_head", "git_diff_file", "claude_inline"]);
+const CONTENT_CMDS = new Set(["read_file_text", "history_read", "ext_read_file", "git_head", "git_diff_file", "claude_inline", "claude_session_load"]);
 function toUiPaths(v: unknown, key = ""): unknown {
   if (process.platform !== "win32" || CONTENT_KEYS.has(key)) return v;
   if (typeof v === "string") return /^([A-Za-z]:\\|\\\\)/.test(v) && !/[\r\n]/.test(v) ? v.replace(/\\/g, "/").replace(/^[a-z]:/, (d) => d.toUpperCase()) : v;
@@ -189,7 +189,7 @@ function buildMenu() {
     ...(isMac
       ? [
           {
-            label: "Nozel Code",
+            label: "Alexel Studio",
             submenu: [{ role: "about" }, { type: "separator" }, { role: "hide" }, { role: "hideOthers" }, { role: "unhide" }, { type: "separator" }, { role: "quit" }],
           } as MenuItemConstructorOptions,
         ]
@@ -216,7 +216,7 @@ function createWindow() {
     minWidth: 760,
     minHeight: 520,
     show: false,
-    title: "Nozel Code",
+    title: "Alexel Studio",
     backgroundColor: "#0e1016",
     // Semua OS memakai title bar Nozel sendiri. macOS: lampu lalu lintas; Windows/Linux:
     // tombol jendela OS ditumpangkan (overlay) di kanan title bar, warnanya mengikuti desain.
@@ -337,7 +337,7 @@ app.on("activate", () => {
 
 app.whenReady().then(() => {
   warmPath();
-  migrateFromTauri(ctx);
+  if (!process.env.NOZEL_USER_DATA) migrateOldData(ctx, app.getPath("appData"));
   session.defaultSession.setPermissionRequestHandler((_wc, permission, cb) => cb(permission === "clipboard-sanitized-write"));
   serveApp();
   buildMenu();

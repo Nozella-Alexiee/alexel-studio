@@ -63,7 +63,7 @@ export async function openProject(root: string, opts: { restoreTabs?: { groups: 
   void refreshGit();
   void refreshRunTargets();
   void import("../panels/todoData").then((m) => m.refreshTodos());
-  void setWindowTitle(`${basename(root)} — Nozel Code`);
+  void setWindowTitle(`${basename(root)} — Alexel Studio`);
   if (opts.restoreTabs) {
     for (let g = 0; g < opts.restoreTabs.groups.length && g < 2; g++) {
       const grp = opts.restoreTabs.groups[g];
@@ -589,7 +589,7 @@ export async function onFsChanged(paths: string[], git: boolean) {
     if (!getState().tabs[p] || getState().tabs[p].kind !== "text") continue;
     const r = await docs.externalChange(p);
     if (r === "conflict") toast(`${basename(p)} berubah di disk saat ada editan yang belum disimpan.`, "error", { label: "Bandingkan", run: () => void import("./conflicts").then((m) => m.resolveConflict(p)) });
-    if (r === "missing") toast(`${basename(p)} dihapus dari luar Nozel.`, "info");
+    if (r === "missing") toast(`${basename(p)} dihapus dari luar Alexel Studio.`, "info");
   }
   if (git || paths.length) {
     clearTimeout(gitTimer);

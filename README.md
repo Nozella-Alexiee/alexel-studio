@@ -1,4 +1,4 @@
-# Nozel Code 🐧
+# Alexel Studio 🐧
 
 > Editor kode desktop buatan sendiri ala VS Code, dengan identitas pinguin (maskot **Nozi**),
 > 6 desain yang bisa diganti kapan saja, autocomplete beneran lewat LSP, ekstensi dari Open VSX,
@@ -20,7 +20,7 @@
 
 ### Angka jujur (diukur di MacBook Air M1)
 
-| | Nozel Code 0.2.0 (Electron) | Catatan |
+| | Alexel Studio 0.2.0 (Electron) | Catatan |
 |---|---|---|
 | Ukuran `.dmg` | 123 MB | arm64 |
 | Ukuran app | 283 MB | sebagian besar framework Electron |

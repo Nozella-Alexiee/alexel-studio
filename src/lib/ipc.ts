@@ -6,6 +6,9 @@ import type {
   FoundProject,
   Branches,
   ClaudeInfo,
+  ClaudeContent,
+  ClaudeSessionCfg,
+  ClaudeSessionInfo,
   Commit,
   FileEntry,
   Footprint,
@@ -59,7 +62,7 @@ async function loadMock() {
 
 export async function call<T>(cmd: string, args: Record<string, unknown> = {}): Promise<T> {
   if (bridge) return (await bridge.invoke(cmd, args)) as T;
-  if (!isDemo) throw new Error("Backend Nozel tidak tersedia.");
+  if (!isDemo) throw new Error("Backend Alexel Studio tidak tersedia.");
   const handlers = await loadMock();
   const h = handlers[cmd];
   if (!h) throw new Error(`Belum didukung di mode pratinjau browser: ${cmd}`);
@@ -135,8 +138,11 @@ export const api = {
   // Claude
   claudeDetect: () => call<ClaudeInfo>("claude_detect"),
   claudeInline: (runId: string, projectDir: string, prompt: string, model: "fast" | "default" = "fast") => call<string>("claude_inline", { runId, projectDir, prompt, model }),
-  claudeRun: (runId: string, projectDir: string, prompt: string, resumeSession?: string | null, mode: "read" | "edit" = "read") =>
-    call<void>("claude_run", { runId, projectDir, prompt, resumeSession: resumeSession ?? null, mode }),
+  claudeSend: (key: string, cfg: ClaudeSessionCfg, content: ClaudeContent[]) => call<void>("claude_session_send", { key, cfg, content }),
+  claudeControl: (key: string, msg: unknown) => call<boolean>("claude_session_control", { key, msg }),
+  claudeClose: (key: string) => call<void>("claude_session_close", { key }),
+  claudeSessions: (cwd: string) => call<ClaudeSessionInfo[]>("claude_sessions_list", { cwd }),
+  claudeSessionLoad: (cwd: string, id: string) => call<string[]>("claude_session_load", { cwd, id }),
   claudeCancel: (runId: string) => call<void>("claude_cancel", { runId }),
 
   // Sistem

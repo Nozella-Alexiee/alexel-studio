@@ -53,7 +53,7 @@ export function ptySpawn(ctx: Ctx, cwd: string, cols: number, rows: number, comm
   const shell = defaultShell();
   const args = shellArgs(command);
   const dir = cwd && fs.existsSync(cwd) && fs.statSync(cwd).isDirectory() ? cwd : os.homedir();
-  const env = childEnv({ TERM: "xterm-256color", COLORTERM: "truecolor", TERM_PROGRAM: "NozelCode", ...(process.env.LANG ? {} : { LANG: "en_US.UTF-8" }) }) as Record<string, string>;
+  const env = childEnv({ TERM: "xterm-256color", COLORTERM: "truecolor", TERM_PROGRAM: "AlexelStudio", ...(process.env.LANG ? {} : { LANG: "en_US.UTF-8" }) }) as Record<string, string>;
   const p = pty.spawn(shell, args, { name: "xterm-256color", cols: Math.max(10, cols), rows: Math.max(2, rows), cwd: dir, env });
   const id = ++next;
   const s: Session = { pty: p, buf: "", timer: null, started: Date.now() };

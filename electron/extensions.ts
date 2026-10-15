@@ -150,7 +150,7 @@ export async function extInstall(ctx: Ctx, namespace: string, name: string): Pro
   const languages = (c.languages ?? []).map((l: { id: string; aliases?: string[]; extensions?: string[]; filenames?: string[] }) => ({ id: l.id, aliases: l.aliases, extensions: l.extensions, filenames: l.filenames }));
   if (!themes.length && !iconThemes.length && !snippets.length && !grammars.length) {
     fs.rmSync(dir, { recursive: true, force: true });
-    throw new Error("Ekstensi ini tidak berisi tema, tema ikon, snippet, atau grammar. Nozel tidak menjalankan kode ekstensi.");
+    throw new Error("Ekstensi ini tidak berisi tema, tema ikon, snippet, atau grammar. Alexel Studio tidak menjalankan kode ekstensi.");
   }
   const manifest: InstalledExt = { id, displayName: pkg.displayName || name, version: pkg.version || meta.version, description: pkg.description || "", themes, iconThemes, snippets, grammars, languages, installedAt: Date.now() };
   fs.writeFileSync(path.join(dir, "nozel-manifest.json"), JSON.stringify(manifest, null, 2));

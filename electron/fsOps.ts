@@ -73,7 +73,7 @@ export async function readText(p: string): Promise<{ content: string; mtime_ms: 
     // fatal: berkas non-UTF-8 ditolak supaya isinya tidak rusak saat disimpan.
     content = new TextDecoder("utf-8", { fatal: true }).decode(buf);
   } catch {
-    throw new Error("ENCODING: Berkas bukan UTF-8. Nozel tidak membukanya supaya isinya tidak rusak saat disimpan.");
+    throw new Error("ENCODING: Berkas bukan UTF-8. Alexel Studio tidak membukanya supaya isinya tidak rusak saat disimpan.");
   }
   return { content, mtime_ms: Math.floor(st.mtimeMs), eol: content.includes("\r\n") ? "crlf" : "lf" };
 }

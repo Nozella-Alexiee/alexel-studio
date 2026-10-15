@@ -1,4 +1,4 @@
-# Panduan cepat Nozel Code 🐧
+# Panduan cepat Alexel Studio 🐧
 
 ## 1. Pilih desain
 

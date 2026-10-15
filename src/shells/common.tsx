@@ -108,7 +108,7 @@ export function openProjectMenu(e: React.MouseEvent) {
   openMenu(e, [
     ...others.map((r) => ({ label: r.split("/").pop() ?? r, keys: r.replace(/^\/Users\/[^/]+/, "~").split("/").slice(0, -1).join("/"), run: () => void A.openProject(r) })),
     ...(others.length ? [{ label: "", separator: true }] : []),
-    { label: "Buka folder…", keys: "⌘O", run: () => void A.openProjectDialog() },
+    { label: "Buka folder…", keys: "Mod+O", run: () => void A.openProjectDialog() },
     ...(root ? [{ label: "Tutup folder", run: () => void A.closeProject() }] : []),
   ]);
 }
@@ -206,7 +206,7 @@ export function StatusBar({ variant }: { variant: "aurora" | "zen" | "control" }
         </>
       )}
       {fp && (
-        <span className="status-item sb-mem" title={`RAM total Nozel ${fp.core_mb} MB${fp.processes ? ` di ${fp.processes} proses` : ""}, CPU ${fp.cpu_percent}%.${isSaver() ? " (hemat daya)" : ""}`}>
+        <span className="status-item sb-mem" title={`RAM total Alexel Studio ${fp.core_mb} MB${fp.processes ? ` di ${fp.processes} proses` : ""}, CPU ${fp.cpu_percent}%.${isSaver() ? " (hemat daya)" : ""}`}>
           <Cpu size={12} aria-hidden /> {Math.round(fp.core_mb)} MB{!zen && ` · ${fp.cpu_percent}%`}
         </span>
       )}

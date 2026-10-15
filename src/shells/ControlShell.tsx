@@ -13,6 +13,7 @@ import { IconButton } from "../components/ui";
 import { BottomPanel } from "../panels/BottomPanel";
 import { getState, setLayout, useLayout, useStore } from "../state/store";
 import { EditorGroups, RightContent, SideContent, SideResizer, StatusBar, openProjectMenu } from "./common";
+import { prettyKeys } from "../lib/keys";
 
 function RunConfig() {
   const targets = useStore((s) => s.runTargets);
@@ -60,13 +61,13 @@ export default function ControlShell() {
   const problems = useStore((s) => Object.values(s.problems).reduce((a, x) => a + x.filter((p) => p.severity === "error").length, 0));
 
   const rail: [string, ReactNode, string, () => void, boolean, number?][] = [
-    ["files", <Files size={19} />, "Explorer (⌘⇧E)", () => A.toggleSidebar("files"), l.sidebar && l.sideView === "files"],
-    ["search", <Search size={19} />, "Cari (⌘⇧F)", () => A.toggleSidebar("search"), l.sidebar && l.sideView === "search"],
-    ["git", <GitBranch size={19} />, "Source control (⌃⇧G)", () => A.toggleRight("git"), l.right && l.rightView === "git", git?.files.length || undefined],
+    ["files", <Files size={19} />, `Explorer (${prettyKeys("Mod+Shift+E")})`, () => A.toggleSidebar("files"), l.sidebar && l.sideView === "files"],
+    ["search", <Search size={19} />, `Cari (${prettyKeys("Mod+Shift+F")})`, () => A.toggleSidebar("search"), l.sidebar && l.sideView === "search"],
+    ["git", <GitBranch size={19} />, `Source control (${prettyKeys("Ctrl+Shift+G")})`, () => A.toggleRight("git"), l.right && l.rightView === "git", git?.files.length || undefined],
     ["todo", <ListTodo size={19} />, "TODO", () => A.toggleSidebar("todo"), l.sidebar && l.sideView === "todo"],
     ["ext", <Puzzle size={19} />, "Ekstensi", () => A.toggleSidebar("ext"), l.sidebar && l.sideView === "ext"],
     ["ports", <Network size={19} />, "Port & proses", () => A.togglePanel("ports"), l.panel && l.panelTab === "ports"],
-    ["claude", <Kepi size={21} />, "Claude (⌘⌥B)", () => A.toggleRight("claude"), l.right && l.rightView === "claude"],
+    ["claude", <Kepi size={21} />, `Claude (${prettyKeys("Mod+Alt+B")})`, () => A.toggleRight("claude"), l.right && l.rightView === "claude"],
   ];
 
   return (
@@ -80,8 +81,8 @@ export default function ControlShell() {
             <FolderOpen size={12} aria-hidden /> {root ? root.split("/").pop() : "Buka project"}
             {git?.is_repo && <span className="ctl-branch">· {git.branch}</span>}
           </button>
-          <button className="ctl-search" onClick={() => openPalette("")} title="Cari berkas (⌘P)" aria-label="Cari berkas">
-            <Search size={12} aria-hidden /> <span>Cari berkas</span> <kbd>⌘P</kbd>
+          <button className="ctl-search" onClick={() => openPalette("")} title={`Cari berkas (${prettyKeys("Mod+P")})`} aria-label="Cari berkas">
+            <Search size={12} aria-hidden /> <span>Cari berkas</span> <kbd>{prettyKeys("Mod+P")}</kbd>
           </button>
         </div>
         <div className="titlebar-actions">
@@ -108,10 +109,10 @@ export default function ControlShell() {
             </button>
           ))}
           <span className="spacer" />
-          <button onClick={() => A.togglePanel("terminal")} title="Terminal (⌃`)" aria-label="Terminal" className={l.panel && l.panelTab === "terminal" ? "is-on" : ""}>
+          <button onClick={() => A.togglePanel("terminal")} title={`Terminal (${prettyKeys("Ctrl+`")})`} aria-label="Terminal" className={l.panel && l.panelTab === "terminal" ? "is-on" : ""}>
             <TerminalSquare size={19} />
           </button>
-          <button onClick={() => A.openSettings()} title="Pengaturan (⌘,)" aria-label="Pengaturan">
+          <button onClick={() => A.openSettings()} title={`Pengaturan (${prettyKeys("Mod+,")})`} aria-label="Pengaturan">
             <Settings size={19} />
           </button>
         </nav>

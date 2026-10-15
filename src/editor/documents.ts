@@ -560,6 +560,17 @@ export function selectionText(group: number): string {
   return v.state.selection.ranges.map((r) => v.state.sliceDoc(r.from, r.to)).join("\n");
 }
 
+/** Seleksi utama di editor grup: teks dan rentang baris (1-based). null bila kosong. */
+export function selectionInfo(group: number): { text: string; from: number; to: number } | null {
+  const v = views[group];
+  if (!v) return null;
+  const r = v.state.selection.main;
+  if (r.empty) return null;
+  const from = v.state.doc.lineAt(r.from).number;
+  const to = v.state.doc.lineAt(r.to).number;
+  return { text: v.state.sliceDoc(r.from, r.to), from, to };
+}
+
 export function revealPosition(group: number, line: number, col = 1, len = 0) {
   const v = views[group];
   if (!v) return;

@@ -1,5 +1,5 @@
 // Penyimpanan JSON kecil (pengaturan, sesi, project terakhir) di folder userData,
-// plus migrasi sekali jalan dari versi Tauri (~/Library/Application Support/com.nozel.code).
+// plus migrasi sekali jalan dari nama lama (Nozel Code) dan versi Tauri.
 
 import fs from "node:fs";
 import os from "node:os";
@@ -24,23 +24,36 @@ export async function storeSave(ctx: Ctx, key: string, json: string) {
   await writeAtomic(path.join(ctx.userData, `${key}.json`), json);
 }
 
-/** Bawa pengaturan, sesi, dan riwayat dari Nozel versi Tauri bila ada. */
-export function migrateFromTauri(ctx: Ctx) {
-  if (process.platform !== "darwin") return;
-  const old = path.join(os.homedir(), "Library/Application Support/com.nozel.code");
-  const marker = path.join(ctx.userData, ".migrated-from-tauri");
-  if (!fs.existsSync(old) || fs.existsSync(marker)) return;
+const CARRY_FILES = ["settings.json", "session.json", "recents.json"];
+const CARRY_DIRS = ["history", "extensions"];
+
+/** Salin data pengguna dari folder lama ke userData sekarang, sekali saja (ditandai `marker`). */
+function carryOver(ctx: Ctx, old: string, marker: string) {
+  const mark = path.join(ctx.userData, marker);
+  if (path.resolve(old) === path.resolve(ctx.userData) || !fs.existsSync(old) || fs.existsSync(mark)) return;
   try {
     fs.mkdirSync(ctx.userData, { recursive: true });
-    for (const f of ["settings.json", "session.json", "recents.json"]) {
+    for (const f of CARRY_FILES) {
       const src = path.join(old, f);
       const dst = path.join(ctx.userData, f);
       if (fs.existsSync(src) && !fs.existsSync(dst)) fs.copyFileSync(src, dst);
     }
-    const hist = path.join(old, "history");
-    if (fs.existsSync(hist) && !fs.existsSync(path.join(ctx.userData, "history"))) fs.cpSync(hist, path.join(ctx.userData, "history"), { recursive: true });
-    fs.writeFileSync(marker, new Date().toISOString());
+    for (const d of CARRY_DIRS) {
+      const src = path.join(old, d);
+      const dst = path.join(ctx.userData, d);
+      if (fs.existsSync(src) && !fs.existsSync(dst)) fs.cpSync(src, dst, { recursive: true });
+    }
+    fs.writeFileSync(mark, new Date().toISOString());
   } catch {
     /* migrasi opsional */
   }
+}
+
+/**
+ * Bawa pengaturan, sesi, riwayat, dan ekstensi dari nama lama aplikasi ("Nozel Code"),
+ * lalu dari versi Tauri lama bila masih ada.
+ */
+export function migrateOldData(ctx: Ctx, appData: string) {
+  carryOver(ctx, path.join(appData, "Nozel Code"), ".migrated-from-nozel");
+  if (process.platform === "darwin") carryOver(ctx, path.join(os.homedir(), "Library/Application Support/com.nozel.code"), ".migrated-from-tauri");
 }
