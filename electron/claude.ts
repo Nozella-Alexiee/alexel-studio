@@ -11,7 +11,14 @@ import { childEnv, findExecutable, killTree, runCapture, spawnable, type Ctx } f
 const MAX_PROMPT_BYTES = 400 * 1024;
 const runs = new Map<string, ChildProcess>();
 
+/** Biner Claude dari panel Ekstensi (dipasang dari Open VSX); diutamakan bila ada. */
+let preferred: string | null = null;
+export function setPreferredClaude(p: string | null) {
+  preferred = p && fs.existsSync(p) ? p : null;
+}
+
 export function findClaude(): string | null {
+  if (preferred) return preferred;
   // Penginstal native menaruh claude(.exe) di ~/.local/bin; npm memasang shim claude(.cmd).
   const home = os.homedir();
   return findExecutable("claude", [path.join(home, ".local", "bin"), path.join(home, ".claude", "local")]) ?? bundledWithDesktop();

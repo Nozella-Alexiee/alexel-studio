@@ -3668,3 +3668,57 @@ select.input.select {
   overflow: hidden;
   text-overflow: ellipsis;
 }
+.agent-ext {
+  margin-bottom: 6px;
+}
+.agent-card {
+  display: flex;
+  gap: 10px;
+  padding: 8px 12px;
+  align-items: flex-start;
+}
+.agent-card:hover {
+  background: var(--surface-hover);
+}
+.agent-card.is-current {
+  box-shadow: inset 2px 0 0 var(--accent);
+}
+.agent-logo {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  display: grid;
+  place-items: center;
+  color: #fff;
+  font-size: 17px;
+  flex: none;
+}
+.agent-state {
+  margin-top: 3px;
+  font-size: 11px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.agent-state svg {
+  vertical-align: -1px;
+}
+.agent-bar {
+  margin-top: 4px;
+  height: 3px;
+  border-radius: 2px;
+  background: var(--surface-3);
+  overflow: hidden;
+}
+.agent-bar i {
+  display: block;
+  height: 100%;
+  background: var(--accent);
+  transition: width 0.2s;
+}
+.agent-actions {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  flex: none;
+}

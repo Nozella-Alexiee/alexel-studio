@@ -3,6 +3,8 @@
 // panel di renderer cukup memahami satu format (teks, alat, kartu izin, hasil).
 
 import * as claude from "../claude";
+import { codexStatus } from "./codex";
+import { installAgentPackage, installedAgent, removeAgentPackage } from "./install";
 import type { Ctx } from "../util";
 
 export type AgentId = "claude" | "codex" | "gemini" | "acp";
@@ -29,16 +31,38 @@ export interface AgentDriver {
   killAll(): void;
 }
 
+const useExtClaude = (ctx: Ctx) => {
+  const inst = installedAgent(ctx, "claude");
+  claude.setPreferredClaude(inst?.binary ?? null);
+  return inst;
+};
+
 const drivers: Partial<Record<AgentId, AgentDriver>> = {
   claude: {
-    status: () => claude.claudeDetect(),
-    send: (ctx, key, cfg, content) => claude.claudeSessionSend(ctx, key, cfg, content),
+    status: async (ctx) => {
+      const inst = useExtClaude(ctx);
+      return { ...(await claude.claudeDetect()), source: inst ? "extension" : "system" };
+    },
+    send: (ctx, key, cfg, content) => {
+      useExtClaude(ctx);
+      return claude.claudeSessionSend(ctx, key, cfg, content);
+    },
     control: (_ctx, key, msg) => claude.claudeSessionControl(key, msg),
     close: (key) => claude.claudeSessionClose(key),
     sessions: (cwd) => claude.claudeSessionsList(cwd),
     sessionLoad: (cwd, id) => claude.claudeSessionLoad(cwd, id),
     killAll: () => claude.killAllClaude(),
   },
+};
+
+drivers.codex = {
+  status: (ctx) => codexStatus(ctx),
+  send: () => {
+    throw new Error("Percakapan Codex belum tersedia di versi ini.");
+  },
+  control: () => false,
+  close: () => {},
+  killAll: () => {},
 };
 
 export function registerDriver(id: AgentId, d: AgentDriver) {
@@ -65,3 +89,7 @@ export function agentSessionLoad(id: unknown, cwd: string, sid: string) {
 export function killAllAgents() {
   for (const d of Object.values(drivers)) d?.killAll();
 }
+
+export const agentInstall = (ctx: Ctx, id: unknown) => installAgentPackage(ctx, String(id));
+export const agentUninstall = (ctx: Ctx, id: unknown) => removeAgentPackage(ctx, String(id));
+export const agentInstalled = (ctx: Ctx, id: unknown) => installedAgent(ctx, String(id));

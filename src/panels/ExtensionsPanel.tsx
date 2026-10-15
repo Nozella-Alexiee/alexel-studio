@@ -5,6 +5,7 @@ import { Empty, IconButton, Segmented, Spinner } from "../components/ui";
 import { loadExtensions, useExtensions, type InstalledExt } from "../extensions/registry";
 import { call, errMsg, isNative } from "../lib/ipc";
 import { confirmDialog, toast, useStore } from "../state/store";
+import { AgentExtensions, agentForPackage, installAgent } from "./AgentExtensions";
 
 interface Result {
   id: string;
@@ -128,6 +129,14 @@ export default function ExtensionsPanel() {
   if (!isNative) return <Empty icon={<Puzzle size={24} />} title="Ekstensi">Pasang tema & snippet dari Open VSX di aplikasi desktop Alexel Studio.</Empty>;
 
   const install = async (r: Result) => {
+    // Ekstensi agen (Claude Code, Codex): pasang bineran agennya ke panel Agen AI.
+    const agent = agentForPackage(r.namespace, r.name);
+    if (agent) {
+      setInstalling(r.id);
+      await installAgent(agent);
+      setInstalling(null);
+      return;
+    }
     setInstalling(r.id);
     try {
       const m = await call<InstalledExt>("ext_install", { namespace: r.namespace, name: r.name });
@@ -161,6 +170,7 @@ export default function ExtensionsPanel() {
         <p className="hint ext-note">Alexel Studio memakai tema, tema ikon, snippet, dan grammar dari ekstensi. Kode JavaScript ekstensi tidak pernah dijalankan.</p>
       </div>
       <div className="ext-scroll">
+        {!q && <AgentExtensions />}
         {installed.length > 0 && (
           <section>
             <div className="git-section-head">
