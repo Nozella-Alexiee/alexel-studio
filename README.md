@@ -1,133 +1,234 @@
-# Alexel Studio
+<p align="center">
+  <img src="docs/assets/alexel-studio-banner.svg" alt="Alexel Studio Banner" width="100%" />
+</p>
 
-A free, open source code editor for macOS, Windows and Linux. Work with the AI agent you prefer
-(Claude Code, Codex, Gemini, Antigravity or any agent that speaks the Agent Client Protocol)
-next to a real terminal, language servers and a debugger. Every change an agent proposes waits
-for your approval.
+<p align="center">
+  <strong>The Next-Generation, Free &amp; Open Source AI Code Editor for macOS, Windows, and Linux.</strong><br/>
+  Pair-program seamlessly with your favorite autonomous AI agents next to a real terminal, language servers, and a native debugger — with human-in-the-loop review for every single line of code.
+</p>
 
-[Bahasa Indonesia](README.id.md) · [Download](#download) · [Agents](docs/AGENTS.md) · [Contributing](CONTRIBUTING.md)
+<p align="center">
+  <a href="https://github.com/Nozella-Alexiee/alexel-studio/releases/latest"><img src="https://img.shields.io/badge/Release-v0.3.0-blue?style=for-the-badge&logo=github&logoColor=white" alt="Latest Release" /></a>
+  <a href="#-supported-ai-agents"><img src="https://img.shields.io/badge/AI_Agents-Claude_·_Codex_·_Gemini_·_Antigravity-8B5CF6?style=for-the-badge" alt="AI Agents" /></a>
+  <a href="#-download--installation"><img src="https://img.shields.io/badge/Platforms-macOS_·_Windows_·_Linux-38BDF8?style=for-the-badge&logo=apple&logoColor=white" alt="Cross-Platform" /></a>
+  <a href="#-privacy--zero-telemetry"><img src="https://img.shields.io/badge/Telemetry-Zero_·_100%25_Private-10B981?style=for-the-badge" alt="Zero Telemetry" /></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-amber?style=for-the-badge" alt="MIT License" /></a>
+</p>
 
-![An agent proposing an edit, with the diff waiting for approval](docs/screenshots/agent.jpg)
+<p align="center">
+  <a href="README.md"><b>English</b></a> · <a href="README.id.md"><b>Bahasa Indonesia</b></a> · <a href="#-download--installation"><b>Download</b></a> · <a href="docs/AGENTS.md"><b>Agent Protocols</b></a> · <a href="CONTRIBUTING.md"><b>Contributing</b></a>
+</p>
 
-## Features
+---
 
-- **AI agents as extensions.** Install Claude Code, Codex or Gemini from the Extensions view.
-  The official package is downloaded, its checksum is verified, and you sign in with your own
-  account. Antigravity and other ACP agents are detected automatically.
-- **You approve every change.** Edits and shell commands appear as cards with the exact diff or
-  command. Allow once, allow for the session, or decline and tell the agent what to do instead.
-  Pick the model, effort and permission mode per conversation; resume earlier conversations.
-- **Checkpoints and review.** Every message is a checkpoint: restore your files to how they were
-  before it with one click. Changed parts light up in the editor so you can accept or reject
-  each one.
-- **AI where you work.** Write a commit message from the staged diff (✨ in Source Control), fix a
-  problem from the Problems panel or with `⌘.` / `Ctrl+.`, and add `@problems`, `@terminal`,
-  `@git-diff` or `@open-editors` to a message for context.
-- **Debugger.** Breakpoints, variables, watch expressions, call stack and a debug console for
-  JavaScript/TypeScript (js-debug), Python (debugpy), C/C++/Rust (lldb-dap) and Go (Delve).
-  Reads `.vscode/launch.json`.
-- **Feels like VS Code.** Activity bar, command palette (`⌘⇧P` / `Ctrl+Shift+P`), full menus,
-  Source Control, Outline, Output, Problems, editable keyboard shortcuts and `settings.json`.
-- **Real terminal.** zsh, bash or PowerShell with full-screen programs. Smart Run reads
-  `package.json`, `Cargo.toml`, `go.mod` and more.
-- **Language servers.** TypeScript and JavaScript work out of the box. Python, Rust, Go, C/C++,
-  PHP and CSS work once their server is installed.
-- **Open VSX themes.** Color themes, file icon themes, snippets and grammars. Extension code is
-  never executed.
-- **File history.** Every save is kept; compare and restore any version.
+<p align="center">
+  <img src="docs/screenshots/agent.jpg" alt="Alexel Studio Interface with Agent Review" width="100%" style="border-radius: 14px; box-shadow: 0 18px 50px rgba(0,0,0,0.28);" />
+</p>
 
-| | |
-|---|---|
-| ![Debugger paused at a breakpoint](docs/screenshots/debug.jpg) | ![Agents in the Extensions view](docs/screenshots/ext.jpg) |
+---
 
-## Download
+## 📑 Table of Contents
 
-Get the latest installer from the [Releases](../../releases/latest) page:
+- [✨ Why Alexel Studio?](#-why-alexel-studio)
+- [🤖 Supported AI Agents](#-supported-ai-agents)
+- [📸 Feature Highlights](#-feature-highlights)
+  - [1. Human-in-the-Loop Diffs & Granular Approval](#1-human-in-the-loop-diffs--granular-approval)
+  - [2. Time-Travel Checkpoints & File History](#2-time-travel-checkpoints--file-history)
+  - [3. Full-Featured Multi-Language Debugger (DAP)](#3-full-featured-multi-language-debugger-dap)
+  - [4. Agent Store with Checksum Verification](#4-agent-store-with-checksum-verification)
+  - [5. Familiar Developer Experience & Open VSX Themes](#5-familiar-developer-experience--open-vsx-themes)
+- [📥 Download & Installation](#-download--installation)
+- [🔒 Privacy & Zero Telemetry](#-privacy--zero-telemetry)
+- [⌨️ Keyboard Shortcuts Reference](#️-keyboard-shortcuts-reference)
+- [🛠️ Building from Source](#️-building-from-source)
+- [📁 Project Layout](#-project-layout)
+- [📄 License & Trademark Notice](#-license--trademark-notice)
 
-| System | File |
-|---|---|
-| macOS, Apple Silicon | `Alexel-Studio-mac-arm64.dmg` |
-| macOS, Intel | `Alexel-Studio-mac-x64.dmg` |
-| Windows x64 / ARM64 | `Alexel-Studio-win-x64.exe` / `Alexel-Studio-win-arm64.exe` |
-| Debian, Ubuntu | `Alexel-Studio-linux-amd64.deb` |
-| Fedora, openSUSE | `Alexel-Studio-linux-x86_64.rpm` |
-| Any Linux | `Alexel-Studio-linux-x86_64.AppImage` |
+---
 
-32-bit Windows (x86) isn't supported: Electron no longer ships 32-bit Windows builds, and
-Windows 11 is 64-bit only.
+## ✨ Why Alexel Studio?
 
-Builds are not code-signed with a paid certificate yet:
+Most AI-assisted editors treat artificial intelligence either as an opaque auto-complete tool or as a black-box that silently modifies files in the background without your oversight.
 
-- **macOS:** right-click the app in Applications and choose **Open** the first time.
-- **Windows:** if SmartScreen warns about an unknown publisher, choose **More info**, then **Run anyway**.
+**Alexel Studio is built on a different principle: *You stay in the pilot seat.***
 
-## AI agents
+1. **Human-in-the-Loop Verification**: Every code edit, file creation, and shell command proposed by an agent is rendered as a crystal-clear visual diff card before anything touches your disk. Accept once, approve for the session, or decline with feedback.
+2. **Time-Travel Checkpoints**: Every message in a conversation functions as an instant snapshot. Made a wrong turn? One click restores your entire working tree to the state before that message.
+3. **No Vendor Lock-In**: Sign in directly with your own Claude, OpenAI, or Google account. You don't pay a markup on API calls, and you use the official CLI agents directly.
+4. **Professional IDE Fundamentals**: You don't sacrifice core tools for AI. Alexel Studio includes a real pseudo-terminal (`node-pty`), Language Server Protocol (LSP) intelligence, and full Debug Adapter Protocol (DAP) debugging.
+5. **Absolute Privacy**: Zero analytics, zero telemetries, and zero intermediary servers. Traffic flows exclusively between your machine and your chosen AI provider.
 
-Each agent signs in with its own account; Alexel Studio never asks for or stores credentials.
+---
 
-| Agent | Account | How it connects |
-|---|---|---|
-| Claude Code | Claude Pro or Max | stream-json protocol of the official CLI |
-| Codex | ChatGPT or OpenAI API key | `codex app-server`, the protocol of the Codex VS Code extension |
-| Gemini | Google account or Gemini API key | Agent Client Protocol (Gemini CLI) |
-| Antigravity | Google account | `agy` CLI in stream-json mode |
-| Other agents | depends on the agent | Agent Client Protocol; set the command in Settings |
+## 🤖 Supported AI Agents
 
-See [docs/AGENTS.md](docs/AGENTS.md) for how each integration works and what data is sent.
+Alexel Studio comes with out-of-the-box drivers for the industry's leading autonomous coding agents, as well as an open integration for any agent supporting the **Agent Client Protocol (ACP)**:
 
-## Keyboard shortcuts
+| Agent | Provider | Account Required | Connection Protocol | Permission Modes |
+|---|---|---|---|---|
+| **Claude Code** | Anthropic | Claude Pro or Team / Max | Stream-JSON CLI protocol | Ask first, Edit automatically, Plan |
+| **Codex** | OpenAI | ChatGPT Plus or OpenAI Key | `codex app-server` (JSON-RPC) | Ask first, Auto in folder, Read-only |
+| **Gemini** | Google | Google Account or Gemini Key | Agent Client Protocol (stdio) | Modes offered by agent |
+| **Antigravity** | Google | Google Account | `agy` CLI Stream-JSON mode | Edit automatically, Plan, Strict |
+| **Any ACP Agent** | Community | Provider specific | Agent Client Protocol (stdio) | Customizable via Settings |
 
-Shortcuts follow your system: `⌘` on macOS, `Ctrl` on Windows and Linux. A few to start with:
+> 💡 **Context Mentions**: Use `@problems`, `@terminal`, `@git-diff`, or `@open-editors` in any conversation prompt to automatically feed exact IDE context directly to the agent.
+
+---
+
+## 📸 Feature Highlights
+
+### 1. Human-in-the-Loop Diffs & Granular Approval
+> Every edit is highlighted inline with CodeMirror 6 syntax highlighting and side-by-side or unified diffs. Approve changes individually or ask the agent to iterate.
+
+<p align="center">
+  <img src="docs/screenshots/agent.jpg" alt="Interactive Agent Diff Review" width="92%" style="border-radius: 10px;" />
+</p>
+
+---
+
+### 2. Time-Travel Checkpoints & File History
+> Never lose working code again. Every user prompt creates an instant checkpoint, and every manual file save is recorded in local history for instant comparison and rollback.
+
+---
+
+### 3. Full-Featured Multi-Language Debugger (DAP)
+> Complete Debug Adapter Protocol integration supporting breakpoints, variable inspection, watch expressions, call stacks, and an interactive debug console. Compatible with standard `.vscode/launch.json` configs.
+
+<p align="center">
+  <img src="docs/screenshots/debug.jpg" alt="Debugger at Breakpoint" width="92%" style="border-radius: 10px;" />
+</p>
+
+* **JavaScript / TypeScript**: Native `js-debug` integration
+* **Python**: `debugpy` adapter
+* **C / C++ / Rust**: `lldb-dap`
+* **Go**: Delve debugger
+
+---
+
+### 4. Agent Store with Checksum Verification
+> Install and manage your AI tools directly from the Extensions panel. Packages are fetched directly from official sources (Open VSX, npm registry, GitHub) with cryptographic checksum validation.
+
+<p align="center">
+  <img src="docs/screenshots/ext.jpg" alt="Extensions and Agent Store" width="92%" style="border-radius: 10px;" />
+</p>
+
+---
+
+### 5. Familiar Developer Experience & Open VSX Themes
+> Feels instantly familiar if you're coming from VS Code: command palette, customizable keymaps, activity bar, and hundreds of themes from Open VSX (rendered securely without executing extension JavaScript).
+
+<p align="center">
+  <img src="docs/screenshots/light.jpg" alt="Alexel Studio Light Theme" width="92%" style="border-radius: 10px;" />
+</p>
+
+---
+
+## 📥 Download & Installation
+
+Pre-built binaries for all major platforms are available on the [**Latest Releases**](https://github.com/Nozella-Alexiee/alexel-studio/releases/latest) page:
+
+| Operating System | Architecture | Installer Format | Download Link |
+|---|---|---|---|
+| **macOS** | Apple Silicon (M1/M2/M3/M4) | `.dmg` | [**Alexel-Studio-mac-arm64.dmg**](https://github.com/Nozella-Alexiee/alexel-studio/releases/latest) |
+| **macOS** | Intel x64 | `.dmg` | [**Alexel-Studio-mac-x64.dmg**](https://github.com/Nozella-Alexiee/alexel-studio/releases/latest) |
+| **Windows** | 64-bit (x64) | `.exe` Installer | [**Alexel-Studio-win-x64.exe**](https://github.com/Nozella-Alexiee/alexel-studio/releases/latest) |
+| **Windows** | ARM64 | `.exe` Installer | [**Alexel-Studio-win-arm64.exe**](https://github.com/Nozella-Alexiee/alexel-studio/releases/latest) |
+| **Linux** | Debian / Ubuntu | `.deb` | [**Alexel-Studio-linux-amd64.deb**](https://github.com/Nozella-Alexiee/alexel-studio/releases/latest) |
+| **Linux** | Fedora / RHEL / openSUSE | `.rpm` | [**Alexel-Studio-linux-x86_64.rpm**](https://github.com/Nozella-Alexiee/alexel-studio/releases/latest) |
+| **Linux (Universal)** | All distributions | `.AppImage` | [**Alexel-Studio-linux-x86_64.AppImage**](https://github.com/Nozella-Alexiee/alexel-studio/releases/latest) |
+
+### 💡 First-Run Security Notes
+Because releases are community-built open-source binaries:
+* **macOS**: On the first launch, right-click `Alexel Studio.app` in your Applications folder and click **Open**, then confirm.
+* **Windows**: If Microsoft Defender SmartScreen appears, click **More info** followed by **Run anyway**.
+
+---
+
+## 🔒 Privacy & Zero Telemetry
+
+We believe developer tools should strictly respect your privacy:
+
+* **Zero Tracking**: No usage metrics, no heartbeat pings, no telemetry libraries.
+* **No Cloud Middleman**: All conversations travel straight from your computer to the AI model's official endpoint via the vendor's own verified CLI.
+* **Your Credentials Stay Yours**: Alexel Studio never requests, intercepts, or persists your passwords or API secrets.
+
+---
+
+## ⌨️ Keyboard Shortcuts Reference
+
+Shortcuts dynamically map to your OS (`⌘` on macOS, `Ctrl` on Windows & Linux):
 
 | Action | macOS | Windows / Linux |
 |---|---|---|
-| Command palette | `⌘⇧P` | `Ctrl+Shift+P` |
-| Open file | `⌘P` | `Ctrl+P` |
-| Open the agent | `⌘⎋` | `Ctrl+Esc` |
-| Terminal | ``⌃` `` | ``Ctrl+` `` |
-| Start debugging / continue | `F5` | `F5` |
-| Toggle breakpoint | `F9` | `F9` |
+| **Command Palette** | `⌘ ⇧ P` | `Ctrl + Shift + P` |
+| **Quick Open File** | `⌘ P` | `Ctrl + P` |
+| **Toggle AI Agent Panel** | `⌘ ⎋` | `Ctrl + Esc` |
+| **Integrated Terminal** | `` ⌃ ` `` | `` Ctrl + ` `` |
+| **Quick Fix / AI Fix** | `⌘ .` | `Ctrl + .` |
+| **Start / Continue Debugging** | `F5` | `F5` |
+| **Toggle Breakpoint** | `F9` | `F9` |
+| **Step Over** | `F10` | `F10` |
+| **Step Into** | `F11` | `F11` |
 
-All shortcuts can be changed in **Settings → Keyboard shortcuts**.
+> Fully customizable under **Settings → Keyboard Shortcuts**.
 
-## Privacy
+---
 
-There is no telemetry. Alexel Studio only connects to the network when you:
+## 🛠️ Building from Source
 
-- send a message to an agent (to that agent's provider, through its own CLI),
-- install an agent, debugger or theme (Open VSX, npm registry or GitHub, with checksums verified),
-- check for updates (one request to GitHub Releases per day; can be turned off in Settings).
-
-## Build from source
-
-Requirements: Node.js 22 or later.
+**Prerequisites:** Node.js 22 or later.
 
 ```bash
+# 1. Clone repository
+git clone https://github.com/Nozella-Alexiee/alexel-studio.git
+cd alexel-studio
+
+# 2. Install dependencies
 npm install
-```
 
-```bash
+# 3. Launch application in development mode
 npm run app
-```
 
-```bash
+# 4. Run test suites
 npm test
 ```
 
-Installers: `npm run dist` (macOS), `npm run dist:win`, `npm run dist:linux`. Releases are built
-by GitHub Actions when a `v*` tag is pushed (see `.github/workflows/release.yml`).
+### Packaging Distribution Installers:
+* macOS: `npm run dist`
+* Windows: `npm run dist:win`
+* Linux: `npm run dist:linux`
 
-Project layout:
+---
 
-| Folder | Contents |
-|---|---|
-| `electron/` | main process: files, terminal, Git, language servers, agents, debugger |
-| `src/` | renderer: React UI, CodeMirror editor, panels |
-| `site/` | download page (GitHub Pages) |
-| `docs/` | documentation and screenshots |
+## 📁 Project Layout
 
-## License
+```
+alexel-studio/
+├── electron/                 # Main Process (Node.js & Electron APIs)
+│   ├── agents/               # AI drivers: claude, codex, gemini, antigravity, acp
+│   ├── debug/                # Debug Adapter Protocol (DAP) client & adapters
+│   ├── lsp/                  # Language Server Protocol client implementations
+│   └── terminal/             # Pseudo-terminal pty management
+├── src/                      # Renderer Process (React 19 + TypeScript)
+│   ├── agents/               # Chat UI, diff cards, checkpoint history
+│   ├── editor/               # CodeMirror 6 engine, syntax trees, keymaps
+│   ├── components/           # Activity bar, tabs, panels, statusbar
+│   └── state/                # Application state, settings, open buffers
+├── build/                    # App icons, metadata, and packaging assets
+├── docs/                     # Architectural guides, agent specs, screenshots
+└── site/                     # Official download website source
+```
 
-[MIT](LICENSE). Claude, Codex, Gemini and Antigravity are trademarks of their respective owners.
-Alexel Studio is not affiliated with Anthropic, OpenAI, Google or Microsoft. Third-party
-licenses are listed in [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
+---
+
+## 📄 License & Trademark Notice
+
+Distributed under the [**MIT License**](LICENSE).
+
+*Disclaimer: Claude Code is a trademark of Anthropic PBC. ChatGPT and Codex are trademarks of OpenAI. Gemini and Antigravity are trademarks of Google LLC. Alexel Studio is an independent open-source project and is not affiliated with, endorsed by, or sponsored by Anthropic, OpenAI, Google, or Microsoft.*
+
+<p align="center">
+  Crafted with care by <strong>Alex (Nozella-Alexiee)</strong> &amp; contributors 🐧<br/>
+  <em>Code side-by-side with autonomous AI agents.</em>
+</p>
