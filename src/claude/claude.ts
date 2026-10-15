@@ -79,7 +79,7 @@ export function describeTool(name: string, input: Record<string, unknown> | unde
   const verbs: Record<string, string> = {
     Read: "Membaca", Grep: "Mencari", Glob: "Mencari berkas", Bash: "Menjalankan", Edit: "Mengedit", MultiEdit: "Mengedit", Write: "Menulis",
     NotebookEdit: "Mengedit notebook", WebFetch: "Membuka", WebSearch: "Mencari di web", Task: "Menjalankan sub-agen", Agent: "Menjalankan sub-agen",
-    TodoWrite: "Mencatat rencana", ExitPlanMode: "Menyerahkan rencana", AskUserQuestion: "Bertanya",
+    TodoWrite: "Mencatat rencana", ExitPlanMode: "Menyerahkan rencana", AskUserQuestion: "Bertanya", ApplyPatch: "Mengubah", MCP: "Memakai alat",
   };
   const target = name === "Bash" ? "" : toolTarget(name, input);
   return `${verbs[name] ?? `Memakai ${name}`}${target ? ` ${target}` : ""}`;
@@ -265,7 +265,7 @@ function onResult(key: string, c: Conv, ev: any) {
       push({ role: "info", text: "Dihentikan." });
       return;
     }
-    const text = ev.result || (ev.subtype === "error_max_turns" ? "Claude berhenti: batas langkah tercapai." : "Claude berhenti dengan error.");
+    const text = ev.result || (ev.subtype === "error_max_turns" ? `${agentInfo(agentNow()).short} berhenti: batas langkah tercapai.` : `${agentInfo(agentNow()).short} berhenti dengan error.`);
     const hint = /login|auth|credential|api key|401/i.test(text) ? "\n\nKamu perlu masuk ke Claude Code dulu. Klik **Masuk** di atas panel." : "";
     push({ role: "error", text: text + hint, meta });
     void import("../components/PenguinMascot").then((m) => m.flashPenguin("error", 6000));
@@ -449,7 +449,7 @@ export async function sendToClaude(prompt: string, o: SendOptions = {}): Promise
   const s = getState();
   if (!prompt.trim() && !o.images?.length) return false;
   if (s.chatRunning) {
-    toast("Claude masih menjawab. Tunggu atau hentikan dulu.");
+    toast(`${agentInfo(agentNow()).short} masih menjawab. Tunggu atau hentikan dulu.`);
     return false;
   }
   setLayout({ right: true, rightView: "claude" });

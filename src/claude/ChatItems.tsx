@@ -7,7 +7,7 @@ import { memo, useEffect, useMemo, useState } from "react";
 import * as A from "../app/actions";
 import * as docs from "../editor/documents";
 import { IconButton } from "../components/ui";
-import { diffRows } from "../lib/diff";
+import { diffRows, unifiedRows } from "../lib/diff";
 import { openExternal } from "../lib/ipc";
 import { basename, relative } from "../lib/paths";
 import { getState, type ChatMessage } from "../state/store";
@@ -84,8 +84,8 @@ export function Markdown({ text }: { text: string }) {
 
 // ---------------- Diff ringkas ----------------
 
-function DiffView({ before, after }: { before: string; after: string }) {
-  const d = useMemo(() => diffRows(before, after), [before, after]);
+function DiffView({ before, after, unified }: { before?: string; after?: string; unified?: string }) {
+  const d = useMemo(() => (unified !== undefined ? unifiedRows(unified) : diffRows(before ?? "", after ?? "")), [before, after, unified]);
   return (
     <div className="chat-diff" role="group" aria-label={`Perubahan: ${d.added} baris ditambah, ${d.removed} dihapus`}>
       {d.rows.map((r, i) => (
@@ -122,7 +122,9 @@ function openDiff(p: { path: string; before: string; after: string }, title: str
 
 // ---------------- Alat ----------------
 
-const isEdit = (n: string) => n === "Edit" || n === "MultiEdit" || n === "Write";
+const isEdit = (n: string) => n === "Edit" || n === "MultiEdit" || n === "Write" || n === "ApplyPatch";
+/** Diff siap pakai (Codex ApplyPatch mengirim unified diff). */
+const patchOf = (input: Record<string, unknown>) => (typeof input.diff === "string" && input.diff ? input.diff : null);
 
 function ToolCard({ m }: { m: ChatMessage }) {
   const t = m.tool!;
@@ -144,7 +146,8 @@ function ToolCard({ m }: { m: ChatMessage }) {
       {m.meta && t.status !== "ok" && <div className="chat-tool-note">{m.meta}</div>}
       {open && (
         <div className="chat-tool-body">
-          {isEdit(t.name) && proposed && t.status !== "ok" && <DiffView before={proposed.before} after={proposed.after} />}
+          {patchOf(t.input) && <DiffView unified={patchOf(t.input)!} />}
+          {isEdit(t.name) && !patchOf(t.input) && proposed && t.status !== "ok" && <DiffView before={proposed.before} after={proposed.after} />}
           {isEdit(t.name) && t.name !== "Write" && t.status === "ok" && typeof t.input.old_string === "string" && <DiffView before={String(t.input.old_string)} after={String(t.input.new_string ?? "")} />}
           {t.result && !isEdit(t.name) && <pre className="chat-tool-result">{t.result.slice(0, 3000)}</pre>}
           {file && (
@@ -265,7 +268,13 @@ function PermissionCard({ m }: { m: ChatMessage }) {
       <div className="chat-perm-head">
         <ShieldAlert size={14} aria-hidden />
         <span>
-          {p.toolName === "Bash" ? "Jalankan perintah?" : isEdit(p.toolName) ? `${p.toolName === "Write" ? "Tulis" : "Edit"} ${target ? relative(root, String(p.input.file_path ?? target)) : "berkas"}?` : `Izinkan ${m.text}?`}
+          {p.toolName === "Bash"
+            ? "Jalankan perintah?"
+            : p.toolName === "ApplyPatch"
+              ? `Ubah ${Array.isArray(p.input.changes) && p.input.changes.length > 1 ? `${p.input.changes.length} berkas` : target ? relative(root, String(p.input.file_path ?? target)) : "berkas"}?`
+              : isEdit(p.toolName)
+                ? `${p.toolName === "Write" ? "Tulis" : "Edit"} ${target ? relative(root, String(p.input.file_path ?? target)) : "berkas"}?`
+                : `Izinkan ${m.text}?`}
         </span>
       </div>
       {p.toolName === "Bash" && (
@@ -274,7 +283,8 @@ function PermissionCard({ m }: { m: ChatMessage }) {
           {typeof p.input.description === "string" && <div className="chat-perm-desc">{p.input.description}</div>}
         </>
       )}
-      {isEdit(p.toolName) && proposed && (
+      {patchOf(p.input) && <DiffView unified={patchOf(p.input)!} />}
+      {isEdit(p.toolName) && !patchOf(p.input) && proposed && (
         <>
           <DiffView before={proposed.before} after={proposed.after} />
           <button className="link-btn" onClick={() => openDiff(proposed, `Usulan Claude untuk ${basename(proposed.path)}`, pending ? () => void answerPermission(m.id, "allow") : undefined)}>
@@ -282,6 +292,7 @@ function PermissionCard({ m }: { m: ChatMessage }) {
           </button>
         </>
       )}
+      {typeof p.input.description === "string" && p.toolName !== "Bash" && <div className="chat-perm-desc">{p.input.description}</div>}
       {!isEdit(p.toolName) && p.toolName !== "Bash" && Object.keys(p.input).length > 0 && <pre className="chat-perm-cmd">{JSON.stringify(p.input, null, 2).slice(0, 1500)}</pre>}
       {pending ? (
         <>

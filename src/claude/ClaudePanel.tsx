@@ -242,7 +242,7 @@ export default function ClaudePanel() {
           )}
           {running && !lastIsStreaming && (
             <div className="chat-typing">
-              <CrabMascot mood="mikir" size={20} /> Claude sedang bekerja…
+              <CrabMascot mood="mikir" size={20} /> {agentInfo(agent).short} sedang bekerja…
             </div>
           )}
         </div>

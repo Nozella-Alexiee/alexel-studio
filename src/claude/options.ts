@@ -24,6 +24,7 @@ export const EFFORTS: { id: string; label: string }[] = [
   { id: "high", label: "Tinggi" },
   { id: "xhigh", label: "Sangat tinggi" },
   { id: "max", label: "Maksimal" },
+  { id: "ultra", label: "Ultra" },
 ];
 
 /** Hanya alias (bukan id bertanggal) yang ditawarkan di pemilih; "default" selalu di depan. */

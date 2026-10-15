@@ -164,3 +164,25 @@ export function diffRows(before: string, after: string, limit = 80): { rows: Dif
   total = rows.length;
   return { rows: rows.slice(0, limit), added, removed, more: Math.max(0, total - limit) };
 }
+
+/** Baris diff gabungan dari teks unified diff (keluaran git / Codex), tanpa header berkas. */
+export function unifiedRows(diff: string, limit = 120): { rows: DiffRow[]; added: number; removed: number; more: number } {
+  const rows: DiffRow[] = [];
+  let added = 0;
+  let removed = 0;
+  for (const l of diff.split("\n")) {
+    if (/^(diff --git|index |--- |\+\+\+ |new file mode|deleted file mode|similarity index|rename (from|to) )/.test(l)) continue;
+    if (l.startsWith("@@")) {
+      if (rows.length) rows.push({ k: "…", t: "" });
+      continue;
+    }
+    if (l.startsWith("+")) {
+      rows.push({ k: "+", t: l.slice(1) });
+      added++;
+    } else if (l.startsWith("-")) {
+      rows.push({ k: "-", t: l.slice(1) });
+      removed++;
+    } else if (l.startsWith(" ")) rows.push({ k: " ", t: l.slice(1) });
+  }
+  return { rows: rows.slice(0, limit), added, removed, more: Math.max(0, rows.length - limit) };
+}

@@ -439,8 +439,8 @@ export function Composer({ onShowHistory }: { onShowHistory: () => void }) {
           className="cz-input"
           placeholder={
             running
-              ? "Claude sedang menjawab…"
-              : `Tanya Claude, @ untuk berkas, / untuk perintah`
+              ? `${agentInfo(agent).short} sedang menjawab…`
+              : `Tanya ${agentInfo(agent).short}, @ untuk berkas, / untuk perintah`
           }
           value={text}
           rows={2}
@@ -607,7 +607,7 @@ export function Composer({ onShowHistory }: { onShowHistory: () => void }) {
   );
 }
 
-/** Fokus ke kotak pesan Claude (dipakai perintah "Tanya Claude"). */
+/** Fokus ke kotak pesan agen (dipakai perintah "Tanya agen AI"). */
 export function focusComposer() {
   (
     document.getElementById("claude-input") as HTMLTextAreaElement | null

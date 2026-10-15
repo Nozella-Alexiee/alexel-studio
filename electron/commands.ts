@@ -87,8 +87,8 @@ export function buildCommands(ctx: Ctx, hooks: { confirmClose: (win: BrowserWind
     agent_send: (a) => agents.agentSend(ctx, a.agent, String(a.key ?? ""), a.cfg ?? {}, a.content),
     agent_control: (a) => agents.agentControl(ctx, a.agent, String(a.key ?? ""), a.msg),
     agent_close: (a) => agents.agentClose(a.agent, String(a.key ?? "")),
-    agent_sessions: (a) => agents.agentSessions(a.agent, String(a.cwd ?? "")),
-    agent_session_load: (a) => agents.agentSessionLoad(a.agent, String(a.cwd ?? ""), String(a.id ?? "")),
+    agent_sessions: (a) => agents.agentSessions(ctx, a.agent, String(a.cwd ?? "")),
+    agent_session_load: (a) => agents.agentSessionLoad(ctx, a.agent, String(a.cwd ?? ""), String(a.id ?? "")),
     claude_cancel: (a) => claude.claudeCancel(a.runId),
 
     // Ekstensi (Open VSX, data saja)
