@@ -72,7 +72,7 @@ describe("pemilihan interpreter & kompiler", () => {
     put(d, ".venv/Scripts/python.exe");
     put(d, "v2/venv/bin/python");
     expect(pythonFor("win32", d, none).cmd).toMatch(/^& .*\.venv.*python\.exe/);
-    expect(pythonFor("linux", path.join(d, "v2"), none).cmd).toMatch(/venv\/bin\/python/);
+    expect(pythonFor("linux", path.join(d, "v2"), none).cmd.replace(/\\/g, "/")).toMatch(/venv\/bin\/python/);
   });
   it("kompiler: gcc dulu di Windows, clang dulu di OS lain; tidak ada = petunjuk pasang", () => {
     const both = (n: string) => `/x/${n}`;
