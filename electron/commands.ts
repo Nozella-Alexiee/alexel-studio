@@ -3,6 +3,7 @@
 
 import { app, BrowserWindow, clipboard, ClipboardItem, dialog, powerMonitor, shell } from "electron";
 import fs from "node:fs";
+import os from "node:os";
 import path from "node:path";
 import * as agents from "./agents";
 import * as CP from "./checkpoints";
@@ -73,7 +74,7 @@ export function buildCommands(ctx: Ctx, hooks: { confirmClose: (win: BrowserWind
     git_auto_commit_file: (a) => G.gitAutoCommitFile(a.projectDir, a.path, !!a.push),
 
     // Terminal & run
-    pty_spawn: (a) => pty.ptySpawn(ctx, a.cwd, a.cols, a.rows, a.command),
+    pty_spawn: (a) => pty.ptySpawn(ctx, a.cwd, a.cols, a.rows, a.command, a.env),
     pty_write: (a) => pty.ptyWrite(a.id, a.data),
     pty_resize: (a) => pty.ptyResize(a.id, a.cols, a.rows),
     pty_kill: (a) => pty.ptyKill(a.id),
@@ -183,7 +184,7 @@ export function buildCommands(ctx: Ctx, hooks: { confirmClose: (win: BrowserWind
     menu_set: (a) => hooks.setMenu(a.spec),
     app_check_update: () => checkUpdate(),
     app_repo: () => repoSlug(),
-    app_info: () => ({ version: app.getVersion(), electron: process.versions.electron, chrome: process.versions.chrome, node: process.versions.node, platform: process.platform, arch: process.arch }),
+    app_info: () => ({ version: app.getVersion(), electron: process.versions.electron, chrome: process.versions.chrome, node: process.versions.node, platform: process.platform, arch: process.arch, osBuild: process.platform === "win32" ? os.release().split(".")[2] : undefined }),
     /** Aksi jendela untuk menu bar di dalam jendela (Windows/Linux). */
     window_action: (a, win) => {
       if (!win) return null;

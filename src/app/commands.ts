@@ -131,9 +131,9 @@ export const COMMANDS: Command[] = [
   { id: "history", label: tl("Time-travel berkas ini"), group: "Editor", keys: "Mod+Shift+H", run: () => { setState({ historyFor: activeTab()?.id ?? null }); A.togglePanel("history"); }, when: hasText },
   { id: "dashboard", label: tl("Dashboard project"), group: tl("Tampilan"), run: () => { const g = getState().groups[getState().focusedGroup]; if (g) setState({ groups: getState().groups.map((x, i) => (i === getState().focusedGroup ? { ...x, active: null } : x)) }); } },
 
-  { id: "run", label: tl("Jalankan berkas aktif"), group: "Run", keys: "Mod+R", run: runActiveFile, when: hasText },
+  { id: "run", label: tl("Jalankan berkas aktif"), group: "Run", keys: "Mod+R", run: runActiveFile },
   { id: "debugStart", label: tl("Mulai debug / lanjutkan"), group: tl("Debug"), keys: "F5", run: () => void dbgm().then((m) => m.startDebug()) },
-  { id: "runNoDebug", label: tl("Jalankan tanpa debug"), group: "Run", keys: "Ctrl+F5", run: runActiveFile, when: hasText, hidden: true },
+  { id: "runNoDebug", label: tl("Jalankan tanpa debug"), group: "Run", keys: "Ctrl+F5", run: runActiveFile, hidden: true },
   { id: "debugStop", label: tl("Hentikan debug"), group: tl("Debug"), keys: "Shift+F5", run: () => void dbgm().then((m) => m.stopDebug()), when: debugging },
   { id: "debugRestart", label: tl("Mulai ulang debug"), group: tl("Debug"), keys: "Mod+Shift+F5", run: () => void dbgm().then((m) => m.restartDebug()), when: debugging },
   { id: "debugPause", label: tl("Jeda"), group: tl("Debug"), keys: "F6", run: () => void dbgm().then((m) => m.pauseRun()), when: debugging },
@@ -229,7 +229,7 @@ export function recordCombo(e: KeyboardEvent): string | null {
 }
 
 /** Perintah yang tetap boleh dipakai saat fokus di terminal; sisanya diteruskan ke shell. */
-const TERMINAL_SAFE = new Set(["palette", "debugStart", "debugStop", "debugStepOver", "debugStepInto", "debugStepOut", "debugPause", "askClaude", "askClaude2", "quickOpen", "palette2", "sidebar", "panel", "terminal", "newTerminal", "settings", "cycleDesign", "explorer", "search", "git", "extensions"]);
+const TERMINAL_SAFE = new Set(["palette", "run", "runNoDebug", "stopRun", "runTarget", "debugRestart", "debugStart", "debugStop", "debugStepOver", "debugStepInto", "debugStepOut", "debugPause", "askClaude", "askClaude2", "quickOpen", "palette2", "sidebar", "panel", "terminal", "newTerminal", "settings", "cycleDesign", "explorer", "search", "git", "extensions"]);
 
 /** Global key handler (fase capture, supaya didahulukan dari CodeMirror). */
 export function handleGlobalKey(e: KeyboardEvent) {

@@ -108,6 +108,8 @@ export interface RunTarget {
   cwd: string;
   kind: string;
   detail: string;
+  /** Program yang dibutuhkan belum terpasang (Run ditahan). */
+  missing?: { tool: string; install: string };
 }
 
 export interface ClaudeInfo {

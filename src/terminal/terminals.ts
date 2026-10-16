@@ -6,7 +6,7 @@ import { FitAddon } from "@xterm/addon-fit";
 import { WebLinksAddon } from "@xterm/addon-web-links";
 import { Terminal, type ITheme } from "@xterm/xterm";
 import "@xterm/xterm/css/xterm.css";
-import { api, errMsg, on, openExternal } from "../lib/ipc";
+import { api, errMsg, isMac, isWindows, on, openExternal } from "../lib/ipc";
 import { formatDuration, stripAnsi } from "../lib/format";
 import { basename } from "../lib/paths";
 import { getState, setState, toast, useStore, type TermSession } from "../state/store";
@@ -20,6 +20,8 @@ interface Runtime {
   ptyId: number | null;
   plain: string;
   ro: ResizeObserver | null;
+  /** Variabel lingkungan tambahan untuk proses (dipakai ulang saat Run ulang). */
+  env?: Record<string, string>;
 }
 
 const runtimes = new Map<string, Runtime>();
@@ -67,9 +69,13 @@ function feed(rt: Runtime, data: string) {
   rt.plain = (rt.plain + data).slice(-24_000);
 }
 
+/** Nomor build Windows (dibutuhkan xterm untuk perilaku ConPTY); 0 = tidak diketahui. */
+let winBuild = 0;
+
 function init() {
   if (initialized) return;
   initialized = true;
+  if (isWindows) void api.appInfo().then((i) => (winBuild = Number((i as { osBuild?: string }).osBuild) || 0)).catch(() => {});
   void on<{ id: number; data: string }>("pty-data", ({ id, data }) => {
     const key = byPty.get(id);
     const rt = key ? runtimes.get(key) : undefined;
@@ -83,15 +89,19 @@ function init() {
     byPty.delete(id);
     const rt = runtimes.get(key);
     const sess = getState().terminals.find((t) => t.key === key);
+    // Dihentikan pengguna (Stop): di Windows taskkill menghasilkan kode 1, itu bukan kegagalan program.
+    const stopped = userStopped.delete(key);
+    // Ctrl+C di Windows: STATUS_CONTROL_C_EXIT, setara interupsi (130) di POSIX.
+    if (code === 3221225786) code = 130;
     if (rt) {
       rt.ptyId = null;
       const ok = code === 0;
-      const label = sess?.kind === "shell" ? tl("Shell selesai") : ok ? tl("Selesai") : tl("Berhenti");
+      const label = stopped ? tl("Dihentikan") : sess?.kind === "shell" ? tl("Shell selesai") : ok ? tl("Selesai") : tl("Berhenti");
       rt.term.write(`\r\n\x1b[2m── ${label} · ${tl("kode {code}", { code: code ?? "?" })} · ${formatDuration(elapsed_ms)} ──\x1b[0m\r\n`);
     }
     patch(key, { status: "exited", exitCode: code, elapsedMs: elapsed_ms, ptyId: null });
-    if (sess?.kind === "run") void import("../components/PenguinMascot").then((m) => m.flashPenguin(code === 0 ? "sukses" : "error", code === 0 ? 6000 : 9000));
-    if (sess?.kind === "run" && code !== 0 && code !== 130 && code !== null) {
+    if (sess?.kind === "run" && !stopped) void import("../components/PenguinMascot").then((m) => m.flashPenguin(code === 0 ? "sukses" : "error", code === 0 ? 6000 : 9000));
+    if (sess?.kind === "run" && !stopped && code !== 0 && code !== 130 && code !== null) {
       toast(tl("{name} gagal (kode {code})", { name: sess.title, code: String(code) }), "error", {
         label: tl("Tanya agen AI"),
         run: () => void import("../claude/claude").then((m) => m.explainTerminal(key)),
@@ -111,6 +121,9 @@ function init() {
     }
   });
 }
+
+/** Sesi yang dihentikan lewat tombol Stop/Tutup: keluarnya bukan kegagalan. */
+const userStopped = new Set<string>();
 
 function safeFit(rt: Runtime) {
   if (!rt.host.isConnected || rt.host.clientWidth < 20 || rt.host.clientHeight < 20) return;
@@ -134,12 +147,33 @@ function createRuntime(key: string): Runtime {
     // Seperti VS Code: Option tetap mengetik karakter (@ [ ] { } di keyboard non-US).
     macOptionIsMeta: false,
     theme: theme(),
+    // ConPTY mengatur ulang tampilan sendiri saat resize; tanpa ini baris terlipat salah di Windows.
+    ...(isWindows ? { windowsPty: { backend: "conpty" as const, buildNumber: winBuild } } : {}),
   });
   const fit = new FitAddon();
   term.loadAddon(fit);
   term.loadAddon(new WebLinksAddon((_e, uri) => void openExternal(uri)));
   term.open(host);
   const rt: Runtime = { key, term, fit, host, ptyId: null, plain: "", ro: null };
+  // Windows/Linux: Ctrl+C menyalin bila ada seleksi (tanpa seleksi tetap Ctrl+C ke program); Ctrl+V / Ctrl+Shift+V menempel.
+  if (!isMac) {
+    term.attachCustomKeyEventHandler((e) => {
+      if (e.type !== "keydown" || !e.ctrlKey || e.altKey || e.metaKey) return true;
+      const k = e.key.toLowerCase();
+      if (k === "c" && (e.shiftKey || term.hasSelection())) {
+        if (term.hasSelection()) void navigator.clipboard.writeText(term.getSelection()).catch(() => {});
+        term.clearSelection();
+        e.preventDefault();
+        return false;
+      }
+      if (k === "v") {
+        e.preventDefault();
+        void navigator.clipboard.readText().then((t) => t && term.paste(t), () => {});
+        return false;
+      }
+      return true;
+    });
+  }
   term.onData((d) => {
     if (rt.ptyId !== null) void api.ptyWrite(rt.ptyId, d).catch(() => {});
   });
@@ -153,7 +187,7 @@ function createRuntime(key: string): Runtime {
 async function spawn(rt: Runtime, cwd: string, command?: string) {
   const { cols, rows } = rt.term;
   try {
-    const id = await api.ptySpawn(cwd, cols || 100, rows || 24, command);
+    const id = await api.ptySpawn(cwd, cols || 100, rows || 24, command, rt.env);
     rt.ptyId = id;
     byPty.set(id, rt.key);
     for (const chunk of pending.get(id) ?? []) feed(rt, chunk);
@@ -165,7 +199,7 @@ async function spawn(rt: Runtime, cwd: string, command?: string) {
   }
 }
 
-export async function newTerminal(opts: { kind?: TermSession["kind"]; title?: string; cwd?: string; command?: string; focus?: boolean } = {}): Promise<string> {
+export async function newTerminal(opts: { kind?: TermSession["kind"]; title?: string; cwd?: string; command?: string; focus?: boolean; env?: Record<string, string> } = {}): Promise<string> {
   init();
   const s = getState();
   const cwd = opts.cwd ?? s.root ?? "";
@@ -176,6 +210,7 @@ export async function newTerminal(opts: { kind?: TermSession["kind"]; title?: st
   const sess: TermSession = { key, ptyId: null, title, kind, cwd, command: opts.command, status: "starting", startedAt: Date.now() };
   setState((st) => ({ terminals: [...st.terminals, sess], activeTerminal: key }));
   const rt = createRuntime(key);
+  rt.env = opts.env;
   if (opts.command && kind !== "shell") rt.term.write(`\x1b[36m$ ${opts.command}\x1b[0m\r\n`);
   const { togglePanel } = await import("../app/actions");
   const l = getState().layouts[getState().settings.design];
@@ -189,14 +224,21 @@ export async function newTerminal(opts: { kind?: TermSession["kind"]; title?: st
 }
 
 /** Jalankan perintah di sesi "run". Sesi run yang sudah selesai untuk perintah sama dipakai ulang. */
-export async function runCommand(command: string, cwd: string, title: string): Promise<string> {
+export async function runCommand(command: string, cwd: string, title: string, opts: { focus?: boolean; env?: Record<string, string> } = {}): Promise<string> {
   init();
-  const reuse = getState().terminals.find((t) => t.kind === "run" && t.command === command && t.cwd === cwd && t.status === "exited");
-  if (reuse) {
-    await rerun(reuse.key);
-    return reuse.key;
+  const same = getState().terminals.find((t) => t.kind === "run" && t.command === command && t.cwd === cwd);
+  // Perintah yang sama masih berjalan (mis. dev server): hentikan dulu lalu mulai ulang, jangan jalankan salinan kedua.
+  if (same && same.status === "running") {
+    await stopTerminal(same.key);
+    await new Promise((r) => setTimeout(r, 400));
   }
-  return newTerminal({ kind: "run", title, cwd, command });
+  if (same) {
+    const rt = runtimes.get(same.key);
+    if (rt) rt.env = opts.env;
+    await rerun(same.key);
+    return same.key;
+  }
+  return newTerminal({ kind: "run", title, cwd, command, focus: opts.focus, env: opts.env });
 }
 
 export async function rerun(key: string) {
@@ -219,7 +261,10 @@ export async function rerun(key: string) {
 
 export async function stopTerminal(key: string) {
   const rt = runtimes.get(key);
-  if (rt?.ptyId != null) await api.ptyKill(rt.ptyId).catch(() => {});
+  if (rt?.ptyId != null) {
+    userStopped.add(key);
+    await api.ptyKill(rt.ptyId).catch(() => {});
+  }
 }
 
 export async function closeTerminal(key: string) {

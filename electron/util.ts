@@ -10,6 +10,69 @@ export const isMac = process.platform === "darwin";
 export const isWin = process.platform === "win32";
 
 let cachedPath: string | null = null;
+let cachedAt = 0;
+/** Di Windows PATH dibaca ulang berkala: program yang baru dipasang (winget, installer) harus langsung ketemu. */
+const WIN_PATH_TTL_MS = 20_000;
+
+/** Ganti %VAR% dengan nilai env (tanpa membedakan huruf besar/kecil, seperti Windows). */
+export function expandWinVars(s: string, env: NodeJS.ProcessEnv = process.env): string {
+  const lower: Record<string, string> = {};
+  for (const [k, v] of Object.entries(env)) if (v !== undefined) lower[k.toLowerCase()] = v;
+  return s.replace(/%([^%]+)%/g, (m, n: string) => lower[n.toLowerCase()] ?? m);
+}
+
+/**
+ * Pecah string PATH Windows: buang tanda kutip pembungkus, spasi dan backslash penutup, expand %VAR%,
+ * dan buang entri kosong/relatif/yang masih berisi %VAR% tak terselesaikan.
+ */
+export function splitWinPath(raw: string, env: NodeJS.ProcessEnv = process.env): string[] {
+  const out: string[] = [];
+  for (const part of raw.split(";")) {
+    // Backslash penutup dibuang, kecuali akar drive ("C:\").
+    const e = expandWinVars(part.trim().replace(/^"(.*)"$/, "$1"), env).replace(/([^:])[\\/]+$/, "$1");
+    if (e && !e.includes("%") && /^[A-Za-z]:[\\/]|^\\\\/.test(e)) out.push(e);
+  }
+  return out;
+}
+
+/** Nilai `Path` dari registri (Machine & User). Proses yang sudah berjalan tidak melihat perubahan PATH tanpa ini. */
+function windowsRegistryPath(): string {
+  const read = (key: string) => {
+    try {
+      const r = spawnSync("reg", ["query", key, "/v", "Path"], { encoding: "utf8", timeout: 3000, windowsHide: true, stdio: ["ignore", "pipe", "ignore"] });
+      const m = /\bPath\s+REG_(?:EXPAND_)?SZ\s+(.*)/i.exec(r.stdout ?? "");
+      return m ? m[1].trim() : "";
+    } catch {
+      return "";
+    }
+  };
+  return [read("HKLM\\SYSTEM\\CurrentControlSet\\Control\\Session Manager\\Environment"), read("HKCU\\Environment")].filter(Boolean).join(";");
+}
+
+/** Lokasi pemasangan umum di Windows (dicoba setelah PATH sebenarnya): Python3*, LLVM, MSYS2, Go, Git, .NET, WinGet. */
+function windowsKnownDirs(home: string): string[] {
+  const local = process.env.LOCALAPPDATA ?? path.join(home, "AppData", "Local");
+  const pf = process.env.ProgramFiles ?? "C:\\Program Files";
+  const out = [
+    path.join(local, "Microsoft", "WinGet", "Links"),
+    path.join(pf, "nodejs"),
+    path.join(pf, "Git", "cmd"),
+    path.join(pf, "Git", "bin"),
+    path.join(pf, "Go", "bin"),
+    path.join(pf, "LLVM", "bin"),
+    path.join(pf, "dotnet"),
+    "C:\\msys64\\ucrt64\\bin",
+    "C:\\msys64\\mingw64\\bin",
+  ];
+  for (const base of [path.join(local, "Programs", "Python"), pf]) {
+    try {
+      for (const n of fs.readdirSync(base)) if (/^Python3\d*/i.test(n)) out.push(path.join(base, n), path.join(base, n, "Scripts"));
+    } catch {
+      /* folder tidak ada */
+    }
+  }
+  return out;
+}
 
 /** Shell POSIX pengguna: $SHELL, lalu zsh (macOS) / bash / sh yang benar-benar ada. */
 export function posixShell(): string {
@@ -20,7 +83,7 @@ export function posixShell(): string {
 
 /** PATH dari shell login+interaktif pengguna (nvm, pyenv, volta ikut), dengan batas 4 detik. */
 function shellPath(): string {
-  if (isWin) return process.env.PATH ?? process.env.Path ?? "";
+  if (isWin) return [windowsRegistryPath(), process.env.PATH ?? process.env.Path ?? ""].filter(Boolean).join(";");
   const shell = posixShell();
   try {
     const r = spawnSync(shell, ["-ilc", 'printf "__NOZEL_PATH__%s__END__" "$PATH"'], { encoding: "utf8", timeout: 4000, stdio: ["ignore", "pipe", "ignore"] });
@@ -36,14 +99,19 @@ function shellPath(): string {
  * Entri kosong/relatif dibuang supaya `./node` dari repo tidak ikut terpanggil.
  */
 export function augmentedPath(): string {
-  if (cachedPath) return cachedPath;
+  if (cachedPath && (!isWin || Date.now() - cachedAt < WIN_PATH_TTL_MS)) return cachedPath;
   const home = os.homedir();
   const sep = isWin ? ";" : ":";
   const parts: string[] = [];
+  const seen = new Set<string>();
   const push = (p: string) => {
-    if (p && path.isAbsolute(p) && !parts.includes(p)) parts.push(p);
+    const key = isWin ? p.toLowerCase() : p;
+    if (p && path.isAbsolute(p) && !seen.has(key)) {
+      seen.add(key);
+      parts.push(p);
+    }
   };
-  shellPath().split(sep).forEach(push);
+  (isWin ? splitWinPath(shellPath()) : shellPath().split(sep)).forEach(push);
   if (!isWin) {
     [
       `${home}/.local/bin`,
@@ -80,13 +148,18 @@ export function augmentedPath(): string {
       path.join(home, "go", "bin"),
       path.join(local, "Programs", "Microsoft VS Code", "bin"),
       path.join(local, "pnpm"),
-      "C:\\Program Files\\nodejs",
-      "C:\\Program Files\\Git\\cmd",
     ].forEach(push);
+    windowsKnownDirs(home).forEach(push);
   }
-  (process.env.PATH ?? process.env.Path ?? "").split(sep).forEach(push);
+  (isWin ? splitWinPath(process.env.PATH ?? process.env.Path ?? "") : (process.env.PATH ?? process.env.Path ?? "").split(sep)).forEach(push);
   cachedPath = parts.join(sep);
+  cachedAt = Date.now();
   return cachedPath;
+}
+
+/** Paksa PATH dihitung ulang (mis. sebelum Run, atau setelah "Periksa ulang"). */
+export function refreshPath() {
+  cachedPath = null;
 }
 
 export function warmPath() {

@@ -181,6 +181,7 @@
       "oneClick": false,
       "perMachine": false,
       "allowToChangeInstallationDirectory": true,
+      "buildUniversalInstaller": false,
       "artifactName": "Alexel-Studio-win-${arch}.${ext}",
       "shortcutName": "Alexel Studio"
     },

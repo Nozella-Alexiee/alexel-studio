@@ -81,16 +81,40 @@ function varsNow(): Record<string, string> {
   };
 }
 
-export async function launchJsonConfigs(): Promise<LaunchConfig[]> {
+/**
+ * Konfigurasi dari .vscode/launch.json. `report`: bila ada yang dilewati atau JSON-nya rusak, beri tahu
+ * pengguna (toast + Debug Console) — sebelumnya dibuang diam-diam lalu F5 memakai konfigurasi otomatis.
+ */
+export async function launchJsonConfigs(report = false): Promise<LaunchConfig[]> {
   const root = getState().root;
   if (!root) return [];
+  let content: string;
   try {
-    const f = await api.readText(join(root, ".vscode/launch.json"));
-    const j = parseJsonc(f.content) as { configurations?: LaunchConfig[] };
-    return (j.configurations ?? []).filter((c) => c && typeof c.type === "string" && typeof c.name === "string" && kindOf(c.type));
+    content = (await api.readText(join(root, ".vscode/launch.json"))).content;
   } catch {
+    return []; // tidak ada launch.json
+  }
+  const warn = (msg: string) => {
+    if (!report) return;
+    consoleLine("err", `launch.json: ${msg}`);
+    toast(`launch.json: ${msg}`, "error", { label: tl("Buka launch.json"), run: () => void import("../app/actions").then((m) => m.openLaunchJson()) });
+  };
+  let j: { configurations?: LaunchConfig[] };
+  try {
+    j = parseJsonc(content) as { configurations?: LaunchConfig[] };
+  } catch (e) {
+    warn(tl("tidak bisa dibaca ({error}). Memakai konfigurasi otomatis.", { error: errMsg(e) }));
     return [];
   }
+  const all = Array.isArray(j.configurations) ? j.configurations : [];
+  const ok: LaunchConfig[] = [];
+  const skipped: string[] = [];
+  for (const c of all) {
+    if (c && typeof c.type === "string" && typeof c.name === "string" && kindOf(c.type)) ok.push(c);
+    else skipped.push(`${(c && typeof c.name === "string" && c.name) || "?"} (${(c && typeof c.type === "string" && c.type) || "?"})`);
+  }
+  if (skipped.length) warn(tl("konfigurasi dilewati karena tipe tidak didukung: {list}", { list: skipped.join(", ") }));
+  return ok;
 }
 
 /** Konfigurasi otomatis dari berkas aktif (tanpa launch.json). */
@@ -152,7 +176,7 @@ export async function startDebug(config?: LaunchConfig) {
     if (dbg().status === "paused") return continueRun();
     return;
   }
-  let cfg = config ?? (await launchJsonConfigs())[0] ?? autoConfig();
+  let cfg = config ?? (await launchJsonConfigs(true))[0] ?? autoConfig();
   if (!cfg) return toast(tl("Buka berkas JavaScript, TypeScript, Python, C/C++, atau Go, atau tambahkan .vscode/launch.json."));
   const kind = kindOf(cfg.type);
   if (!kind) return toast(tl("Tipe debug \"{type}\" belum didukung.", { type: cfg.type }));
@@ -258,7 +282,10 @@ function wire(c: DapClient, isRoot: boolean) {
       const { runInTerminal } = await import("../app/run");
       const q = (a: string) => (isWindows ? `'${a.replace(/'/g, "''")}'` : `'${a.replace(/'/g, "'\\''")}'`);
       const argv = (args.args ?? []) as string[];
-      await runInTerminal((isWindows ? "& " : "") + argv.map(q).join(" "), args.title ?? "Debug");
+      // cwd dan env dari adapter (js-debug `console: integratedTerminal`) ikut diteruskan ke proses.
+      const env: Record<string, string> = {};
+      for (const [k, v] of Object.entries((args.env ?? {}) as Record<string, unknown>)) if (typeof v === "string") env[k] = v;
+      await runInTerminal((isWindows ? "& " : "") + argv.map(q).join(" "), args.title ?? "Debug", { cwd: typeof args.cwd === "string" ? args.cwd : undefined, env });
       return {};
     }
     if (command === "startDebugging") {

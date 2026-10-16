@@ -50,7 +50,23 @@ async function lldbDap(): Promise<string | null> {
   return null;
 }
 
-const pythonExe = () => findExecutable("python3") ?? findExecutable("python");
+/**
+ * Python untuk debugpy. Windows: launcher `py -3` dulu; `python` di PATH sering hanya stub Microsoft Store
+ * (WindowsApps) yang tidak menjalankan apa-apa, jadi ditolak.
+ */
+export function pythonLaunch(has: (n: string) => string | null = (n) => findExecutable(n), win = process.platform === "win32"): { exe: string; pre: string[]; label: string } | null {
+  if (win) {
+    const py = has("py");
+    if (py) return { exe: py, pre: ["-3"], label: "py -3" };
+    for (const n of ["python", "python3"]) {
+      const p = has(n);
+      if (p && !/[\\/]WindowsApps[\\/]/i.test(p)) return { exe: p, pre: [], label: n };
+    }
+    return null;
+  }
+  const p = has("python3") ?? has("python");
+  return p ? { exe: p, pre: [], label: path.basename(p) } : null;
+}
 
 export interface AdapterStatus {
   kind: AdapterKind;
@@ -72,10 +88,10 @@ export async function adapterStatus(ctx: Ctx, kind: AdapterKind): Promise<Adapte
     return { kind, available: !!f, installable: !f, detail: f };
   }
   if (kind === "python") {
-    const py = pythonExe();
-    if (!py) return { kind, available: false, install: "Pasang Python 3 dulu" };
-    const r = await runCapture(py, ["-c", "import debugpy; print(debugpy.__version__)"], { timeoutMs: 15_000 }).catch(() => null);
-    return { kind, available: !!r?.success, detail: r?.success ? `debugpy ${r.stdout.trim()}` : null, install: r?.success ? null : `${path.basename(py)} -m pip install debugpy` };
+    const py = pythonLaunch();
+    if (!py) return { kind, available: false, install: process.platform === "win32" ? "winget install Python.Python.3.12" : process.platform === "darwin" ? "brew install python" : "sudo apt install python3 python3-pip" };
+    const r = await runCapture(py.exe, [...py.pre, "-c", "import debugpy; print(debugpy.__version__)"], { timeoutMs: 15_000 }).catch(() => null);
+    return { kind, available: !!r?.success, detail: r?.success ? `debugpy ${r.stdout.trim()}` : null, install: r?.success ? null : `${py.label} -m pip install debugpy` };
   }
   const dlv = findExecutable("dlv");
   return { kind, available: !!dlv, detail: dlv, install: dlv ? null : "go install github.com/go-delve/delve/cmd/dlv@latest" };
@@ -187,9 +203,10 @@ export async function dapStart(ctx: Ctx, id: string, kind: AdapterKind, cwd: str
   sessions.set(id, s);
   try {
     if (kind === "lldb" || kind === "python") {
-      const exe = kind === "lldb" ? await lldbDap() : pythonExe();
+      const py = kind === "python" ? pythonLaunch() : null;
+      const exe = kind === "lldb" ? await lldbDap() : py?.exe;
       if (!exe) throw new Error(kind === "lldb" ? "lldb-dap tidak ditemukan." : "Python tidak ditemukan.");
-      const sp = spawnable(exe, kind === "python" ? ["-m", "debugpy.adapter"] : []);
+      const sp = spawnable(exe, kind === "python" ? [...(py?.pre ?? []), "-m", "debugpy.adapter"] : []);
       const proc = spawn(sp.cmd, sp.args, { cwd: dir, env: childEnv(), stdio: ["pipe", "pipe", "pipe"], windowsHide: true, windowsVerbatimArguments: sp.verbatim });
       watchProc(ctx, s, proc);
       proc.stdout?.on("data", (c: Buffer) => onData(ctx, s, c));

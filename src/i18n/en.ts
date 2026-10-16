@@ -982,4 +982,11 @@ export const EN: Record<string, string> = {
   "Antigravity (agy) datang bersama aplikasi Antigravity. Pasang aplikasinya dulu, lalu klik Periksa ulang.": "Antigravity (agy) comes with the Antigravity app. Install the app first, then click Check again.",
   "Unduh Antigravity": "Download Antigravity",
   "Akan membuka terminal: pilih \"Continue with Google\", selesaikan di browser, lalu tekan Ctrl+D dua kali.": "This opens a terminal: choose \"Continue with Google\", finish in your browser, then press Ctrl+D twice.",
+  "Berkas belum bisa disimpan, jadi tidak dijalankan.": "The file couldn't be saved, so it wasn't run.",
+  "{tool} tidak ditemukan di komputer ini. Pasang dulu: {install}": "{tool} wasn't found on this computer. Install it first: {install}",
+  "Salin perintah": "Copy command",
+  "Dihentikan": "Stopped",
+  "Buka launch.json": "Open launch.json",
+  "tidak bisa dibaca ({error}). Memakai konfigurasi otomatis.": "couldn't be read ({error}). Using the automatic configuration.",
+  "konfigurasi dilewati karena tipe tidak didukung: {list}": "configurations skipped because their type isn't supported: {list}",
 };

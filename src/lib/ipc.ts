@@ -136,8 +136,8 @@ export const api = {
   gitAutoCommit: (projectDir: string, path: string, push: boolean) => call<string>("git_auto_commit_file", { projectDir, path, push }),
 
   // Terminal
-  ptySpawn: (cwd: string, cols: number, rows: number, command?: string) =>
-    call<number>("pty_spawn", { cwd, cols, rows, command: command ?? null }),
+  ptySpawn: (cwd: string, cols: number, rows: number, command?: string, env?: Record<string, string>) =>
+    call<number>("pty_spawn", { cwd, cols, rows, command: command ?? null, env: env ?? null }),
   ptyWrite: (id: number, data: string) => call<void>("pty_write", { id, data }),
   ptyResize: (id: number, cols: number, rows: number) => call<void>("pty_resize", { id, cols, rows }),
   ptyKill: (id: number) => call<void>("pty_kill", { id }),
@@ -150,7 +150,7 @@ export const api = {
   checkUpdate: () => call<{ repo: string | null; current: string; latest: string | null; url: string | null; newer: boolean }>("app_check_update"),
   appRepo: () => call<string | null>("app_repo"),
   gitClone: (url: string, parent: string) => call<string>("git_clone", { url, parent }),
-  appInfo: () => call<{ version: string; electron: string; chrome?: string; node?: string; platform: string; arch?: string }>("app_info"),
+  appInfo: () => call<{ version: string; electron: string; chrome?: string; node?: string; platform: string; arch?: string; osBuild?: string }>("app_info"),
   windowAction: (action: "fullscreen" | "minimize" | "maximize" | "close" | "devtools" | "zoomIn" | "zoomOut" | "zoomReset" | "quit") => call<void>("window_action", { action }),
 
   // Debug (DAP)

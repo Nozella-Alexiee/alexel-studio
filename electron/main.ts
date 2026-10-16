@@ -2,6 +2,7 @@
 // Keamanan: contextIsolation + sandbox, tanpa nodeIntegration, CSP ketat, navigasi & popup diblok,
 // semua command lewat satu pintu IPC dengan whitelist (lihat commands.ts).
 
+import { cleanTempBins } from "./runner";
 import { app, BrowserWindow, ipcMain, Menu, net, protocol, session, shell, type MenuItemConstructorOptions } from "electron";
 import fs from "node:fs";
 import path from "node:path";
@@ -72,13 +73,16 @@ function toUiPaths(v: unknown, key = ""): unknown {
   return v;
 }
 
+setTimeout(() => cleanTempBins(), 5000); // sisa biner Run sebelumnya
+
 const ctx: Ctx = {
   userData: app.getPath("userData"),
   emit: (event, payload) => {
     if (win && !win.isDestroyed()) win.webContents.send("nozel:event", event, event === "pty-data" || event === "agent-event" || event === "lsp-message" || event === "dap-message" ? payload : toUiPaths(payload));
   },
-  trash: (p) => shell.trashItem(p),
-  reveal: (p) => shell.showItemInFolder(p),
+  // Path dari UI memakai "/" juga di Windows; API shell Windows butuh "\\".
+  trash: (p) => shell.trashItem(path.normalize(p)),
+  reveal: (p) => shell.showItemInFolder(path.normalize(p)),
 };
 
 const commands = buildCommands(ctx, {

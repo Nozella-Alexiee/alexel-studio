@@ -15,7 +15,7 @@ export async function runActiveFile() {
   if (!tab || tab.kind !== "text") return toast(tl("Buka berkas yang mau dijalankan."));
   busy = true;
   try {
-    if (tab.dirty && !(await docs.saveDocument(tab.id, { quiet: true }))) return;
+    if (tab.dirty && !(await docs.saveDocument(tab.id, { quiet: true }))) return toast(tl("Berkas belum bisa disimpan, jadi tidak dijalankan."), "error");
     const target = await api.commandForFile(tab.id, getState().root);
     await runTarget(target, basename(tab.id));
   } catch (e) {
@@ -25,11 +25,21 @@ export async function runActiveFile() {
   }
 }
 
+/** Program yang dibutuhkan belum terpasang: beri tahu apa yang dipasang, jangan jalankan perintah yang pasti gagal. */
+function reportMissing(m: { tool: string; install: string }) {
+  toast(tl("{tool} tidak ditemukan di komputer ini. Pasang dulu: {install}", { tool: m.tool, install: m.install }), "error", {
+    label: tl("Salin perintah"),
+    run: () => void import("../components/textMenu").then((x) => x.copyText(m.install)),
+  });
+}
+
 export async function runTarget(t: RunTarget, title = t.label) {
+  if (t.missing) return reportMissing(t.missing);
   // Simpan semua dulu supaya yang dijalankan sama dengan yang terlihat.
   for (const tab of Object.values(getState().tabs)) if (tab.dirty) await docs.saveDocument(tab.id, { quiet: true });
   const { runCommand } = await import("../terminal/terminals");
-  await runCommand(t.command, t.cwd, title);
+  // Fokus tetap di editor: Ctrl+R / F5 berikutnya harus tetap bisa dipakai (terminal menelan tombol).
+  await runCommand(t.command, t.cwd, title, { focus: false });
 }
 
 export async function openShell() {
@@ -51,9 +61,9 @@ export async function openClaudeInteractive() {
 
 /** Jalankan satu perintah di tab terminal baru (folder project, atau folder rumah). */
 /** Jalankan perintah di tab terminal "run"; mengembalikan kunci sesi terminalnya. */
-export async function runInTerminal(command: string, title: string): Promise<string> {
+export async function runInTerminal(command: string, title: string, opts: { cwd?: string; env?: Record<string, string> } = {}): Promise<string> {
   const { runCommand } = await import("../terminal/terminals");
-  return runCommand(command, getState().root ?? "", title);
+  return runCommand(command, opts.cwd || (getState().root ?? ""), title, { env: opts.env });
 }
 
 /**

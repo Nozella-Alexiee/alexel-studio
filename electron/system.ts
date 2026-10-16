@@ -146,8 +146,10 @@ export async function listPorts(): Promise<ListeningPort[]> {
 export function killProcess(pid: number, force: boolean, ownPids: number[] = []) {
   if (pid <= 1 || pid === process.pid || ownPids.includes(pid)) throw new Error("Proses ini tidak boleh dihentikan.");
   if (isWin) {
-    void runCapture("taskkill", ["/pid", String(pid), "/T", ...(force ? ["/F"] : [])], { timeoutMs: 5000 });
-    return;
+    // Program konsol tidak berhenti tanpa /F; hasilnya dilaporkan, bukan dibuang diam-diam.
+    return runCapture("taskkill", ["/pid", String(pid), "/T", "/F"], { timeoutMs: 5000 }).then((r) => {
+      if (!r.success) throw new Error(`Gagal menghentikan proses ${pid}: ${(r.stderr || r.stdout).trim().slice(0, 200)}`);
+    });
   }
   try {
     process.kill(pid, force ? "SIGKILL" : "SIGTERM");
