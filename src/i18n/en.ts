@@ -973,4 +973,9 @@ export const EN: Record<string, string> = {
   "Tidak ada error atau peringatan di baris ini.": "No errors or warnings on this line.",
   "Ln {line}, Kol {col}": "Ln {line}, Col {col}",
   "({n} dipilih)": "({n} selected)",
+  "Salin nilai": "Copy value",
+  "Salin nama": "Copy name",
+  "Salin pesan": "Copy message",
+  "Salin lokasi dan pesan": "Copy location and message",
+  "Tidak bisa menyalin ke clipboard.": "Couldn't copy to the clipboard.",
 };

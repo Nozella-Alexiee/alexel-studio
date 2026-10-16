@@ -34,9 +34,18 @@ textarea,
 .chat-user-text,
 .dialog-detail,
 pre,
-code {
+code,
+.selectable {
   user-select: text;
   -webkit-user-select: text;
+}
+/* Tampilan mirip konsol (Debug Console, chat agen, Output, Problems…) harus bisa dipilih & disalin. */
+.selectable {
+  cursor: text;
+}
+.selectable button,
+.selectable a {
+  cursor: pointer;
 }
 
 button {

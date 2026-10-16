@@ -224,7 +224,7 @@ export default function ClaudePanel() {
         <Setup />
       ) : (
         <div
-          className="claude-list"
+          className="claude-list selectable"
           ref={list}
           aria-live="polite"
           onScroll={(e) => {

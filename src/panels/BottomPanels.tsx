@@ -8,6 +8,7 @@ import { FileIcon } from "../components/FileIcon";
 import { Empty, IconButton, Segmented, Spinner } from "../components/ui";
 import { api, errMsg, openExternal } from "../lib/ipc";
 import { relative } from "../lib/paths";
+import { openCopyMenu } from "../components/textMenu";
 import type { ListeningPort, TodoItem } from "../lib/types";
 import { confirmDialog, isSaver, toast, useStore } from "../state/store";
 import { refreshTodos } from "./todoData";
@@ -30,7 +31,7 @@ export function ProblemsPanel() {
             <span className="count-badge">{list.length}</span>
           </div>
           {list.map((p, i) => (
-            <div key={i} className={`prob-row sev-${p.severity}`}>
+            <div key={i} className={`prob-row sev-${p.severity}`} onContextMenu={(e) => openCopyMenu(e, [{ label: tl("Salin pesan"), text: p.message }, { label: tl("Salin lokasi dan pesan"), text: `${relative(root, path)}:${p.line}:${p.col} ${p.message}` }])}>
               <button className="prob-main" onClick={() => void A.openFile(path, { line: p.line, col: p.col })}>
                 {p.severity === "error" ? <AlertCircle size={14} aria-label="Error" /> : p.severity === "warning" ? <AlertTriangle size={14} aria-label={tl("Peringatan")} /> : <Info size={14} aria-label="Info" />}
                 <span className="prob-msg">{p.message}</span>
@@ -105,7 +106,7 @@ export function PortsPanel() {
       ) : ports.length === 0 ? (
         <Empty title={tl("Tidak ada port terbuka")}>{tl("Jalankan dev server (mis. npm run dev), lalu muncul di sini.")}</Empty>
       ) : (
-        <table className="ports-table">
+        <table className="ports-table selectable">
           <thead>
             <tr>
               <th>Port</th>

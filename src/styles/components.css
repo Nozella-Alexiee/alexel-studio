@@ -64,6 +64,9 @@
   flex: 1;
   padding: 2px 6px 24px;
   min-height: 60px;
+  /* Studio & Control menaruh .tree langsung di .sidebar (overflow:hidden): tanpa ini daftar tidak bisa di-scroll. */
+  overflow-x: hidden;
+  overflow-y: auto;
 }
 .tree-row {
   display: flex;
@@ -821,6 +824,9 @@ button.crumb:hover {
 }
 .todo-list {
   padding: 0 6px 8px;
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
 }
 .todo-line {
   display: flex;

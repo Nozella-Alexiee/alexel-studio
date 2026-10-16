@@ -36,6 +36,19 @@ const needLsp = (fn: (v: EditorView) => boolean | void, what: string) => () => {
  */
 export function editAction(action: "undo" | "redo" | "cut" | "copy" | "paste" | "selectAll") {
   const v = view();
+  // Seleksi/fokus di tampilan teks non-editor (Debug Console, Output, chat…): jangan pindah fokus ke editor.
+  const active = document.activeElement as HTMLElement | null;
+  const sel = window.getSelection();
+  const selOutsideEditor = !!sel && !sel.isCollapsed && !!sel.anchorNode && !sel.anchorNode.parentElement?.closest(".cm-editor") && !sel.anchorNode.parentElement?.closest("input, textarea");
+  if (action === "copy" && selOutsideEditor) return void call("edit_action", { action });
+  const selectable = active?.closest?.<HTMLElement>(".selectable");
+  if (action === "selectAll" && selectable) {
+    const r = document.createRange();
+    r.selectNodeContents(selectable);
+    sel?.removeAllRanges();
+    sel?.addRange(r);
+    return;
+  }
   const inEditor = !!v && (v.hasFocus || !(document.activeElement instanceof HTMLInputElement || document.activeElement instanceof HTMLTextAreaElement));
   if (inEditor && v && (action === "undo" || action === "redo" || action === "selectAll")) {
     v.focus();

@@ -1,8 +1,9 @@
 // Debug Console: output program & adapter, plus evaluasi ekspresi (REPL) saat program berhenti.
 
-import { Trash2 } from "lucide-react";
+import { Copy, Trash2 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { IconButton } from "../components/ui";
+import { copyText, openTextMenu } from "../components/textMenu";
 import { evaluateRepl } from "../debug/debug";
 import { setDbg, useDebug } from "../debug/state";
 import { tl } from "../i18n";
@@ -23,11 +24,14 @@ export default function DebugConsole() {
       <div className="output-bar">
         <span className="hint">{status === "paused" ? tl("Program berhenti, ekspresi dievaluasi di frame terpilih.") : status === "running" ? tl("Program berjalan.") : tl("Tidak ada sesi debug.")}</span>
         <span className="spacer" />
+        <IconButton label={tl("Salin semua")} onClick={() => copyText(lines.map((l) => l.text).join("\n"))} disabled={!lines.length}>
+          <Copy size={13} />
+        </IconButton>
         <IconButton label={tl("Bersihkan")} onClick={() => setDbg({ console: [] })} disabled={!lines.length}>
           <Trash2 size={13} />
         </IconButton>
       </div>
-      <div className="dbg-console-lines" ref={box} role="log" aria-label={tl("Debug console")}>
+      <div className="dbg-console-lines selectable" ref={box} role="log" aria-label={tl("Debug console")} onContextMenu={(e) => openTextMenu(e, [{ label: tl("Bersihkan"), disabled: !lines.length, run: () => setDbg({ console: [] }) }])}>
         {lines.map((l, i) => (
           <div key={i} className={`dbg-line k-${l.kind}`}>
             {l.kind === "in" ? "› " : l.kind === "result" ? "‹ " : ""}

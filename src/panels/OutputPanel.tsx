@@ -40,7 +40,7 @@ export default function OutputPanel() {
           <Trash2 size={13} />
         </IconButton>
       </div>
-      <pre className="output-text" ref={box} tabIndex={0} aria-label={`Output ${channel}`}>
+      <pre className="output-text selectable" ref={box} tabIndex={0} aria-label={`Output ${channel}`}>
         {lines.length ? lines.join("\n") : <span className="hint">{tl("Belum ada output di saluran ini.")}</span>}
       </pre>
     </div>

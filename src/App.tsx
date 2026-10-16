@@ -60,6 +60,11 @@ function useBackgroundTasks() {
         void import("./editor/editorMenu").then((m) => m.openEditorMenu(e));
         return;
       }
+      if (t.closest(".selectable")) {
+        void import("./components/textMenu").then((m) => m.openTextMenu(e));
+        e.preventDefault();
+        return;
+      }
       if (!t.closest("input, textarea, .xterm, .md-preview, .chat-md")) e.preventDefault();
     };
     window.addEventListener("contextmenu", onCtx);

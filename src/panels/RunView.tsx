@@ -8,6 +8,7 @@ import { autoConfig, addWatch, launchJsonConfigs, loadVars, removeAllBreakpoints
 import { useDebug, type Var } from "../debug/state";
 import { prettyKeys } from "../lib/keys";
 import { basename, relative } from "../lib/paths";
+import { openCopyMenu } from "../components/textMenu";
 import { useStore } from "../state/store";
 import { tl } from "../i18n";
 
@@ -41,6 +42,7 @@ function VarRow({ v, depth }: { v: Var; depth: number }) {
           setOpen((x) => !x);
         }}
         title={v.type ? `${v.name}: ${v.type}` : v.name}
+        onContextMenu={(e) => openCopyMenu(e, [{ label: tl("Salin nilai"), text: String(v.value ?? "") }, { label: tl("Salin nama"), text: v.name }])}
       >
         <span className="dbg-var-chev">{v.ref ? <ChevronRight size={11} className={`chev ${open ? "is-open" : ""}`} /> : null}</span>
         <span className="dbg-var-name">{v.name}</span>
