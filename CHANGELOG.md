@@ -1,5 +1,30 @@
 # Changelog
 
+## 0.4.1
+
+Fixed:
+
+- **File tree didn't scroll** in the default (Studio) and Control layouts.
+- **Debug Console, Output and the agent chat can be selected and copied.** Right-click gives Copy /
+  Copy all / Select all (and Clear in the Debug Console); Problems and Variables rows have Copy menus.
+  Edit → Copy no longer jumps into the editor when the selection is elsewhere.
+- **Antigravity sign-in.** The panel now detects when you're signed out and shows **Sign in**; signing
+  in opens `agy` in a terminal and re-checks when you finish. A headless run that hits the OAuth wall
+  stops with a clear error instead of hanging.
+- **Run on Windows:**
+  - PATH is read from the registry and refreshed, so tools installed after Alexel Studio started
+    (winget, installers) are found; common install folders (Python, LLVM, MSYS2, Go, Git, .NET) are searched.
+  - The terminal and Run use `-ExecutionPolicy Bypass`, so npm/npx work on stock Windows.
+  - Python: `py -3`, a real `python.exe` (not the Microsoft Store stub) or the project's `.venv`; debugpy too.
+  - New runners: `.ps1`, `.bat`/`.cmd`, `.sh` via Git Bash, `.cs`; gcc before clang; a unique temp `.exe` per run.
+  - Exit codes are passed through; Stop is no longer reported as a failure; Ctrl+C copies when text is selected, Ctrl+V pastes.
+  - ConPTY handles are released; the terminal explains itself if the shell never starts.
+  - Ports → Stop uses `/F` and reports failures; the stray `Alexel-Studio-win.exe` installer is gone.
+- **Run everywhere:** a missing toolchain now shows what to install instead of a doomed command; Run
+  keeps focus in the editor so shortcuts keep working; running a server again restarts it; a failed
+  save, a broken `launch.json` or an unsupported debug type is reported instead of silently ignored;
+  the debugger passes `cwd`/`env` to integrated-terminal sessions.
+
 ## 0.4.0
 
 New:

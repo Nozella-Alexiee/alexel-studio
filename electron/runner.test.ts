@@ -117,3 +117,33 @@ describe("shell Windows", () => {
     expect(shellArgs(null, false)).toEqual(["-l"]);
   });
 });
+
+import { spawnSync } from "node:child_process";
+
+// Hanya di Windows (CI windows-latest): jalankan perintah hasil generate lewat PowerShell sungguhan.
+const onWin = process.platform === "win32";
+describe.skipIf(!onWin)("Run Windows: eksekusi nyata lewat PowerShell", () => {
+  const ps = () => path.join(process.env.SystemRoot ?? "C:\\Windows", "System32", "WindowsPowerShell", "v1.0", "powershell.exe");
+  const runIt = (command: string, cwd: string) => spawnSync(ps(), shellArgs(command, true), { cwd, encoding: "utf8", windowsHide: true, timeout: 60_000 });
+
+  it("node: nama folder berspasi dan apostrof, kode keluar diteruskan", () => {
+    const d = tmp();
+    const ok = put(d, "a b/it's ok.js", "console.log('HALO')");
+    const r1 = runIt(commandForFile(ok, d).command, d);
+    expect(r1.stdout).toContain("HALO");
+    expect(r1.status).toBe(0);
+    const bad = put(d, "a b/bad.js", "process.exit(3)");
+    expect(runIt(commandForFile(bad, d).command, d).status).toBe(3);
+  });
+  it(".ps1 dan .bat", () => {
+    const d = tmp();
+    expect(runIt(commandForFile(put(d, "s.ps1", "Write-Output PS-OK"), d).command, d).stdout).toContain("PS-OK");
+    expect(runIt(commandForFile(put(d, "b.bat", "@echo BAT-OK\r\nexit /b 5"), d).command, d)).toMatchObject({ status: 5 });
+  });
+  it("shim npm (.ps1 diblokir kebijakan default) berjalan: npm -v", () => {
+    const d = tmp();
+    const r = runIt("npm -v", d);
+    expect(r.stdout.trim()).toMatch(/^\d+\.\d+\.\d+/);
+    expect(r.status).toBe(0);
+  });
+});
