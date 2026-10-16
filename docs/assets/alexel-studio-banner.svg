@@ -1,173 +1,232 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 440" width="100%" height="100%">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 460" width="100%" height="100%">
   <defs>
     <!-- Background Gradient -->
-    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#080F1D" />
-      <stop offset="50%" stop-color="#101E36" />
-      <stop offset="100%" stop-color="#182C4E" />
+    <linearGradient id="bgGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#060913" />
+      <stop offset="35%" stop-color="#0B1124" />
+      <stop offset="70%" stop-color="#111836" />
+      <stop offset="100%" stop-color="#070A15" />
     </linearGradient>
 
-    <!-- App Icon Card Gradient -->
-    <linearGradient id="iconBg" x1="0%" y1="0%" x2="0%" y2="1">
-      <stop offset="0%" stop-color="#233E6B" />
-      <stop offset="100%" stop-color="#0E1A2E" />
+    <!-- Ambient Nebulae -->
+    <radialGradient id="nebulaCyan" cx="15%" cy="30%" r="55%">
+      <stop offset="0%" stop-color="#06B6D4" stop-opacity="0.32" />
+      <stop offset="60%" stop-color="#0284C7" stop-opacity="0.10" />
+      <stop offset="100%" stop-color="#0B1124" stop-opacity="0" />
+    </radialGradient>
+
+    <radialGradient id="nebulaViolet" cx="85%" cy="25%" r="60%">
+      <stop offset="0%" stop-color="#8B5CF6" stop-opacity="0.35" />
+      <stop offset="55%" stop-color="#6366F1" stop-opacity="0.12" />
+      <stop offset="100%" stop-color="#0B1124" stop-opacity="0" />
+    </radialGradient>
+
+    <radialGradient id="nebulaEmerald" cx="50%" cy="85%" r="45%">
+      <stop offset="0%" stop-color="#10B981" stop-opacity="0.22" />
+      <stop offset="100%" stop-color="#060913" stop-opacity="0" />
+    </radialGradient>
+
+    <!-- Glassmorphic Window -->
+    <linearGradient id="editorBg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#161D38" stop-opacity="0.90" />
+      <stop offset="100%" stop-color="#0D1326" stop-opacity="0.95" />
     </linearGradient>
 
-    <linearGradient id="cardBg" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#1C2E4F" stop-opacity="0.85" />
-      <stop offset="100%" stop-color="#111D33" stop-opacity="0.85" />
+    <linearGradient id="editorBorder" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#38BDF8" stop-opacity="0.6" />
+      <stop offset="50%" stop-color="#818CF8" stop-opacity="0.3" />
+      <stop offset="100%" stop-color="#C084FC" stop-opacity="0.5" />
     </linearGradient>
 
-    <!-- Glow & Shadow Filters -->
-    <filter id="softGlow" x="-30%" y="-30%" width="160%" height="160%">
-      <feGaussianBlur stdDeviation="16" result="blur" />
+    <!-- Agent Badges Gradients -->
+    <linearGradient id="badgeClaude" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#D97706" stop-opacity="0.3" />
+      <stop offset="100%" stop-color="#F59E0B" stop-opacity="0.15" />
+    </linearGradient>
+
+    <linearGradient id="badgeCodex" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#10B981" stop-opacity="0.3" />
+      <stop offset="100%" stop-color="#059669" stop-opacity="0.15" />
+    </linearGradient>
+
+    <linearGradient id="badgeGemini" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#3B82F6" stop-opacity="0.3" />
+      <stop offset="100%" stop-color="#8B5CF6" stop-opacity="0.15" />
+    </linearGradient>
+
+    <linearGradient id="badgeAgy" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#EC4899" stop-opacity="0.3" />
+      <stop offset="100%" stop-color="#8B5CF6" stop-opacity="0.15" />
+    </linearGradient>
+
+    <!-- Filters -->
+    <filter id="laserGlow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="10" result="blur" />
       <feComposite in="SourceGraphic" in2="blur" operator="over" />
     </filter>
 
-    <filter id="cardShadow" x="-10%" y="-10%" width="120%" height="130%">
-      <feDropShadow dx="0" dy="16" stdDeviation="22" flood-color="#02050A" flood-opacity="0.6" />
+    <filter id="editorShadow" x="-10%" y="-10%" width="120%" height="130%">
+      <feDropShadow dx="0" dy="24" stdDeviation="28" flood-color="#000000" flood-opacity="0.75" />
     </filter>
+
+    <!-- Tech Grid Pattern -->
+    <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
+      <path d="M 40 0 L 0 0 0 40" fill="none" stroke="#38BDF8" stroke-width="0.7" stroke-opacity="0.07" />
+    </pattern>
   </defs>
 
-  <!-- Banner Canvas -->
-  <rect width="1200" height="440" rx="28" fill="url(#bgGrad)" />
+  <!-- Background Base -->
+  <rect width="1200" height="460" rx="20" fill="url(#bgGradient)" />
+  <rect width="1200" height="460" rx="20" fill="url(#grid)" />
 
-  <!-- Technical Code / Blueprint Grid -->
-  <g opacity="0.06" stroke="#FFFFFF" stroke-width="1">
-    <path d="M0 70 H1200 M0 140 H1200 M0 210 H1200 M0 280 H1200 M0 350 H1200" />
-    <path d="M70 0 V440 M210 0 V440 M350 0 V440 M490 0 V440 M630 0 V440 M770 0 V440 M910 0 V440 M1050 0 V440 M1190 0 V440" />
-  </g>
+  <!-- Ambient Glows -->
+  <circle cx="200" cy="180" r="320" fill="url(#nebulaCyan)" />
+  <circle cx="1020" cy="160" r="320" fill="url(#nebulaViolet)" />
+  <circle cx="600" cy="420" r="320" fill="url(#nebulaEmerald)" />
 
-  <!-- Ambient Light Orbs -->
-  <circle cx="1020" cy="110" r="160" fill="#6CC4FF" opacity="0.14" filter="url(#softGlow)" />
-  <circle cx="820" cy="360" r="130" fill="#2A75FF" opacity="0.15" filter="url(#softGlow)" />
-  <circle cx="160" cy="340" r="140" fill="#FF9A3C" opacity="0.10" filter="url(#softGlow)" />
+  <!-- Outer Border -->
+  <rect width="1198" height="458" x="1" y="1" rx="19" fill="none" stroke="#38BDF8" stroke-width="1.2" stroke-opacity="0.35" />
 
-  <!-- RIGHT HERO CARD: Mascot Penguin & Official App Icon -->
-  <g transform="translate(840, 50)" filter="url(#cardShadow)">
-    <!-- Container Card Frame -->
-    <rect width="290" height="340" rx="24" fill="url(#cardBg)" stroke="#2B4673" stroke-width="1.5" />
+  <!-- LEFT: Mockup of AI Agent Diff Card & Code Editor -->
+  <g transform="translate(60, 52)" filter="url(#editorShadow)">
+    <!-- Main Window Frame -->
+    <rect width="470" height="356" rx="14" fill="url(#editorBg)" stroke="url(#editorBorder)" stroke-width="1.2" />
 
-    <!-- Penguin App Icon Frame -->
-    <g transform="translate(45, 30)">
-      <!-- Squircle Base -->
-      <rect width="200" height="200" rx="46" fill="url(#iconBg)" stroke="#3B609E" stroke-width="2" />
-      <ellipse cx="100" cy="180" rx="58" ry="12" fill="#182A4A" opacity="0.8" />
+    <!-- Window Titlebar -->
+    <rect width="470" height="40" rx="14" fill="#0F172A" fill-opacity="0.9" />
+    <rect width="470" height="12" y="28" fill="#0F172A" fill-opacity="0.9" />
+    <line x1="0" y1="40" x2="470" y2="40" stroke="#1E293B" stroke-width="1" />
 
-      <!-- The Official Alexel Penguin -->
-      <g transform="translate(100 115) scale(1.3) translate(-60 -78)">
-        <!-- Feet -->
-        <ellipse cx="45" cy="128" rx="10" ry="5" fill="#FF9A3C" />
-        <ellipse cx="75" cy="128" rx="10" ry="5" fill="#FF9A3C" />
-        <!-- Flippers -->
-        <ellipse cx="22" cy="86" rx="9" ry="24" fill="#22345C" transform="rotate(22 22 86)" />
-        <ellipse cx="98" cy="86" rx="9" ry="24" fill="#22345C" transform="rotate(-22 98 86)" />
-        <!-- Body -->
-        <ellipse cx="60" cy="78" rx="40" ry="52" fill="#2A4170" />
-        <!-- Belly -->
-        <ellipse cx="60" cy="90" rx="27" ry="37" fill="#F4F8FF" />
-        <!-- Face White Patch -->
-        <path d="M60 40 C40 40 33 54 36 66 C40 76 52 74 60 70 C68 74 80 76 84 66 C87 54 80 40 60 40 Z" fill="#F4F8FF" />
-        <!-- Beanie Hat -->
-        <path d="M26 44 C28 18 92 18 94 44 C80 36 40 36 26 44 Z" fill="#6CC4FF" />
-        <rect x="24" y="40" width="72" height="9" rx="4.5" fill="#E9F6FF" />
-        <circle cx="60" cy="17" r="7" fill="#E9F6FF" />
-        <!-- Cheeks -->
-        <circle cx="42" cy="66" r="4.5" fill="#FF8FA3" opacity=".6" />
-        <circle cx="78" cy="66" r="4.5" fill="#FF8FA3" opacity=".6" />
-        <!-- Eyes -->
-        <circle cx="49" cy="56" r="5" fill="#0D1526" />
-        <circle cx="71" cy="56" r="5" fill="#0D1526" />
-        <circle cx="50.8" cy="54.2" r="1.7" fill="#FFF" />
-        <circle cx="72.8" cy="54.2" r="1.7" fill="#FFF" />
-        <!-- Beak -->
-        <path d="M51 64 Q60 76 69 64 Q60 59 51 64 Z" fill="#FF9A3C" />
-        <path d="M53 66 Q60 70 67 66" stroke="#C96A1C" stroke-width="1.4" stroke-linecap="round" fill="none" />
+    <!-- Traffic Lights -->
+    <circle cx="22" cy="20" r="5.5" fill="#EF4444" />
+    <circle cx="40" cy="20" r="5.5" fill="#F59E0B" />
+    <circle cx="58" cy="20" r="5.5" fill="#10B981" />
+
+    <!-- Tab Simulation -->
+    <rect x="80" y="8" width="160" height="26" rx="6" fill="#1E293B" />
+    <text x="160" y="25" fill="#E2E8F0" font-family="-apple-system, sans-serif" font-size="11" font-weight="600" text-anchor="middle">✨ Agent Diff Review</text>
+
+    <!-- Editor Mockup: Diff Card with Granular Consent -->
+    <g transform="translate(20, 56)">
+      <!-- Agent Header Card -->
+      <rect width="430" height="42" rx="8" fill="#1E293B" stroke="#334155" stroke-width="0.8" />
+      <circle cx="24" cy="21" r="9" fill="#0284C7" />
+      <text x="24" y="25" fill="#FFFFFF" font-family="sans-serif" font-size="11" font-weight="bold" text-anchor="middle">AI</text>
+      <text x="44" y="25" fill="#F8FAFC" font-family="-apple-system, sans-serif" font-size="12" font-weight="700">Claude Code · Checkpoint #42</text>
+      
+      <!-- Accept/Reject Action Pills -->
+      <rect x="290" y="10" width="62" height="22" rx="4" fill="#065F46" />
+      <text x="321" y="25" fill="#6EE7B7" font-family="sans-serif" font-size="10.5" font-weight="bold" text-anchor="middle">✓ Accept</text>
+      <rect x="360" y="10" width="60" height="22" rx="4" fill="#7F1D1D" />
+      <text x="390" y="25" fill="#FCA5A5" font-family="sans-serif" font-size="10.5" font-weight="bold" text-anchor="middle">✗ Reject</text>
+
+      <!-- Code Diff Lines -->
+      <g transform="translate(0, 52)" font-family="'JetBrains Mono', 'Fira Code', Menlo, monospace" font-size="11.5">
+        <!-- Unchanged line -->
+        <rect width="430" height="22" fill="#0F172A" fill-opacity="0.5" />
+        <text x="12" y="15" fill="#64748B">12</text>
+        <text x="36" y="15" fill="#94A3B8">  const agent = await registry.resolve(target);</text>
+
+        <!-- Removed line (Red) -->
+        <rect y="24" width="430" height="22" fill="#450A0A" fill-opacity="0.6" />
+        <text x="12" y="39" fill="#F87171">-</text>
+        <text x="36" y="39" fill="#FCA5A5">  await agent.executeDirectlyWithoutPrompt();</text>
+
+        <!-- Added lines (Green) -->
+        <rect y="48" width="430" height="22" fill="#064E3B" fill-opacity="0.6" />
+        <text x="12" y="63" fill="#34D399">+</text>
+        <text x="36" y="63" fill="#6EE7B7">  const diff = await agent.proposeDiff(context);</text>
+
+        <rect y="72" width="430" height="22" fill="#064E3B" fill-opacity="0.6" />
+        <text x="12" y="87" fill="#34D399">+</text>
+        <text x="36" y="87" fill="#6EE7B7">  await reviewer.requestHumanApproval(diff);</text>
+      </g>
+
+      <!-- Bottom Status Bar -->
+      <g transform="translate(0, 160)">
+        <rect width="430" height="74" rx="8" fill="#090E1F" stroke="#1E293B" stroke-width="0.8" />
+        <circle cx="16" cy="16" r="3.5" fill="#38BDF8" filter="url(#laserGlow)" />
+        <text x="28" y="19" fill="#38BDF8" font-family="'JetBrains Mono', monospace" font-size="10.5" font-weight="700">HUMAN-IN-THE-LOOP ACTIVE · ZERO TELEMETRY</text>
+        <text x="16" y="42" fill="#E2E8F0" font-family="'JetBrains Mono', monospace" font-size="11">&gt; DAP Debugger: Python / Node / Rust attached</text>
+        <text x="16" y="60" fill="#A78BFA" font-family="'JetBrains Mono', monospace" font-size="11">&gt; Time-Travel Snapshot saved: 0.002s</text>
       </g>
     </g>
-
-    <!-- Version & Tag Pill -->
-    <rect x="45" y="260" width="200" height="36" rx="18" fill="#0D182A" stroke="#2B4673" stroke-width="1.2" />
-    <text x="145" y="283" text-anchor="middle" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="13" font-weight="800" fill="#6CC4FF" letter-spacing="1.2">
-      ALEXEL PENGUIN 🐧 v0.3.0
-    </text>
   </g>
 
-  <!-- LEFT SECTION: Branding, AI Agents Pills, Tagline, Cross-Platform -->
-  <g transform="translate(75, 65)">
-    <!-- Top Pill -->
-    <g>
-      <rect width="320" height="34" rx="17" fill="#1C2E4F" stroke="#365B96" stroke-width="1.2" />
-      <circle cx="18" cy="17" r="5" fill="#6CC4FF" />
-      <text x="34" y="22" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="11.5" font-weight="800" fill="#CBE7FF" letter-spacing="1.5">
-        NEXT-GEN OPEN SOURCE CODE EDITOR
-      </text>
+  <!-- RIGHT: Typography & High-Tech Features -->
+  <g transform="translate(580, 52)">
+
+    <!-- Top Badge -->
+    <g transform="translate(0, 16)">
+      <rect width="335" height="28" rx="14" fill="#0C4A6E" fill-opacity="0.4" stroke="#38BDF8" stroke-width="0.8" />
+      <circle cx="14" cy="14" r="4" fill="#38BDF8" filter="url(#laserGlow)" />
+      <text x="28" y="18" fill="#BAE6FD" font-family="-apple-system, sans-serif" font-size="11" font-weight="700" letter-spacing="1">ALEXEL STUDIO · V0.4.1 PRODUCTION</text>
     </g>
 
-    <!-- Title & Wordmark -->
-    <g transform="translate(0, 82)">
-      <text font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', 'SF Pro Display', sans-serif" font-size="60" font-weight="900" fill="#FFFFFF" letter-spacing="-1.5">
-        ALEXEL STUDIO
-      </text>
-    </g>
+    <!-- Brand Title -->
+    <text x="0" y="100" fill="#FFFFFF" font-family="-apple-system, BlinkMacSystemFont, 'SF Pro Display', sans-serif" font-size="52" font-weight="900" letter-spacing="-1.5">
+      ALEXEL STUDIO
+    </text>
 
-    <!-- Tagline & Core Philosophy -->
-    <g transform="translate(0, 128)">
-      <text font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="22" font-weight="700" fill="#EBF3FF">
-        Code side-by-side with <tspan fill="#6CC4FF">autonomous AI agents.</tspan>
-      </text>
-      <text y="32" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="15" fill="#9DB7DF" font-weight="400">
-        Free, open-source IDE for macOS, Windows &amp; Linux with human-in-the-loop review,
-      </text>
-      <text y="54" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="15" fill="#9DB7DF" font-weight="400">
-        real integrated terminal, language servers (LSP), and native multi-language debugger (DAP).
-      </text>
-    </g>
+    <!-- Subtitle -->
+    <text x="0" y="132" fill="#38BDF8" font-family="-apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif" font-size="16" font-weight="700" letter-spacing="2">
+      THE AUTONOMOUS MULTI-AGENT AI CODE EDITOR
+    </text>
 
-    <!-- Built-in AI Agents Badges Row -->
-    <g transform="translate(0, 224)">
-      <!-- Claude Code -->
+    <!-- Description -->
+    <text x="0" y="168" fill="#94A3B8" font-family="-apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif" font-size="14" font-weight="400" line-height="1.6">
+      <tspan x="0" dy="0">Pair-program seamlessly with your favorite autonomous coding agents</tspan>
+      <tspan x="0" dy="22">side-by-side with human-in-the-loop granular diff review, instant</tspan>
+      <tspan x="0" dy="22">time-travel checkpoints, native DAP debugging, and zero telemetry.</tspan>
+    </text>
+
+    <!-- 4 Supported Agent Badges -->
+    <g transform="translate(0, 240)">
+      <!-- Claude -->
       <g transform="translate(0, 0)">
-        <rect width="135" height="36" rx="10" fill="#2E1815" stroke="#D97706" stroke-width="1.2" />
-        <circle cx="16" cy="18" r="5" fill="#F59E0B" />
-        <text x="28" y="23" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="12" font-weight="700" fill="#FDE68A">Claude Code</text>
+        <rect width="130" height="32" rx="8" fill="url(#badgeClaude)" stroke="#F59E0B" stroke-width="0.8" />
+        <text x="14" y="20" fill="#FDE68A" font-family="-apple-system, sans-serif" font-size="11.5" font-weight="600">⚡ Claude Code</text>
       </g>
 
       <!-- Codex -->
-      <g transform="translate(145, 0)">
-        <rect width="105" height="36" rx="10" fill="#0E2E20" stroke="#10B981" stroke-width="1.2" />
-        <circle cx="16" cy="18" r="5" fill="#10B981" />
-        <text x="28" y="23" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="12" font-weight="700" fill="#A7F3D0">Codex</text>
+      <g transform="translate(140, 0)">
+        <rect width="130" height="32" rx="8" fill="url(#badgeCodex)" stroke="#10B981" stroke-width="0.8" />
+        <text x="14" y="20" fill="#A7F3D0" font-family="-apple-system, sans-serif" font-size="11.5" font-weight="600">🟢 OpenAI Codex</text>
       </g>
 
       <!-- Gemini -->
-      <g transform="translate(260, 0)">
-        <rect width="105" height="36" rx="10" fill="#172554" stroke="#3B82F6" stroke-width="1.2" />
-        <circle cx="16" cy="18" r="5" fill="#3B82F6" />
-        <text x="28" y="23" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="12" font-weight="700" fill="#BFDBFE">Gemini</text>
+      <g transform="translate(280, 0)">
+        <rect width="135" height="32" rx="8" fill="url(#badgeGemini)" stroke="#38BDF8" stroke-width="0.8" />
+        <text x="14" y="20" fill="#BAE6FD" font-family="-apple-system, sans-serif" font-size="11.5" font-weight="600">🔷 Google Gemini</text>
       </g>
 
       <!-- Antigravity -->
-      <g transform="translate(375, 0)">
-        <rect width="130" height="36" rx="10" fill="#291A38" stroke="#A855F7" stroke-width="1.2" />
-        <circle cx="16" cy="18" r="5" fill="#A855F7" />
-        <text x="28" y="23" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="12" font-weight="700" fill="#E9D5FF">Antigravity</text>
-      </g>
-
-      <!-- ACP Standard -->
-      <g transform="translate(515, 0)">
-        <rect width="120" height="36" rx="10" fill="#1E293B" stroke="#64748B" stroke-width="1.2" />
-        <circle cx="16" cy="18" r="5" fill="#94A3B8" />
-        <text x="28" y="23" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="12" font-weight="700" fill="#E2E8F0">+ Any ACP</text>
+      <g transform="translate(425, 0)">
+        <rect width="145" height="32" rx="8" fill="url(#badgeAgy)" stroke="#EC4899" stroke-width="0.8" />
+        <text x="14" y="20" fill="#FBCFE8" font-family="-apple-system, sans-serif" font-size="11.5" font-weight="600">🚀 Antigravity / ACP</text>
       </g>
     </g>
 
-    <!-- Platform Availability Row -->
-    <g transform="translate(0, 280)">
-      <text y="14" font-family="'JetBrains Mono', monospace" font-size="11.5" font-weight="700" fill="#7899CC" letter-spacing="1">PLATFORMS:</text>
-      <text x="95" y="14" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="13" font-weight="600" fill="#E2E8F0">
-         macOS (Apple Silicon &amp; Intel)  ·  ⊞ Windows (x64 / ARM64)  ·  🐧 Linux (.deb / .rpm / .AppImage)
-      </text>
+    <!-- Feature Highlights Pills -->
+    <g transform="translate(0, 288)">
+      <g transform="translate(0, 0)">
+        <rect width="180" height="32" rx="8" fill="#1E293B" stroke="#475569" stroke-width="0.8" />
+        <text x="14" y="20" fill="#E2E8F0" font-family="-apple-system, sans-serif" font-size="11.5" font-weight="600">🔍 Granular Diff Review</text>
+      </g>
+      <g transform="translate(190, 0)">
+        <rect width="180" height="32" rx="8" fill="#1E293B" stroke="#475569" stroke-width="0.8" />
+        <text x="14" y="20" fill="#E2E8F0" font-family="-apple-system, sans-serif" font-size="11.5" font-weight="600">⏱️ Time-Travel Snapshots</text>
+      </g>
+      <g transform="translate(380, 0)">
+        <rect width="190" height="32" rx="8" fill="#1E293B" stroke="#475569" stroke-width="0.8" />
+        <text x="14" y="20" fill="#E2E8F0" font-family="-apple-system, sans-serif" font-size="11.5" font-weight="600">🛡️ 100% Zero Telemetry</text>
+      </g>
+    </g>
+
+    <!-- Mascot Nozi Silhouette -->
+    <g transform="translate(490, 48)">
+      <circle cx="36" cy="36" r="32" fill="#0F172A" stroke="#38BDF8" stroke-width="1.2" />
+      <text x="36" y="44" font-size="28" text-anchor="middle">🐧</text>
     </g>
   </g>
 </svg>
