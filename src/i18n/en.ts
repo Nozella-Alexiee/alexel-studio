@@ -978,4 +978,8 @@ export const EN: Record<string, string> = {
   "Salin pesan": "Copy message",
   "Salin lokasi dan pesan": "Copy location and message",
   "Tidak bisa menyalin ke clipboard.": "Couldn't copy to the clipboard.",
+  "Di terminal, pilih \"Continue with Google\" dan selesaikan di browser. Setelah itu tekan Ctrl+D dua kali untuk keluar.": "In the terminal, choose \"Continue with Google\" and finish in your browser. Then press Ctrl+D twice to exit.",
+  "Antigravity (agy) datang bersama aplikasi Antigravity. Pasang aplikasinya dulu, lalu klik Periksa ulang.": "Antigravity (agy) comes with the Antigravity app. Install the app first, then click Check again.",
+  "Unduh Antigravity": "Download Antigravity",
+  "Akan membuka terminal: pilih \"Continue with Google\", selesaikan di browser, lalu tekan Ctrl+D dua kali.": "This opens a terminal: choose \"Continue with Google\", finish in your browser, then press Ctrl+D twice.",
 };

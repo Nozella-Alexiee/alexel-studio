@@ -15,21 +15,62 @@ export function findAgy(): string | null {
   return fs.existsSync(local) ? local : findExecutable("agy");
 }
 
+/**
+ * Teks yang menandakan agy belum masuk (OAuth interaktif diperlukan). Tidak ada perintah `agy status`;
+ * pesan ini berasal dari mode print (stderr/stdout) saat silent auth gagal.
+ */
+export const AUTH_RE = /not authenticated|authentication (required|expired|failed)|not logged in|log(?:ged)? ?in (required|first)|please (log ?in|sign ?in)|interactive (oauth|login)|no controlling terminal|open the following url|enter the authorization code|verify your account|silent auth failed/i;
+export const isAuthText = (t: string) => AUTH_RE.test(t);
+
+/** Run headless terakhir gagal karena belum masuk. Dihapus saat `agy models` berhasil lagi. */
+let authFailed = false;
+let lastModels: { value: string; displayName: string }[] = [];
+
+function parseModels(out: string): { value: string; displayName: string }[] {
+  return out
+    .split("\n")
+    .map((l) => l.split("\t"))
+    .filter((p) => p.length >= 2 && /^[\w.-]+$/.test(p[0].trim()))
+    .map(([id, name]) => ({ value: id.trim(), displayName: name.trim() }));
+}
+
+/**
+ * Status Antigravity tanpa pernah memicu OAuth: `agy --version`, lalu `agy models` (memakai token keyring;
+ * keluaran daftar model = sudah masuk, teks auth = belum masuk, lainnya = tidak diketahui).
+ */
 export async function agyStatus(): Promise<AgentStatus> {
-  const p = findAgy();
+  return agyStatusFor(findAgy());
+}
+
+export async function agyStatusFor(p: string | null): Promise<AgentStatus> {
   if (!p) return { installed: false, error: null };
-  return { installed: true, path: p, version: null, loggedIn: null, source: "system", error: null };
+  const v = await runCapture(p, ["--version"], { timeoutMs: 10_000 }).catch(() => null);
+  if (v && !v.success && !v.timedOut) return { installed: false, path: p, source: "system", error: `Antigravity ditemukan tapi gagal jalan${v.stderr ? `: ${v.stderr.trim().slice(0, 200)}` : "."}` };
+  const version = v?.success ? v.stdout.trim().split("\n").pop() ?? null : null;
+  const m = await runCapture(p, ["models"], { timeoutMs: 30_000 }).catch(() => null);
+  let loggedIn: boolean | null = null;
+  if (m?.success) {
+    const models = parseModels(m.stdout);
+    if (models.length) {
+      lastModels = models;
+      authFailed = false;
+      loggedIn = true;
+    }
+  } else if (m && !m.timedOut && (isAuthText(`${m.stdout}\n${m.stderr}`) || authFailed)) {
+    loggedIn = false;
+  } else if (authFailed) {
+    loggedIn = false;
+  }
+  return { installed: true, path: p, version, loggedIn, source: "system", error: null };
 }
 
 /** Daftar model dari `agy models` (id<TAB>nama). */
 export async function agyModels(bin: string): Promise<{ value: string; displayName: string }[]> {
   const r = await runCapture(bin, ["models"], { timeoutMs: 30_000 }).catch(() => null);
   if (!r?.success) return [];
-  return r.stdout
-    .split("\n")
-    .map((l) => l.split("\t"))
-    .filter((p) => p.length >= 2 && /^[\w.-]+$/.test(p[0].trim()))
-    .map(([id, name]) => ({ value: id.trim(), displayName: name.trim() }));
+  const models = parseModels(r.stdout);
+  if (models.length) lastModels = models;
+  return models;
 }
 
 const TOOL: Record<string, string> = { write_to_file: "Write", replace_file_content: "Edit", multi_replace_file_content: "Edit", run_command: "Bash", view_file: "Read", list_dir: "Glob", grep_search: "Grep", find_by_name: "Glob", read_url_content: "WebFetch", search_web: "WebSearch" };
@@ -153,15 +194,27 @@ function start(ctx: Ctx, key: string, cfg: Cfg): Session {
   const child = spawn(sp.cmd, sp.args, { cwd, env: childEnv(), stdio: ["pipe", "pipe", "pipe"], windowsHide: true, windowsVerbatimArguments: sp.verbatim });
   const s: Session = { child, cfg: { ...cfg, cwd }, conversation: cfg.resume, stderr: "", texts: new Map() };
   sessions.set(key, s);
+  // Belum masuk: agy mencoba OAuth interaktif yang tidak bisa selesai tanpa terminal dan menunggu selamanya.
+  // Hentikan prosesnya dan laporkan error yang jelas supaya panel menampilkan tombol Masuk.
+  let authReported = false;
+  const authWall = (text: string) => {
+    if (authReported || !isAuthText(text)) return;
+    authReported = true;
+    authFailed = true;
+    emitLine(ctx, key, { type: "result", subtype: "error_during_execution", is_error: true, result: "Antigravity: authentication required. Masuk dulu dengan akun Google (klik Masuk di panel).", session_id: s.conversation });
+    killTree(child);
+  };
   readline.createInterface({ input: child.stdout! }).on("line", (line) => {
     try {
       onEvent(ctx, key, s, JSON.parse(line));
     } catch {
-      /* baris bukan JSON (log) */
+      authWall(line); // baris bukan JSON: log / pesan auth
     }
   });
   child.stderr?.on("data", (b: Buffer) => {
-    if (s.stderr.length < 8000) s.stderr += b.toString("utf8");
+    const t = b.toString("utf8");
+    if (s.stderr.length < 8000) s.stderr += t;
+    authWall(t);
   });
   child.stdin?.on("error", () => {});
   child.on("error", (e) => (s.stderr += e.message));
@@ -193,9 +246,11 @@ export async function agySend(ctx: Ctx, key: string, raw: Record<string, unknown
     stoppedConversations.delete(key);
     if (!cfg.resume && stopped) cfg.resume = stopped;
     s = start(ctx, key, cfg);
-    void agyModels(findAgy()!).then((models) =>
-      emitLine(ctx, key, { type: "control_response", response: { subtype: "success", request_id: `init-${key}`, response: { models, commands: [] } } })
-    );
+    // Daftar model dari status terakhir; hanya menjalankan `agy models` lagi bila belum ada dan belum ada tanda gagal masuk.
+    const emitModels = (models: { value: string; displayName: string }[]) =>
+      emitLine(ctx, key, { type: "control_response", response: { subtype: "success", request_id: `init-${key}`, response: { models, commands: [] } } });
+    if (lastModels.length) emitModels(lastModels);
+    else if (!authFailed) void agyModels(findAgy()!).then(emitModels);
   }
   s.child.stdin?.write(JSON.stringify({ event: "user", message: { content: text } }) + "\n");
 }

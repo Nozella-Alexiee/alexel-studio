@@ -7,7 +7,7 @@ import { api, errMsg, on } from "../lib/ipc";
 import { basename, relative, uiPath } from "../lib/paths";
 import type { ClaudeContent, ClaudePermMode } from "../lib/types";
 import { agentInfo, type AgentId } from "../agents/registry";
-import { activeTab, ask, getState, newChatKey, setLayout, setState, toast, type ChatMessage, type ChatTool, type Problem } from "../state/store";
+import { activeTab, ask, getState, newChatKey, setLayout, setState, toast, useStore, type ChatMessage, type ChatTool, type Problem } from "../state/store";
 import { tl } from "../i18n";
 
 let listening = false;
@@ -288,7 +288,9 @@ function onResult(key: string, c: Conv, ev: any) {
       return;
     }
     const text = ev.result || (ev.subtype === "error_max_turns" ? tl("{name} berhenti: batas langkah tercapai.", { name: agentInfo(agentNow()).short }) : tl("{name} berhenti dengan error.", { name: agentInfo(agentNow()).short }));
-    const hint = /login|auth|credential|api key|401/i.test(text) ? "\n\n" + tl("Kamu perlu masuk ke {name} dulu. Klik **Masuk** di atas panel.", { name: agentInfo(agentNow()).name }) : "";
+    const needLogin = isAuthError(text);
+    const hint = needLogin ? "\n\n" + tl("Kamu perlu masuk ke {name} dulu. Klik **Masuk** di atas panel.", { name: agentInfo(agentNow()).name }) : "";
+    if (needLogin) void detectAgent(agentNow()); // status jadi "belum masuk" → panel menampilkan tombol Masuk
     push({ role: "error", text: text + hint, meta });
     void import("../components/PenguinMascot").then((m) => m.flashPenguin("error", 6000));
     void import("../components/CrabMascot").then((m) => m.flashKepi("error", 5000));
@@ -331,13 +333,19 @@ function ensureListeners() {
       if (wasRunning) push({ role: "info", text: tl("Dihentikan.") });
     } else if (code !== 0 && wasRunning && !c?.turn?.errored) {
       const name = agentInfo(agentNow()).name;
-      const hint = /login|auth|credential/i.test(stderr) ? ` ${tl("Kamu perlu masuk ke {name} dulu.", { name })}` : "";
+      const needLogin = isAuthError(stderr);
+      const hint = needLogin ? ` ${tl("Kamu perlu masuk ke {name} dulu.", { name })}` : "";
+      if (needLogin) void detectAgent(agentNow());
       push({ role: "error", text: `${tl("{name} berhenti (kode {code}).", { name, code: String(code) })}${hint}\n\n${stderr.trim()}`.trim() });
     }
   });
 }
 
 // ---------------- Deteksi & login ----------------
+
+/** Teks error yang berarti "belum masuk / kredensial salah" (bukan sekadar kata "auth" di mana saja). */
+export const isAuthError = (t: string) =>
+  /not authenticated|authentication (required|expired|failed)|not logged in|log(?:ged)? ?in (required|first)|please (log ?in|sign ?in)|invalid api key|api key (is )?(missing|invalid|not set)|\b401\b|unauthori[sz]ed|oauth|authorization code|no controlling terminal|interactive login|silent auth failed|credential/i.test(t);
 
 export async function detectClaude() {
   try {
@@ -393,8 +401,21 @@ export async function loginClaude() {
   const info = getState().agentStatus[agent] ?? (agent === "claude" ? getState().claude : null);
   if (!info?.path) return toast(tl("{name} belum terpasang.", { name: agentInfo(agent).name }));
   const { runInTerminal, shellExe } = await import("../app/run");
-  await runInTerminal(`${shellExe(info.path)} ${LOGIN_ARGS[agent]}`.trim(), tl("Masuk ke {name}", { name: agentInfo(agent).short }));
-  toast(tl("Ikuti langkah masuk di terminal. Setelah selesai, klik Periksa ulang."), "info");
+  const key = await runInTerminal(`${shellExe(info.path)} ${LOGIN_ARGS[agent]}`.trim(), tl("Masuk ke {name}", { name: agentInfo(agent).short }));
+  // Terminal login ditutup → periksa lagi otomatis (agy tetap terbuka sampai Ctrl+D, jadi juga cek saat jendela kembali fokus).
+  const unsub = useStore.subscribe((s) => {
+    const t = s.terminals.find((x) => x.key === key);
+    if (!t || t.status === "exited") {
+      unsub();
+      void detectAgent(agent);
+    }
+  });
+  toast(
+    agent === "antigravity"
+      ? tl("Di terminal, pilih \"Continue with Google\" dan selesaikan di browser. Setelah itu tekan Ctrl+D dua kali untuk keluar.")
+      : tl("Ikuti langkah masuk di terminal. Setelah selesai, klik Periksa ulang."),
+    "info"
+  );
 }
 
 export async function installClaude() {

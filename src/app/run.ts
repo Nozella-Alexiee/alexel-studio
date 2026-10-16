@@ -50,9 +50,10 @@ export async function openClaudeInteractive() {
 }
 
 /** Jalankan satu perintah di tab terminal baru (folder project, atau folder rumah). */
-export async function runInTerminal(command: string, title: string) {
+/** Jalankan perintah di tab terminal "run"; mengembalikan kunci sesi terminalnya. */
+export async function runInTerminal(command: string, title: string): Promise<string> {
   const { runCommand } = await import("../terminal/terminals");
-  await runCommand(command, getState().root ?? "", title);
+  return runCommand(command, getState().root ?? "", title);
 }
 
 /**

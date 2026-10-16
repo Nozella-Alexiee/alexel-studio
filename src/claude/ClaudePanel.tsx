@@ -1,9 +1,9 @@
-import { ArrowLeft, ChevronDown, History, LogIn, MessageSquarePlus, Puzzle, RefreshCw, TerminalSquare } from "lucide-react";
+import { ArrowLeft, ChevronDown, Download, History, LogIn, MessageSquarePlus, Puzzle, RefreshCw, TerminalSquare } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { openClaudeInteractive } from "../app/run";
 import { CrabMascot, flashKepi, Kepi } from "../components/CrabMascot";
 import { IconButton } from "../components/ui";
-import { api, errMsg } from "../lib/ipc";
+import { api, errMsg, openExternal } from "../lib/ipc";
 import { timeAgo } from "../lib/format";
 import type { ClaudeSessionInfo } from "../lib/types";
 import { getState, setState, useStore } from "../state/store";
@@ -91,6 +91,13 @@ function Setup() {
         <p>{a.description}</p>
         {agent === "acp" ? (
           <p className="hint">{tl("Isi perintah agen ACP di Pengaturan → Agen AI.")}</p>
+        ) : agent === "antigravity" ? (
+          <>
+            <p className="hint">{tl("Antigravity (agy) datang bersama aplikasi Antigravity. Pasang aplikasinya dulu, lalu klik Periksa ulang.")}</p>
+            <button className="btn btn-claude btn-sm" onClick={() => void openExternal("https://antigravity.google/download")}>
+              <Download size={13} /> {tl("Unduh Antigravity")}
+            </button>
+          </>
         ) : (
           <button className="btn btn-claude btn-sm" onClick={() => void import("../app/actions").then((m) => m.toggleSidebar("ext"))}>
             <Puzzle size={13} /> {tl("Pasang dari Ekstensi")}
@@ -116,6 +123,7 @@ function Setup() {
       <CrabMascot mood="melambai" size={54} />
       <h3>{tl("Masuk ke {name}", { name: a.name })}</h3>
       <p>{tl("Masuk sekali dengan akun {vendor} kamu. Setelah itu panel ini langsung bisa dipakai.", { vendor: a.vendor })}</p>
+      {agent === "antigravity" && <p className="hint small">{tl("Akan membuka terminal: pilih \"Continue with Google\", selesaikan di browser, lalu tekan Ctrl+D dua kali.")}</p>}
       <div className="perm-actions">
         <button className="btn btn-claude btn-sm" onClick={() => void loginClaude()}>
           <LogIn size={13} /> {tl("Masuk")}
@@ -175,6 +183,14 @@ export default function ClaudePanel() {
   useEffect(() => {
     if (!info) void detectAgent(agent);
   }, [info, agent]);
+  // Belum masuk / belum terpasang: periksa lagi saat jendela kembali fokus (mis. selesai login di browser/terminal).
+  const needsSetup = !info || !info.installed || info.loggedIn === false;
+  useEffect(() => {
+    if (!needsSetup) return;
+    const onFocus = () => void detectAgent(agent);
+    window.addEventListener("focus", onFocus);
+    return () => window.removeEventListener("focus", onFocus);
+  }, [needsSetup, agent]);
   // Riwayat milik agen sebelumnya tidak berlaku untuk agen baru.
   useEffect(() => {
     if (!agentInfo(agent).caps.history) setState({ chatHistoryOpen: false });
