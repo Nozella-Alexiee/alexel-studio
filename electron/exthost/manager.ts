@@ -8,6 +8,7 @@ import { clipboard, dialog, shell, BrowserWindow } from "electron";
 import { childEnv, killTree, type Ctx } from "../util";
 import { extCodeDir, extList, type InstalledExt } from "../extensions";
 import { Rpc, type Msg } from "./rpc";
+import { webviewCreate, webviewDispose, webviewHtml } from "./webviews";
 
 export interface HostStart {
   root: string | null;
@@ -71,6 +72,12 @@ export class ExtHostManager {
     child.on("message", (m: Msg) => {
       if (m.t === "evt") {
         if (m.m === "ready") return ready();
+        if (m.m === "ui/webview") {
+          const w = m.p as { op: string; id: number; roots?: string[]; html?: string };
+          if (w.op === "create") webviewCreate(w.id, w.roots ?? []);
+          else if (w.op === "html") webviewHtml(w.id, String(w.html ?? ""));
+          else if (w.op === "dispose") webviewDispose(w.id);
+        }
         this.ctx.emit("exthost-event", { e: m.m, p: m.p });
         return;
       }

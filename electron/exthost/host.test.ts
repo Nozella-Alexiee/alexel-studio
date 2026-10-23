@@ -73,6 +73,14 @@ exports.activate = function (context) {
     const we = new vscode.WorkspaceEdit(); we.insert(doc.uri, new vscode.Position(0, 0), "X");
     return await vscode.workspace.applyEdit(we);
   }));
+  context.subscriptions.push(vscode.commands.registerCommand("demo.web", async () => {
+    const panel = vscode.window.createWebviewPanel("demo.view", "Demo", vscode.ViewColumn.Beside, { enableScripts: true });
+    panel.webview.html = "<h1>halo</h1>";
+    panel.webview.onDidReceiveMessage((m) => { vscode.window.showInformationMessage("dari webview: " + m.text); panel.webview.postMessage({ balas: m.text }); });
+    panel.onDidDispose(() => { globalThis.__disposed = true; });
+    return panel.webview.asWebviewUri(vscode.Uri.file("/x/y z.css")).toString();
+  }));
+  context.subscriptions.push(vscode.commands.registerCommand("demo.disposed", () => !!globalThis.__disposed));
   return { ping: () => "pong" };
 };
 exports.deactivate = function () {};
@@ -180,6 +188,21 @@ describe("extension host", () => {
     expect(await rpc.request("command/execute", { id: "demo.fs" })).toBe("demo|file|Alexel Studio");
     expect(await rpc.request("command/execute", { id: "demo.edit" })).toBe(true);
     expect(uiRequests.find((u) => u.m === "ui/applyEdit")!.p.files[0].edits[0]).toEqual({ range: { s: { l: 0, c: 0 }, e: { l: 0, c: 0 } }, newText: "X" });
+  });
+
+  it("webview: panel dibuat, HTML & pesan dua arah, URI sumber daya, dan dispose dari renderer", async () => {
+    const uri = await rpc.request("command/execute", { id: "demo.web" });
+    expect(uri).toBe("nozelweb://r/" + events.find((e) => e.e === "ui/webview" && e.p.op === "create")!.p.id + "/x/y%20z.css");
+    const create = events.find((e) => e.e === "ui/webview" && e.p.op === "create")!.p;
+    expect(create).toMatchObject({ viewType: "demo.view", title: "Demo", owner: "me.demo" });
+    expect(create.roots).toEqual(expect.arrayContaining([expect.stringContaining("ext")]));
+    await waitFor(() => events.some((e) => e.e === "ui/webview" && e.p.op === "html" && e.p.html === "<h1>halo</h1>"));
+    rpc.notify("webview/message", { id: create.id, message: { text: "ping" } });
+    await waitFor(() => events.some((e) => e.e === "ui/webview" && e.p.op === "post" && e.p.message.balas === "ping"));
+    expect(uiRequests.some((u) => u.m === "ui/message" && u.p.text === "dari webview: ping")).toBe(true);
+    rpc.notify("webview/dispose", { id: create.id });
+    await new Promise((r) => setTimeout(r, 60));
+    expect(await rpc.request("command/execute", { id: "demo.disposed" })).toBe(true);
   });
 
   it("perintah bawaan editor diteruskan ke UI; modul vscode tak dikenal tidak membuat crash", async () => {

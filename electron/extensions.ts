@@ -11,7 +11,8 @@ import { classifyManifest, type Compatibility } from "./extCompat";
 import type { Ctx } from "./util";
 
 const API = "https://open-vsx.org/api";
-const MAX_VSIX = 60 * 1024 * 1024;
+// Ekstensi AI resmi (Claude Code, Codex) membawa biner CLI sendiri: ratusan MB.
+const MAX_VSIX = 600 * 1024 * 1024;
 const DATA_EXT = /\.(json|jsonc|tmLanguage|plist|tmTheme)$/i;
 /** Gambar ikon berkas; hanya yang dirujuk tema ikon yang disalin. */
 const ICON_EXT = /\.(svg|png)$/i;
@@ -247,9 +248,16 @@ export async function extUpdates(ctx: Ctx): Promise<ExtUpdate[]> {
 const inPkg = (p: string) => path.posix.join("extension", p.replace(/^\.\//, ""));
 
 const MAX_CODE_FILES = 30_000;
-const MAX_CODE_BYTES = 400 * 1024 * 1024;
+const MAX_CODE_BYTES = 1200 * 1024 * 1024;
 
 /** Salin seluruh isi `extension/` dari vsix ke `dest` (tanpa source map); path di luar `dest` ditolak. */
+/** Biner (Mach-O/ELF) atau skrip shebang: zip tidak membawa bit eksekusi, jadi dikenali dari isinya. */
+export function isExecutable(b: Uint8Array): boolean {
+  if (b.length < 4) return false;
+  const m = (b[0] << 24) | (b[1] << 16) | (b[2] << 8) | b[3];
+  return m === 0x7f454c46 || m === 0xfeedface || m === 0xfeedfacf || m === 0xcefaedfe || m === 0xcffaedfe || m === 0xcafebabe || (b[0] === 0x23 && b[1] === 0x21);
+}
+
 export function extractCode(buf: Uint8Array, dest: string): number {
   const files = unzipSync(buf, { filter: (f) => f.name.startsWith("extension/") && !f.name.endsWith("/") && !f.name.endsWith(".map") });
   const names = Object.keys(files);
@@ -262,7 +270,7 @@ export function extractCode(buf: Uint8Array, dest: string): number {
     if (rel.startsWith("..") || path.isAbsolute(rel) || !out.startsWith(dest + path.sep)) throw new Error("Paket memuat path yang tidak aman.");
     if ((total += files[name].length) > MAX_CODE_BYTES) throw new Error("Ekstensi terlalu besar.");
     fs.mkdirSync(path.dirname(out), { recursive: true });
-    fs.writeFileSync(out, files[name]);
+    fs.writeFileSync(out, files[name], isExecutable(files[name]) ? { mode: 0o755 } : undefined);
   }
   return names.length;
 }
@@ -288,10 +296,21 @@ export async function extInstall(ctx: Ctx, namespace: string, name: string, vers
 
 async function installInto(dir: string, namespace: string, name: string, version?: string | null): Promise<InstalledExt> {
   if (version && !/^[\w.+-]+$/.test(version)) throw new Error("Versi tidak valid.");
-  const meta = (await getJson(`${API}/${encodeURIComponent(namespace)}/${encodeURIComponent(name)}${version ? `/${encodeURIComponent(version)}` : ""}`)) as Record<string, any>; // eslint-disable-line @typescript-eslint/no-explicit-any
+  // Ekstensi yang dibangun per platform (Claude Code, Codex, …) punya vsix khusus OS/arsitektur ini;
+  // kalau tidak ada, pakai paket universal.
+  const target = `${process.platform}-${process.arch}`;
+  const base = `${API}/${encodeURIComponent(namespace)}/${encodeURIComponent(name)}`;
+  const tail = version ? `/${encodeURIComponent(version)}` : "";
+  let meta: Record<string, any>; // eslint-disable-line @typescript-eslint/no-explicit-any
+  try {
+    meta = (await getJson(`${base}/${target}${tail}`)) as Record<string, any>; // eslint-disable-line @typescript-eslint/no-explicit-any
+    if (meta.targetPlatform !== target) throw new Error("bukan paket platform ini");
+  } catch {
+    meta = (await getJson(`${base}${tail}`)) as Record<string, any>; // eslint-disable-line @typescript-eslint/no-explicit-any
+  }
   const url: string | undefined = meta.files?.download;
   if (!url?.startsWith("https://")) throw new Error("Berkas ekstensi tidak tersedia.");
-  const r = await fetch(url, { signal: AbortSignal.timeout(90_000) });
+  const r = await fetch(url, { signal: AbortSignal.timeout(600_000) });
   if (!r.ok) throw new Error(`Gagal mengunduh ekstensi (${r.status}).`);
   const buf = new Uint8Array(await r.arrayBuffer());
   if (buf.length > MAX_VSIX) throw new Error("Ekstensi terlalu besar.");

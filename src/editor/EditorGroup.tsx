@@ -13,6 +13,7 @@ import { tl } from "../i18n";
 
 const SettingsView = lazy(() => import("../panels/SettingsView"));
 const ExtensionDetail = lazy(() => import("../panels/ExtensionDetail"));
+const WebviewTab = lazy(() => import("../panels/WebviewTab"));
 const Dashboard = lazy(() => import("../panels/Dashboard"));
 const WelcomePage = lazy(() => import("../panels/Dashboard").then((m) => ({ default: m.Welcome })));
 
@@ -63,7 +64,7 @@ function TabItem({ tab, group, active, drop }: { tab: Tab; group: number; active
       onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && A.activateTab(tab.id, group)}
       onContextMenu={onMenu}
     >
-      {tab.kind === "settings" ? <Cog size={14} aria-hidden /> : tab.kind === "extension" ? <Puzzle size={14} aria-hidden /> : tab.kind === "welcome" ? <Sparkle size={14} aria-hidden /> : <FileIcon filename={tab.name} size={14} />}
+      {tab.kind === "settings" ? <Cog size={14} aria-hidden /> : tab.kind === "extension" || tab.kind === "webview" ? <Puzzle size={14} aria-hidden /> : tab.kind === "welcome" ? <Sparkle size={14} aria-hidden /> : <FileIcon filename={tab.name} size={14} />}
       <span className="tab-name">{tab.name}</span>
       <button
         className="tab-close"
@@ -311,6 +312,16 @@ export function EditorBody({ group, breadcrumb = true }: { group: number; breadc
       <div className="editor-body" {...drop.props}>
         <Suspense fallback={null}>
           <WelcomePage />
+        </Suspense>
+        {drop.overlay}
+      </div>
+    );
+  }
+  if (tab.kind === "webview") {
+    return (
+      <div className="editor-body" {...drop.props}>
+        <Suspense fallback={null}>
+          <WebviewTab tabId={tab.id} />
         </Suspense>
         {drop.overlay}
       </div>

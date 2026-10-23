@@ -34,12 +34,14 @@ function open(doc: docs.Doc) {
   hostNotify("doc/open", { uri: fileUri(doc.path), languageId: vscodeLanguageId(doc.path, doc.langId), version: bump(doc.path), text, eol: doc.eol === "crlf" ? 2 : 1 });
 }
 
-function activeEditor() {
+/** Editor aktif: view baru menampilkan tab setelah render, jadi coba lagi sebentar sebelum menyerah (null). */
+function activeEditor(attempt = 0) {
   const t = activeTab();
   if (!t || t.kind !== "text") return hostNotify("editor/active", null);
   const g = getState().focusedGroup;
   const v = docs.viewOf(g);
   if (v && docs.shownPath(g) === t.id) hostNotify("editor/active", editorInfo(t.id, v.state));
+  else if (attempt < 8) setTimeout(() => activeEditor(attempt + 1), 80);
   else hostNotify("editor/active", null);
 }
 

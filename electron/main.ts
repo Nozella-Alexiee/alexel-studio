@@ -3,6 +3,7 @@
 // semua command lewat satu pintu IPC dengan whitelist (lihat commands.ts).
 
 import { stopIde } from "./ide";
+import { resolveWebview } from "./exthost/webviews";
 import { stopExtHost } from "./exthost/manager";
 import { runScheduledUpdate } from "./updater";
 import { cleanTempBins } from "./runner";
@@ -33,7 +34,7 @@ const CSP = [
   "img-src 'self' data: blob: nozelpreview: nozelext: https://open-vsx.org",
   "font-src 'self' data:",
   "connect-src 'self'",
-  "frame-src nozelpreview:",
+  "frame-src nozelpreview: nozelweb:",
   "worker-src 'self' blob:",
   "object-src 'none'",
   "base-uri 'self'",
@@ -49,6 +50,7 @@ protocol.registerSchemesAsPrivileged([
   { scheme: "app", privileges: { standard: true, secure: true, supportFetchAPI: true, codeCache: true } },
   { scheme: "nozelpreview", privileges: { standard: true, secure: true, supportFetchAPI: true, stream: true, corsEnabled: true } },
   { scheme: "nozelext", privileges: { standard: true, secure: true } },
+  { scheme: "nozelweb", privileges: { standard: true, secure: true, supportFetchAPI: true, stream: true, corsEnabled: true } },
 ]);
 
 if (!app.requestSingleInstanceLock()) app.quit();
@@ -177,6 +179,19 @@ function serveApp() {
     return new Response(typeof r.body === "string" ? r.body : new Uint8Array(r.body), {
       status: r.status,
       headers: { "Content-Type": r.mime, "Cache-Control": "max-age=31536000, immutable", "X-Content-Type-Options": "nosniff" },
+    });
+  });
+  // Webview ekstensi (iframe ber-sandbox); lihat exthost/webviews.ts.
+  protocol.handle("nozelweb", (req) => {
+    const r = resolveWebview(req.url);
+    return new Response(typeof r.body === "string" ? r.body : new Uint8Array(r.body), {
+      status: r.status,
+      headers: {
+        "Content-Type": r.mime,
+        "Cache-Control": "no-store",
+        "Access-Control-Allow-Origin": "*",
+        ...(r.csp ? { "Content-Security-Policy": "default-src * nozelweb: data: blob: 'unsafe-inline' 'unsafe-eval'" } : {}),
+      },
     });
   });
   protocol.handle("nozelpreview", (req) => {

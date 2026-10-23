@@ -63,6 +63,8 @@ export interface HostCtx {
   activeEditor: EditorInfo | null;
   decorationTypes: Map<number, unknown>;
   treeProviders: Map<string, { provider: any; ext: LoadedExt | null }>; // eslint-disable-line @typescript-eslint/no-explicit-any
+  /** Panel webview yang hidup (id → penangan peristiwa dari renderer). */
+  webviews: Map<number, { message: (m: unknown) => void; disposed: () => void; state: (s: { active: boolean; visible: boolean }) => void }>;
   events: {
     openDoc: EventEmitter<HostDocument>;
     closeDoc: EventEmitter<HostDocument>;

@@ -1,6 +1,7 @@
 // Aksi tingkat aplikasi: project, tree, tab, simpan, berkas, git, desain.
 // Semua aksi membaca state terbaru lewat getState() — tidak ada closure basi.
 
+import { hostNotify } from "../exthost/client";
 import { applyDesign, DESIGNS, type DesignId } from "../design/designs";
 import * as docs from "../editor/documents";
 import { languageFor } from "../editor/languages";
@@ -210,6 +211,11 @@ export function openSettings(group = getState().focusedGroup, section?: string) 
   if (section) setTimeout(() => document.getElementById(`set-${section}`)?.scrollIntoView({ block: "start" }), 150);
 }
 
+/** Tampilkan tab yang sudah terdaftar di store (mis. webview ekstensi) di grup tertentu. */
+export function showTab(id: string, group = getState().focusedGroup) {
+  addTabToGroup(id, ensureGroup(group));
+}
+
 /** Halaman detail ekstensi sebagai tab (README, versi, kecocokan). */
 export function openExtension(namespace: string, name: string, displayName?: string, group = getState().focusedGroup) {
   const id = `nozel:ext:${namespace}.${name}`;
@@ -304,6 +310,14 @@ export async function closeTab(id: string, g = getState().focusedGroup): Promise
     } else if (choice !== "discard") return false;
   }
   removeFromGroup(id, g);
+  if (tab.kind === "webview" && !getState().tabs[id]) {
+    const m = await import("../exthost/webview");
+    const wid = m.webviewIdOf(id);
+    if (wid !== null) {
+      hostNotify("webview/dispose", { id: wid });
+      m.closeWebviewTab(wid);
+    }
+  }
   if ((tab.kind === "text" || tab.kind === "image") && !getState().tabs[id]) {
     closedTabs.push(id);
     if (closedTabs.length > 30) closedTabs.shift();

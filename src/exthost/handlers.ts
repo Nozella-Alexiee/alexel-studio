@@ -283,6 +283,20 @@ export function handleEvent(e: string, p: Any) {
     case "ui/treeChanged":
       host.setState((s) => (s.treeViews[p.viewId] ? { treeViews: { ...s.treeViews, [p.viewId]: { ...s.treeViews[p.viewId], version: s.treeViews[p.viewId].version + 1 } } } : {}));
       break;
+    case "ui/webview": {
+      void import("./webview").then((w) => {
+        if (p.op === "create") w.openWebviewTab(p.id, p.title, p.viewType, p.owner, p.column);
+        else if (p.op === "html") w.useWebviews.setState((s) => (s.panels[p.id] ? { panels: { ...s.panels, [p.id]: { ...s.panels[p.id], rev: s.panels[p.id].rev + 1 } } } : {}));
+        else if (p.op === "title") {
+          w.useWebviews.setState((s) => (s.panels[p.id] ? { panels: { ...s.panels, [p.id]: { ...s.panels[p.id], title: p.title } } } : {}));
+          const tid = w.webviewTabId(p.id);
+          setState((s) => (s.tabs[tid] ? { tabs: { ...s.tabs, [tid]: { ...s.tabs[tid], name: p.title } } } : {}));
+        } else if (p.op === "post") w.postToWebview(p.id, p.message);
+        else if (p.op === "reveal") A.showTab(w.webviewTabId(p.id));
+        else if (p.op === "dispose") w.closeWebviewTab(p.id);
+      });
+      break;
+    }
     case "ui/reveal": {
       const sel = p.range as { s: { l: number; c: number } };
       void A.openFile(pathOf(p.uri), { line: sel.s.l + 1, col: sel.s.c + 1 });

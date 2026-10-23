@@ -142,7 +142,7 @@ export const DEFAULT_LAYOUTS: Record<DesignId, Layout> = {
   kawanan: { sidebar: true, sidebarW: 240, sideView: "files", panel: false, panelH: 190, panelTab: "terminal", right: true, rightW: 340, rightView: "claude" },
 };
 
-export type TabKind = "text" | "image" | "settings" | "dashboard" | "welcome" | "extension";
+export type TabKind = "text" | "image" | "settings" | "dashboard" | "welcome" | "extension" | "webview";
 
 export interface Tab {
   /** Path absolut, atau id khusus "nozel:settings". */

@@ -280,7 +280,77 @@ export function windowApi(hc: HostCtx, ext: LoadedExt | null) {
       const d = registerTreeDataProvider(viewId, o.treeDataProvider);
       return { onDidChangeSelection: new EventEmitter<unknown>().event, onDidChangeVisibility: new EventEmitter<unknown>().event, onDidExpandElement: new EventEmitter<unknown>().event, onDidCollapseElement: new EventEmitter<unknown>().event, visible: true, selection: [], reveal: async () => {}, dispose: () => d.dispose(), message: undefined, title: undefined, description: undefined, badge: undefined };
     },
-    createWebviewPanel: unsupported("Webview"),
+    createWebviewPanel: (viewType: string, title: string, showOptions: unknown, options: { localResourceRoots?: Uri[]; enableScripts?: boolean; retainContextWhenHidden?: boolean } = {}) => {
+      const id = nextId();
+      const message = new EventEmitter<unknown>();
+      const disposeEv = new EventEmitter<void>();
+      const stateEv = new EventEmitter<{ webviewPanel: unknown }>();
+      const roots = [ext?.dir, hc.root, ...(options.localResourceRoots ?? []).map((u) => u.fsPath)].filter((x): x is string => !!x);
+      let html = "";
+      let curTitle = title;
+      let isDisposed = false;
+      const column = typeof showOptions === "number" ? showOptions : (showOptions as { viewColumn?: number } | undefined)?.viewColumn ?? ViewColumn.Beside;
+      rpc.notify("ui/webview", { op: "create", id, viewType, title, roots, owner: ext?.id, column, preserveFocus: !!(showOptions as { preserveFocus?: boolean } | undefined)?.preserveFocus });
+      const panel: Record<string, unknown> = {
+        viewType,
+        options,
+        active: true,
+        visible: true,
+        viewColumn: column,
+        onDidDispose: disposeEv.event,
+        onDidChangeViewState: stateEv.event,
+        get title() {
+          return curTitle;
+        },
+        set title(t: string) {
+          curTitle = t;
+          rpc.notify("ui/webview", { op: "title", id, title: t });
+        },
+        iconPath: undefined,
+        webview: {
+          options,
+          cspSource: "nozelweb:",
+          get html() {
+            return html;
+          },
+          set html(v: string) {
+            html = v;
+            rpc.notify("ui/webview", { op: "html", id, html: v });
+          },
+          onDidReceiveMessage: message.event,
+          postMessage: async (m: unknown) => {
+            if (isDisposed) return false;
+            rpc.notify("ui/webview", { op: "post", id, message: m });
+            return true;
+          },
+          // nozelweb://r/<id>/<path absolut tanpa "/" awal>; tiap segmen di-encode oleh Uri.toString().
+          asWebviewUri: (u: Uri) => Uri.from({ scheme: "nozelweb", authority: "r", path: `/${id}/${u.fsPath.replace(/\\/g, "/").replace(/^\//, "")}` }),
+        },
+        reveal: () => rpc.notify("ui/webview", { op: "reveal", id }),
+        dispose: () => {
+          if (isDisposed) return;
+          isDisposed = true;
+          hc.webviews.delete(id);
+          rpc.notify("ui/webview", { op: "dispose", id });
+          disposeEv.fire();
+        },
+      };
+      hc.webviews.set(id, {
+        message: (m) => message.fire(m),
+        disposed: () => {
+          if (isDisposed) return;
+          isDisposed = true;
+          hc.webviews.delete(id);
+          disposeEv.fire();
+        },
+        state: (s) => {
+          panel.active = s.active;
+          panel.visible = s.visible;
+          stateEv.fire({ webviewPanel: panel });
+        },
+      });
+      return panel;
+    },
     registerWebviewViewProvider: () => new Disposable(() => {}),
     registerWebviewPanelSerializer: () => new Disposable(() => {}),
     registerCustomEditorProvider: () => new Disposable(() => {}),

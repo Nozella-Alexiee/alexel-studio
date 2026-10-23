@@ -41,6 +41,7 @@ const hc: HostCtx = {
   activeEditor: null,
   decorationTypes: new Map(),
   treeProviders: new Map(),
+  webviews: new Map(),
   events: newEvents(),
   activate: (id, reason) => activate(id, reason),
   activateByEvent: (event) => activateByEvent(event),
@@ -289,7 +290,12 @@ rpc.events.set("diag/external", (p: { source: string; uri: string; items: { rang
 });
 rpc.events.set("fs/changed", (p: { kind: "create" | "change" | "delete"; path: string }) => hc.events.fsChanged.fire({ kind: p.kind, uri: Uri.file(p.path) }));
 
+rpc.events.set("webview/message", (p: { id: number; message: unknown }) => hc.webviews.get(p.id)?.message(p.message));
+rpc.events.set("webview/dispose", (p: { id: number }) => hc.webviews.get(p.id)?.disposed());
+rpc.events.set("webview/state", (p: { id: number; active: boolean; visible: boolean }) => hc.webviews.get(p.id)?.state(p));
+
 rpc.requests.set("command/execute", (p: { id: string; args?: unknown[] }) => runCommand(hc, p.id, p.args ?? []));
+rpc.requests.set("debug/state", () => ({ active: hc.activeEditor?.uri ?? null, docs: [...hc.docs.keys()].map((k) => k.split("/").pop()), commands: hc.commands.size }));
 rpc.requests.set("commands/list", () => [...hc.commands.keys()]);
 
 // ---- provider ----------------------------------------------------------------------------
