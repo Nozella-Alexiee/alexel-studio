@@ -1,20 +1,21 @@
 // Desain A — Aurora Glass: gelap macOS, sidebar kaca dengan kartu workspace,
 // palette di title bar, agen Claude di kanan, dock terminal melayang.
 
-import { Columns2, GitBranch, PanelBottom, Play, Puzzle, Search } from "lucide-react";
+import { Bug, Columns2, GitBranch, ListTree, PanelBottom, Play, Puzzle, Search, Settings } from "lucide-react";
 import { Kepi } from "../components/CrabMascot";
 import * as A from "../app/actions";
 import { openPalette } from "../app/commands";
 import { runActiveFile } from "../app/run";
 import { NoziBrand, NoziPeek } from "../components/PenguinMascot";
+import { MenuHamburger } from "../components/MenuBar";
 import { IconButton, Kbd, Segmented } from "../components/ui";
 import { BottomPanel } from "../panels/BottomPanel";
-import { setLayout, useLayout, useStore, type SideView } from "../state/store";
-import { EditorGroups, RightContent, SideContent, SideResizer, StatusBar, openProjectMenu } from "./common";
+import { setLayout, useStore, type SideView } from "../state/store";
+import { EditorGroups, RightContent, SideContent, SideResizer, StatusBar, openProjectMenu, useFitLayout } from "./common";
 import { tl } from "../i18n";
 
 export default function AuroraShell() {
-  const l = useLayout();
+  const l = useFitLayout(0);
   const root = useStore((s) => s.root);
   const git = useStore((s) => s.git);
   const split = useStore((s) => s.groups.length > 1);
@@ -24,6 +25,7 @@ export default function AuroraShell() {
     <div className="shell shell-aurora">
       <header className="titlebar">
         <div className="traffic-space" />
+        <MenuHamburger />
         <NoziBrand />
         <button className="palette-pill" onClick={() => openPalette("")}>
           <Search size={14} aria-hidden />
@@ -39,6 +41,9 @@ export default function AuroraShell() {
           </IconButton>
           <IconButton label={tl("Panel bawah")} keys="Mod+J" active={l.panel} onClick={() => A.togglePanel()}>
             <PanelBottom size={15} />
+          </IconButton>
+          <IconButton label={tl("Pengaturan")} keys="Mod+," onClick={() => A.openSettings()}>
+            <Settings size={15} />
           </IconButton>
           <IconButton label={tl("Panel agen AI")} keys="Mod+Alt+B" active={l.right} onClick={() => A.toggleRight("claude")}>
             <Kepi size={18} />
@@ -75,6 +80,8 @@ export default function AuroraShell() {
                   { id: "search", label: tl("Cari") },
                   { id: "todo", label: "TODO" },
                   { id: "ext", label: <Puzzle size={13} />, title: tl("Ekstensi") },
+                  { id: "run", label: <Bug size={13} />, title: "Run & Debug" },
+                  { id: "outline", label: <ListTree size={13} />, title: tl("Outline (struktur berkas)") },
                 ]}
               />
               <div className="side-scroll">

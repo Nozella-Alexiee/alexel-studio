@@ -1,5 +1,28 @@
 # Changelog
 
+## 0.5.1
+
+Fixed, in all eight designs:
+
+- **Text contrast.** Every design now meets WCAG AA (4.5:1 text, 3:1 UI) for muted/subtle text, accents,
+  line numbers, comments, terminal colors and warnings — checked by a test (`scripts/contrast.mjs`).
+  Zen and Kawanan primary buttons and accent text were the worst offenders.
+- **Selection is visible on the active line** (the active-line tint is now translucent).
+- **Control and Tuxedo panels had stray padding** (a shared `.tile` class collided with the Dashboard);
+  Dashboard tiles keep their border in Tuxedo.
+- **Windows/Linux had no menu bar** in Aurora, Antartika, Zen, Kawanan, Control and Tuxedo: a ☰ menu
+  now sits in the title bar (and replaces the menu bar in narrow Studio windows).
+- **Settings, Split and Markdown/HTML Preview buttons** are reachable from the Aurora/Zen/Kawanan title bars.
+- **Switching design or extension theme** no longer leaves the terminal on the old font, the editor on
+  the old colors, or the window buttons in the wrong scheme.
+- **Narrow windows:** sidebar and right panel shrink to keep the editor usable; the right panel hides
+  when it cannot fit.
+- Aurora/Antartika sidebar tabs no longer clip and include Run & Debug and Outline.
+- Kawanan no longer doubles the gap between cards; its Markdown preview and chat use its own font.
+- Light designs get a readable warning squiggle; Control uses the bundled mono font; Windows UI font
+  fallbacks; toasts no longer cover the agent composer; Zen shows CRLF in the status bar.
+- Settings: layout thumbnails match the real layouts; the Nozi sidebar row only shows for Antartika.
+
 ## 0.5.0
 
 New:

@@ -27,6 +27,13 @@ if (import.meta.env.DEV) {
 
 // Platform untuk CSS (title bar, ruang tombol jendela).
 document.documentElement.dataset.platform = platform;
+// Layar penuh macOS menyembunyikan lampu lalu lintas, jadi ruang kosongnya di titlebar ikut dilepas.
+const syncFullscreen = () => {
+  const full = window.innerWidth >= screen.width && window.innerHeight >= screen.height;
+  document.documentElement.toggleAttribute("data-fullscreen", full);
+};
+window.addEventListener("resize", syncFullscreen);
+syncFullscreen();
 // Terapkan desain terakhir sebelum render supaya tidak berkedip.
 const d = cachedDesign();
 applyDesign(d.id, d.accent);

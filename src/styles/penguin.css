@@ -327,7 +327,7 @@
 [data-design="tuxedo"] .shell-control .shell-body {
   padding: 0;
 }
-[data-design="tuxedo"] .shell-control .tile {
+[data-design="tuxedo"] .shell-control .ctl-tile {
   border-radius: 0;
   border-width: 0 1px 0 0;
 }
@@ -370,12 +370,15 @@
 }
 [data-design="kawanan"] .shell-zen .shell-body {
   padding: 0 12px;
-  gap: 12px;
+  /* Kolom resizer 1px ikut mengapit celah, jadi celah per sisi separuhnya (6+1+6 ≈ 12px antar-kartu). */
+  column-gap: 6px;
   background: var(--bg);
 }
 [data-design="kawanan"] .shell-zen .shell-body > .resizer-x {
   background: transparent;
-  width: 0;
+  width: 10px;
+  margin: 0 -4.5px;
+  z-index: 2;
 }
 [data-design="kawanan"] .shell-zen .zen-nav,
 [data-design="kawanan"] .shell-zen .zen-main,

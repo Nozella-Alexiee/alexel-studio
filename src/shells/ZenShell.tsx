@@ -1,7 +1,7 @@
 // Desain B — Zen Paper: terang hangat, tanpa activity bar & tab bar. Navigator di kiri
 // (berkas terbuka, ringkasan simbol, tree), satu kolom fokus, omnibar di bawah.
 
-import { ChevronDown, ChevronRight, Files, GitBranch, Play, Puzzle, Search, TerminalSquare, X, Focus, ListTodo } from "lucide-react";
+import { ChevronDown, ChevronRight, Columns2, Files, GitBranch, Play, Puzzle, Search, Settings, TerminalSquare, X, Focus, ListTodo } from "lucide-react";
 import { Kepi } from "../components/CrabMascot";
 import { useState, type ReactNode } from "react";
 import * as A from "../app/actions";
@@ -9,13 +9,15 @@ import { openPalette } from "../app/commands";
 import { runActiveFile } from "../app/run";
 import { FileIcon } from "../components/FileIcon";
 import { NoziBrand, NoziProcesses, usePenguinVariant } from "../components/PenguinMascot";
+import { MenuHamburger } from "../components/MenuBar";
+import { PreviewToggle } from "../editor/EditorGroup";
 import { IconButton, Kbd } from "../components/ui";
 import { relative } from "../lib/paths";
 import { PanelContent, PanelTabs } from "../panels/BottomPanel";
 import { Outline } from "../panels/OutlinePanel";
 import { FileTree } from "../panels/Explorer";
-import { activeTab, setLayout, useLayout, useStore } from "../state/store";
-import { EditorGroups, RightContent, SideContent, SideResizer, StatusBar, openProjectMenu } from "./common";
+import { activeTab, setLayout, useStore } from "../state/store";
+import { EditorGroups, RightContent, SideContent, SideResizer, StatusBar, openProjectMenu, useFitLayout } from "./common";
 import { prettyKeys } from "../lib/keys";
 import { tl } from "../i18n";
 
@@ -64,7 +66,7 @@ function OpenFiles() {
 }
 
 export default function ZenShell() {
-  const l = useLayout();
+  const l = useFitLayout(0);
   const tab = useStore((s) => activeTab(s));
   const root = useStore((s) => s.root);
   const git = useStore((s) => s.git);
@@ -76,6 +78,7 @@ export default function ZenShell() {
     <div className="shell shell-zen">
       <header className="titlebar">
         <div className="traffic-space" />
+        <MenuHamburger />
         <NoziBrand />
         <div className="zen-crumb">
           <button className="zen-root" onClick={openProjectMenu} title={tl("Ganti project")} aria-haspopup="menu">
@@ -90,15 +93,23 @@ export default function ZenShell() {
           )}
         </div>
         <div className="titlebar-actions">
+          {/* Zen menyembunyikan tab strip, jadi pratinjau Markdown/HTML dan belah editor dipasang di sini. */}
+          {tab && <PreviewToggle tab={tab} />}
+          <IconButton label={tl("Belah editor")} keys="Mod+\" active={split} onClick={A.splitEditor}>
+            <Columns2 size={15} />
+          </IconButton>
           <button className="tbtn tone-run" onClick={() => void runActiveFile()} title={`${tl("Jalankan")} (${prettyKeys("Mod+R")})`}>
-            <Play size={14} /> Jalankan
+            <Play size={14} /> <span>{tl("Jalankan")}</span>
           </button>
           <button className={`tbtn ${l.panel ? "is-on" : ""}`} onClick={() => A.togglePanel("terminal")} title={`Terminal (${prettyKeys("Ctrl+`")})`}>
-            <TerminalSquare size={14} /> Terminal
+            <TerminalSquare size={14} /> <span>Terminal</span>
           </button>
           <button className={`tbtn ${l.right ? "is-on" : ""}`} onClick={() => A.toggleRight("claude")} title={`${tl("Agen AI")} (${prettyKeys("Mod+Alt+B")})`}>
-            <Kepi size={16} /> Agen AI
+            <Kepi size={16} /> <span>{tl("Agen AI")}</span>
           </button>
+          <IconButton label={tl("Pengaturan")} keys="Mod+," onClick={() => A.openSettings()}>
+            <Settings size={15} />
+          </IconButton>
           <IconButton label={tl("Mode fokus")} active={!l.sidebar && !l.right} onClick={() => setLayout(!l.sidebar && !l.right ? { sidebar: true } : { sidebar: false, right: false, panel: false })}>
             <Focus size={15} />
           </IconButton>

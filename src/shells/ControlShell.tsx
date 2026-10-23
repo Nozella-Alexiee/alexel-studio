@@ -9,10 +9,11 @@ import { openPalette } from "../app/commands";
 import { runActiveFile, runTarget } from "../app/run";
 import { openMenu } from "../components/Overlays";
 import { NoziBrand } from "../components/PenguinMascot";
+import { MenuHamburger } from "../components/MenuBar";
 import { IconButton } from "../components/ui";
 import { BottomPanel } from "../panels/BottomPanel";
-import { getState, setLayout, useLayout, useStore } from "../state/store";
-import { EditorGroups, RightContent, SideContent, SideResizer, StatusBar, openProjectMenu } from "./common";
+import { getState, setLayout, useStore } from "../state/store";
+import { EditorGroups, RightContent, SideContent, SideResizer, StatusBar, openProjectMenu, useFitLayout } from "./common";
 import { prettyKeys } from "../lib/keys";
 import { tl } from "../i18n";
 
@@ -55,7 +56,7 @@ function RunConfig() {
 }
 
 export default function ControlShell() {
-  const l = useLayout();
+  const l = useFitLayout(46);
   const root = useStore((s) => s.root);
   const git = useStore((s) => s.git);
   const split = useStore((s) => s.groups.length > 1);
@@ -75,6 +76,7 @@ export default function ControlShell() {
     <div className="shell shell-control">
       <header className="titlebar">
         <div className="traffic-space" />
+        <MenuHamburger />
         <NoziBrand />
         <RunConfig />
         <div className="ctl-center">
@@ -102,7 +104,7 @@ export default function ControlShell() {
       </header>
 
       <div className="shell-body" style={{ gridTemplateColumns: `46px ${l.sidebar ? `${l.sidebarW}px 1px` : ""} minmax(0,1fr) ${l.right ? `1px ${l.rightW}px` : ""}` }}>
-        <nav className="rail tile" aria-label={tl("Navigasi")}>
+        <nav className="rail ctl-tile" aria-label={tl("Navigasi")}>
           {rail.map(([id, icon, label, run, on, count]) => (
             <button key={id} className={on ? "is-on" : ""} onClick={run} title={label} aria-label={label} aria-pressed={on}>
               {icon}
@@ -120,7 +122,7 @@ export default function ControlShell() {
 
         {l.sidebar && (
           <>
-            <aside className="sidebar tile" aria-label="Sidebar">
+            <aside className="sidebar ctl-tile" aria-label="Sidebar">
               <SideContent />
             </aside>
             <SideResizer side="left" />
@@ -128,13 +130,13 @@ export default function ControlShell() {
         )}
 
         <main className="main ctl-mid">
-          <div className="tile ctl-editors">
+          <div className="ctl-tile ctl-editors">
             <EditorGroups />
           </div>
           {l.panel && (
             <>
               <SideResizer side="bottom" />
-              <div className="tile ctl-panel" style={{ height: l.panelH }}>
+              <div className="ctl-tile ctl-panel" style={{ height: l.panelH }}>
                 <BottomPanel upper />
               </div>
             </>
@@ -144,7 +146,7 @@ export default function ControlShell() {
         {l.right && (
           <>
             <SideResizer side="right" />
-            <aside className="right-panel tile" aria-label={tl("Panel kanan")}>
+            <aside className="right-panel ctl-tile" aria-label={tl("Panel kanan")}>
               <div className="ctl-right-tabs" role="tablist">
                 <button role="tab" aria-selected={l.rightView === "git"} className={l.rightView === "git" ? "is-on" : ""} onClick={() => setLayout({ rightView: "git" })}>
                   GIT

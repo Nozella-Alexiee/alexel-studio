@@ -85,6 +85,43 @@ export function RightContent() {
   );
 }
 
+/** Lebar jendela, diperbarui saat di-resize. */
+function useWindowWidth() {
+  const [w, setW] = useState(() => window.innerWidth);
+  useEffect(() => {
+    const on = () => setW(window.innerWidth);
+    window.addEventListener("resize", on);
+    return () => window.removeEventListener("resize", on);
+  }, []);
+  return w;
+}
+
+/** Editor minimal selebar ini; sisanya dibagi ke sidebar & panel kanan. */
+const MIN_EDITOR = 420;
+
+/**
+ * Lebar sidebar/panel kanan yang benar-benar dipakai: ukuran tersimpan dikecilkan seperlunya agar
+ * editor tetap terlihat di jendela sempit, dan panel kanan disembunyikan bila tetap tidak muat.
+ */
+export function useFitLayout(rail: number) {
+  const l = useLayout();
+  const w = useWindowWidth();
+  let side = l.sidebar ? l.sidebarW : 0;
+  let right = l.right ? l.rightW : 0;
+  let showRight = l.right;
+  const room = w - rail - MIN_EDITOR;
+  if (side + right > room) {
+    right = Math.max(240, room - side);
+    if (side + right > room) side = Math.max(170, room - right);
+    if (side + right > room) {
+      showRight = false;
+      right = 0;
+      side = Math.min(side, Math.max(170, room));
+    }
+  }
+  return { ...l, right: showRight, sidebarW: l.sidebar ? side : l.sidebarW, rightW: showRight ? right : l.rightW };
+}
+
 /** Resizer untuk sidebar kiri / panel kanan / panel bawah yang menyimpan ukuran ke layout desain aktif. */
 export function SideResizer({ side }: { side: "left" | "right" | "bottom" }) {
   const l = useLayout();
@@ -246,7 +283,7 @@ export function StatusBar({ variant }: { variant: "aurora" | "zen" | "control" |
             </button>
           )}
           {!zen && <span className="status-item" title={tl("Encoding berkas")}>UTF-8</span>}
-          {!zen && doc && (
+          {doc && (!zen || doc.eol === "crlf") && (
             <button
               className="status-item"
               title={tl("Akhir baris")}

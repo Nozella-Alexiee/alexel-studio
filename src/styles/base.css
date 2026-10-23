@@ -206,7 +206,7 @@ body.resizing-y * {
   color: var(--fg-strong);
 }
 .icon-btn.is-active {
-  color: var(--accent);
+  color: var(--accent-text, var(--accent));
   background: var(--accent-softer);
 }
 .icon-btn.tone-run {
@@ -320,6 +320,9 @@ body.resizing-y * {
 }
 
 .segmented {
+  max-width: 100%;
+  overflow-x: auto;
+  scrollbar-width: none;
   display: inline-grid;
   grid-auto-flow: column;
   grid-auto-columns: 1fr;

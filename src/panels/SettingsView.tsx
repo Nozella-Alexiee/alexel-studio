@@ -36,7 +36,7 @@ function LayoutThumb({ d }: { d: DesignInfo }) {
     <div className={`thumb thumb-${id}`} aria-hidden>
       <div className="t-bar" />
       <div className="t-body">
-        {id !== "zen" && <div className="t-rail" />}
+        {(id === "studio" || id === "control") && <div className="t-rail" />}
         <div className="t-side" />
         <div className="t-main">
           <div className="t-code" />
@@ -246,14 +246,16 @@ export default function SettingsView() {
             {tl("Mulai tur")}
           </button>
         </Row>
-        <Row label={tl("Nozi di sidebar")} hint={tl("Nozi kecil dengan tips di bawah Explorer (desain Pinguin).")}>
-          <button
-            className="btn btn-sm"
-            onClick={showNoziPeek}
-          >
-            {tl("Munculkan lagi")}
-          </button>
-        </Row>
+        {s.design === "antartika" && (
+          <Row label={tl("Nozi di sidebar")} hint={tl("Nozi kecil dengan tips di bawah Explorer (desain Pinguin).")}>
+            <button
+              className="btn btn-sm"
+              onClick={showNoziPeek}
+            >
+              {tl("Munculkan lagi")}
+            </button>
+          </Row>
+        )}
       </section>
 
       <section className="set-section">

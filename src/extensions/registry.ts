@@ -1,5 +1,6 @@
 // Registry ekstensi terpasang: tema, snippet, bahasa ber-grammar. Dimuat saat aplikasi mulai.
 
+import { applyDesign } from "../design/designs";
 import { snippetCompletion, type Completion } from "@codemirror/autocomplete";
 import { create } from "zustand";
 import { call, isNative } from "../lib/ipc";
@@ -179,18 +180,33 @@ export async function loadExtensions() {
   await applySavedTheme();
 }
 
+/** Setelah warna berubah (desain / tema ekstensi): editor, terminal & warna tombol jendela OS ikut menyesuaikan. */
+function themeChanged() {
+  void import("../editor/documents").then((d) => requestAnimationFrame(() => d.applyEditorSettings()));
+  void import("../app/actions").then((a) => a.syncTrafficLights());
+  window.dispatchEvent(new Event("alexel:theme"));
+}
+
 export async function applySavedTheme() {
-  const t = getState().settings.extTheme;
-  if (!t) return applyThemeVars(null);
+  const s = getState().settings;
+  const t = s.extTheme;
+  // Tanpa tema ekstensi (atau gagal dimuat), kembalikan skema warna milik desain (terang/gelap).
+  const plain = () => {
+    applyThemeVars(null);
+    applyDesign(s.design, s.accent);
+    themeChanged();
+  };
+  if (!t) return plain();
   const ext = useExtensions.getState().list.find((e) => e.id === t.ext);
-  if (!ext) return applyThemeVars(null);
+  if (!ext) return plain();
   try {
     const theme = await resolveTheme((rel) => call<string>("ext_read_file", { id: ext.id, path: rel }), t.path);
     const { vars, scheme } = themeToVars(theme, t.uiTheme);
     applyThemeVars(vars, scheme);
+    themeChanged();
   } catch (e) {
     console.warn("Tema ekstensi gagal", e);
-    applyThemeVars(null);
+    plain();
   }
 }
 

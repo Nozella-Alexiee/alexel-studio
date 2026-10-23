@@ -86,7 +86,7 @@ button.status-item:hover {
   align-items: center;
 }
 .sb-lang {
-  color: var(--accent);
+  color: var(--accent-text, var(--accent));
   font-weight: 600;
 }
 .sb-mem {
@@ -140,6 +140,9 @@ button.status-item:hover {
 .shell-aurora .sidebar > .segmented {
   margin: 0 4px;
 }
+.shell-aurora .sidebar > .segmented button {
+  padding: 0 7px;
+}
 .workspace-card {
   display: flex;
   align-items: center;
@@ -176,7 +179,7 @@ button.status-item:hover {
   text-align: left;
 }
 .ws-name:hover {
-  color: var(--accent);
+  color: var(--accent-text, var(--accent));
 }
 .ws-sub {
   display: flex;
@@ -269,7 +272,7 @@ button.status-item:hover {
   color: var(--fg-subtle);
 }
 .zen-live {
-  color: var(--accent);
+  color: var(--accent-text, var(--accent));
 }
 .tbtn {
   display: inline-flex;
@@ -413,7 +416,7 @@ button.status-item:hover {
   color: var(--fg);
 }
 .zen-sym.is-on {
-  color: var(--accent);
+  color: var(--accent-text, var(--accent));
 }
 .zen-kind {
   font: 10.5px var(--font-mono);
@@ -527,7 +530,7 @@ button.status-item:hover {
   white-space: nowrap;
 }
 .run-select svg:first-child {
-  color: var(--accent);
+  color: var(--accent-text, var(--accent));
 }
 .run-config .icon-btn.tone-run {
   background: color-mix(in srgb, var(--success) 15%, transparent);
@@ -619,7 +622,7 @@ button.status-item:hover {
 .shell-control .shell-body > .resizer-x:hover {
   background: var(--accent-soft);
 }
-.tile {
+.ctl-tile {
   background: var(--surface-2);
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
@@ -647,7 +650,7 @@ button.status-item:hover {
   background: var(--surface-hover);
 }
 .rail button.is-on {
-  color: var(--accent);
+  color: var(--accent-text, var(--accent));
   background: var(--accent-softer);
 }
 .rail button.is-on::before {
@@ -719,7 +722,7 @@ button.status-item:hover {
   font-size: 10.5px;
 }
 .shell-control .panel-tab.is-active {
-  color: var(--accent);
+  color: var(--accent-text, var(--accent));
 }
 .shell-control .right-panel {
   background: var(--surface-1);
@@ -737,7 +740,7 @@ button.status-item:hover {
   color: var(--fg-subtle);
 }
 .ctl-right-tabs button.is-on {
-  color: var(--accent);
+  color: var(--accent-text, var(--accent));
   box-shadow: inset 0 -2px 0 var(--accent);
 }
 .shell-control .claude-head {
@@ -1044,7 +1047,10 @@ button.status-item:hover {
 /* Platform: Windows/Linux tanpa lampu lalu lintas; sisakan ruang untuk tombol jendela OS. */
 [data-platform="win32"] .traffic-space,
 [data-platform="linux"] .traffic-space {
-  width: 0;
+  width: 10px;
+}
+[data-platform="darwin"][data-fullscreen] .traffic-space {
+  width: 10px;
 }
 [data-platform="win32"] .titlebar,
 [data-platform="linux"] .titlebar {
@@ -1064,4 +1070,46 @@ button.status-item:hover {
 .shell-studio.is-debugging .statusbar,
 .shell-studio.is-debugging .statusbar * {
   color: #fff !important;
+}
+
+/* ---------- Menu hamburger (☰): Windows/Linux di desain tanpa ruang untuk deretan menu ---------- */
+.mb-burger {
+  position: relative;
+  flex: none;
+  display: flex;
+  align-items: center;
+  height: 100%;
+  margin-left: 4px;
+  -webkit-app-region: no-drag;
+  app-region: no-drag;
+}
+.mb-burger-btn {
+  width: 30px;
+  height: 26px;
+  display: grid;
+  place-items: center;
+  border-radius: 6px;
+  color: var(--fg-muted);
+  cursor: pointer;
+}
+.mb-burger-btn:hover,
+.mb-burger-btn.is-open {
+  background: var(--surface-hover);
+  color: var(--fg);
+}
+.mb-burger > .mb-menu {
+  left: 0;
+  top: calc(100% - 4px);
+}
+/* Studio menampilkan menu penuh; hamburger hanya menggantikannya di jendela sempit. */
+.mb-burger.mb-compact {
+  display: none;
+}
+@media (max-width: 900px) {
+  .shell-studio .menubar {
+    display: none;
+  }
+  .mb-burger.mb-compact {
+    display: flex;
+  }
 }

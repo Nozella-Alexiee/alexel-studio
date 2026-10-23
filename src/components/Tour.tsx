@@ -19,7 +19,7 @@ interface Step {
 
 const STEPS: Step[] = [
   { target: ".sidebar, .zen-nav", title: tl("Seret berkas ke editor"), body: () => tl("Tarik berkas dari Explorer ke editor untuk membukanya. Lepas di tepi kanan editor untuk membuka berdampingan.") },
-  { target: ".tabstrip", title: tl("Tab bisa digeser"), body: () => tl("Seret tab untuk mengurutkan, atau ke tepi kanan editor untuk membelah. Tab yang tertutup bisa dibuka lagi dengan {keys}.", { keys: prettyKeys("Mod+Shift+T") }) },
+  { target: ".tabstrip, .main", title: tl("Tab bisa digeser"), body: () => tl("Seret tab untuk mengurutkan, atau ke tepi kanan editor untuk membelah. Tab yang tertutup bisa dibuka lagi dengan {keys}.", { keys: prettyKeys("Mod+Shift+T") }) },
   { target: ".cm-editor", title: tl("Seleksi kode, lalu {keys}", { keys: prettyKeys("Mod+K") }), body: () => tl("AI mengubah kode langsung di tempat. Setiap perubahan tampil hijau/merah dan bisa diterima atau ditolak satu per satu. Klik kanan untuk aksi lainnya.") },
   { target: ".nozi-status, .sb-claude, .statusbar", title: tl("Nozi & Kepi ikut bereaksi"), body: () => tl("Nozi senang saat simpan, run, dan commit berhasil, dan ikut panik saat ada error. Kepi menemani agen AI. Klik mereka untuk menyapa.") },
 ];

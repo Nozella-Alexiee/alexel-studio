@@ -108,11 +108,18 @@ function init() {
       });
     }
   });
-  // Ikuti perubahan desain.
+  // Ikuti perubahan desain & tema ekstensi: warna dan font (tiap desain punya --font-mono sendiri).
+  const retheme = () =>
+    requestAnimationFrame(() =>
+      runtimes.forEach((rt) => {
+        rt.term.options.theme = theme();
+        rt.term.options.fontFamily = cssVar("--font-mono", "Menlo, monospace");
+        safeFit(rt);
+      })
+    );
+  window.addEventListener("alexel:theme", retheme);
   useStore.subscribe((s, prev) => {
-    if (s.settings.design !== prev.settings.design || s.settings.accent !== prev.settings.accent) {
-      requestAnimationFrame(() => runtimes.forEach((rt) => (rt.term.options.theme = theme())));
-    }
+    if (s.settings.design !== prev.settings.design || s.settings.accent !== prev.settings.accent) retheme();
     if (s.settings.terminalFontSize !== prev.settings.terminalFontSize) {
       runtimes.forEach((rt) => {
         rt.term.options.fontSize = s.settings.terminalFontSize;
