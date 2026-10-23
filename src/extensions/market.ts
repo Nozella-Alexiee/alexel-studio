@@ -26,7 +26,7 @@ export interface SearchPage {
 }
 
 export interface Compat {
-  level: "full" | "partial" | "none";
+  level: "full" | "partial" | "host" | "none";
   data: string[];
   code: boolean;
   needs: string[];

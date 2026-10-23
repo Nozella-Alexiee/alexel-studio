@@ -10,6 +10,7 @@ const NONE: string[] = [];
 export default function OutputPanel() {
   const channel = useOutput((s) => s.channel);
   const lines = useOutput((s) => s.lines[channel] ?? NONE);
+  const extra = useOutput((s) => Object.keys(s.lines).filter((c) => !(CHANNELS as readonly string[]).includes(c)).join("\n"));
   const box = useRef<HTMLPreElement>(null);
   useEffect(() => {
     const el = box.current;
@@ -24,6 +25,12 @@ export default function OutputPanel() {
               {tl(c)}
             </option>
           ))}
+          {extra &&
+            extra.split("\n").map((c) => (
+              <option key={c} value={c}>
+                {c}
+              </option>
+            ))}
         </select>
         <span className="spacer" />
         <IconButton

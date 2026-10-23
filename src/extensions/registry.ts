@@ -18,6 +18,11 @@ export interface InstalledExt {
   grammars: { language?: string; scopeName: string; path: string; injectTo?: string[] }[];
   languages: { id: string; aliases?: string[]; extensions?: string[]; filenames?: string[]; configuration?: string }[];
   installedAt: number;
+  hasCode?: boolean;
+  publisher?: string;
+  commands?: { command: string; title: string; category?: string }[];
+  keybindings?: { command: string; key: string; mac?: string; win?: string; linux?: string; when?: string; args?: unknown }[];
+  activationEvents?: string[];
   namespace?: string;
   name?: string;
 }

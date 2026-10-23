@@ -1,0 +1,302 @@
+// vscode.window: pesan, quick pick, input, output channel, status bar, progress, editor, dekorasi, terminal.
+
+import type { HostCtx, LoadedExt } from "./context";
+import { edits as jEdits, range as jRange, toRange } from "./convert";
+import type { HostDocument } from "./document";
+import { CancellationTokenSource, Disposable, EventEmitter, Position, Range, Selection, StatusBarAlignment, TextEdit, ThemeColor, ViewColumn } from "./types";
+import { Uri } from "./uri";
+
+let seq = 0;
+const nextId = () => ++seq;
+
+type Thenable<T> = PromiseLike<T>;
+type MessageItem = string | { title: string; isCloseAffordance?: boolean; [k: string]: unknown };
+
+export function windowApi(hc: HostCtx, ext: LoadedExt | null) {
+  const rpc = hc.rpc;
+  const prefix = ext ? `[${ext.id}] ` : "";
+
+  const message = (level: "info" | "warn" | "error") => async (text: string, ...rest: unknown[]) => {
+    const items = rest.filter((x) => typeof x === "string" || (x && typeof x === "object" && "title" in (x as object))) as MessageItem[];
+    const options = rest.find((x) => x && typeof x === "object" && !("title" in (x as object)) && !Array.isArray(x)) as { modal?: boolean } | undefined;
+    const labels = items.map((i) => (typeof i === "string" ? i : i.title));
+    const picked = await rpc.request<number | null>("ui/message", { level, text: String(text), items: labels, modal: !!options?.modal, source: ext?.manifest.displayName ?? ext?.id });
+    return picked == null || picked < 0 ? undefined : items[picked];
+  };
+
+  const editors = new Map<string, TextEditorImpl>();
+  class TextEditorImpl {
+    selections: Selection[];
+    visibleRanges: Range[] = [];
+    options: { tabSize: number; insertSpaces: boolean; cursorStyle?: number; lineNumbers?: number };
+    viewColumn = ViewColumn.One;
+    constructor(readonly document: HostDocument, info?: import("./context").EditorInfo) {
+      this.selections = info ? info.selections.map((s) => new Selection(new Position(s.anchor.l, s.anchor.c), new Position(s.active.l, s.active.c))) : [new Selection(new Position(0, 0), new Position(0, 0))];
+      this.options = info?.options ?? { tabSize: 2, insertSpaces: true };
+      if (info?.visible) this.visibleRanges = info.visible.map(toRange);
+    }
+    get selection() {
+      return this.selections[0];
+    }
+    set selection(s: Selection) {
+      this.selections = [s];
+      void rpc.request("ui/setSelections", { uri: this.document.uri.toString(), selections: [{ anchor: { l: s.anchor.line, c: s.anchor.character }, active: { l: s.active.line, c: s.active.character } }] }).catch(() => {});
+    }
+    async edit(cb: (b: { replace(r: Range | Position | Selection, t: string): void; insert(p: Position, t: string): void; delete(r: Range | Selection): void; setEndOfLine(): void }) => void): Promise<boolean> {
+      const list: TextEdit[] = [];
+      cb({
+        replace: (r, t) => list.push(new TextEdit(r instanceof Position ? new Range(r, r) : r, t)),
+        insert: (p, t) => list.push(TextEdit.insert(p, t)),
+        delete: (r) => list.push(TextEdit.delete(r)),
+        setEndOfLine: () => {},
+      });
+      return !!(await rpc.request<boolean>("ui/applyEdit", { files: [{ uri: this.document.uri.toString(), edits: jEdits(list) }] }));
+    }
+    async insertSnippet(snippet: { value: string }, location?: Position | Range) {
+      const r = location instanceof Position ? new Range(location, location) : location;
+      return !!(await rpc.request<boolean>("ui/insertSnippet", { uri: this.document.uri.toString(), snippet: snippet.value, range: r ? jRange(r) : null }));
+    }
+    setDecorations(type: { key: number }, ranges: (Range | { range: Range; hoverMessage?: unknown; renderOptions?: unknown })[]) {
+      rpc.notify("ui/decorations", {
+        type: type.key,
+        uri: this.document.uri.toString(),
+        items: ranges.map((r) => (r instanceof Range ? { range: jRange(r) } : { range: jRange(r.range), hover: r.hoverMessage ? String((r.hoverMessage as { value?: string }).value ?? r.hoverMessage) : undefined, render: r.renderOptions })),
+      });
+    }
+    revealRange(range: Range, _type?: number) {
+      rpc.notify("ui/reveal", { uri: this.document.uri.toString(), range: jRange(range) });
+    }
+    show() {}
+    hide() {}
+  }
+
+  const editorFor = (doc: HostDocument): TextEditorImpl => {
+    const k = doc.uri.toString();
+    let e = editors.get(k);
+    if (!e) editors.set(k, (e = new TextEditorImpl(doc, hc.activeEditor?.uri === k ? hc.activeEditor : undefined)));
+    return e;
+  };
+
+  const channels = new Set<string>();
+  const createOutputChannel = (name: string, opts?: string | { log?: boolean }) => {
+    const id = `${ext?.id ?? "host"}:${name}`;
+    channels.add(id);
+    const send = (text: string, clear = false) => rpc.notify("ui/output", { channel: name, source: ext?.id, text, clear });
+    const ch = {
+      name,
+      append: (v: string) => send(String(v)),
+      appendLine: (v: string) => send(String(v) + "\n"),
+      replace: (v: string) => send(String(v), true),
+      clear: () => send("", true),
+      show: (_c?: unknown, _preserve?: boolean) => rpc.notify("ui/outputShow", { channel: name }),
+      hide: () => {},
+      dispose: () => {},
+    };
+    if (opts && typeof opts === "object" && opts.log) {
+      const lvl = (l: string) => (v: unknown, ...a: unknown[]) => send(`[${l}] ${[v, ...a].map((x) => (x instanceof Error ? x.stack ?? x.message : typeof x === "string" ? x : JSON.stringify(x))).join(" ")}\n`);
+      return Object.assign(ch, { logLevel: 2, onDidChangeLogLevel: new EventEmitter<number>().event, trace: lvl("trace"), debug: lvl("debug"), info: lvl("info"), warn: lvl("warn"), error: lvl("error") });
+    }
+    return ch;
+  };
+
+  const statusItems = new Map<number, Record<string, unknown>>();
+  const createStatusBarItem = (a?: string | StatusBarAlignment | { id?: string; alignment?: number; priority?: number }, b?: number | StatusBarAlignment, c?: number) => {
+    const id = nextId();
+    const isOpts = a && typeof a === "object";
+    const state: Record<string, unknown> = { id, owner: ext?.id, alignment: (isOpts ? (a as { alignment?: number }).alignment : typeof a === "number" ? a : b) ?? StatusBarAlignment.Left, priority: (isOpts ? (a as { priority?: number }).priority : typeof b === "number" && typeof a !== "number" ? b : c) ?? 0, visible: false };
+    statusItems.set(id, state);
+    let pending = false;
+    const push = () => {
+      if (pending) return;
+      pending = true;
+      queueMicrotask(() => {
+        pending = false;
+        rpc.notify("ui/statusItem", { ...state, command: typeof state.command === "string" ? state.command : (state.command as { command?: string } | undefined)?.command, args: (state.command as { arguments?: unknown[] } | undefined)?.arguments, color: state.color instanceof ThemeColor ? state.color.id : state.color, backgroundColor: state.backgroundColor instanceof ThemeColor ? state.backgroundColor.id : state.backgroundColor, tooltip: typeof state.tooltip === "string" ? state.tooltip : (state.tooltip as { value?: string } | undefined)?.value });
+      });
+    };
+    const item = new Proxy(
+      {
+        id: typeof a === "string" ? a : undefined,
+        alignment: state.alignment,
+        priority: state.priority,
+        show() {
+          state.visible = true;
+          push();
+        },
+        hide() {
+          state.visible = false;
+          push();
+        },
+        dispose() {
+          rpc.notify("ui/statusItem", { id, removed: true });
+          statusItems.delete(id);
+        },
+      } as Record<string, unknown>,
+      {
+        set(t, k: string, v) {
+          t[k] = v;
+          state[k] = v;
+          push();
+          return true;
+        },
+      }
+    );
+    return item;
+  };
+
+  const showQuickPick = async (items: unknown, options?: { canPickMany?: boolean; placeHolder?: string; matchOnDescription?: boolean; matchOnDetail?: boolean; title?: string }, token?: { isCancellationRequested: boolean }) => {
+    const list = (await items) as (string | { label: string; description?: string; detail?: string; picked?: boolean; kind?: number })[];
+    const wire = list.map((i) => (typeof i === "string" ? { label: i } : { label: i.label, description: i.description, detail: i.detail, picked: i.picked, separator: i.kind === -1 }));
+    if (token?.isCancellationRequested) return undefined;
+    const r = await rpc.request<number[] | null>("ui/quickPick", { items: wire, canPickMany: !!options?.canPickMany, placeHolder: options?.placeHolder, title: options?.title }, 0);
+    if (!r) return undefined;
+    const picked = r.map((i) => list[i]);
+    return options?.canPickMany ? picked : picked[0];
+  };
+
+  const showInputBox = async (options?: { value?: string; prompt?: string; placeHolder?: string; password?: boolean; title?: string; validateInput?: (v: string) => string | undefined | null | Promise<string | undefined | null> }, _token?: unknown) => {
+    let validate: string | null = null;
+    for (;;) {
+      const r: string | null | undefined = await rpc.request<string | null>("ui/inputBox", { value: options?.value, prompt: options?.prompt, placeHolder: options?.placeHolder, password: !!options?.password, title: options?.title, error: validate }, 0);
+      if (r === null || r === undefined) return undefined;
+      const err: string | null | undefined = options?.validateInput ? await options.validateInput(r) : undefined;
+      if (!err) return r;
+      validate = String(err);
+      options = { ...options, value: r };
+    }
+  };
+
+  const withProgress = async <T>(opts: { location: number | { viewId: string }; title?: string; cancellable?: boolean }, task: (progress: { report(v: { message?: string; increment?: number }): void }, token: unknown) => Thenable<T> | T): Promise<T> => {
+    const id = nextId();
+    const cts = new CancellationTokenSource();
+    rpc.notify("ui/progress", { id, title: opts.title, location: typeof opts.location === "number" ? opts.location : 1, cancellable: !!opts.cancellable });
+    let total = 0;
+    try {
+      return await task({ report: (v) => {
+        if (v.increment) total += v.increment;
+        rpc.notify("ui/progress", { id, title: opts.title, message: v.message, percent: total || undefined });
+      } }, cts.token);
+    } finally {
+      rpc.notify("ui/progress", { id, done: true });
+    }
+  };
+
+  const decTypes = new Map<number, unknown>();
+  const createTextEditorDecorationType = (options: Record<string, unknown>) => {
+    const key = nextId();
+    decTypes.set(key, options);
+    rpc.notify("ui/decorationType", { key, options });
+    return { key, dispose: () => { decTypes.delete(key); rpc.notify("ui/decorationType", { key, removed: true }); } };
+  };
+
+  const terminals = new Map<number, { name: string }>();
+  const createTerminal = (a?: string | { name?: string; shellPath?: string; shellArgs?: string[]; cwd?: string | Uri; env?: Record<string, string | null> }, shellPath?: string, shellArgs?: string[]) => {
+    const o = typeof a === "object" ? a : { name: a, shellPath, shellArgs };
+    const id = nextId();
+    terminals.set(id, { name: o.name ?? "Terminal" });
+    const created = rpc.request("ui/terminalCreate", { id, name: o.name, shellPath: o.shellPath, shellArgs: o.shellArgs, cwd: o.cwd instanceof Uri ? o.cwd.fsPath : o.cwd, env: o.env });
+    void created.catch(() => {});
+    return {
+      name: o.name ?? "Terminal",
+      processId: Promise.resolve(undefined),
+      exitStatus: undefined,
+      sendText: (text: string, addNewLine = true) => void created.then(() => rpc.notify("ui/terminalSend", { id, text, newline: addNewLine })),
+      show: () => void created.then(() => rpc.notify("ui/terminalShow", { id })),
+      hide: () => {},
+      dispose: () => rpc.notify("ui/terminalDispose", { id }),
+    };
+  };
+
+  const unsupported = (what: string) => () => {
+    rpc.notify("ui/output", { channel: "Extension Host", text: `${prefix}${what} belum didukung di Alexel Studio.\n` });
+    throw new Error(`${what} is not supported in Alexel Studio`);
+  };
+
+  const registerTreeDataProvider = (viewId: string, provider: { getChildren(e?: unknown): unknown; getTreeItem(e: unknown): unknown; onDidChangeTreeData?: (l: (e: unknown) => void) => { dispose(): void } }) => {
+    hc.treeProviders.set(viewId, { provider, ext });
+    const sub = provider.onDidChangeTreeData?.(() => rpc.notify("ui/treeChanged", { viewId }));
+    rpc.notify("ui/treeRegistered", { viewId, owner: ext?.id });
+    return new Disposable(() => {
+      hc.treeProviders.delete(viewId);
+      sub?.dispose();
+      rpc.notify("ui/treeRegistered", { viewId, removed: true });
+    });
+  };
+
+  return {
+    showInformationMessage: message("info"),
+    showWarningMessage: message("warn"),
+    showErrorMessage: message("error"),
+    showQuickPick,
+    showInputBox,
+    showWorkspaceFolderPick: async () => (hc.root ? { uri: Uri.file(hc.root), name: hc.root.split(/[\\/]/).pop() ?? "", index: 0 } : undefined),
+    async showOpenDialog(o?: Record<string, unknown>) {
+      const r = await rpc.request<string[] | null>("ui/openDialog", o ?? {}, 0);
+      return r ? r.map((p) => Uri.file(p)) : undefined;
+    },
+    async showSaveDialog(o?: Record<string, unknown>) {
+      const r = await rpc.request<string | null>("ui/saveDialog", o ?? {}, 0);
+      return r ? Uri.file(r) : undefined;
+    },
+    createOutputChannel,
+    createStatusBarItem,
+    setStatusBarMessage(text: string, hideAfter?: number | Thenable<unknown>) {
+      const item = createStatusBarItem(StatusBarAlignment.Left, -1000) as { text?: string; show(): void; dispose(): void };
+      item.text = text;
+      item.show();
+      if (typeof hideAfter === "number") setTimeout(() => item.dispose(), hideAfter);
+      else if (hideAfter) void Promise.resolve(hideAfter).finally(() => item.dispose());
+      return new Disposable(() => item.dispose());
+    },
+    withProgress,
+    get activeTextEditor() {
+      const a = hc.activeEditor ? hc.docs.get(hc.activeEditor.uri) : undefined;
+      return a ? editorFor(a) : undefined;
+    },
+    get visibleTextEditors() {
+      return hc.activeEditor ? [this.activeTextEditor].filter(Boolean) : [];
+    },
+    onDidChangeActiveTextEditor: hc.events.activeEditor.event,
+    onDidChangeVisibleTextEditors: new EventEmitter<unknown[]>().event,
+    onDidChangeTextEditorSelection: hc.events.selection.event,
+    onDidChangeTextEditorVisibleRanges: new EventEmitter<unknown>().event,
+    onDidChangeTextEditorOptions: new EventEmitter<unknown>().event,
+    async showTextDocument(arg: HostDocument | Uri, opts?: { selection?: Range; preview?: boolean; preserveFocus?: boolean; viewColumn?: number }) {
+      const uri = arg instanceof Uri ? arg : arg.uri;
+      await rpc.request("ui/showDocument", { uri: uri.toString(), selection: opts?.selection ? jRange(opts.selection) : null, preserveFocus: !!opts?.preserveFocus });
+      const doc = hc.docs.get(uri.toString()) ?? (await (await import("./api-workspace")).workspaceApi(hc, ext).openTextDocument(uri));
+      return editorFor(doc);
+    },
+    createTextEditorDecorationType,
+    createTerminal,
+    get terminals() {
+      return [];
+    },
+    onDidOpenTerminal: new EventEmitter<unknown>().event,
+    onDidCloseTerminal: new EventEmitter<unknown>().event,
+    onDidChangeActiveTerminal: new EventEmitter<unknown>().event,
+    registerTreeDataProvider,
+    createTreeView: (viewId: string, o: { treeDataProvider: Parameters<typeof registerTreeDataProvider>[1] }) => {
+      const d = registerTreeDataProvider(viewId, o.treeDataProvider);
+      return { onDidChangeSelection: new EventEmitter<unknown>().event, onDidChangeVisibility: new EventEmitter<unknown>().event, onDidExpandElement: new EventEmitter<unknown>().event, onDidCollapseElement: new EventEmitter<unknown>().event, visible: true, selection: [], reveal: async () => {}, dispose: () => d.dispose(), message: undefined, title: undefined, description: undefined, badge: undefined };
+    },
+    createWebviewPanel: unsupported("Webview"),
+    registerWebviewViewProvider: () => new Disposable(() => {}),
+    registerWebviewPanelSerializer: () => new Disposable(() => {}),
+    registerCustomEditorProvider: () => new Disposable(() => {}),
+    registerFileDecorationProvider: () => new Disposable(() => {}),
+    registerUriHandler: () => new Disposable(() => {}),
+    registerTerminalLinkProvider: () => new Disposable(() => {}),
+    registerTerminalProfileProvider: () => new Disposable(() => {}),
+    createInputBox: unsupported("createInputBox"),
+    createQuickPick: unsupported("createQuickPick"),
+    state: { focused: true, active: true },
+    onDidChangeWindowState: new EventEmitter<unknown>().event,
+    activeColorTheme: { kind: 2 },
+    onDidChangeActiveColorTheme: new EventEmitter<unknown>().event,
+    activeNotebookEditor: undefined,
+    visibleNotebookEditors: [],
+    tabGroups: { all: [], activeTabGroup: { tabs: [] }, onDidChangeTabs: new EventEmitter<unknown>().event, onDidChangeTabGroups: new EventEmitter<unknown>().event },
+    __editorFor: editorFor,
+  };
+}

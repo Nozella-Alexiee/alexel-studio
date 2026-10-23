@@ -4,7 +4,7 @@
 
 import { MANAGED } from "./managedServers";
 
-export type CompatLevel = "full" | "partial" | "none";
+export type CompatLevel = "full" | "partial" | "host" | "none";
 
 export interface Compatibility {
   level: CompatLevel;
@@ -84,6 +84,7 @@ export function classifyManifest(pkg: Pkg, id = ""): Compatibility {
   const needs = code ? codeContributions(pkg) : [];
   const alt = alternativeFor(id);
   // Ekstensi dengan data sekaligus kode: bagian datanya jalan, fitur kodenya tidak.
-  const level: CompatLevel = data.length === 0 ? "none" : code ? "partial" : "full";
+  // Ada kode (`main`): dijalankan extension host dengan API VS Code subset (eksperimental), setelah dipercaya.
+  const level: CompatLevel = code ? "host" : data.length === 0 ? "none" : "full";
   return { level, data, code, needs, alt, server: serverFor(id) };
 }

@@ -15,14 +15,15 @@ describe("kecocokan ekstensi", () => {
     expect(c).toMatchObject({ level: "full", data: ["themes"], code: false, server: null });
   });
 
-  it("tema + kode = sebagian, dengan fitur yang butuh kode", () => {
+  it("ada kode (main) = dijalankan extension host (eksperimental), data tetap tercatat", () => {
     const c = classifyManifest({ main: "./out/ext.js", contributes: { iconThemes: [{}], commands: [{ command: "x" }] } });
-    expect(c.level).toBe("partial");
+    expect(c.level).toBe("host");
+    expect(c.data).toEqual(["iconThemes"]);
     expect(c.needs).toEqual(["commands"]);
   });
 
-  it("tanpa kontribusi data = tidak didukung, dengan pengganti bawaan bila ada", () => {
-    const c = classifyManifest({ main: "./x.js", contributes: { commands: [{}] } }, "esbenp.prettier-vscode");
+  it("tanpa data dan tanpa kode = tidak didukung; pengganti bawaan tetap tercatat", () => {
+    const c = classifyManifest({ contributes: { keybindings: [{}] } }, "esbenp.prettier-vscode");
     expect(c.level).toBe("none");
     expect(c.alt).toContain("Prettier");
     expect(alternativeFor("Eamodio.GitLens")).toBeTruthy();
@@ -72,7 +73,7 @@ describe("pasang ekstensi", () => {
     const ctx = ctxFor(userData);
     stubOpenVsx(vsixOf({ name: "ext", version: "1.0.0", contributes: { themes: [{ label: "A", path: "./a.json" }] } }, { "a.json": "{}" }));
     await extInstall(ctx, "pub", "ext");
-    stubOpenVsx(vsixOf({ name: "ext", version: "2.0.0", main: "x.js", contributes: { commands: [{}] } }), "2.0.0");
+    stubOpenVsx(vsixOf({ name: "ext", version: "2.0.0", contributes: { commands: [{}] } }), "2.0.0");
     await expect(extInstall(ctx, "pub", "ext")).rejects.toThrow(/tidak berisi/);
     expect(fs.readdirSync(path.join(userData, "extensions"))).toEqual(["pub.ext"]);
     expect(extList(ctx)[0].version).toBe("1.0.0");

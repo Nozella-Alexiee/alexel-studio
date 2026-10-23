@@ -15,6 +15,8 @@ const shared = {
 export const entries = [
   { entryPoints: ["electron/main.ts"], outfile: "dist-electron/main.cjs" },
   { entryPoints: ["electron/preload.ts"], outfile: "dist-electron/preload.cjs" },
+  // Proses extension host (dijalankan sebagai child process oleh main).
+  { entryPoints: ["electron/exthost/host.ts"], outfile: "dist-electron/exthost.cjs" },
 ];
 
 export async function buildAll() {

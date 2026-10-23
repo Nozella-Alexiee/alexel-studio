@@ -8,7 +8,7 @@ import type { Command, EditorView } from "@codemirror/view";
 import * as docs from "../editor/documents";
 import { call } from "../lib/ipc";
 import { prettierParser, formatWithPrettier, projectPrettierOptions } from "../editor/prettierFormat";
-import { activeTab, getState, toast } from "../state/store";
+import { activeTab, getState, promptDialog, setState, toast } from "../state/store";
 import { tl } from "../i18n";
 
 const view = (): EditorView | null => docs.viewOf(getState().focusedGroup) ?? null;
@@ -74,6 +74,21 @@ const lspFormat = needLsp((v) => formatDocument(v), "Rapikan dokumen");
 export function format() {
   const v = view();
   const tab = activeTab();
+  if (v && tab?.kind === "text") {
+    const path = tab.id;
+    void import("../exthost/features").then(async (f) => {
+      // Formatter yang didaftarkan ekstensi dipakai lebih dulu (pemakai memasangnya dengan sengaja).
+      if (f.hostProviders("formatting", path).length && (await f.hostFormat(path, v, getState().settings.tabSize))) return;
+      formatBuiltin();
+    });
+    return;
+  }
+  formatBuiltin();
+}
+
+function formatBuiltin() {
+  const v = view();
+  const tab = activeTab();
   if (!v || !tab || tab.kind !== "text" || !prettierParser(tab.id)) return lspFormat();
   v.focus();
   void formatWithPrettierInView(v, tab.id);
@@ -93,9 +108,49 @@ async function formatWithPrettierInView(v: EditorView, path: string) {
     toast(tl("Prettier: {error}", { error: (e instanceof Error ? e.message : String(e)).split("\n")[0] }), "error");
   }
 }
-export const definition = needLsp((v) => jumpToDefinition(v), "Ke definisi");
-export const references = needLsp((v) => findReferences(v), "Cari referensi");
-export const rename = needLsp((v) => renameSymbol(v), "Ganti nama simbol");
+/** Server bahasa dulu; bila tidak ada, provider dari ekstensi (extension host). */
+const lspOrHost = (what: string, lsp: (v: EditorView) => boolean | void, host: (path: string, v: EditorView) => Promise<boolean>) => () => {
+  const v = view();
+  const tab = activeTab();
+  if (!v) return;
+  if (LSPPlugin.get(v)) {
+    v.focus();
+    lsp(v);
+    return;
+  }
+  if (tab?.kind === "text") {
+    v.focus();
+    void host(tab.id, v).then((done) => !done && toast(tl("{what} butuh server bahasa untuk berkas ini. Lihat Pengaturan → Server bahasa.", { what: tl(what) })));
+    return;
+  }
+  toast(tl("{what} butuh server bahasa untuk berkas ini. Lihat Pengaturan → Server bahasa.", { what: tl(what) }));
+};
+
+export const definition = lspOrHost("Ke definisi", (v) => jumpToDefinition(v), async (path, v) => (await import("../exthost/features")).hostDefinition(path, v));
+export const references = lspOrHost("Cari referensi", (v) => findReferences(v), async (path, v) => {
+  const list = await (await import("../exthost/features")).hostReferences(path, v);
+  if (list === null) return false;
+  if (!list.length) return toast(tl("Tidak ada referensi."), "info"), true;
+  const { uriToPath } = await import("../editor/lsp");
+  const A = await import("./actions");
+  const root = getState().root ?? "";
+  const picked = await new Promise<number[] | null>((resolve) =>
+    setState({ quickPick: { items: list.map((l) => ({ label: `${uriToPath(l.uri).replace(root + "/", "")}:${l.range.s.l + 1}`, description: "" })), canPickMany: false, placeHolder: tl("{n} referensi", { n: list.length }), resolve } })
+  );
+  if (picked?.length) await A.openFile(uriToPath(list[picked[0]].uri), { line: list[picked[0]].range.s.l + 1, col: list[picked[0]].range.s.c + 1 });
+  return true;
+});
+export const rename = lspOrHost("Ganti nama simbol", (v) => renameSymbol(v), async (path, v) => {
+  const feats = await import("../exthost/features");
+  if (!feats.hostProviders("rename", path).length) return false;
+  const word = v.state.wordAt(v.state.selection.main.head);
+  const name = await promptDialog(tl("Ganti nama simbol"), { defaultValue: word ? v.state.sliceDoc(word.from, word.to) : "", okLabel: tl("Ganti nama") });
+  if (!name) return true;
+  const r = await feats.hostRename(path, v, name);
+  if (r?.error) toast(r.error, "error");
+  for (const f of r?.files ?? []) await docs.applyTextEdits((await import("../editor/lsp")).uriToPath(f.uri), f.edits);
+  return true;
+});
 export const lineDown = onEditor(copyLineDown);
 export const lineUp = onEditor(copyLineUp);
 export const moveDown = onEditor(moveLineDown);

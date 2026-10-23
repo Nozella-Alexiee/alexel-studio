@@ -1,0 +1,533 @@
+// Tipe & kelas inti API `vscode` yang dipakai ekstensi (Position, Range, Disposable, EventEmitter, …).
+// Perilakunya mengikuti VS Code; hanya bagian yang dipakai ekstensi umum yang disediakan.
+
+import { Uri } from "./uri";
+
+export class Disposable {
+  private fn: (() => void) | undefined;
+  constructor(callOnDispose: () => void) {
+    this.fn = callOnDispose;
+  }
+  static from(...disposables: { dispose(): unknown }[]): Disposable {
+    return new Disposable(() => disposables.forEach((d) => d?.dispose?.()));
+  }
+  dispose(): void {
+    const f = this.fn;
+    this.fn = undefined;
+    f?.();
+  }
+}
+
+export type Listener<T> = (e: T) => unknown;
+export type Event<T> = (listener: Listener<T>, thisArgs?: unknown, disposables?: { dispose(): unknown }[]) => Disposable;
+
+export class EventEmitter<T> {
+  private listeners = new Set<Listener<T>>();
+  readonly event: Event<T> = (listener, thisArgs, disposables) => {
+    const l = thisArgs ? listener.bind(thisArgs) : listener;
+    this.listeners.add(l);
+    const d = new Disposable(() => this.listeners.delete(l));
+    disposables?.push(d);
+    return d;
+  };
+  fire(data: T): void {
+    for (const l of [...this.listeners]) {
+      try {
+        l(data);
+      } catch (e) {
+        console.error("[exthost] listener error:", e);
+      }
+    }
+  }
+  dispose(): void {
+    this.listeners.clear();
+  }
+}
+
+export class CancellationTokenSource {
+  private emitter = new EventEmitter<void>();
+  private cancelled = false;
+  readonly token = {
+    get isCancellationRequested() {
+      return false;
+    },
+    onCancellationRequested: ((l, t, d) => this.emitter.event(l as Listener<void>, t, d)) as Event<unknown>,
+  } as { isCancellationRequested: boolean; onCancellationRequested: Event<unknown> };
+  constructor() {
+    const self = this;
+    Object.defineProperty(this.token, "isCancellationRequested", { get: () => self.cancelled });
+  }
+  cancel() {
+    if (this.cancelled) return;
+    this.cancelled = true;
+    this.emitter.fire();
+  }
+  dispose() {
+    this.cancel();
+    this.emitter.dispose();
+  }
+}
+
+export const CancellationToken = {
+  None: { isCancellationRequested: false, onCancellationRequested: new EventEmitter<unknown>().event },
+  Cancelled: { isCancellationRequested: true, onCancellationRequested: new EventEmitter<unknown>().event },
+};
+
+export class CancellationError extends Error {
+  constructor() {
+    super("Canceled");
+    this.name = "Canceled";
+  }
+}
+
+export class Position {
+  constructor(readonly line: number, readonly character: number) {
+    if (line < 0) throw new Error("illegal argument: line must be non-negative");
+    if (character < 0) throw new Error("illegal argument: character must be non-negative");
+  }
+  isBefore(o: Position) {
+    return this.line < o.line || (this.line === o.line && this.character < o.character);
+  }
+  isBeforeOrEqual(o: Position) {
+    return this.isBefore(o) || this.isEqual(o);
+  }
+  isAfter(o: Position) {
+    return !this.isBeforeOrEqual(o);
+  }
+  isAfterOrEqual(o: Position) {
+    return !this.isBefore(o);
+  }
+  isEqual(o: Position) {
+    return this.line === o.line && this.character === o.character;
+  }
+  compareTo(o: Position) {
+    return this.line !== o.line ? this.line - o.line : this.character - o.character;
+  }
+  translate(dl?: number | { lineDelta?: number; characterDelta?: number }, dc?: number): Position {
+    const ld = typeof dl === "object" ? dl.lineDelta ?? 0 : dl ?? 0;
+    const cd = typeof dl === "object" ? dl.characterDelta ?? 0 : dc ?? 0;
+    return new Position(this.line + ld, this.character + cd);
+  }
+  with(line?: number | { line?: number; character?: number }, character?: number): Position {
+    if (typeof line === "object") return new Position(line.line ?? this.line, line.character ?? this.character);
+    return new Position(line ?? this.line, character ?? this.character);
+  }
+}
+
+export class Range {
+  readonly start: Position;
+  readonly end: Position;
+  constructor(a: Position | number, b: Position | number, c?: number, d?: number) {
+    let s: Position, e: Position;
+    if (typeof a === "number") {
+      s = new Position(a, b as number);
+      e = new Position(c as number, d as number);
+    } else {
+      s = a;
+      e = b as Position;
+    }
+    if (e.isBefore(s)) [s, e] = [e, s];
+    this.start = s;
+    this.end = e;
+  }
+  get isEmpty() {
+    return this.start.isEqual(this.end);
+  }
+  get isSingleLine() {
+    return this.start.line === this.end.line;
+  }
+  contains(x: Position | Range): boolean {
+    if (x instanceof Range) return this.contains(x.start) && this.contains(x.end);
+    return x.isAfterOrEqual(this.start) && x.isBeforeOrEqual(this.end);
+  }
+  isEqual(o: Range) {
+    return this.start.isEqual(o.start) && this.end.isEqual(o.end);
+  }
+  intersection(o: Range): Range | undefined {
+    const s = this.start.isAfter(o.start) ? this.start : o.start;
+    const e = this.end.isBefore(o.end) ? this.end : o.end;
+    return s.isAfter(e) ? undefined : new Range(s, e);
+  }
+  union(o: Range): Range {
+    return new Range(this.start.isBefore(o.start) ? this.start : o.start, this.end.isAfter(o.end) ? this.end : o.end);
+  }
+  with(start?: Position | { start?: Position; end?: Position }, end?: Position): Range {
+    if (start && !(start instanceof Position)) return new Range(start.start ?? this.start, start.end ?? this.end);
+    return new Range((start as Position) ?? this.start, end ?? this.end);
+  }
+}
+
+export class Selection extends Range {
+  readonly anchor: Position;
+  readonly active: Position;
+  constructor(a: Position | number, b: Position | number, c?: number, d?: number) {
+    const anchor = typeof a === "number" ? new Position(a, b as number) : a;
+    const active = typeof a === "number" ? new Position(c as number, d as number) : (b as Position);
+    super(anchor, active);
+    this.anchor = anchor;
+    this.active = active;
+  }
+  get isReversed() {
+    return this.anchor.isAfter(this.active);
+  }
+}
+
+export class Location {
+  range: Range;
+  constructor(readonly uri: Uri, rangeOrPosition: Range | Position) {
+    this.range = rangeOrPosition instanceof Range ? rangeOrPosition : new Range(rangeOrPosition, rangeOrPosition);
+  }
+}
+
+export class MarkdownString {
+  isTrusted?: boolean | { enabledCommands: string[] };
+  supportThemeIcons?: boolean;
+  supportHtml?: boolean;
+  baseUri?: Uri;
+  constructor(public value = "", supportThemeIcons = false) {
+    this.supportThemeIcons = supportThemeIcons;
+  }
+  appendText(v: string) {
+    this.value += v.replace(/[\\`*_{}[\]()#+\-.!]/g, "\\$&");
+    return this;
+  }
+  appendMarkdown(v: string) {
+    this.value += v;
+    return this;
+  }
+  appendCodeblock(code: string, lang = "") {
+    this.value += "\n```" + lang + "\n" + code + "\n```\n";
+    return this;
+  }
+}
+
+export class SnippetString {
+  constructor(public value = "") {}
+  appendText(s: string) {
+    this.value += s.replace(/[$}\\]/g, "\\$&");
+    return this;
+  }
+  appendTabstop(n = 1) {
+    this.value += `$${n}`;
+    return this;
+  }
+  appendPlaceholder(v: string | ((s: SnippetString) => void), n = 1) {
+    const inner = typeof v === "function" ? (() => { const s = new SnippetString(); v(s); return s.value; })() : v;
+    this.value += `\${${n}:${inner}}`;
+    return this;
+  }
+  appendVariable(name: string, def?: string) {
+    this.value += def ? `\${${name}:${def}}` : `\${${name}}`;
+    return this;
+  }
+}
+
+export class ThemeColor {
+  constructor(readonly id: string) {}
+}
+export class ThemeIcon {
+  static readonly File = new ThemeIcon("file");
+  static readonly Folder = new ThemeIcon("folder");
+  constructor(readonly id: string, readonly color?: ThemeColor) {}
+}
+
+export class TextEdit {
+  constructor(public range: Range, public newText: string) {}
+  static replace(range: Range, newText: string) {
+    return new TextEdit(range, newText);
+  }
+  static insert(position: Position, newText: string) {
+    return new TextEdit(new Range(position, position), newText);
+  }
+  static delete(range: Range) {
+    return new TextEdit(range, "");
+  }
+  static setEndOfLine() {
+    return new TextEdit(new Range(0, 0, 0, 0), "");
+  }
+}
+
+export class WorkspaceEdit {
+  private edits = new Map<string, { uri: Uri; edits: TextEdit[] }>();
+  get size() {
+    return this.edits.size;
+  }
+  replace(uri: Uri, range: Range, newText: string) {
+    this.entry(uri).edits.push(new TextEdit(range, newText));
+  }
+  insert(uri: Uri, position: Position, newText: string) {
+    this.entry(uri).edits.push(TextEdit.insert(position, newText));
+  }
+  delete(uri: Uri, range: Range) {
+    this.entry(uri).edits.push(TextEdit.delete(range));
+  }
+  has(uri: Uri) {
+    return this.edits.has(uri.toString());
+  }
+  set(uri: Uri, edits: TextEdit[]) {
+    this.entry(uri).edits = [...edits];
+  }
+  get(uri: Uri): TextEdit[] {
+    return this.edits.get(uri.toString())?.edits ?? [];
+  }
+  entries(): [Uri, TextEdit[]][] {
+    return [...this.edits.values()].map((e) => [e.uri, e.edits]);
+  }
+  private entry(uri: Uri) {
+    const k = uri.toString();
+    let e = this.edits.get(k);
+    if (!e) this.edits.set(k, (e = { uri, edits: [] }));
+    return e;
+  }
+}
+
+export enum DiagnosticSeverity {
+  Error = 0,
+  Warning = 1,
+  Information = 2,
+  Hint = 3,
+}
+export enum DiagnosticTag {
+  Unnecessary = 1,
+  Deprecated = 2,
+}
+
+export class DiagnosticRelatedInformation {
+  constructor(public location: Location, public message: string) {}
+}
+
+export class Diagnostic {
+  source?: string;
+  code?: string | number | { value: string | number; target: Uri };
+  tags?: DiagnosticTag[];
+  relatedInformation?: DiagnosticRelatedInformation[];
+  constructor(public range: Range, public message: string, public severity: DiagnosticSeverity = DiagnosticSeverity.Error) {}
+}
+
+export enum CompletionItemKind {
+  Text = 0, Method = 1, Function = 2, Constructor = 3, Field = 4, Variable = 5, Class = 6, Interface = 7, Module = 8, Property = 9, Unit = 10,
+  Value = 11, Enum = 12, Keyword = 13, Snippet = 14, Color = 15, File = 16, Reference = 17, Folder = 18, EnumMember = 19, Constant = 20, Struct = 21,
+  Event = 22, Operator = 23, TypeParameter = 24, User = 25, Issue = 26,
+}
+export enum CompletionItemTag {
+  Deprecated = 1,
+}
+export enum CompletionTriggerKind {
+  Invoke = 0,
+  TriggerCharacter = 1,
+  TriggerForIncompleteCompletions = 2,
+}
+
+export class CompletionItem {
+  detail?: string;
+  documentation?: string | MarkdownString;
+  sortText?: string;
+  filterText?: string;
+  insertText?: string | SnippetString;
+  range?: Range | { inserting: Range; replacing: Range };
+  commitCharacters?: string[];
+  command?: { command: string; title?: string; arguments?: unknown[] };
+  additionalTextEdits?: TextEdit[];
+  preselect?: boolean;
+  keepWhitespace?: boolean;
+  tags?: CompletionItemTag[];
+  constructor(public label: string | { label: string; detail?: string; description?: string }, public kind?: CompletionItemKind) {}
+}
+
+export class CompletionList {
+  constructor(public items: CompletionItem[] = [], public isIncomplete = false) {}
+}
+
+export class Hover {
+  contents: (MarkdownString | string | { language: string; value: string })[];
+  constructor(contents: MarkdownString | string | { language: string; value: string } | (MarkdownString | string | { language: string; value: string })[], public range?: Range) {
+    this.contents = Array.isArray(contents) ? contents : [contents];
+  }
+}
+
+export class LocationLink {
+  constructor(public targetUri: Uri, public targetRange: Range, public targetSelectionRange?: Range, public originSelectionRange?: Range) {}
+}
+
+export enum SymbolKind {
+  File = 0, Module = 1, Namespace = 2, Package = 3, Class = 4, Method = 5, Property = 6, Field = 7, Constructor = 8, Enum = 9, Interface = 10, Function = 11,
+  Variable = 12, Constant = 13, String = 14, Number = 15, Boolean = 16, Array = 17, Object = 18, Key = 19, Null = 20, EnumMember = 21, Struct = 22, Event = 23,
+  Operator = 24, TypeParameter = 25,
+}
+
+export class DocumentSymbol {
+  children: DocumentSymbol[] = [];
+  constructor(public name: string, public detail: string, public kind: SymbolKind, public range: Range, public selectionRange: Range) {}
+}
+
+export class SymbolInformation {
+  constructor(public name: string, public kind: SymbolKind, public containerName: string, public location: Location) {}
+}
+
+export class CodeAction {
+  edit?: WorkspaceEdit;
+  diagnostics?: Diagnostic[];
+  command?: { command: string; title: string; arguments?: unknown[] };
+  isPreferred?: boolean;
+  constructor(public title: string, public kind?: CodeActionKind) {}
+}
+
+export class CodeActionKind {
+  static readonly Empty = new CodeActionKind("");
+  static readonly QuickFix = new CodeActionKind("quickfix");
+  static readonly Refactor = new CodeActionKind("refactor");
+  static readonly RefactorExtract = new CodeActionKind("refactor.extract");
+  static readonly RefactorInline = new CodeActionKind("refactor.inline");
+  static readonly RefactorRewrite = new CodeActionKind("refactor.rewrite");
+  static readonly Source = new CodeActionKind("source");
+  static readonly SourceOrganizeImports = new CodeActionKind("source.organizeImports");
+  static readonly SourceFixAll = new CodeActionKind("source.fixAll");
+  constructor(readonly value: string) {}
+  append(part: string) {
+    return new CodeActionKind(this.value ? `${this.value}.${part}` : part);
+  }
+  contains(o: CodeActionKind) {
+    return o.value === this.value || o.value.startsWith(this.value + ".");
+  }
+  intersects(o: CodeActionKind) {
+    return this.contains(o) || o.contains(this);
+  }
+}
+
+export enum CodeActionTriggerKind {
+  Invoke = 1,
+  Automatic = 2,
+}
+
+export class CodeLens {
+  constructor(public range: Range, public command?: { command: string; title: string; arguments?: unknown[] }) {}
+  get isResolved() {
+    return !!this.command;
+  }
+}
+
+export class DocumentLink {
+  constructor(public range: Range, public target?: Uri) {}
+}
+
+export enum StatusBarAlignment {
+  Left = 1,
+  Right = 2,
+}
+export enum ViewColumn {
+  Active = -1,
+  Beside = -2,
+  One = 1,
+  Two = 2,
+  Three = 3,
+}
+export enum EndOfLine {
+  LF = 1,
+  CRLF = 2,
+}
+export enum ConfigurationTarget {
+  Global = 1,
+  Workspace = 2,
+  WorkspaceFolder = 3,
+}
+export enum ExtensionMode {
+  Production = 1,
+  Development = 2,
+  Test = 3,
+}
+export enum OverviewRulerLane {
+  Left = 1,
+  Center = 2,
+  Right = 4,
+  Full = 7,
+}
+export enum DecorationRangeBehavior {
+  OpenOpen = 0,
+  ClosedClosed = 1,
+  OpenClosed = 2,
+  ClosedOpen = 3,
+}
+export enum TextEditorRevealType {
+  Default = 0,
+  InCenter = 1,
+  InCenterIfOutsideViewport = 2,
+  AtTop = 3,
+}
+export enum ProgressLocation {
+  SourceControl = 1,
+  Window = 10,
+  Notification = 15,
+}
+export enum FileType {
+  Unknown = 0,
+  File = 1,
+  Directory = 2,
+  SymbolicLink = 64,
+}
+export enum UIKind {
+  Desktop = 1,
+  Web = 2,
+}
+export enum TextDocumentSaveReason {
+  Manual = 1,
+  AfterDelay = 2,
+  FocusOut = 3,
+}
+export enum DocumentHighlightKind {
+  Text = 0,
+  Read = 1,
+  Write = 2,
+}
+
+export class DocumentHighlight {
+  constructor(public range: Range, public kind: DocumentHighlightKind = DocumentHighlightKind.Text) {}
+}
+
+export class FileSystemError extends Error {
+  constructor(message?: string | Uri, public code = "Unknown") {
+    super(typeof message === "string" ? message : message?.toString());
+    this.name = code === "Unknown" ? "FileSystemError" : `FileSystemError (${code})`;
+  }
+  static FileNotFound(m?: string | Uri) {
+    return new FileSystemError(m, "FileNotFound");
+  }
+  static FileExists(m?: string | Uri) {
+    return new FileSystemError(m, "FileExists");
+  }
+  static FileNotADirectory(m?: string | Uri) {
+    return new FileSystemError(m, "FileNotADirectory");
+  }
+  static FileIsADirectory(m?: string | Uri) {
+    return new FileSystemError(m, "FileIsADirectory");
+  }
+  static NoPermissions(m?: string | Uri) {
+    return new FileSystemError(m, "NoPermissions");
+  }
+  static Unavailable(m?: string | Uri) {
+    return new FileSystemError(m, "Unavailable");
+  }
+}
+
+export class RelativePattern {
+  baseUri: Uri;
+  constructor(base: string | Uri | { uri: Uri }, public pattern: string) {
+    this.baseUri = typeof base === "string" ? Uri.file(base) : base instanceof Uri ? base : base.uri;
+  }
+  get base() {
+    return this.baseUri.fsPath;
+  }
+}
+
+export class QuickInputButtons {
+  static readonly Back = { iconPath: new ThemeIcon("arrow-left"), tooltip: "Back" };
+}
+
+export class TreeItem {
+  constructor(public label: string | { label: string }, public collapsibleState: number = 0) {}
+  [k: string]: unknown;
+}
+export enum TreeItemCollapsibleState {
+  None = 0,
+  Collapsed = 1,
+  Expanded = 2,
+}

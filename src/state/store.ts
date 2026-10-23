@@ -73,6 +73,10 @@ export interface Settings {
   iconTheme: { ext: string; path: string; label: string } | null;
   /** Ekstensi yang dimatikan (tetap terpasang, kontribusinya tidak dipakai). */
   disabledExts: string[];
+  /** Ekstensi bersertifikat "percaya" untuk menjalankan kodenya di extension host. */
+  trustedExts: string[];
+  /** Pengaturan ekstensi (kunci datar "ekstensi.kunci"), dipakai vscode.workspace.getConfiguration. */
+  extSettings: Record<string, unknown>;
 }
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -108,6 +112,8 @@ export const DEFAULT_SETTINGS: Settings = {
   extTheme: null,
   iconTheme: null,
   disabledExts: [],
+  trustedExts: [],
+  extSettings: {},
 };
 
 export interface Layout {
@@ -254,6 +260,15 @@ export interface CompareRequest {
   onAccept?: () => void;
 }
 
+export interface QuickPickRequest {
+  items: { label: string; description?: string; detail?: string; picked?: boolean; separator?: boolean }[];
+  canPickMany: boolean;
+  placeHolder?: string;
+  title?: string;
+  /** Indeks item yang dipilih, atau null bila dibatalkan. */
+  resolve: (picked: number[] | null) => void;
+}
+
 export interface PaletteState {
   open: boolean;
   /** "" = berkas, ">" = perintah, ":" = baris, "@" = simbol */
@@ -312,6 +327,7 @@ interface State {
   agentModes: { id: string; label: string; hint: string }[];
 
   palette: PaletteState;
+  quickPick: QuickPickRequest | null;
   toasts: Toast[];
   dialog: DialogRequest | null;
   snapshotOpen: boolean;
@@ -365,6 +381,7 @@ export const useStore = create<State>(() => ({
   agentModes: [],
 
   palette: { open: false, initial: "" },
+  quickPick: null,
   toasts: [],
   dialog: null,
   snapshotOpen: false,
@@ -438,4 +455,37 @@ export async function confirmDialog(title: string, message: string, okLabel = tl
 export async function promptDialog(title: string, opts: { message?: string; defaultValue?: string; placeholder?: string; okLabel?: string; validate?: (v: string) => string | null } = {}): Promise<string | null> {
   const r = await ask({ kind: "prompt", title, ...opts });
   return typeof r === "string" ? r : null;
+}
+
+
+// ---------- Masalah (diagnostik) dari banyak sumber: linter bawaan, server bahasa, ekstensi ----------
+
+const problemSources = new Map<string, Map<string, Problem[]>>();
+
+/** Setel daftar masalah satu berkas dari satu sumber; `problems` adalah gabungan semua sumber. */
+export function setProblemsFrom(source: string, path: string, list: Problem[]) {
+  let m = problemSources.get(source);
+  if (!m) problemSources.set(source, (m = new Map()));
+  if (list.length) m.set(path, list);
+  else m.delete(path);
+  const merged = [...problemSources.values()].flatMap((x) => x.get(path) ?? []);
+  const prev = getState().problems[path];
+  if (!prev?.length && !merged.length) return;
+  setState((s) => {
+    const next = { ...s.problems };
+    if (merged.length) next[path] = merged;
+    else delete next[path];
+    return { problems: next };
+  });
+}
+
+/** Buang semua masalah suatu berkas (dokumen ditutup). */
+export function clearProblemsOf(path: string) {
+  for (const m of problemSources.values()) m.delete(path);
+  setState((s) => {
+    if (!(path in s.problems)) return {};
+    const next = { ...s.problems };
+    delete next[path];
+    return { problems: next };
+  });
 }

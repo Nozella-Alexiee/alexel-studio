@@ -280,4 +280,12 @@ export async function openInlineClaude() {
   openInline(v);
 }
 
+/** Ganti seluruh perintah dari ekstensi (id berawalan "ext:") dan pasang ulang shortcut-nya. */
+export function setExtensionCommands(list: Command[]) {
+  for (let i = COMMANDS.length - 1; i >= 0; i--) if (COMMANDS[i].id.startsWith("ext:")) COMMANDS.splice(i, 1);
+  COMMANDS.push(...list);
+  for (const c of list) DEFAULT_KEYS.set(c.id, c.keys);
+  applyKeybindings(getState().settings.keybindings);
+}
+
 export const visibleCommands = () => COMMANDS.filter((c) => !c.hidden && (!c.when || c.when()));

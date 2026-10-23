@@ -336,3 +336,9 @@ export function writeToActive(text: string) {
 export function hasRunning(): boolean {
   return getState().terminals.some((t) => t.status === "running" && t.kind !== "shell");
 }
+
+/** Kirim teks ke terminal tertentu (dipakai ekstensi: Terminal.sendText). */
+export function writeToKey(key: string, text: string) {
+  const rt = runtimes.get(key);
+  if (rt?.ptyId != null) void api.ptyWrite(rt.ptyId, text);
+}

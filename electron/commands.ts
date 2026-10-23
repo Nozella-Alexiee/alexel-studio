@@ -1,6 +1,7 @@
 // Daftar command yang boleh dipanggil renderer. Nama & bentuk data sama dengan versi Tauri
 // (lihat src/lib/ipc.ts), jadi frontend tidak perlu berubah.
 
+import { hostManager } from "./exthost/manager";
 import { managedInstall as installManaged, managedRemove } from "./managedServers";
 import { app, BrowserWindow, clipboard, ClipboardItem, dialog, powerMonitor, shell } from "electron";
 import fs from "node:fs";
@@ -195,6 +196,17 @@ export function buildCommands(ctx: Ctx, hooks: { confirmClose: (win: BrowserWind
     },
     menu_set: (a) => hooks.setMenu(a.spec),
     app_check_update: () => checkUpdate(),
+    exthost_start: (a) => hostManager(ctx).start({ root: a.root ?? null, settings: a.settings ?? {}, trusted: a.trusted ?? [], disabled: a.disabled ?? [] }),
+    exthost_stop: () => hostManager(ctx).stop(),
+    exthost_call: (a) => hostManager(ctx).call(String(a.m), a.p),
+    exthost_notify: (a) => {
+      hostManager(ctx).notify(String(a.e), a.p);
+      return null;
+    },
+    exthost_reply: (a) => {
+      hostManager(ctx).reply(Number(a.id), a.result, a.error === undefined ? undefined : String(a.error));
+      return null;
+    },
     update_check: () => updateCheck(),
     update_prepare: () => updatePrepare(ctx),
     update_apply: () => updateApply(),

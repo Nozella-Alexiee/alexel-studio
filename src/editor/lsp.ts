@@ -8,7 +8,7 @@ import { EditorView } from "@codemirror/view";
 import DOMPurify from "dompurify";
 import { call, isNative, on } from "../lib/ipc";
 import { extname, isInside } from "../lib/paths";
-import { getState, setState, type Problem } from "../state/store";
+import { getState, setProblemsFrom, type Problem } from "../state/store";
 import { tl } from "../i18n";
 import { answerServerRequest } from "./lspShim";
 
@@ -140,7 +140,7 @@ function ensureListener() {
 }
 
 function setProblems(path: string, list: Problem[]) {
-  setState((s) => ({ problems: { ...s.problems, [path]: list } }));
+  setProblemsFrom("lsp", path, list);
 }
 
 async function getClient(serverId: string, root: string): Promise<LSPClient | null> {

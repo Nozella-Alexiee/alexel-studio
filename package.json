@@ -110,7 +110,8 @@
       "node_modules/node-pty/**",
       "node_modules/@parcel/**",
       "node_modules/typescript-language-server/**",
-      "node_modules/bundled-typescript/**"
+      "node_modules/bundled-typescript/**",
+      "dist-electron/exthost.cjs"
     ],
     "npmRebuild": false,
     "mac": {

@@ -9,6 +9,7 @@ import { ContextMenuHost, DialogHost, Toasts } from "./components/Overlays";
 import { TourHost } from "./components/Tour";
 import { api, call, confirmWindowClose, isDemo, on, pathForFile } from "./lib/ipc";
 import { CommandPalette } from "./panels/CommandPalette";
+import { QuickPickHost } from "./panels/QuickPick";
 import { ask, getState, isSaver, setState, useStore } from "./state/store";
 import { tl } from "./i18n";
 
@@ -27,7 +28,7 @@ function useBackgroundTasks() {
     if (!booted) {
       booted = true;
       void restoreAll().then(() => {
-        void import("./extensions/registry").then((m) => m.loadExtensions());
+        void import("./extensions/registry").then((m) => m.loadExtensions()).then(() => import("./exthost/boot")).then((b) => b.bootExtHost());
         void detectAgent(getState().settings.agent);
         // Cek pembaruan sekali sehari (bisa dimatikan di Pengaturan).
         try {
@@ -194,6 +195,7 @@ export default function App() {
         <div className="boot" aria-busy="true" />
       )}
       <CommandPalette />
+      <QuickPickHost />
       <DialogHost />
       <ContextMenuHost />
       <Toasts />

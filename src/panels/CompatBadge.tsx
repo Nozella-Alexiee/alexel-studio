@@ -46,6 +46,13 @@ export function CompatBadge({ compat }: { compat: Compat | null | undefined }) {
       </span>
     );
   }
+  if (compat.level === "host") {
+    return (
+      <span className="compat compat-partial" title={tl("Berisi kode ekstensi: dijalankan di extension host dengan API VS Code terbatas (eksperimental) setelah kamu mempercayainya. Sebagian fitur mungkin tidak berjalan.")}>
+        <TriangleAlert size={11} aria-hidden /> {tl("Menjalankan kode (eksperimental)")}
+      </span>
+    );
+  }
   if (compat.level === "partial") {
     return (
       <span className="compat compat-partial" title={tl("Yang dipakai: {list}. Fitur yang butuh kode ekstensi tidak berjalan.", { list: contribList(compat) })}>

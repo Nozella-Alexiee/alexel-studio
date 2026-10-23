@@ -7,7 +7,7 @@ import { defaultKeymap, history, historyKeymap, indentWithTab } from "@codemirro
 import { bracketMatching, foldGutter, foldKeymap, indentOnInput, indentUnit } from "@codemirror/language";
 import { forceLinting, lintGutter, lintKeymap } from "@codemirror/lint";
 import { highlightSelectionMatches, searchKeymap } from "@codemirror/search";
-import { Annotation, Compartment, EditorState, Prec, Text, type Extension, Transaction } from "@codemirror/state";
+import { Annotation, Compartment, EditorSelection, EditorState, Prec, Text, type Extension, Transaction } from "@codemirror/state";
 import {
   EditorView,
   crosshairCursor,
@@ -23,12 +23,13 @@ import {
 } from "@codemirror/view";
 import { api, errMsg } from "../lib/ipc";
 import { basename, isInside } from "../lib/paths";
-import { getState, isSaver, setState, type Problem, type Settings } from "../state/store";
+import { clearProblemsOf, getState, isSaver, setProblemsFrom, setState, type Problem, type Settings } from "../state/store";
 import { gitGutter, refreshGitGutter } from "./gitGutter";
 import { languageFor } from "./languages";
 import { inlineClaude } from "./inlineClaude";
 import { detectIndent, minimalChange } from "../lib/text";
 import { nozelLinter } from "./lint";
+import { hostFeatures } from "../exthost/features";
 import { minimap } from "./minimap";
 import { snippetExtension } from "./snippets";
 import { nozelEditorTheme } from "./theme";
@@ -37,6 +38,30 @@ import { tl } from "../i18n";
 import { fixAction } from "./fixWithAi";
 
 const syncAnno = Annotation.define<boolean>();
+
+/** Peristiwa dokumen untuk jembatan extension host (src/exthost/sync.ts). */
+export type DocEvent =
+  | { type: "open"; doc: Doc }
+  | { type: "change"; path: string; update: ViewUpdate }
+  | { type: "replace"; path: string; text: string }
+  | { type: "selection"; path: string; state: EditorState }
+  | { type: "save"; path: string }
+  | { type: "close"; path: string }
+  | { type: "rename"; from: string; to: string };
+const docListeners = new Set<(e: DocEvent) => void>();
+export function onDocEvent(cb: (e: DocEvent) => void) {
+  docListeners.add(cb);
+  return () => docListeners.delete(cb);
+}
+const emitDoc = (e: DocEvent) => {
+  for (const l of docListeners) {
+    try {
+      l(e);
+    } catch (err) {
+      console.warn("doc listener", err);
+    }
+  }
+};
 
 export interface Doc {
   path: string;
@@ -94,9 +119,7 @@ function currentSettingsExt() {
 }
 
 function setProblems(path: string, list: Problem[]) {
-  const prev = getState().problems[path];
-  if (!prev?.length && !list.length) return;
-  setState((s) => ({ problems: { ...s.problems, [path]: list } }));
+  setProblemsFrom("lint", path, list);
 }
 
 function baseExtensions(doc: Doc, group: number): Extension {
@@ -125,6 +148,7 @@ function baseExtensions(doc: Doc, group: number): Extension {
     nozelEditorTheme,
     snippetExtension(doc.langId),
     lintGutter(),
+    hostFeatures(doc),
     lintComp.of(doc.lsp ? [] : lezerLinter(doc, saver)),
     lspComp.of(doc.lsp && group === doc.lspGroup ? doc.lsp : []),
     gitGutter(() => doc.head),
@@ -212,6 +236,7 @@ function liveState(doc: Doc, group: number): EditorState | null {
 }
 
 function onUpdate(doc: Doc, group: number, u: ViewUpdate) {
+  if (u.selectionSet && !u.docChanged && getState().focusedGroup === group) emitDoc({ type: "selection", path: doc.path, state: u.state });
   if (u.selectionSet || u.docChanged) {
     if (getState().focusedGroup === group) {
       const head = u.state.selection.main;
@@ -221,6 +246,7 @@ function onUpdate(doc: Doc, group: number, u: ViewUpdate) {
   }
   if (!u.docChanged) return;
   const isSync = u.transactions.some((t: Transaction) => t.annotation(syncAnno));
+  if (!isSync) emitDoc({ type: "change", path: doc.path, update: u });
   if (!isSync) {
     // Sinkronkan ke grup lain yang membuka berkas yang sama.
     for (let g = 0; g < doc.states.length; g++) {
@@ -394,6 +420,7 @@ export async function openDocument(path: string): Promise<Doc> {
   void loadLanguage(doc);
   void loadHead(doc);
   void attachLsp(doc);
+  emitDoc({ type: "open", doc });
   return doc;
 }
 
@@ -506,6 +533,7 @@ export async function saveDocument(path: string, opts: { quiet?: boolean; force?
     const now = liveState(doc, 0) ?? liveState(doc, 1) ?? st;
     markDirty(doc, now.doc);
     setState((s) => (s.tabs[path] ? { tabs: { ...s.tabs, [path]: { ...s.tabs[path], conflict: false, missing: false } } } : {}));
+    emitDoc({ type: "save", path });
     const { afterSave } = await import("../app/actions");
     afterSave(path, opts.quiet);
     if (!opts.quiet) void import("../components/PenguinMascot").then((m) => m.flashPenguin("jempol", 2500));
@@ -559,6 +587,7 @@ export function replaceAll(doc: Doc, text: string) {
     else doc.states[g] = st.update(spec).state;
   }
   if (!anyState(doc)) doc.saved = Text.of(text.split("\n"));
+  emitDoc({ type: "replace", path: doc.path, text });
 }
 
 export function setDocumentText(path: string, text: string) {
@@ -588,14 +617,10 @@ export async function reloadFromDisk(path: string) {
 
 export function closeDocument(path: string) {
   docs.delete(path);
+  emitDoc({ type: "close", path });
   clearTimeout(previewTimers.get(path));
   clearTimeout(autoSaveTimers.get(path));
-  setState((s) => {
-    if (!(path in s.problems)) return {};
-    const p = { ...s.problems };
-    delete p[path];
-    return { problems: p };
-  });
+  clearProblemsOf(path);
 }
 
 /**
@@ -627,6 +652,7 @@ export function renameDocument(oldPath: string, newPath: string) {
   docs.delete(oldPath);
   d.path = newPath;
   docs.set(newPath, d);
+  emitDoc({ type: "rename", from: oldPath, to: newPath });
 }
 
 export function selectionText(group: number): string {
@@ -672,4 +698,67 @@ export function focusEditor(group: number) {
 /** Kunci dokumen terbuka yang ada di dalam folder `dir` (untuk hapus/rename folder). */
 export function docsUnder(dir: string): string[] {
   return [...docs.keys()].filter((p) => p === dir || p.startsWith(dir + "/"));
+}
+
+// ---------- Edit dari luar editor (extension host) ----------
+
+export interface WireEdit {
+  range: { s: { l: number; c: number }; e: { l: number; c: number } };
+  newText: string;
+}
+
+/** Offset dalam teks dari posisi baris/kolom 0-based (dijepit ke batas teks). */
+function offsetIn(text: string, lineStarts: number[], p: { l: number; c: number }): number {
+  const line = Math.min(Math.max(p.l, 0), lineStarts.length - 1);
+  const start = lineStarts[line];
+  const end = line + 1 < lineStarts.length ? lineStarts[line + 1] - 1 : text.length;
+  return Math.min(start + Math.max(p.c, 0), end);
+}
+
+/** Terapkan daftar TextEdit ke teks, mengembalikan teks baru. Rentang tumpang-tindih dilewati. */
+export function applyEditsToText(text: string, edits: WireEdit[]): string {
+  const starts = [0];
+  for (let i = 0; i < text.length; i++) if (text[i] === "\n") starts.push(i + 1);
+  const list = edits
+    .map((e) => ({ from: offsetIn(text, starts, e.range.s), to: offsetIn(text, starts, e.range.e), text: e.newText }))
+    .sort((a, b) => a.from - b.from || a.to - b.to);
+  let out = "";
+  let pos = 0;
+  for (const e of list) {
+    if (e.from < pos) continue;
+    out += text.slice(pos, e.from) + e.text;
+    pos = e.to;
+  }
+  return out + text.slice(pos);
+}
+
+/** Terapkan edit ke berkas: lewat editor bila terbuka, kalau tidak langsung ke disk. */
+export async function applyTextEdits(path: string, edits: WireEdit[]): Promise<boolean> {
+  const d = docs.get(path);
+  if (d) {
+    const cur = currentText(path);
+    if (cur == null) return false;
+    const next = applyEditsToText(cur.replace(/\r\n/g, "\n"), edits);
+    if (next !== cur) replaceAll(d, next);
+    return true;
+  }
+  try {
+    const file = await api.readText(path);
+    const next = applyEditsToText(file.content.replace(/\r\n/g, "\n"), edits);
+    await api.writeText(path, file.eol === "crlf" ? next.replace(/\n/g, "\r\n") : next);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+export function setSelectionsAt(path: string, sels: { anchor: { l: number; c: number }; active: { l: number; c: number } }[]) {
+  const g = shown.findIndex((p) => p === path);
+  const v = g >= 0 ? views[g] : null;
+  if (!v || !sels.length) return;
+  const at = (p: { l: number; c: number }) => {
+    const line = v.state.doc.line(Math.min(Math.max(p.l + 1, 1), v.state.doc.lines));
+    return Math.min(line.from + p.c, line.to);
+  };
+  v.dispatch({ selection: EditorSelection.create(sels.map((s) => EditorSelection.range(at(s.anchor), at(s.active)))) });
 }

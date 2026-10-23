@@ -6,6 +6,7 @@ import { createHash } from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
 import { unzipSync } from "fflate";
+import { parseJsonc } from "./jsonc";
 import { classifyManifest, type Compatibility } from "./extCompat";
 import type { Ctx } from "./util";
 
@@ -60,6 +61,12 @@ export interface InstalledExt {
   grammars: { language?: string; scopeName: string; path: string; embeddedLanguages?: Record<string, string>; injectTo?: string[] }[];
   languages: { id: string; aliases?: string[]; extensions?: string[]; filenames?: string[]; configuration?: string }[];
   installedAt: number;
+  /** Paket kode ada di `<id>/ext` dan bisa dijalankan extension host (setelah dipercaya). */
+  hasCode?: boolean;
+  publisher?: string;
+  commands?: { command: string; title: string; category?: string }[];
+  keybindings?: { command: string; key: string; mac?: string; win?: string; linux?: string; when?: string; args?: unknown }[];
+  activationEvents?: string[];
 }
 
 const extRoot = (ctx: Ctx) => path.join(ctx.userData, "extensions");
@@ -226,6 +233,27 @@ export async function extUpdates(ctx: Ctx): Promise<ExtUpdate[]> {
 /** Normalisasi path di dalam vsix: "./themes/a.json" → "extension/themes/a.json". */
 const inPkg = (p: string) => path.posix.join("extension", p.replace(/^\.\//, ""));
 
+const MAX_CODE_FILES = 30_000;
+const MAX_CODE_BYTES = 400 * 1024 * 1024;
+
+/** Salin seluruh isi `extension/` dari vsix ke `dest` (tanpa source map); path di luar `dest` ditolak. */
+export function extractCode(buf: Uint8Array, dest: string): number {
+  const files = unzipSync(buf, { filter: (f) => f.name.startsWith("extension/") && !f.name.endsWith("/") && !f.name.endsWith(".map") });
+  const names = Object.keys(files);
+  if (names.length > MAX_CODE_FILES) throw new Error("Ekstensi memuat terlalu banyak berkas.");
+  let total = 0;
+  fs.mkdirSync(dest, { recursive: true });
+  for (const name of names) {
+    const rel = path.posix.normalize(name.slice("extension/".length));
+    const out = path.join(dest, ...rel.split("/"));
+    if (rel.startsWith("..") || path.isAbsolute(rel) || !out.startsWith(dest + path.sep)) throw new Error("Paket memuat path yang tidak aman.");
+    if ((total += files[name].length) > MAX_CODE_BYTES) throw new Error("Ekstensi terlalu besar.");
+    fs.mkdirSync(path.dirname(out), { recursive: true });
+    fs.writeFileSync(out, files[name]);
+  }
+  return names.length;
+}
+
 /** Pasang atomik: tulis ke folder sementara, baru gantikan versi lama setelah semuanya sukses. */
 export async function extInstall(ctx: Ctx, namespace: string, name: string, version?: string | null): Promise<InstalledExt> {
   if (!validId(namespace) || !validId(name)) throw new Error("Nama ekstensi tidak valid.");
@@ -264,7 +292,24 @@ async function installInto(dir: string, namespace: string, name: string, version
   const pkgRaw = files["extension/package.json"];
   if (!pkgRaw) throw new Error("Paket ekstensi tidak valid.");
   const pkg = JSON.parse(new TextDecoder().decode(pkgRaw));
+  const nls = (() => {
+    try {
+      const raw = files["extension/package.nls.json"];
+      return raw ? (parseJsonc(new TextDecoder().decode(raw)) as Record<string, string | { message: string }> | null) : null;
+    } catch {
+      return null;
+    }
+  })();
+  /** "%key%" → teks dari package.nls.json (bahasa Inggris bawaan). */
+  const nl = (v: unknown): unknown => {
+    if (typeof v !== "string" || !/^%[^%]+%$/.test(v) || !nls) return v;
+    const e = nls[v.slice(1, -1)];
+    return typeof e === "string" ? e : e?.message ?? v;
+  };
+  pkg.displayName = nl(pkg.displayName);
+  pkg.description = nl(pkg.description);
   const c = pkg.contributes ?? {};
+  if (Array.isArray(c.commands)) for (const x of c.commands) if (x && typeof x === "object") ((x.title = nl(x.title)), (x.category = nl(x.category)));
   const id = `${namespace}.${name}`;
   const copy = (rel: string, data: Uint8Array | undefined = files[inPkg(rel)]): string | null => {
     if (!data) return null;
@@ -321,13 +366,20 @@ async function installInto(dir: string, namespace: string, name: string, version
     filenames: l.filenames,
     configuration: typeof l.configuration === "string" && files[inPkg(l.configuration)] ? l.configuration.replace(/^\.\//, "") : undefined,
   }));
-  if (!themes.length && !iconThemes.length && !snippets.length && !grammars.length && !languages.some((l: { configuration?: string }) => l.configuration)) {
+  // Ekstensi dengan kode (`main`): seluruh paketnya disalin ke ext/ untuk extension host. Kode hanya
+  // berjalan setelah pemakai mempercayai ekstensi ini (lihat exthost/manager.ts).
+  const hasCode = typeof pkg.main === "string" && !!pkg.main;
+  if (hasCode) extractCode(buf, path.join(dir, "ext"));
+  if (!hasCode && !themes.length && !iconThemes.length && !snippets.length && !grammars.length && !languages.some((l: { configuration?: string }) => l.configuration)) {
     throw new Error("Ekstensi ini tidak berisi tema, tema ikon, snippet, grammar, atau konfigurasi bahasa. Alexel Studio tidak menjalankan kode ekstensi.");
   }
-  const manifest: InstalledExt = { id, namespace, name, displayName: pkg.displayName || name, version: pkg.version || meta.version, description: pkg.description || "", themes, iconThemes, snippets, grammars, languages, installedAt: Date.now() };
+  const manifest: InstalledExt = { id, namespace, name, displayName: pkg.displayName || name, version: pkg.version || meta.version, description: pkg.description || "", themes, iconThemes, snippets, grammars, languages, installedAt: Date.now(), hasCode, publisher: pkg.publisher, activationEvents: pkg.activationEvents, commands: Array.isArray(c.commands) ? c.commands.filter((x: { command?: string; title?: unknown }) => x?.command && typeof x.title === "string") : undefined, keybindings: Array.isArray(c.keybindings) ? c.keybindings.filter((x: { command?: string; key?: string }) => x?.command && x?.key) : undefined };
   fs.writeFileSync(path.join(dir, "nozel-manifest.json"), JSON.stringify(manifest, null, 2));
   return manifest;
 }
+
+/** Folder kode ekstensi (isi vsix `extension/`), dipakai extension host. */
+export const extCodeDir = (ctx: Ctx, id: string) => path.join(extRoot(ctx), id, "ext");
 
 export function extList(ctx: Ctx): InstalledExt[] {
   const root = extRoot(ctx);

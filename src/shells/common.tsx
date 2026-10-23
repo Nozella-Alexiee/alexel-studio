@@ -16,6 +16,7 @@ import type { Footprint } from "../lib/types";
 import { FileTree, ExplorerHeader } from "../panels/Explorer";
 import { activeTab, isSaver, setLayout, setState, useLayout, useSaver, useStore } from "../state/store";
 import { tl } from "../i18n";
+import { ExtStatusItems } from "../exthost/StatusItems";
 
 const SearchPanel = lazy(() => import("../panels/SearchPanel"));
 const GitPanel = lazy(() => import("../panels/GitPanel"));
@@ -261,7 +262,9 @@ export function StatusBar({ variant }: { variant: "aurora" | "zen" | "control" |
           <Play size={11} aria-hidden /> {running} berjalan
         </button>
       )}
+      <ExtStatusItems side="left" />
       <span className="spacer" />
+      <ExtStatusItems side="right" />
       {saver && (
         <button className="status-item tone-success-fg" onClick={() => A.openSettings()} title={tl("Mode hemat daya aktif")}>
           <Leaf size={12} aria-hidden /> {zen ? "" : tl("Hemat daya")}

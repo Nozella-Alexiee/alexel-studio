@@ -3,7 +3,8 @@
 import { create } from "zustand";
 
 export const CHANNELS = ["Alexel Studio", "Agen AI", "Server bahasa", "Git", "Debug"] as const;
-export type Channel = (typeof CHANNELS)[number];
+/** Saluran bawaan + saluran dinamis dari ekstensi (vscode.window.createOutputChannel). */
+export type Channel = string;
 
 const MAX = 2000;
 
