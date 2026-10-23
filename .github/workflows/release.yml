@@ -12,7 +12,22 @@ permissions:
   contents: write
 
 jobs:
+  # Satu draft dibuat dulu. Tiga job build paralel yang sama-sama membuat draft bisa menghasilkan
+  # beberapa draft terpisah (berkas Mac pernah nyasar ke draft kedua pada v0.5.0).
+  draft:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Buat draft rilis bila belum ada
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          if ! gh release view "$TAG" -R "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            gh release create "$TAG" -R "$GITHUB_REPOSITORY" --draft --title "$TAG" --notes "Draft otomatis dari CI."
+          fi
+
   build:
+    needs: draft
     strategy:
       fail-fast: false
       matrix:
@@ -52,3 +67,23 @@ jobs:
         run: npx electron-builder ${{ matrix.target }} --publish always -c.publish.provider=github -c.publish.releaseType=draft
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  # Pemeriksaan akhir: semua installer harus ada di SATU rilis sebelum dipublikasikan.
+  verify:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Periksa berkas rilis
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          set -e
+          names=$(gh api "repos/$GITHUB_REPOSITORY/releases" --paginate -q ".[] | select(.tag_name==\"$TAG\") | .assets[].name")
+          count_rel=$(gh api "repos/$GITHUB_REPOSITORY/releases" --paginate -q "[.[] | select(.tag_name==\"$TAG\")] | length")
+          echo "Rilis dengan tag $TAG: $count_rel"
+          [ "$count_rel" = "1" ] || { echo "::error::Ada $count_rel rilis untuk $TAG (harus 1)"; exit 1; }
+          for f in Alexel-Studio-mac-arm64.dmg Alexel-Studio-mac-x64.dmg Alexel-Studio-win-x64.exe Alexel-Studio-win-arm64.exe Alexel-Studio-linux-amd64.deb Alexel-Studio-linux-x86_64.AppImage Alexel-Studio-linux-x86_64.rpm latest-mac.yml latest.yml latest-linux.yml; do
+            echo "$names" | grep -qx "$f" || { echo "::error::Berkas $f tidak ada di rilis $TAG"; exit 1; }
+          done
+          echo "Semua berkas ada. Publikasikan dengan: gh release edit $TAG --draft=false --latest"
