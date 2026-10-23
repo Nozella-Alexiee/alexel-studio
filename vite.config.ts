@@ -17,5 +17,7 @@ export default defineConfig(() => ({
   },
   test: {
     include: ["src/**/*.test.ts", "electron/**/*.test.ts"],
+    // Tes yang menjalankan PowerShell/proses nyata di runner CI Windows kadang >5 dtk saat beban tinggi.
+    testTimeout: 30_000,
   },
 }));
