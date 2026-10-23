@@ -1,8 +1,15 @@
 # Changelog
 
-## 0.7.0 (belum dirilis)
+## 0.7.0
 
 Extensions that look and behave like VS Code's:
+
+- **The official Claude Code and Codex extensions run in Alexel Studio** with their own UI (chat
+  panel in an editor tab or the right-hand "Extension views" panel), like in VS Code. Cline,
+  Continue and Roo Code activate too. Installing picks the package built for your OS/architecture
+  (they ship their own CLI binary, 100+ MB), extracted in a child process so the app stays responsive.
+  Webviews run in sandboxed, per-extension origins. Experimental: not every extension feature works,
+  and Codex is not on Open VSX for Windows.
 
 - **Extension host** (experimental): extensions that contain code run in a separate Node process with a
   growing subset of the `vscode` API, *only after you trust them*. Verified with the real Prettier,
