@@ -157,6 +157,14 @@ Pasang tema, language server, dan driver agen otonom baru tanpa hambatan:
 
 ---
 
+### 7. Kontrol Agen yang Setara Ekstensi Resmi
+* **Opsi per model**: Level effort mengikuti model yang dipilih (model tanpa effort menyembunyikan kontrolnya), jadi panel tidak pernah menawarkan nilai yang ditolak CLI.
+* Saklar **Ultracode** di bawah Effort, mode izin **Auto**, dan effort bisa diganti langsung tanpa memulai ulang percakapan.
+* **Mode berbahaya tetap opt-in**: "Lewati semua izin" baru muncul setelah kamu menyalakannya di Pengaturan, dan tidak pernah jadi mode awal.
+* **Slash command** (`/compact`, …) sampai ke agen apa adanya; `@problems`, `@terminal`, `@git-diff`, dan `@open-editors` menambah konteks.
+
+---
+
 ## ⚙️ Arsitektur Sistem
 
 ```mermaid

@@ -157,6 +157,14 @@ Install themes, language servers, and autonomous agent drivers with zero frictio
 
 ---
 
+### 7. Agent Controls That Match the Official Extensions
+* **Per-model options**: Effort levels come from the selected model (a model without effort hides the control), so the panel never offers a value the CLI would reject.
+* **Ultracode** switch under Effort, **Auto** permission mode, and live effort changes without restarting the conversation.
+* **Dangerous modes stay opt-in**: "Skip all permissions" only appears after you turn it on in Settings, and is never a starting mode.
+* **Slash commands** (`/compact`, …) reach the agent untouched; `@problems`, `@terminal`, `@git-diff` and `@open-editors` add context.
+
+---
+
 ## ⚙️ System Architecture
 
 ```mermaid

@@ -1,5 +1,25 @@
 # Changelog
 
+## 0.5.0
+
+New:
+
+- **Ultracode** switch under Effort (shown when the agent CLI reports it available), applied live.
+- **Effort follows the model.** Each model lists its own levels; models without effort hide the
+  control; stored values a model doesn't support are no longer sent. The Codex-only "Ultra" level is
+  gone from the other agents. Codex efforts are validated against the model's list.
+- **Auto permission mode** (when the model and CLI support it); the mode list is limited to what the
+  CLI's `--help` reports, so a mode the CLI would reject is never offered.
+- **Effort changes apply to the running conversation** instead of restarting the process.
+- **The agent starts when the panel opens**, so models, Ultracode and modes are correct before your
+  first message.
+- **Slash commands reach the agent untouched** (they used to be wrapped in file context and treated as
+  plain text). `/ultracode` toggles Ultracode; Gemini's own slash commands show up in the `/` list.
+- Antigravity gets an **Auto** mode.
+- **Dangerous modes are opt-in:** Bypass permissions / full access / yolo only appear after enabling
+  *Allow dangerous mode* in Settings (with a confirmation), never as the starting mode, and the
+  desktop side refuses them otherwise. They are also left out of the Shift+Tab cycle.
+
 ## 0.4.1
 
 Fixed:
