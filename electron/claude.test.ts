@@ -15,8 +15,12 @@ describe("sesi Claude Code", () => {
   });
   it("nilai tidak dikenal dibuang", () => {
     const c = sanitizeCfg({ cwd: "/x", model: "default", effort: "turbo", mode: "yolo" as never, resume: "../../etc" });
-    expect(c).toEqual({ cwd: "/x", model: null, effort: null, mode: "default", resume: null, ultracode: false, allowDangerous: false });
+    expect(c).toEqual({ cwd: "/x", model: null, effort: null, mode: "default", resume: null, ultracode: false, allowDangerous: false, fast: false, thinking: undefined });
     expect(sessionArgs(c).join(" ")).not.toContain("--model");
+  });
+  it("fast & thinking: hanya true / false yang dihormati", () => {
+    expect(sanitizeCfg({ cwd: "/x", fast: true, thinking: false })).toMatchObject({ fast: true, thinking: false });
+    expect(sanitizeCfg({ cwd: "/x", fast: "ya" as never, thinking: "tidak" as never })).toMatchObject({ fast: false, thinking: undefined });
   });
   it("mode auto diterima; bypassPermissions hanya bila diizinkan, dan flag peluncuran ikut", () => {
     expect(sanitizeCfg({ cwd: "/x", mode: "auto" }).mode).toBe("auto");

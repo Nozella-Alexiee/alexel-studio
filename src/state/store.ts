@@ -45,6 +45,10 @@ export interface Settings {
   claudeEffort: string;
   /** Ultracode (saklar sesi Claude di bawah Effort); hanya berlaku bila CLI melaporkan tersedia. */
   claudeUltracode: boolean;
+  /** Mode cepat Claude (butuh dukungan akun/model; lihat claudeFast di state). */
+  claudeFast: boolean;
+  /** Thinking Claude; false = dimatikan. */
+  claudeThinking: boolean;
   /** Izinkan mode berbahaya (Bypass permissions) di pemilih mode. Default mati. */
   allowDangerousModes: boolean;
   /** Agen AI yang dipakai di panel (Claude Code, Codex, Gemini, atau agen ACP). */
@@ -99,6 +103,8 @@ export const DEFAULT_SETTINGS: Settings = {
   claudeModel: "default",
   claudeEffort: "auto",
   claudeUltracode: false,
+  claudeFast: false,
+  claudeThinking: true,
   allowDangerousModes: false,
   agent: "claude",
   agentPrefs: {},
@@ -331,6 +337,8 @@ interface State {
   claudeModels: ClaudeModel[];
   /** CLI melaporkan Ultracode tersedia (get_settings → applied.ultracodeAvailable). */
   claudeUltracodeAvailable: boolean;
+  /** Dari pesan init CLI: fast_mode_state & alasan bila tidak bisa dipakai (undefined = bisa). */
+  claudeFastInfo: { state: string; reason?: string } | null;
   claudeActiveModel: string | null;
   claudeCommands: { name: string; description: string }[];
   /** Status tiap agen AI (terpasang, login). */
@@ -388,6 +396,7 @@ export const useStore = create<State>(() => ({
   chatUsage: null,
   claudeModels: [],
   claudeUltracodeAvailable: false,
+  claudeFastInfo: null,
   claudeActiveModel: null,
   claudeCommands: [],
   agentStatus: {},

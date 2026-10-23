@@ -97,6 +97,10 @@ export interface SessionCfg {
   ultracode?: boolean;
   /** Pengguna mengizinkan mode berbahaya (bypassPermissions) di Pengaturan; tanpa ini mode itu ditolak. */
   allowDangerous?: boolean;
+  /** Mode cepat (fastMode): respons lebih cepat bila akun/model mendukung. */
+  fast?: boolean;
+  /** false = matikan thinking (alwaysThinkingEnabled); selain itu bawaan CLI. */
+  thinking?: boolean;
 }
 
 interface Live {
@@ -125,6 +129,8 @@ export function sanitizeCfg(raw: Partial<SessionCfg> | undefined): SessionCfg {
     resume: validId(r.resume) ? r.resume : null,
     ultracode: r.ultracode === true,
     allowDangerous,
+    fast: r.fast === true,
+    thinking: r.thinking === false ? false : undefined,
   };
 }
 
@@ -203,6 +209,11 @@ function startSession(ctx: Ctx, key: string, cfg: SessionCfg): Live {
   // get_settings melaporkan apakah Ultracode tersedia untuk akun/model ini (`applied.ultracodeAvailable`).
   writeLine(live, { type: "control_request", request_id: `settings-${key}`, request: { subtype: "get_settings" } });
   if (cfg.ultracode) writeLine(live, { type: "control_request", request_id: `u-${key}-${++live.seq}`, request: { subtype: "apply_flag_settings", settings: { ultracode: true } } });
+  // Mode cepat butuh opt-in eksplisit dari host SDK (fastMode di flag settings); thinking dimatikan hanya bila diminta.
+  const flags: Record<string, unknown> = {};
+  if (cfg.fast) flags.fastMode = true;
+  if (cfg.thinking === false) flags.alwaysThinkingEnabled = false;
+  if (Object.keys(flags).length) writeLine(live, { type: "control_request", request_id: `f-${key}-${++live.seq}`, request: { subtype: "apply_flag_settings", settings: flags } });
   return live;
 }
 
@@ -271,10 +282,14 @@ export function claudeSessionControl(key: string, msg: unknown): boolean {
       const clean: Record<string, unknown> = {};
       if ("ultracode" in s) clean.ultracode = s.ultracode === true ? true : null;
       if ("effortLevel" in s) clean.effortLevel = typeof s.effortLevel === "string" && EFFORTS.includes(s.effortLevel) ? s.effortLevel : null;
+      if ("fastMode" in s) clean.fastMode = s.fastMode === true ? true : null;
+      if ("alwaysThinkingEnabled" in s) clean.alwaysThinkingEnabled = typeof s.alwaysThinkingEnabled === "boolean" ? s.alwaysThinkingEnabled : null;
       if (!Object.keys(clean).length) throw new Error("Pengaturan tidak didukung.");
       m.request = { subtype: "apply_flag_settings", settings: clean };
       if ("ultracode" in clean) live.cfg.ultracode = clean.ultracode === true;
       if ("effortLevel" in clean) live.cfg.effort = (clean.effortLevel as string | null) ?? null;
+      if ("fastMode" in clean) live.cfg.fast = clean.fastMode === true;
+      if ("alwaysThinkingEnabled" in clean) live.cfg.thinking = clean.alwaysThinkingEnabled === false ? false : undefined;
     } else if (sub === "get_settings") {
       /* hanya baca */
     } else if (sub === "set_model") {

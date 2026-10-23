@@ -8,6 +8,7 @@ import {
   Check,
   ChevronDown,
   FileCode2,
+  Gauge,
   ImagePlus,
   ListChecks,
   Pencil,
@@ -38,6 +39,8 @@ import {
   setClaudeMode,
   setClaudeModel,
   setClaudeUltracode,
+  setClaudeFast,
+  setClaudeThinking,
   modesAvailable,
 } from "./claude";
 import { CLAUDE_DEFAULT_EFFORTS, claudeEffortLevels, effortLabel, EFFORTS, modelChoices, selectedModel } from "./options";
@@ -198,6 +201,9 @@ export function Composer({ onShowHistory }: { onShowHistory: () => void }) {
   const claudeInfo = useStore((s) => s.claude);
   const allowDangerous = useStore((s) => s.settings.allowDangerousModes);
   const ultracodeOn = useStore((s) => s.settings.claudeUltracode);
+  const fastOn = useStore((s) => s.settings.claudeFast);
+  const thinkingOn = useStore((s) => s.settings.claudeThinking);
+  const fastInfo = useStore((s) => s.claudeFastInfo);
   const ultracodeAvail = useStore((s) => s.claudeUltracodeAvailable);
   const caps = useMemo(() => ({ ...baseCaps, modes: modesAvailable(agent) }), [agent, baseCaps, dynModes, claudeInfo, models, allowDangerous]); // eslint-disable-line react-hooks/exhaustive-deps
   const cliCommands = useStore((s) => s.claudeCommands);
@@ -566,6 +572,16 @@ export function Composer({ onShowHistory }: { onShowHistory: () => void }) {
               }))}
               onPick={(v) => void setClaudeEffort(v)}
             />
+            )}
+            {agent === "claude" && fastInfo && (fastInfo.reason === undefined || fastInfo.reason === "sdk_opt_in_required" || fastOn) && (
+              <button type="button" role="switch" aria-checked={fastOn} className={`cz-toggle ${fastOn ? "is-on" : ""}`} title={fastOn && fastInfo?.state !== "on" && fastInfo?.reason && fastInfo.reason !== "sdk_opt_in_required" ? tl("Mode cepat diminta, tapi tidak aktif untuk akun/model ini ({reason}).", { reason: fastInfo.reason }) : tl("Mode cepat: respons lebih cepat dengan biaya lebih tinggi (bila akun dan model mendukung). Berlaku langsung.")} onClick={() => void setClaudeFast(!fastOn)}>
+                <Gauge size={12} aria-hidden /> {tl("Cepat")}
+              </button>
+            )}
+            {agent === "claude" && (
+              <button type="button" role="switch" aria-checked={thinkingOn} className={`cz-toggle ${thinkingOn ? "is-on" : ""}`} title={tl("Thinking: Claude berpikir dulu sebelum menjawab. Matikan untuk respons lebih singkat. Berlaku langsung.")} onClick={() => void setClaudeThinking(!thinkingOn)}>
+                <Brain size={12} aria-hidden /> {tl("Berpikir")}
+              </button>
             )}
             {showUltracode && (
               <button

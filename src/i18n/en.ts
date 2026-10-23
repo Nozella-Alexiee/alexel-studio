@@ -1132,4 +1132,8 @@ export const EN: Record<string, string> = {
   "Pewarnaan sintaks": "Syntax highlighting",
   "Menu": "Menus",
   "Validasi JSON": "JSON validation",
+  "Mode cepat: respons lebih cepat dengan biaya lebih tinggi (bila akun dan model mendukung). Berlaku langsung.": "Fast mode: faster responses at a higher cost (when your account and model support it). Applies immediately.",
+  "Thinking: Claude berpikir dulu sebelum menjawab. Matikan untuk respons lebih singkat. Berlaku langsung.": "Thinking: Claude thinks before answering. Turn off for shorter responses. Applies immediately.",
+  "Berpikir": "Thinking",
+  "Mode cepat diminta, tapi tidak aktif untuk akun/model ini ({reason}).": "Fast mode was requested but isn't active for this account/model ({reason}).",
 };

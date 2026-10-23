@@ -121,7 +121,7 @@ function handleLine(key: string, line: string) {
       }
       return;
     case "system":
-      if (ev.subtype === "init") setState({ chatSession: ev.session_id ?? getState().chatSession, claudeActiveModel: ev.model ?? null });
+      if (ev.subtype === "init") setState({ chatSession: ev.session_id ?? getState().chatSession, claudeActiveModel: ev.model ?? null, claudeFastInfo: typeof ev.fast_mode_state === "string" ? { state: ev.fast_mode_state, reason: ev.fast_mode_disabled_reason } : null });
       return;
     case "stream_event":
       if (!ev.parent_tool_use_id && c.turn) onStream(c.turn, ev.event);
@@ -512,7 +512,7 @@ const cfgNow = () => {
     mode: claude ? claude.mode : c.mode,
     resume: s.chatSession,
     command: s.settings.agent === "acp" ? s.settings.acpCommand : undefined,
-    ...(claude ? { ultracode: claude.ultracode, allowDangerous: s.settings.allowDangerousModes } : {}),
+    ...(claude ? { ultracode: claude.ultracode, allowDangerous: s.settings.allowDangerousModes, fast: s.settings.claudeFast, thinking: s.settings.claudeThinking ? undefined : false } : {}),
   };
 };
 
@@ -771,6 +771,20 @@ export async function setClaudeUltracode(on: boolean) {
   const { updateSettings } = await import("../app/actions");
   updateSettings({ claudeUltracode: on });
   await api.agentControl("claude", getState().chatKey, { type: "control_request", request: { subtype: "apply_flag_settings", settings: { ultracode: on ? true : null } } }).catch(() => false);
+}
+
+/** Mode cepat: berlaku langsung pada sesi berjalan dan sesi berikutnya. */
+export async function setClaudeFast(on: boolean) {
+  const { updateSettings } = await import("../app/actions");
+  updateSettings({ claudeFast: on });
+  await api.agentControl("claude", getState().chatKey, { type: "control_request", request: { subtype: "apply_flag_settings", settings: { fastMode: on ? true : null } } }).catch(() => false);
+}
+
+/** Thinking Claude: dimatikan lewat alwaysThinkingEnabled=false, dinyalakan kembali ke bawaan. */
+export async function setClaudeThinking(on: boolean) {
+  const { updateSettings } = await import("../app/actions");
+  updateSettings({ claudeThinking: on });
+  await api.agentControl("claude", getState().chatKey, { type: "control_request", request: { subtype: "apply_flag_settings", settings: { alwaysThinkingEnabled: on ? null : false } } }).catch(() => false);
 }
 
 /** Mode izin yang bisa dipilih agen terpilih saat ini (Claude: dibatasi CLI, model, dan izin mode berbahaya). */
