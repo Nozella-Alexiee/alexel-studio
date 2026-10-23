@@ -121,6 +121,9 @@ export interface ClaudeInfo {
   loggedIn?: boolean | null;
   /** "pro", "max", … */
   plan?: string | null;
+  /** Pilihan yang diterima CLI (dari --help). */
+  permissionModes?: string[];
+  efforts?: string[];
 }
 
 /** Status satu agen AI (lihat electron/agents). */
@@ -130,11 +133,13 @@ export interface AgentStatus {
   version?: string | null;
   loggedIn?: boolean | null;
   plan?: string | null;
+  permissionModes?: string[];
+  efforts?: string[];
   source?: "system" | "extension" | null;
   error?: string | null;
 }
 
-export type ClaudePermMode = "default" | "acceptEdits" | "plan";
+export type ClaudePermMode = "default" | "acceptEdits" | "plan" | "auto" | "bypassPermissions";
 
 export interface ClaudeSessionCfg {
   cwd: string;
@@ -142,6 +147,8 @@ export interface ClaudeSessionCfg {
   effort?: string | null;
   mode: ClaudePermMode;
   resume?: string | null;
+  ultracode?: boolean;
+  allowDangerous?: boolean;
 }
 
 export type ClaudeContent = { type: "text"; text: string } | { type: "image"; source: { type: "base64"; media_type: string; data: string } };
@@ -158,7 +165,11 @@ export interface ClaudeModel {
   value: string;
   displayName: string;
   description?: string;
+  /** false = model tidak punya pengaturan effort (kontrol disembunyikan). */
+  supportsEffort?: boolean;
   supportedEffortLevels?: string[];
+  supportsAutoMode?: boolean;
+  supportsFastMode?: boolean;
 }
 
 export interface Footprint {

@@ -6,7 +6,7 @@ import * as A from "../app/actions";
 import { PenguinMascot, showNoziPeek } from "../components/PenguinMascot";
 import { Segmented } from "../components/ui";
 import { ACCENTS, DESIGNS, type DesignInfo } from "../design/designs";
-import { isSaver, useStore, type Settings } from "../state/store";
+import { confirmDialog, isSaver, useStore, type Settings } from "../state/store";
 import { detectClaude, selectAgent } from "../claude/claude";
 import { AGENTS, type AgentId } from "../agents/registry";
 import { isMac } from "../lib/ipc";
@@ -380,12 +380,22 @@ export default function SettingsView() {
         </Row>
         <Row label={tl("Effort bawaan")} hint={tl("Effort lebih tinggi = berpikir lebih lama dan lebih teliti.")}>
           <select className="input select" value={s.claudeEffort} onChange={(e) => set({ claudeEffort: e.target.value })} aria-label={tl("Effort Claude")}>
-            {EFFORTS.map((e) => (
+            {EFFORTS.filter((e) => ["auto", "low", "medium", "high", "xhigh", "max"].includes(e.id)).map((e) => (
               <option key={e.id} value={e.id}>
                 {e.label}
               </option>
             ))}
           </select>
+        </Row>
+        <Row label={tl("Izinkan mode berbahaya")} hint={tl("Menampilkan \"Lewati semua izin\" di pemilih mode: semua edit dan perintah jalan tanpa bertanya. Hanya untuk sandbox tanpa data penting. Tidak pernah jadi mode awal.")}>
+          <Toggle
+            label={tl("Izinkan mode berbahaya")}
+            value={s.allowDangerousModes}
+            onChange={(v) => {
+              if (!v) return set({ allowDangerousModes: false });
+              void confirmDialog(tl("Izinkan mode berbahaya?"), tl("Dengan mode ini agen bisa menghapus berkas atau menjalankan perintah apa pun tanpa bertanya. Aktifkan hanya di sandbox atau VM tanpa data penting."), tl("Izinkan"), true).then((ok) => ok && set({ allowDangerousModes: true }));
+            }}
+          />
         </Row>
         <Row label={tl("Model untuk Claude inline")} hint={tl("Cepat memakai Sonnet dengan effort rendah (±15 detik). Bawaan mengikuti model Claude Code kamu, bisa beberapa menit.")}>
           <Segmented

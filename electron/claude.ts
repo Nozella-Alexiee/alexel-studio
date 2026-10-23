@@ -65,7 +65,8 @@ export async function claudeDetect() {
       } catch {
         /* versi CLI lama tanpa `auth status` */
       }
-      return { installed: true, path: p, version: r.stdout.trim(), error: null, loggedIn, plan };
+      const choices = await cliChoices(p);
+      return { installed: true, path: p, version: r.stdout.trim(), error: null, loggedIn, plan, permissionModes: choices.permissionModes, efforts: choices.efforts };
     }
     return { installed: false, path: p, version: null, error: `claude ditemukan tapi gagal jalan: ${r.timedOut ? "timeout" : r.stderr.trim()}` };
   } catch (e) {
@@ -79,8 +80,8 @@ export async function claudeDetect() {
  * "acceptEdits" = edit berkas langsung, perintah lain tetap ditanyakan,
  * "plan" = hanya membaca dan menyusun rencana.
  */
-export type PermMode = "default" | "acceptEdits" | "plan";
-export const PERM_MODES: PermMode[] = ["default", "acceptEdits", "plan"];
+export type PermMode = "default" | "acceptEdits" | "plan" | "auto" | "bypassPermissions";
+export const PERM_MODES: PermMode[] = ["default", "acceptEdits", "plan", "auto", "bypassPermissions"];
 const EFFORTS = ["low", "medium", "high", "xhigh", "max"];
 
 export interface SessionCfg {
@@ -92,6 +93,10 @@ export interface SessionCfg {
   mode: PermMode;
   /** session_id Claude Code untuk dilanjutkan. */
   resume?: string | null;
+  /** Ultracode (saklar sesi di bawah Effort): `apply_flag_settings {ultracode}`. */
+  ultracode?: boolean;
+  /** Pengguna mengizinkan mode berbahaya (bypassPermissions) di Pengaturan; tanpa ini mode itu ditolak. */
+  allowDangerous?: boolean;
 }
 
 interface Live {
@@ -108,13 +113,42 @@ const validModel = (s: unknown): s is string => typeof s === "string" && /^[A-Za
 
 export function sanitizeCfg(raw: Partial<SessionCfg> | undefined): SessionCfg {
   const r = raw ?? {};
+  const allowDangerous = r.allowDangerous === true;
+  let mode: PermMode = PERM_MODES.includes(r.mode as PermMode) ? (r.mode as PermMode) : "default";
+  // Mode berbahaya hanya bila diizinkan di Pengaturan, dan tidak pernah sebagai mode awal proses.
+  if (mode === "bypassPermissions" && !allowDangerous) mode = "default";
   return {
     cwd: typeof r.cwd === "string" ? r.cwd : "",
     model: validModel(r.model) ? r.model : null,
     effort: typeof r.effort === "string" && EFFORTS.includes(r.effort) ? r.effort : null,
-    mode: PERM_MODES.includes(r.mode as PermMode) ? (r.mode as PermMode) : "default",
+    mode,
     resume: validId(r.resume) ? r.resume : null,
+    ultracode: r.ultracode === true,
+    allowDangerous,
   };
+}
+
+/**
+ * Pilihan yang diterima CLI, dibaca dari `claude --help`. Nilai tak valid untuk --permission-mode
+ * membuat proses keluar sebelum pesan pertama, jadi panel hanya menawarkan yang tercantum di sini.
+ */
+export function parseCliHelp(text: string): { permissionModes: string[]; efforts: string[] } {
+  const t = text.replace(/\s+/g, " ");
+  const list = (m: RegExpExecArray | null) => (m ? m[1].split(",").map((x) => x.trim().replace(/^"|"$/g, "")).filter(Boolean) : []);
+  return {
+    permissionModes: list(/--permission-mode <mode>.*?\(choices: ([^)]*)\)/.exec(t)),
+    efforts: list(/--effort <level>.*?\(([^)]*)\)/.exec(t)),
+  };
+}
+
+const helpCache = new Map<string, { permissionModes: string[]; efforts: string[] }>();
+async function cliChoices(cli: string) {
+  const hit = helpCache.get(cli);
+  if (hit) return hit;
+  const r = await runCapture(cli, ["--help"], { timeoutMs: 15_000 }).catch(() => null);
+  const parsed = parseCliHelp(`${r?.stdout ?? ""}\n${r?.stderr ?? ""}`);
+  if (parsed.permissionModes.length || parsed.efforts.length) helpCache.set(cli, parsed);
+  return parsed;
 }
 
 /** Argumen CLI untuk sesi stream-json; permintaan izin dijawab pengguna lewat panel. */
@@ -124,6 +158,7 @@ export function sessionArgs(cfg: SessionCfg): string[] {
     "--permission-prompts", "host", "--permission-prompt-tool", "stdio",
     "--permission-mode", cfg.mode,
   ];
+  if (cfg.allowDangerous) args.push("--allow-dangerously-skip-permissions");
   if (cfg.model) args.push("--model", cfg.model);
   if (cfg.effort) args.push("--effort", cfg.effort);
   if (cfg.resume) args.push("--resume", cfg.resume);
@@ -165,6 +200,9 @@ function startSession(ctx: Ctx, key: string, cfg: SessionCfg): Live {
   child.stdin?.on("error", () => {});
   // initialize: CLI membalas daftar model, akun, dan slash command (diteruskan ke renderer).
   writeLine(live, { type: "control_request", request_id: `init-${key}`, request: { subtype: "initialize" } });
+  // get_settings melaporkan apakah Ultracode tersedia untuk akun/model ini (`applied.ultracodeAvailable`).
+  writeLine(live, { type: "control_request", request_id: `settings-${key}`, request: { subtype: "get_settings" } });
+  if (cfg.ultracode) writeLine(live, { type: "control_request", request_id: `u-${key}-${++live.seq}`, request: { subtype: "apply_flag_settings", settings: { ultracode: true } } });
   return live;
 }
 
@@ -184,17 +222,31 @@ export function claudeSessionSend(ctx: Ctx, key: string, rawCfg: Partial<Session
   if (Buffer.byteLength(JSON.stringify(blocks)) > MAX_CONTENT_BYTES) throw new Error("Pesan terlalu besar untuk dikirim (maks 24 MB).");
   const cfg = sanitizeCfg(rawCfg);
   let live = sessions.get(key);
-  if (live && (live.cfg.cwd !== cfg.cwd || (live.cfg.effort ?? null) !== (cfg.effort ?? null))) {
+  // Folder atau izin mode berbahaya berubah: proses harus dimulai ulang (flag peluncuran). Effort & Ultracode
+  // diterapkan langsung lewat apply_flag_settings, tanpa mengganggu percakapan.
+  if (live && (live.cfg.cwd !== cfg.cwd || !!live.cfg.allowDangerous !== !!cfg.allowDangerous)) {
     claudeSessionClose(key);
     live = undefined;
   }
   if (!live) live = startSession(ctx, key, cfg);
   else {
+    if ((live.cfg.effort ?? null) !== (cfg.effort ?? null)) writeLine(live, { type: "control_request", request_id: `e-${key}-${++live.seq}`, request: { subtype: "apply_flag_settings", settings: { effortLevel: cfg.effort ?? null } } });
+    if (!!live.cfg.ultracode !== !!cfg.ultracode) writeLine(live, { type: "control_request", request_id: `u-${key}-${++live.seq}`, request: { subtype: "apply_flag_settings", settings: { ultracode: cfg.ultracode ? true : null } } });
     if ((live.cfg.model ?? null) !== (cfg.model ?? null)) writeLine(live, { type: "control_request", request_id: `m-${key}-${++live.seq}`, request: { subtype: "set_model", model: cfg.model ?? "default" } });
     if (live.cfg.mode !== cfg.mode) writeLine(live, { type: "control_request", request_id: `p-${key}-${++live.seq}`, request: { subtype: "set_permission_mode", mode: cfg.mode } });
     live.cfg = { ...cfg, resume: live.cfg.resume };
   }
   writeLine(live, { type: "user", message: { role: "user", content: blocks }, parent_tool_use_id: null, session_id: "" });
+}
+
+/**
+ * Mulai proses CLI tanpa mengirim pesan: initialize membalas daftar model, kemampuan (Ultracode, auto) dan
+ * slash command, jadi pemilih di panel langsung akurat sebelum pesan pertama. Tidak memanggil API apa pun.
+ */
+export function claudeSessionWarm(ctx: Ctx, key: string, rawCfg: Partial<SessionCfg>) {
+  if (!validId(key)) throw new Error("Sesi tidak valid.");
+  if (sessions.has(key)) return;
+  startSession(ctx, key, sanitizeCfg(rawCfg));
 }
 
 /**
@@ -204,14 +256,27 @@ export function claudeSessionSend(ctx: Ctx, key: string, rawCfg: Partial<Session
 export function claudeSessionControl(key: string, msg: unknown): boolean {
   const live = sessions.get(key);
   if (!live) return false;
-  const m = msg as { type?: string; request_id?: string; request?: { subtype?: string; mode?: string; model?: string }; response?: { request_id?: string } };
+  const m = msg as { type?: string; request_id?: string; request?: { subtype?: string; mode?: string; model?: string; settings?: Record<string, unknown> }; response?: { request_id?: string } };
   if (m?.type === "control_response") {
     if (typeof m.response?.request_id !== "string") throw new Error("Jawaban izin tidak valid.");
   } else if (m?.type === "control_request") {
     const sub = m.request?.subtype;
     if (sub === "set_permission_mode") {
       if (!PERM_MODES.includes(m.request?.mode as PermMode)) throw new Error("Mode izin tidak valid.");
+      if (m.request?.mode === "bypassPermissions" && !live.cfg.allowDangerous) throw new Error("Mode berbahaya belum diizinkan di Pengaturan.");
       live.cfg.mode = m.request!.mode as PermMode;
+    } else if (sub === "apply_flag_settings") {
+      // Hanya dua kunci, dibangun ulang dari nol: renderer tidak boleh menyuntikkan hooks/env/izin ke CLI.
+      const s = m.request?.settings ?? {};
+      const clean: Record<string, unknown> = {};
+      if ("ultracode" in s) clean.ultracode = s.ultracode === true ? true : null;
+      if ("effortLevel" in s) clean.effortLevel = typeof s.effortLevel === "string" && EFFORTS.includes(s.effortLevel) ? s.effortLevel : null;
+      if (!Object.keys(clean).length) throw new Error("Pengaturan tidak didukung.");
+      m.request = { subtype: "apply_flag_settings", settings: clean };
+      if ("ultracode" in clean) live.cfg.ultracode = clean.ultracode === true;
+      if ("effortLevel" in clean) live.cfg.effort = (clean.effortLevel as string | null) ?? null;
+    } else if (sub === "get_settings") {
+      /* hanya baca */
     } else if (sub === "set_model") {
       if (m.request?.model !== "default" && !validModel(m.request?.model)) throw new Error("Model tidak valid.");
       live.cfg.model = m.request?.model === "default" ? null : (m.request?.model ?? null);

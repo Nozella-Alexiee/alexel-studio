@@ -115,7 +115,7 @@ function sanitize(raw: Record<string, unknown>): Cfg {
     cwd: typeof raw.cwd === "string" ? raw.cwd : "",
     model: typeof raw.model === "string" && /^[\w.-]{1,80}$/.test(raw.model) && raw.model !== "default" ? raw.model : null,
     effort: typeof raw.effort === "string" && EFFORTS.includes(raw.effort) ? raw.effort : null,
-    mode: raw.mode === "plan" || raw.mode === "strict" ? raw.mode : "accept-edits",
+    mode: raw.mode === "plan" || raw.mode === "strict" || raw.mode === "auto" ? raw.mode : "accept-edits",
     resume: typeof raw.resume === "string" && /^[A-Za-z0-9-]{1,80}$/.test(raw.resume) ? raw.resume : null,
   };
 }

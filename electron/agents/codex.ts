@@ -61,6 +61,8 @@ interface Session {
   threadId: string | null;
   turnId: string | null;
   defaultModel: string | null;
+  /** Effort yang didukung tiap model (dari model/list); effort lain tidak dikirim ke model itu. */
+  efforts: Map<string, string[]>;
   contextWindow: number | null;
   items: Map<string, any>; // eslint-disable-line @typescript-eslint/no-explicit-any
   /** request_id kartu izin → id permintaan JSON-RPC dan jenisnya. */
@@ -74,7 +76,14 @@ interface Session {
 const sessions = new Map<string, Session>();
 const validId = (s: unknown): s is string => typeof s === "string" && /^[A-Za-z0-9-]{1,80}$/.test(s);
 const validModel = (s: unknown): s is string => typeof s === "string" && /^[A-Za-z0-9._:-]{1,80}$/.test(s) && s !== "default";
-const EFFORTS = ["low", "medium", "high", "xhigh", "max", "ultra", "minimal", "none"];
+const EFFORTS = ["low", "medium", "high", "xhigh", "max", "ultra", "minimal", "none", "persistent"];
+
+/** Effort yang boleh dikirim untuk model ini: harus ada di daftar model (bila daftarnya sudah diketahui). */
+export function effortFor(effort: string | null, allowed: string[] | undefined): string | undefined {
+  if (!effort) return undefined;
+  if (allowed && allowed.length && !allowed.includes(effort)) return undefined;
+  return effort;
+}
 
 function sanitize(raw: Record<string, unknown>): Cfg {
   return {
@@ -243,7 +252,7 @@ async function start(ctx: Ctx, key: string, cfg: Cfg): Promise<Session> {
   const cwd = cfg.cwd && fs.existsSync(cfg.cwd) ? cfg.cwd : os.homedir();
   const sp = spawnable(f.path, ["app-server"]);
   const child = spawn(sp.cmd, sp.args, { cwd, env: codexEnv(f.path), stdio: ["pipe", "pipe", "pipe"], windowsHide: true, windowsVerbatimArguments: sp.verbatim });
-  const s = { child, cfg: { ...cfg, cwd }, threadId: null, turnId: null, defaultModel: null, contextWindow: null, items: new Map(), approvals: new Map(), started: Date.now(), lastUsage: null, error: null, stderr: "" } as unknown as Session;
+  const s = { child, cfg: { ...cfg, cwd }, threadId: null, turnId: null, defaultModel: null, efforts: new Map(), contextWindow: null, items: new Map(), approvals: new Map(), started: Date.now(), lastUsage: null, error: null, stderr: "" } as unknown as Session;
   s.rpc = new LineRpc(child, { onNotify: (m, p) => onNotify(ctx, key, s, m, p), onRequest: (id, m, p) => onRequest(ctx, key, s, id, m, p) });
   sessions.set(key, s);
   child.stderr?.on("data", (b: Buffer) => {
@@ -260,6 +269,7 @@ async function start(ctx: Ctx, key: string, cfg: Cfg): Promise<Session> {
     const list = await s.rpc.request<{ data?: any[] }>("model/list", {}, 30_000).catch(() => ({ data: [] })); // eslint-disable-line @typescript-eslint/no-explicit-any
     const models = (list.data ?? []).filter((m) => !m.hidden);
     s.defaultModel = models.find((m) => m.isDefault)?.id ?? models[0]?.id ?? null;
+    for (const m of models) s.efforts.set(m.id, (m.supportedReasoningEfforts ?? []).map((e: { reasoningEffort: string }) => e.reasoningEffort));
     emitLine(ctx, key, {
       type: "control_response",
       response: {
@@ -318,7 +328,7 @@ export async function codexSend(ctx: Ctx, key: string, raw: Record<string, unkno
     threadId: s.threadId,
     input,
     model: s.cfg.model ?? s.defaultModel ?? undefined,
-    effort: s.cfg.effort ?? undefined,
+    effort: effortFor(s.cfg.effort, s.efforts.get(s.cfg.model ?? s.defaultModel ?? "")),
     approvalPolicy: pol.approvalPolicy,
     sandboxPolicy: sandboxPolicy(pol.sandbox, s.cfg.cwd),
   }, 60_000);

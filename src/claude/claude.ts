@@ -8,6 +8,7 @@ import { basename, relative, uiPath } from "../lib/paths";
 import type { ClaudeContent, ClaudePermMode } from "../lib/types";
 import { agentInfo, type AgentId } from "../agents/registry";
 import { activeTab, ask, getState, newChatKey, setLayout, setState, toast, useStore, type ChatMessage, type ChatTool, type Problem } from "../state/store";
+import { claudeEffortLevels, claudeModesAvailable, selectedModel } from "./options";
 import { tl } from "../i18n";
 
 let listening = false;
@@ -144,10 +145,21 @@ function onControlResponse(key: string, r: any) {
     const commands = Array.isArray(res.commands) ? res.commands.filter((x: any) => typeof x?.name === "string").map((x: any) => ({ name: x.name, description: String(x.description ?? "") })) : [];
     const modes = Array.isArray(res.modes) ? res.modes.filter((m: any) => typeof m?.id === "string").map((m: any) => ({ id: m.id, label: String(m.label ?? m.id), hint: String(m.hint ?? "") })) : [];
     setState({ claudeModels: models, claudeCommands: commands, agentModes: modes });
+    // Model baru dimuat: perbarui daftar pilihan yang valid (mis. mode auto hanya untuk model yang mendukung).
     // Proses baru (sesi dilanjutkan) menghitung biaya dari nol lagi.
     const c = conv(key);
     c.costBase += c.lastCost;
     c.lastCost = 0;
+    return;
+  }
+  if (r.request_id === `cmds-${key}`) {
+    const commands = Array.isArray(r.response?.commands) ? r.response.commands.filter((x: any) => typeof x?.name === "string").map((x: any) => ({ name: x.name, description: String(x.description ?? "") })) : [];
+    setState({ claudeCommands: commands });
+    return;
+  }
+  if (r.request_id === `settings-${key}`) {
+    // get_settings: apakah Ultracode bisa aktif untuk akun/model ini.
+    setState({ claudeUltracodeAvailable: r.response?.applied?.ultracodeAvailable === true });
     return;
   }
   if (r.subtype === "error") {
@@ -475,18 +487,52 @@ export function agentChoice(agent = agentNow()): { model: string; effort: string
   return { model: p.model ?? "default", effort: p.effort ?? "auto", mode: p.mode ?? agentInfo(agent).caps.modes[0]?.id ?? "default" };
 }
 
+/** Pilihan Claude yang valid untuk model & CLI saat ini (tidak pernah mengirim yang akan dibuang/ditolak CLI). */
+export function effectiveClaudeChoice() {
+  const s = getState();
+  const c = agentChoice("claude");
+  const m = selectedModel(s.claudeModels, c.model);
+  const levels = claudeEffortLevels(m, s.claude?.efforts);
+  // Effort tersimpan yang tidak didukung model terpilih: jangan dikirim (UI juga menampilkannya "Otomatis").
+  const effort = c.effort !== "auto" && levels && levels.includes(c.effort) ? c.effort : null;
+  const allowed = claudeModesAvailable(s.claude, m, s.settings.allowDangerousModes).map((x) => x.id as string);
+  const mode = allowed.includes(c.mode) ? c.mode : "default";
+  const ultracode = s.settings.claudeUltracode && s.claudeUltracodeAvailable && levels !== null;
+  return { effort, mode, ultracode };
+}
+
 const cfgNow = () => {
   const s = getState();
   const c = agentChoice();
+  const claude = s.settings.agent === "claude" ? effectiveClaudeChoice() : null;
   return {
     cwd: s.root ?? "",
     model: c.model === "default" ? null : c.model,
-    effort: c.effort === "auto" ? null : c.effort,
-    mode: c.mode,
+    effort: claude ? claude.effort : c.effort === "auto" ? null : c.effort,
+    mode: claude ? claude.mode : c.mode,
     resume: s.chatSession,
     command: s.settings.agent === "acp" ? s.settings.acpCommand : undefined,
+    ...(claude ? { ultracode: claude.ultracode, allowDangerous: s.settings.allowDangerousModes } : {}),
   };
 };
+
+const warmed = new Set<string>();
+
+/** Claude siap dipakai: mulai prosesnya diam-diam supaya model/Ultracode/mode langsung tampil benar. */
+export async function warmClaude() {
+  const s = getState();
+  const key = s.chatKey;
+  if (s.settings.agent !== "claude" || warmed.has(key) || s.chatRunning) return;
+  const st = s.claude;
+  if (!st?.installed || st.loggedIn === false) return;
+  warmed.add(key);
+  ensureListeners();
+  try {
+    await api.agentWarm("claude", key, cfgNow());
+  } catch {
+    warmed.delete(key); // dicoba lagi lain kali; pesan pertama tetap memulai proses
+  }
+}
 
 export async function ensureConsent(): Promise<boolean> {
   if (getState().settings.claudeConsent) return true;
@@ -526,11 +572,17 @@ export async function sendToClaude(prompt: string, o: SendOptions = {}): Promise
     return false;
   }
   if (!(await ensureConsent())) return false;
-  const { resolveMentions } = await import("./mentions");
-  const mentioned = await resolveMentions(prompt);
-  if (mentioned.length) o = { ...o, extraContexts: [...(o.extraContexts ?? []), ...mentioned] };
-  if (pendingNote) o = { ...o, extraContexts: [...(o.extraContexts ?? []), { label: tl("Catatan dari editor"), body: pendingNote }] };
-  const { payload, summary } = buildPayload(prompt, o);
+  // Slash command CLI (/compact, /review, …) harus dikirim apa adanya: dibungkus konteks, CLI tidak
+  // mengenalinya sebagai perintah dan memperlakukannya sebagai teks biasa.
+  const slashName = /^\/([A-Za-z][\w:-]*)(?:\s|$)/.exec(prompt.trim())?.[1];
+  const cliSlash = (agent === "claude" || agent === "gemini" || agent === "acp") && !!slashName && getState().claudeCommands.some((c) => c.name === slashName);
+  if (!cliSlash) {
+    const { resolveMentions } = await import("./mentions");
+    const mentioned = await resolveMentions(prompt);
+    if (mentioned.length) o = { ...o, extraContexts: [...(o.extraContexts ?? []), ...mentioned] };
+    if (pendingNote) o = { ...o, extraContexts: [...(o.extraContexts ?? []), { label: tl("Catatan dari editor"), body: pendingNote }] };
+  }
+  const { payload, summary } = cliSlash ? { payload: prompt.trim(), summary: "" } : buildPayload(prompt, o);
   if (getState().settings.claudeConfirm) {
     const ok = await ask({
       kind: "confirm",
@@ -706,13 +758,34 @@ export async function setClaudeModel(model: string) {
   await api.agentControl(agentNow(), getState().chatKey, { type: "control_request", request: { subtype: "set_model", model } }).catch(() => false);
 }
 
-/** Effort berlaku mulai pesan berikutnya (proses dimulai ulang dan sesi dilanjutkan). */
+/** Effort diterapkan langsung ke sesi yang berjalan (apply_flag_settings); tanpa memulai ulang proses. */
 export async function setClaudeEffort(effort: string) {
   await savePref("effort", effort);
+  if (agentNow() !== "claude") return;
+  const next = effectiveClaudeChoice().effort;
+  await api.agentControl(agentNow(), getState().chatKey, { type: "control_request", request: { subtype: "apply_flag_settings", settings: { effortLevel: next } } }).catch(() => false);
+}
+
+/** Ultracode: saklar sesi di bawah Effort. Berlaku langsung bila sesi berjalan, dan untuk sesi berikutnya. */
+export async function setClaudeUltracode(on: boolean) {
+  const { updateSettings } = await import("../app/actions");
+  updateSettings({ claudeUltracode: on });
+  await api.agentControl("claude", getState().chatKey, { type: "control_request", request: { subtype: "apply_flag_settings", settings: { ultracode: on ? true : null } } }).catch(() => false);
+}
+
+/** Mode izin yang bisa dipilih agen terpilih saat ini (Claude: dibatasi CLI, model, dan izin mode berbahaya). */
+export function modesAvailable(agent = agentNow()) {
+  const s = getState();
+  if (agent === "claude") return claudeModesAvailable(s.claude, selectedModel(s.claudeModels, s.settings.claudeModel), s.settings.allowDangerousModes);
+  const base = agentInfo(agent).caps.modes;
+  const modes = base.length ? base : s.agentModes;
+  // Modes "tanpa bertanya" (yolo, full access, bypass) hanya bila diizinkan di Pengaturan → Izinkan mode berbahaya.
+  return s.settings.allowDangerousModes ? modes : modes.filter((m) => !/yolo|bypass|danger|full-?access/i.test(m.id));
 }
 
 export function cycleClaudeMode() {
-  const order = agentInfo(agentNow()).caps.modes.map((m) => m.id);
+  // Mode berbahaya tidak ikut siklus Shift+Tab: harus dipilih sengaja dari pemilih.
+  const order = modesAvailable().map((m) => m.id).filter((id) => id !== "bypassPermissions");
   if (!order.length) return;
   const cur = agentChoice().mode;
   void setClaudeMode(order[(order.indexOf(cur) + 1) % order.length]);

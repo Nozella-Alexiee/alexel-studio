@@ -22,3 +22,13 @@ describe("Codex app-server", () => {
     expect(parseError("biasa")).toBe("biasa");
   });
 });
+
+import { effortFor } from "./codex";
+describe("effort Codex per model", () => {
+  it("hanya mengirim effort yang didukung model", () => {
+    expect(effortFor("ultra", ["low", "medium", "high", "xhigh", "max", "ultra"])).toBe("ultra");
+    expect(effortFor("ultra", ["low", "medium", "high", "max"])).toBeUndefined();
+    expect(effortFor(null, ["low"])).toBeUndefined();
+    expect(effortFor("high", undefined)).toBe("high"); // daftar belum diketahui: kirim apa adanya
+  });
+});

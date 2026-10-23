@@ -178,6 +178,7 @@ export const api = {
   agentOnce: (agent: string, runId: string, cwd: string, prompt: string) => call<string>("agent_once", { agent, runId, cwd, prompt }),
   agentOnceCancel: (runId: string) => call<void>("agent_once_cancel", { runId }),
   gitCommitContext: (dir: string) => call<{ staged: boolean; files: string[]; diff: string; truncated: boolean; recent: string[] }>("git_commit_context", { dir }),
+  agentWarm: (agent: string, key: string, cfg: Record<string, unknown>) => call<void>("agent_warm", { agent, key, cfg }),
   checkpointList: (root: string, chatKey: string) => call<{ turnId: string; time: number; files: { path: string; created: boolean }[] }[]>("checkpoint_list", { root, chatKey }),
   checkpointPre: (root: string, chatKey: string, path: string) => call<{ content: string | null; turnId: string } | null>("checkpoint_pre", { root, chatKey, path }),
   checkpointRestore: (root: string, chatKey: string, turnId: string, paths?: string[]) =>

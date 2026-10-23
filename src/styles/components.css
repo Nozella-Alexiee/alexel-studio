@@ -4149,3 +4149,27 @@ select.input.select {
   flex: none;
   color: var(--claude);
 }
+
+/* Saklar kecil di bar pemilih (Ultracode) */
+.cz-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: 24px;
+  padding: 0 8px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--fg-muted);
+  font: 600 11.5px var(--font-ui);
+  cursor: pointer;
+}
+.cz-toggle:hover {
+  background: var(--surface-hover);
+  color: var(--fg);
+}
+.cz-toggle.is-on {
+  background: color-mix(in srgb, var(--claude) 18%, transparent);
+  border-color: color-mix(in srgb, var(--claude) 55%, var(--border));
+  color: var(--claude);
+}

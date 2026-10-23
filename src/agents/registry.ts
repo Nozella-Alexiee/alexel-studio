@@ -36,7 +36,15 @@ export const CLAUDE_MODES: { id: ClaudePermMode; label: string; hint: string }[]
   { id: "default", label: tl("Tanya dulu"), hint: tl("Agen meminta izin di panel sebelum mengedit berkas atau menjalankan perintah.") },
   { id: "acceptEdits", label: tl("Edit otomatis"), hint: tl("Edit berkas langsung diterapkan. Perintah shell tetap ditanyakan dulu.") },
   { id: "plan", label: tl("Rencana"), hint: tl("Agen hanya membaca dan menyusun rencana, tanpa mengubah apa pun.") },
+  { id: "auto", label: tl("Otomatis"), hint: tl("Claude memutuskan sendiri mana yang aman dijalankan tanpa bertanya; yang berisiko tetap ditanyakan.") },
 ];
+
+/** Hanya muncul bila pengguna menyalakannya di Pengaturan → Izinkan mode berbahaya. */
+export const CLAUDE_BYPASS_MODE: { id: ClaudePermMode; label: string; hint: string } = {
+  id: "bypassPermissions",
+  label: tl("Lewati semua izin"),
+  hint: tl("Semua edit dan perintah langsung dijalankan tanpa bertanya. Hanya untuk sandbox tanpa data penting."),
+};
 
 export const CODEX_MODES: AgentMode[] = [
   { id: "untrusted", label: tl("Tanya dulu"), hint: tl("Codex meminta izin sebelum menjalankan perintah atau mengubah berkas.") },
@@ -46,6 +54,7 @@ export const CODEX_MODES: AgentMode[] = [
 
 export const ANTIGRAVITY_MODES: AgentMode[] = [
   { id: "accept-edits", label: tl("Edit otomatis"), hint: tl("Antigravity boleh mengedit berkas. Mode headless tidak bisa bertanya; aksi lain yang butuh izin ditolak.") },
+  { id: "auto", label: tl("Otomatis"), hint: tl("Antigravity memutuskan sendiri aksi mana yang aman; yang butuh izin tetap ditolak di mode headless.") },
   { id: "plan", label: tl("Rencana"), hint: tl("Antigravity hanya membaca dan menyusun rencana.") },
   { id: "strict", label: tl("Ketat"), hint: tl("Semua aksi yang butuh izin ditolak otomatis.") },
 ];

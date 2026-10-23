@@ -11,10 +11,13 @@ import {
   ImagePlus,
   ListChecks,
   Pencil,
+  ShieldAlert,
+  ShieldCheck,
   ShieldQuestion,
   Square,
   TextCursorInput,
   X,
+  Zap,
 } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import * as docs from "../editor/documents";
@@ -34,8 +37,10 @@ import {
   setClaudeEffort,
   setClaudeMode,
   setClaudeModel,
+  setClaudeUltracode,
+  modesAvailable,
 } from "./claude";
-import { EFFORTS, effortLabel, modelChoices } from "./options";
+import { CLAUDE_DEFAULT_EFFORTS, claudeEffortLevels, effortLabel, EFFORTS, modelChoices, selectedModel } from "./options";
 import { agentInfo } from "../agents/registry";
 import { tl } from "../i18n";
 
@@ -159,6 +164,8 @@ const MODE_ICON: Record<string, React.ReactNode> = {
   "on-request": <Pencil size={12} aria-hidden />,
   plan: <ListChecks size={12} aria-hidden />,
   "read-only": <ListChecks size={12} aria-hidden />,
+  auto: <ShieldCheck size={12} aria-hidden />,
+  bypassPermissions: <ShieldAlert size={12} aria-hidden />,
 };
 
 // ---------------- Saran @ dan / ----------------
@@ -174,6 +181,7 @@ const LOCAL_CMDS = [
   { name: "mode", description: tl("Ganti mode izin") },
   { name: "clear", description: tl("Mulai percakapan baru") },
   { name: "resume", description: tl("Lanjutkan percakapan sebelumnya") },
+  { name: "ultracode", description: tl("Nyalakan atau matikan Ultracode") },
 ];
 
 export function Composer({ onShowHistory }: { onShowHistory: () => void }) {
@@ -183,11 +191,15 @@ export function Composer({ onShowHistory }: { onShowHistory: () => void }) {
   const agent = useStore((s) => s.settings.agent);
   const dynModes = useStore((s) => s.agentModes);
   const baseCaps = agentInfo(agent).caps;
-  const caps = useMemo(() => ({ ...baseCaps, modes: baseCaps.modes.length ? baseCaps.modes : dynModes }), [baseCaps, dynModes]);
   // Pilihan per agen (Claude memakai claudeModel dsb., agen lain agentPrefs).
   const choice = useStore((s) => (s.settings.agent === "claude" ? `${s.settings.claudeModel}|${s.settings.claudeEffort}|${s.settings.claudeMode}` : JSON.stringify(s.settings.agentPrefs[s.settings.agent] ?? {})));
   const { model, effort, mode } = useMemo(() => agentChoice(agent), [agent, choice]);
   const models = useStore((s) => s.claudeModels);
+  const claudeInfo = useStore((s) => s.claude);
+  const allowDangerous = useStore((s) => s.settings.allowDangerousModes);
+  const ultracodeOn = useStore((s) => s.settings.claudeUltracode);
+  const ultracodeAvail = useStore((s) => s.claudeUltracodeAvailable);
+  const caps = useMemo(() => ({ ...baseCaps, modes: modesAvailable(agent) }), [agent, baseCaps, dynModes, claudeInfo, models, allowDangerous]); // eslint-disable-line react-hooks/exhaustive-deps
   const cliCommands = useStore((s) => s.claudeCommands);
   const usage = useStore((s) => s.chatUsage);
   const tab = useStore((s) => activeTab(s));
@@ -225,12 +237,14 @@ export function Composer({ onShowHistory }: { onShowHistory: () => void }) {
   const modelValue = modelList.some((m) => m.value === model)
     ? model
     : "default";
-  const effortLevels = modelList.find(
-    (m) => m.value === modelValue,
-  )?.supportedEffortLevels;
-  const effortChoices = EFFORTS.filter(
-    (e) => e.id === "auto" || !effortLevels || effortLevels.includes(e.id),
-  );
+  const modelObj = selectedModel(models, modelValue);
+  // Claude: hanya effort yang didukung model terpilih (dan CLI); model tanpa pengaturan effort = kontrol tersembunyi.
+  // Agen lain: daftar dari modelnya bila ada, kalau tidak low…max (nilai khusus Codex tidak ikut ditawarkan sembarangan).
+  const claudeLevels = agent === "claude" ? claudeEffortLevels(modelObj, claudeInfo?.efforts) : null;
+  const showEffort = caps.effort && (agent !== "claude" || claudeLevels !== null);
+  const effortIds = agent === "claude" ? claudeLevels ?? CLAUDE_DEFAULT_EFFORTS : modelObj?.supportedEffortLevels ?? ["low", "medium", "high", "xhigh", "max"];
+  const effortChoices = [EFFORTS[0], ...effortIds.map((id) => ({ id, label: effortLabel(id) }))];
+  const showUltracode = agent === "claude" && ultracodeAvail && claudeLevels !== null;
 
   // ---- saran ----
   const refreshSuggest = (value: string, caret: number) => {
@@ -267,7 +281,7 @@ export function Composer({ onShowHistory }: { onShowHistory: () => void }) {
     if (slash) {
       const q = slash[1].toLowerCase();
       const all = [
-        ...LOCAL_CMDS.filter((c) => (c.name === "resume" ? caps.history : c.name === "effort" ? caps.effort : c.name === "mode" ? caps.modes.length > 0 : c.name === "model" ? caps.models : true)).map((c) => ({ ...c, local: true })),
+        ...LOCAL_CMDS.filter((c) => (c.name === "ultracode" ? agent === "claude" && ultracodeAvail : c.name === "resume" ? caps.history : c.name === "effort" ? caps.effort : c.name === "mode" ? caps.modes.length > 0 : c.name === "model" ? caps.models : true)).map((c) => ({ ...c, local: true })),
         ...cliCommands
           .filter((c) => !LOCAL_CMDS.some((l) => l.name === c.name))
           .map((c) => ({ ...c, local: false })),
@@ -299,6 +313,7 @@ export function Composer({ onShowHistory }: { onShowHistory: () => void }) {
     if (name === "clear") newConversation();
     else if (name === "resume") onShowHistory();
     else if (name === "mode") cycleClaudeMode();
+    else if (name === "ultracode") void setClaudeUltracode(!ultracodeOn);
     else
       (
         document.querySelector(
@@ -535,7 +550,7 @@ export function Composer({ onShowHistory }: { onShowHistory: () => void }) {
               }))}
               onPick={(v) => void setClaudeModel(v)}
             />
-            {caps.effort && (
+            {showEffort && (
             <Picker
               className="pick-effort"
               label="Effort"
@@ -551,6 +566,18 @@ export function Composer({ onShowHistory }: { onShowHistory: () => void }) {
               }))}
               onPick={(v) => void setClaudeEffort(v)}
             />
+            )}
+            {showUltracode && (
+              <button
+                type="button"
+                role="switch"
+                aria-checked={ultracodeOn}
+                className={`cz-toggle ${ultracodeOn ? "is-on" : ""}`}
+                title={tl("Ultracode: Claude bekerja lebih lama dan teliti pada tugas besar (mengerahkan banyak agen). Berlaku langsung.")}
+                onClick={() => void setClaudeUltracode(!ultracodeOn)}
+              >
+                <Zap size={12} aria-hidden /> Ultracode
+              </button>
             )}
           </div>
           <div className="cz-actions">

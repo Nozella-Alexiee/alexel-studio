@@ -151,6 +151,14 @@ function onUpdate(ctx: Ctx, key: string, s: Session, u: any) { // eslint-disable
     case "current_mode_update":
       s.cfg.mode = u.currentModeId ?? s.cfg.mode;
       return;
+    case "available_commands_update": {
+      // Slash command milik agen (Gemini: /memory, /tools, …): tampil di daftar "/" panel.
+      const commands = ((u.availableCommands ?? []) as { name?: unknown; description?: unknown }[])
+        .filter((c) => typeof c?.name === "string" && /^[\w:-]{1,60}$/.test(c.name as string))
+        .map((c) => ({ name: c.name as string, description: String(c.description ?? "").slice(0, 200) }));
+      emitLine(ctx, key, { type: "control_response", response: { subtype: "success", request_id: `cmds-${key}`, response: { commands } } });
+      return;
+    }
   }
 }
 

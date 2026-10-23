@@ -99,6 +99,7 @@ export function buildCommands(ctx: Ctx, hooks: { confirmClose: (win: BrowserWind
     checkpoint_list: (a) => CP.checkpointList(ctx, String(a.root ?? ""), String(a.chatKey ?? "")),
     checkpoint_pre: (a) => CP.checkpointPre(ctx, String(a.root ?? ""), String(a.chatKey ?? ""), String(a.path ?? "")),
     checkpoint_restore: (a) => CP.checkpointRestore(ctx, String(a.root ?? ""), String(a.chatKey ?? ""), String(a.turnId ?? ""), Array.isArray(a.paths) ? a.paths.map(String) : null),
+    agent_warm: (a) => agents.agentWarm(ctx, a.agent, String(a.key ?? ""), a.cfg ?? {}),
     agent_session_load: (a) => agents.agentSessionLoad(ctx, a.agent, String(a.cwd ?? ""), String(a.id ?? "")),
     claude_cancel: (a) => claude.claudeCancel(a.runId),
 

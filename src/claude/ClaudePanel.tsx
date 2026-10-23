@@ -8,7 +8,7 @@ import { timeAgo } from "../lib/format";
 import type { ClaudeSessionInfo } from "../lib/types";
 import { getState, setState, useStore } from "../state/store";
 import { Message } from "./ChatItems";
-import { detectAgent, installClaude, installCommand, loginClaude, newConversation, resumeSession, selectAgent, sendToClaude } from "./claude";
+import { detectAgent, warmClaude, installClaude, installCommand, loginClaude, newConversation, resumeSession, selectAgent, sendToClaude } from "./claude";
 import { AGENTS, agentInfo } from "../agents/registry";
 import { openMenu } from "../components/Overlays";
 import { Composer } from "./Composer";
@@ -183,6 +183,11 @@ export default function ClaudePanel() {
   useEffect(() => {
     if (!info) void detectAgent(agent);
   }, [info, agent]);
+  const chatKey = useStore((s) => s.chatKey);
+  const claudeReady = agent === "claude" && !!info?.installed && info.loggedIn !== false;
+  useEffect(() => {
+    if (claudeReady) void warmClaude();
+  }, [claudeReady, chatKey]);
   // Belum masuk / belum terpasang: periksa lagi saat jendela kembali fokus (mis. selesai login di browser/terminal).
   const needsSetup = !info || !info.installed || info.loggedIn === false;
   useEffect(() => {

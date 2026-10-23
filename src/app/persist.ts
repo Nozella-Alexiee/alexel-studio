@@ -57,7 +57,10 @@ function sanitizeSettings(raw: Partial<Settings> | null): Settings {
   s.terminalFontSize = Math.min(24, Math.max(9, Number(s.terminalFontSize) || 12));
   // Pengaturan lama: "read" → plan, "edit" → acceptEdits.
   const mode = s.claudeMode as string;
-  s.claudeMode = mode === "edit" ? "acceptEdits" : mode === "read" ? "plan" : mode === "acceptEdits" || mode === "plan" ? mode : "default";
+  // bypassPermissions tidak pernah jadi mode awal (mode berbahaya harus dipilih sadar tiap sesi).
+  s.claudeMode = mode === "edit" ? "acceptEdits" : mode === "read" ? "plan" : mode === "acceptEdits" || mode === "plan" || mode === "auto" ? mode : "default";
+  s.claudeUltracode = s.claudeUltracode === true;
+  s.allowDangerousModes = s.allowDangerousModes === true;
   if (typeof s.claudeModel !== "string" || !/^[A-Za-z0-9._[\]-]{1,80}$/.test(s.claudeModel)) s.claudeModel = "default";
   if (!["auto", "low", "medium", "high", "xhigh", "max"].includes(s.claudeEffort)) s.claudeEffort = "auto";
   // Versi lama menampilkan dialog di setiap pesan; sekarang cukup persetujuan sekali.

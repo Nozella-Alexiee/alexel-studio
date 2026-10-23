@@ -19,6 +19,9 @@ export interface AgentStatus {
   /** null = tidak diketahui. */
   loggedIn?: boolean | null;
   plan?: string | null;
+  /** Pilihan yang diterima CLI (dari --help): mode izin & effort. */
+  permissionModes?: string[];
+  efforts?: string[];
   /** "system" = sudah ada di komputer, "extension" = dipasang dari panel Ekstensi. */
   source?: "system" | "extension" | null;
   error?: string | null;
@@ -123,6 +126,13 @@ function withCheckpoints(ctx: Ctx): Ctx {
     wrapped.set(ctx, w);
   }
   return w;
+}
+
+/** Siapkan proses agen sebelum pesan pertama (hanya Claude: memuat daftar model & kemampuan). */
+export function agentWarm(ctx: Ctx, id: unknown, key: string, cfg: Record<string, unknown>) {
+  if (id !== "claude") return;
+  useExtClaude(ctx);
+  claude.claudeSessionWarm(withCheckpoints(ctx), key, cfg ?? {});
 }
 
 export function agentSend(ctx: Ctx, id: unknown, key: string, cfg: Record<string, unknown>, content: unknown) {
