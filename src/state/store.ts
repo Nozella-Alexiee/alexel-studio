@@ -16,7 +16,7 @@ export const newChatKey = () => `c-${Date.now().toString(36)}-${++chatSeq}`;
 
 export type PanelId = "terminal" | "problems" | "output" | "ports" | "todo" | "history" | "debug";
 export type SideView = "files" | "search" | "git" | "todo" | "ext" | "outline" | "run" | "exviews";
-export type RightView = "claude" | "git";
+export type RightView = "claude" | "git" | "extviews";
 export type PreviewMode = "code" | "split" | "preview";
 
 export interface Settings {

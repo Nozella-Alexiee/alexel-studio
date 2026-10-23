@@ -71,7 +71,7 @@ export default function ControlShell() {
     ["run", <Bug size={19} />, `Run & Debug (${prettyKeys("Mod+Shift+D")})`, () => A.toggleSidebar("run"), l.sidebar && l.sideView === "run"],
     ["todo", <ListTodo size={19} />, "TODO", () => A.toggleSidebar("todo"), l.sidebar && l.sideView === "todo"],
     ["ext", <Puzzle size={19} />, "Ekstensi", () => A.toggleSidebar("ext"), l.sidebar && l.sideView === "ext"],
-    ...(hasViews ? ([["exviews", <Layers size={19} />, tl("Tampilan ekstensi"), () => A.toggleSidebar("exviews"), l.sidebar && l.sideView === "exviews"]] as typeof rail) : []),
+    ...(hasViews ? ([["exviews", <Layers size={19} />, tl("Tampilan ekstensi"), () => A.toggleRight("extviews"), l.right && l.rightView === "extviews"]] as typeof rail) : []),
     ["ports", <Network size={19} />, "Port & proses", () => A.togglePanel("ports"), l.panel && l.panelTab === "ports"],
     ["claude", <Kepi size={21} />, `${tl("Agen AI")} (${prettyKeys("Mod+Alt+B")})`, () => A.toggleRight("claude"), l.right && l.rightView === "claude"],
   ];

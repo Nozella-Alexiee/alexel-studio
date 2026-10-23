@@ -34,7 +34,7 @@ export default function StudioShell() {
     ["todo", <ListTodo size={22} strokeWidth={1.6} />, "TODO", () => A.toggleSidebar("todo"), l.sidebar && l.sideView === "todo"],
     ["outline", <ListTree size={22} strokeWidth={1.6} />, tl("Outline (struktur berkas)"), () => A.toggleSidebar("outline"), l.sidebar && l.sideView === "outline"],
     ["ext", <Puzzle size={22} strokeWidth={1.6} />, `Ekstensi (${prettyKeys("Mod+Shift+X")})`, () => A.toggleSidebar("ext"), l.sidebar && l.sideView === "ext"],
-    ...(hasViews ? ([["exviews", <Layers size={22} strokeWidth={1.6} />, tl("Tampilan ekstensi"), () => A.toggleSidebar("exviews"), l.sidebar && l.sideView === "exviews"]] as typeof items) : []),
+    ...(hasViews ? ([["exviews", <Layers size={22} strokeWidth={1.6} />, tl("Tampilan ekstensi"), () => A.toggleRight("extviews"), l.right && l.rightView === "extviews"]] as typeof items) : []),
   ];
 
   return (

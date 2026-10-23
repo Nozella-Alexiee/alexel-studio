@@ -109,6 +109,11 @@ export default function ZenShell() {
           <button className={`tbtn ${l.right ? "is-on" : ""}`} onClick={() => A.toggleRight("claude")} title={`${tl("Agen AI")} (${prettyKeys("Mod+Alt+B")})`}>
             <Kepi size={16} /> <span>{tl("Agen AI")}</span>
           </button>
+          {hasViews && (
+            <IconButton label={tl("Tampilan ekstensi")} active={l.right && l.rightView === "extviews"} onClick={() => A.toggleRight("extviews")}>
+              <Layers size={15} />
+            </IconButton>
+          )}
           <IconButton label={tl("Pengaturan")} keys="Mod+," onClick={() => A.openSettings()}>
             <Settings size={15} />
           </IconButton>
@@ -131,7 +136,6 @@ export default function ZenShell() {
                     ["todo", <ListTodo size={14} />, "TODO"],
                     ["run", <Bug size={14} />, "Run & Debug"],
                     ["ext", <Puzzle size={14} />, "Ekstensi"],
-                    ...(hasViews ? ([["exviews", <Layers size={14} />, tl("Tampilan ekstensi")]] as const) : []),
                   ] as const
                 ).map(([id, icon, label]) => (
                   <button key={id} role="tab" aria-selected={l.sideView === id} className={l.sideView === id ? "is-on" : ""} onClick={() => setLayout({ sideView: id })} title={label} aria-label={label}>

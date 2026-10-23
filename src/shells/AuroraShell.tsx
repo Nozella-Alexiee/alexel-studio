@@ -82,7 +82,6 @@ export default function AuroraShell() {
                   { id: "search", label: tl("Cari") },
                   { id: "todo", label: "TODO" },
                   { id: "ext", label: <Puzzle size={13} />, title: tl("Ekstensi") },
-                  ...(hasViews ? [{ id: "exviews" as SideView, label: <Layers size={13} />, title: tl("Tampilan ekstensi") }] : []),
                   { id: "run", label: <Bug size={13} />, title: "Run & Debug" },
                   { id: "outline", label: <ListTree size={13} />, title: tl("Outline (struktur berkas)") },
                 ]}
@@ -120,6 +119,7 @@ export default function AuroraShell() {
                   options={[
                     { id: "claude", label: <><Kepi size={14} /> {tl("Agen AI")}</> },
                     { id: "git", label: <><GitBranch size={12} /> Git</> },
+                    ...(hasViews ? [{ id: "extviews" as const, label: <><Layers size={12} /> {tl("Ekstensi")}</> }] : []),
                   ]}
                 />
               </div>

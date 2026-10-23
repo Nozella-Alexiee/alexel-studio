@@ -83,7 +83,7 @@ export function RightContent() {
   const layout = useLayout();
   return (
     <ErrorBoundary>
-      <Suspense fallback={<Loading />}>{layout.rightView === "claude" ? <ClaudePanel /> : <GitPanel />}</Suspense>
+      <Suspense fallback={<Loading />}>{layout.rightView === "claude" ? <ClaudePanel /> : layout.rightView === "extviews" ? <ExtViewsPanel /> : <GitPanel />}</Suspense>
     </ErrorBoundary>
   );
 }
