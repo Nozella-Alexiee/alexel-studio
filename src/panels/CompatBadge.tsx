@@ -32,6 +32,13 @@ export function useCompat(r: Pick<Result, "namespace" | "name" | "manifestUrl">)
 export function CompatBadge({ compat }: { compat: Compat | null | undefined }) {
   if (compat === undefined) return <span className="compat compat-wait">…</span>;
   if (compat === null) return null;
+  if (compat.server) {
+    return (
+      <span className="compat compat-full" title={tl("Data ekstensi + server bahasa sekali klik (autocomplete, hover, diagnostik). Fitur lain yang butuh kode ekstensi tidak berjalan.")}>
+        <CheckCircle2 size={11} aria-hidden /> {tl("Lengkap + server bahasa")}
+      </span>
+    );
+  }
   if (compat.level === "full") {
     return (
       <span className="compat compat-full" title={tl("Berjalan penuh: {list}.", { list: contribList(compat) })}>

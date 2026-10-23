@@ -5,6 +5,7 @@
 import { spawn, type ChildProcess } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
+import { managedById, managedInstalled, MANAGED } from "./managedServers";
 import { childEnv, findExecutable, killTree, spawnable, type Ctx } from "./util";
 
 export interface ServerDef {
@@ -36,8 +37,11 @@ function bundledPath(rel: string): string {
   return require.resolve(rel).replace(`app.asar${path.sep}`, `app.asar.unpacked${path.sep}`);
 }
 
-export function serverStatus() {
-  return SERVERS.map((s) => ({ id: s.id, name: s.name, langs: s.langs, available: s.bundled ? true : !!(s.bin && whichBin(s.bin)), bundled: !!s.bundled, install: s.install ?? null }));
+export function serverStatus(ctx: Ctx) {
+  const own = SERVERS.map((s) => ({ id: s.id, name: s.name, langs: s.langs, available: s.bundled ? true : !!(s.bin && whichBin(s.bin)), bundled: !!s.bundled, install: s.install ?? null, managed: false, version: null as string | null, extensionIds: [] as string[] }));
+  // Server terkurasi sekali klik: tersedia bila sudah dipasang dari aplikasi ini.
+  const managed = MANAGED.map((m) => ({ id: m.id, name: m.name, langs: m.langs, available: !!managedInstalled(ctx, m), bundled: false, install: null, managed: true, version: m.vsix.version, extensionIds: m.extensionIds }));
+  return [...own, ...managed];
 }
 
 interface Running {
@@ -70,27 +74,36 @@ export function parseFrames(buf: Buffer): { messages: string[]; rest: Buffer } {
 
 export const frame = (json: string) => `Content-Length: ${Buffer.byteLength(json, "utf8")}\r\n\r\n${json}`;
 
-export function lspStart(ctx: Ctx, serverId: string, root: string): { key: string; initializationOptions: unknown } {
+export function lspStart(ctx: Ctx, serverId: string, root: string): { key: string; initializationOptions: unknown; settings: Record<string, unknown> | null } {
+  const managed = managedById(serverId);
   const def = SERVERS.find((s) => s.id === serverId);
-  if (!def) throw new Error(`Server bahasa tidak dikenal: ${serverId}`);
+  if (!def && !managed) throw new Error(`Server bahasa tidak dikenal: ${serverId}`);
+  const settings = managed?.settings ?? null;
   const key = `${serverId}::${root}`;
   let initializationOptions: unknown = undefined;
-  if (def.bundled) initializationOptions = { tsserver: { fallbackPath: bundledPath("bundled-typescript/lib/tsserver.js") }, preferences: { includeCompletionsForModuleExports: true, includeCompletionsWithInsertText: true } };
-  if (running.has(key)) return { key, initializationOptions };
+  if (managed) initializationOptions = managed.init?.(managedInstalled(ctx, managed)?.dir ?? "");
+  if (def?.bundled) initializationOptions = { tsserver: { fallbackPath: bundledPath("bundled-typescript/lib/tsserver.js") }, preferences: { includeCompletionsForModuleExports: true, includeCompletionsWithInsertText: true } };
+  if (running.has(key)) return { key, initializationOptions, settings };
 
   let cmd: string;
   let args: string[];
   let env = childEnv();
-  if (def.bundled) {
+  if (managed) {
+    const inst = managedInstalled(ctx, managed);
+    if (!inst) throw new Error(`${managed.name} belum dipasang.`);
+    cmd = process.execPath;
+    args = [inst.entry, ...managed.args];
+    env = childEnv({ ELECTRON_RUN_AS_NODE: "1" });
+  } else if (def!.bundled) {
     // Jalankan dengan Node bawaan Electron supaya tidak bergantung Node milik pengguna.
     cmd = process.execPath;
     args = [bundledPath("typescript-language-server/lib/cli.mjs"), "--stdio"];
     env = childEnv({ ELECTRON_RUN_AS_NODE: "1" });
   } else {
-    const p = def.bin ? whichBin(def.bin) : null;
-    if (!p) throw new Error(`${def.name} belum terpasang. Pasang dengan: ${def.install}`);
+    const p = def!.bin ? whichBin(def!.bin) : null;
+    if (!p) throw new Error(`${def!.name} belum terpasang. Pasang dengan: ${def!.install}`);
     cmd = p;
-    args = def.args ?? [];
+    args = def!.args ?? [];
   }
   const sp = spawnable(cmd, args);
   const proc = spawn(sp.cmd, sp.args, { cwd: fs.existsSync(root) ? root : undefined, env, stdio: ["pipe", "pipe", "pipe"], windowsHide: true, windowsVerbatimArguments: sp.verbatim });
@@ -116,7 +129,7 @@ export function lspStart(ctx: Ctx, serverId: string, root: string): { key: strin
   };
   proc.on("exit", gone);
   proc.on("error", () => gone(null));
-  return { key, initializationOptions };
+  return { key, initializationOptions, settings };
 }
 
 export function lspSend(key: string, message: string) {

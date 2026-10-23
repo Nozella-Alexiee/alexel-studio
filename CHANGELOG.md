@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.6.2
+
+New:
+
+- **One-click language servers** for **YAML**, **Prisma** and **Dockerfile** (Settings → Language
+  servers, or right after installing the matching extension from the catalog): autocomplete, hover,
+  and diagnostics, no terminal install. Each is a pinned Open VSX package (version + SHA-256 are
+  checked against values reviewed in this repo), only the server files are extracted, and you confirm
+  before anything runs. Extension code (`extension.js`) is still never run.
+- LSP client now answers server→client requests (`workspace/configuration`,
+  `client/registerCapability`, …) instead of returning "method not found", which crashed some servers.
+- Catalog badge **Full + language server** for those extensions.
+
 ## 0.6.1
 
 New:

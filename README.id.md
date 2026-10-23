@@ -143,6 +143,7 @@ Pasang agen dan ekstensi data VS Code tanpa hambatan:
 * Telusuri seluruh **Open VSX Registry** (20.000+ ekstensi): cari tanpa memilih kategori, urutkan menurut unduhan/rating/terbaru, muat halaman berikutnya, dan baca README, changelog, serta versi tiap ekstensi.
 * Setiap hasil menunjukkan sebelum diunduh apakah akan berfungsi: **Lengkap**, **Sebagian**, atau **Butuh kode ekstensi**. Alexel Studio memakai tema, tema ikon, snippet, grammar TextMate, dan konfigurasi bahasa (komentar, kurung) dari ekstensi; kode JavaScript ekstensi tidak pernah dijalankan, jadi fitur yang butuh kode itu (perintah, debugger, server bahasa bawaan ekstensi) tidak tersedia, dan daftar menunjuk padanan bawaannya bila ada (Prettier, panel Git, agen AI, pratinjau HTML…).
 * Kelola ekstensi terpasang: aktif/nonaktif, perbarui (satu atau semua), pasang versi tertentu. Pemasangan atomik.
+* **Server bahasa sekali klik** untuk YAML, Prisma, dan Dockerfile (di-pin + diverifikasi SHA-256, dikonfirmasi sebelum dijalankan).
 * **Prettier bawaan**: Shift+Alt+F merapikan JS/TS, JSON, CSS/SCSS/Less, HTML, Markdown, dan YAML sesuai `.prettierrc`; bisa juga saat menyimpan.
 
 ---

@@ -143,6 +143,7 @@ Install agents and VS Code data extensions with zero friction:
 * Browse the whole **Open VSX Registry** (20,000+ extensions): search without picking a category, sort by downloads/rating/newest, page through results, and read each extension's README, changelog and versions.
 * Every result shows up front, before downloading, whether it will work: **Full**, **Partial**, or **Needs extension code**. Alexel Studio uses an extension's themes, icon themes, snippets, TextMate grammars and language configuration (comments, brackets); extension JavaScript is never run, so features that need it (commands, debuggers, language servers shipped inside an extension) are not available, and the list points to the built-in equivalent when there is one (Prettier, Git panel, AI agents, HTML preview…).
 * Manage installed extensions: enable/disable, update (single or all), install a specific version. Installs are atomic.
+* **One-click language servers** for YAML, Prisma and Dockerfile (pinned + SHA-256 verified, confirmed before they run).
 * **Prettier is built in**: Shift+Alt+F formats JS/TS, JSON, CSS/SCSS/Less, HTML, Markdown and YAML, honouring `.prettierrc`; optional format on save.
 
 ---

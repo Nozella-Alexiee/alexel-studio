@@ -329,6 +329,11 @@ export function setDocEol(path: string, eol: "lf" | "crlf") {
   if (tab) setState((s) => ({ tabs: { ...s.tabs, [path]: { ...tab, dirty: true } } }));
 }
 
+/** Setelah server bahasa baru dipasang: dokumen yang terbuka ikut dihubungkan tanpa dibuka ulang. */
+export function reattachLsp() {
+  for (const doc of docs.values()) if (!doc.lsp) void attachLsp(doc);
+}
+
 export function redetectLanguages() {
   for (const doc of docs.values()) {
     if (doc.langFile) continue;

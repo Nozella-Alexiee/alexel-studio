@@ -1,6 +1,7 @@
 // Daftar command yang boleh dipanggil renderer. Nama & bentuk data sama dengan versi Tauri
 // (lihat src/lib/ipc.ts), jadi frontend tidak perlu berubah.
 
+import { managedInstall as installManaged, managedRemove } from "./managedServers";
 import { app, BrowserWindow, clipboard, ClipboardItem, dialog, powerMonitor, shell } from "electron";
 import fs from "node:fs";
 import os from "node:os";
@@ -124,7 +125,13 @@ export function buildCommands(ctx: Ctx, hooks: { confirmClose: (win: BrowserWind
     ext_read_file: (a) => X.extReadFile(ctx, a.id, a.path),
 
     // Language server
-    lsp_status: () => lsp.serverStatus(),
+    lsp_status: () => lsp.serverStatus(ctx),
+    lsp_install: (a) => installManaged(ctx, String(a.id)),
+    lsp_remove: (a) => {
+      lsp.killAllLsp();
+      managedRemove(ctx, String(a.id));
+      return null;
+    },
     lsp_start: (a) => lsp.lspStart(ctx, a.serverId, a.root),
     lsp_send: (a) => lsp.lspSend(a.key, a.message),
     lsp_stop: (a) => lsp.lspStop(a.key),

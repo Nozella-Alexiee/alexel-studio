@@ -2,6 +2,8 @@
 // Alexel Studio hanya memakai kontribusi data (tema, tema ikon, snippet, grammar, konfigurasi
 // bahasa); kode JavaScript ekstensi tidak dijalankan.
 
+import { MANAGED } from "./managedServers";
+
 export type CompatLevel = "full" | "partial" | "none";
 
 export interface Compatibility {
@@ -14,6 +16,8 @@ export interface Compatibility {
   needs: string[];
   /** Pengganti bawaan Alexel Studio bila ada (kunci terjemahan tl()). */
   alt: string | null;
+  /** Server bahasa terkurasi yang bisa dipasang sekali klik untuk ekstensi ini (id server). */
+  server: string | null;
 }
 
 interface Pkg {
@@ -69,6 +73,9 @@ const ALTERNATIVES: Record<string, string> = {
   "alefragnani.bookmarks": "Belum didukung.",
 };
 
+/** Server bahasa terkurasi untuk ekstensi (id kecil `ns.name`). */
+export const serverFor = (id: string): string | null => MANAGED.find((s) => s.extensionIds.some((e) => e.toLowerCase() === id.toLowerCase()))?.id ?? null;
+
 export const alternativeFor = (id: string): string | null => ALTERNATIVES[id.toLowerCase()] ?? null;
 
 export function classifyManifest(pkg: Pkg, id = ""): Compatibility {
@@ -78,5 +85,5 @@ export function classifyManifest(pkg: Pkg, id = ""): Compatibility {
   const alt = alternativeFor(id);
   // Ekstensi dengan data sekaligus kode: bagian datanya jalan, fitur kodenya tidak.
   const level: CompatLevel = data.length === 0 ? "none" : code ? "partial" : "full";
-  return { level, data, code, needs, alt };
+  return { level, data, code, needs, alt, server: serverFor(id) };
 }

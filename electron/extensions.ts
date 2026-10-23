@@ -1,5 +1,6 @@
 // Ekstensi dari Open VSX — HANYA kontribusi data: tema warna, snippet, grammar TextMate,
 // dan definisi bahasa. Kode JavaScript ekstensi tidak pernah diekstrak apalagi dijalankan.
+// (Pengecualian terkurasi: server bahasa pilihan di managedServers.ts, di-pin SHA-256.)
 
 import { createHash } from "node:crypto";
 import fs from "node:fs";
@@ -159,7 +160,7 @@ export async function extDetails(namespace: string, name: string): Promise<ExtDe
   if (!validId(namespace) || !validId(name)) throw new Error("Nama ekstensi tidak valid.");
   const m = (await getJson(`${API}/${encodeURIComponent(namespace)}/${encodeURIComponent(name)}`)) as Record<string, any>; // eslint-disable-line @typescript-eslint/no-explicit-any
   const [readme, changelog, manifest] = await Promise.all([getText(m.files?.readme), getText(m.files?.changelog), getText(m.files?.manifest, 2_000_000)]);
-  let compat: Compatibility = { level: "none", data: [], code: false, needs: [], alt: null };
+  let compat: Compatibility = { level: "none", data: [], code: false, needs: [], alt: null, server: null };
   try {
     compat = classifyManifest(JSON.parse(manifest), `${namespace}.${name}`);
   } catch {

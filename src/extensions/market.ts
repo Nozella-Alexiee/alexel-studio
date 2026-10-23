@@ -31,6 +31,7 @@ export interface Compat {
   code: boolean;
   needs: string[];
   alt: string | null;
+  server: string | null;
 }
 
 export interface Details {

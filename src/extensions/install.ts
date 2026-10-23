@@ -4,6 +4,8 @@ import * as A from "../app/actions";
 import { call, errMsg } from "../lib/ipc";
 import { confirmDialog, getState, toast } from "../state/store";
 import { installAgent, agentForPackage } from "../panels/AgentExtensions";
+import { serverStatus } from "../editor/lsp";
+import { installServer } from "./servers";
 import { tl } from "../i18n";
 import { loadExtensions, type InstalledExt } from "./registry";
 
@@ -19,6 +21,9 @@ export async function installExtension(namespace: string, name: string, opts: { 
     const m = await call<InstalledExt>("ext_install", { namespace, name, version: opts.version ?? null });
     await loadExtensions();
     toast(tl("{name} terpasang", { name: m.displayName }), "success");
+    // Ekstensi yang punya server bahasa terkurasi: tawarkan server-nya (konfirmasi eksplisit).
+    const srv = (await serverStatus()).find((s) => s.managed && !s.available && s.extensionIds?.some((e) => e.toLowerCase() === m.id.toLowerCase()));
+    if (srv && !opts.quiet) await installServer(srv);
     if (opts.quiet) return m;
     if (m.themes[0] && (await confirmDialog(tl("Pakai tema {name}?", { name: m.themes[0].label }), tl("Warnanya diterapkan di atas desain yang sedang dipakai. Tata letak dan Nozi tetap."), tl("Pakai")))) {
       A.updateSettings({ extTheme: { ext: m.id, path: m.themes[0].path, label: m.themes[0].label, uiTheme: m.themes[0].uiTheme } });

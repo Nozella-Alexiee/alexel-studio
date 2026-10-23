@@ -69,8 +69,21 @@ function LanguageServers() {
         <p className="hint">{tl("Hanya tersedia di aplikasi desktop.")}</p>
       ) : (
         list.map((s) => (
-          <Row key={s.id} label={s.name} hint={s.bundled ? "Dibundel bersama Alexel Studio" : s.available ? tl("Terpasang") : s.install ?? undefined}>
-            {s.available ? (
+          <Row key={s.id} label={s.name} hint={s.bundled ? "Dibundel bersama Alexel Studio" : s.managed ? (s.available ? tl("Terpasang dari Alexel Studio (v{v})", { v: s.version ?? "" }) : tl("Pasang sekali klik dari Open VSX")) : s.available ? tl("Terpasang") : s.install ?? undefined}>
+            {s.managed ? (
+              s.available ? (
+                <>
+                  <span className="tone-success-fg">{tl("Aktif")}</span>
+                  <button className="btn btn-sm btn-ghost" onClick={() => void import("../extensions/servers").then((m) => m.removeServer(s)).then(refresh)}>
+                    {tl("Hapus")}
+                  </button>
+                </>
+              ) : (
+                <button className="btn btn-sm btn-primary" onClick={() => void import("../extensions/servers").then((m) => m.installServer(s)).then(refresh)}>
+                  {tl("Pasang")}
+                </button>
+              )
+            ) : s.available ? (
               <span className="tone-success-fg">{tl("Aktif")}</span>
             ) : (
               <button

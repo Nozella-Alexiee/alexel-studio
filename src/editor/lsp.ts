@@ -10,6 +10,7 @@ import { call, isNative, on } from "../lib/ipc";
 import { extname, isInside } from "../lib/paths";
 import { getState, setState, type Problem } from "../state/store";
 import { tl } from "../i18n";
+import { answerServerRequest } from "./lspShim";
 
 export interface ServerStatus {
   id: string;
@@ -18,6 +19,10 @@ export interface ServerStatus {
   available: boolean;
   bundled: boolean;
   install: string | null;
+  /** Server terkurasi yang dipasang dari aplikasi (Pengaturan → Server bahasa). */
+  managed?: boolean;
+  version?: string | null;
+  extensionIds?: string[];
 }
 
 let statusCache: Promise<ServerStatus[]> | null = null;
@@ -115,16 +120,22 @@ class NozelWorkspace extends Workspace {
 const clients = new Map<string, Promise<LSPClient | null>>();
 let listening = false;
 const handlers = new Map<string, Set<(m: string) => void>>();
+/** Penjawab request server→klien per kunci server (lihat lspShim.ts). */
+const responders = new Map<string, (m: string) => boolean>();
 
 function ensureListener() {
   if (listening) return;
   listening = true;
-  void on<{ key: string; message: string }>("lsp-message", ({ key, message }) => handlers.get(key)?.forEach((h) => h(message)));
+  void on<{ key: string; message: string }>("lsp-message", ({ key, message }) => {
+    if (responders.get(key)?.(message)) return;
+    handlers.get(key)?.forEach((h) => h(message));
+  });
   void on<{ key: string; text: string }>("lsp-log", ({ key, text }) => void import("../app/output").then((m) => m.logOutput("Server bahasa", `${key.split("::")[0]}: ${text}`)));
   void on<{ key: string }>("lsp-exit", ({ key }) => {
     // Kunci klien sama dengan kunci di main process ("server::root").
     clients.delete(key);
     handlers.delete(key);
+    responders.delete(key);
   });
 }
 
@@ -139,11 +150,17 @@ async function getClient(serverId: string, root: string): Promise<LSPClient | nu
     p = (async () => {
       ensureListener();
       try {
-        const { key, initializationOptions } = await call<{ key: string; initializationOptions: unknown }>("lsp_start", { serverId, root });
+        const { key, initializationOptions, settings } = await call<{ key: string; initializationOptions: unknown; settings: Record<string, unknown> | null }>("lsp_start", { serverId, root });
         const subs = new Set<(m: string) => void>();
         handlers.set(key, subs);
+        const send = (message: string) => void call("lsp_send", { key, message }).catch(() => {});
+        responders.set(key, (m) => {
+          const reply = answerServerRequest(m, { settings, rootUri: fileUri(root), rootName: root.split("/").pop() || root });
+          if (reply) send(reply);
+          return !!reply;
+        });
         const transport: Transport = {
-          send: (message) => void call("lsp_send", { key, message }).catch(() => {}),
+          send,
           subscribe: (h) => subs.add(h),
           unsubscribe: (h) => subs.delete(h),
         };

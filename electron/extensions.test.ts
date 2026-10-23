@@ -12,7 +12,7 @@ afterEach(() => vi.unstubAllGlobals());
 describe("kecocokan ekstensi", () => {
   it("tema murni = lengkap", () => {
     const c = classifyManifest({ contributes: { themes: [{ label: "X", path: "./t.json" }] } }, "a.b");
-    expect(c).toMatchObject({ level: "full", data: ["themes"], code: false });
+    expect(c).toMatchObject({ level: "full", data: ["themes"], code: false, server: null });
   });
 
   it("tema + kode = sebagian, dengan fitur yang butuh kode", () => {
