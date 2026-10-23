@@ -29,3 +29,4 @@ release
 # Lokal
 .claude/
 *.vsix
+release-local/

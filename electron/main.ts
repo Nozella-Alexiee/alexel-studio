@@ -184,6 +184,7 @@ function serveApp() {
   // Webview ekstensi (iframe ber-sandbox); lihat exthost/webviews.ts.
   protocol.handle("nozelweb", (req) => {
     const r = resolveWebview(req.url);
+    if (process.env.NOZEL_WEB_DEBUG) console.log("nozelweb", r.status, req.url.slice(0, 200).replace(/\/private\/tmp[^ ]*\/ext\//, "<ext>/"));
     return new Response(typeof r.body === "string" ? r.body : new Uint8Array(r.body), {
       status: r.status,
       headers: {
@@ -350,7 +351,7 @@ function createWindow() {
  *  cetak hasilnya, simpan screenshot, lalu keluar. Tidak aktif dalam pemakaian normal. */
 function runSmoke(w: BrowserWindow, scriptPath: string) {
   w.webContents.on("console-message", (e) => {
-    if (e.level === "error" || e.level === "warning") process.stdout.write(`SMOKE_CONSOLE ${e.level} ${e.message.slice(0, 400)}\n`);
+    if (e.level === "error" || e.level === "warning" || process.env.NOZEL_SMOKE_LOGS === "all") process.stdout.write(`SMOKE_CONSOLE ${e.level} ${e.message.slice(0, 400)}\n`);
   });
   w.webContents.once("did-finish-load", async () => {
     try {

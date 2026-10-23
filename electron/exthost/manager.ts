@@ -62,7 +62,8 @@ export class ExtHostManager {
     if (!exts.length) return { count: 0 };
     if (!fs.existsSync(this.script)) throw new Error("Extension host tidak ditemukan di build ini.");
     this.stopping = false;
-    const child = fork(this.script, [], { env: childEnv({ ELECTRON_RUN_AS_NODE: "1" }), stdio: ["ignore", "ignore", "pipe", "ipc"], cwd: o.root && fs.existsSync(o.root) ? o.root : undefined, windowsHide: true });
+    const child = fork(this.script, [], { env: childEnv({ ELECTRON_RUN_AS_NODE: "1" }), // "advanced" = structured clone: pesan webview boleh berisi ArrayBuffer/typed array (mis. Cap'n Proto di Codex).
+      serialization: "advanced", stdio: ["ignore", "ignore", "pipe", "ipc"], cwd: o.root && fs.existsSync(o.root) ? o.root : undefined, windowsHide: true });
     this.child = child;
     const rpc = new Rpc((m) => child.send(m));
     this.rpc = rpc;

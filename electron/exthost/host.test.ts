@@ -104,7 +104,7 @@ beforeAll(async () => {
   fs.writeFileSync(path.join(extDir, "package.json"), JSON.stringify(manifest));
   fs.writeFileSync(path.join(extDir, "extension.js"), EXT_JS);
 
-  child = fork(bundle, [], { env: { ...process.env, ELECTRON_RUN_AS_NODE: "1" }, stdio: ["ignore", "pipe", "pipe", "ipc"] });
+  child = fork(bundle, [], { serialization: "advanced", env: { ...process.env, ELECTRON_RUN_AS_NODE: "1" }, stdio: ["ignore", "pipe", "pipe", "ipc"] });
   child.stderr?.on("data", (d) => process.stderr.write(d));
   rpc = new Rpc((m) => child.send(m));
   rpc.requests.set("ui/message", (p) => {

@@ -70,16 +70,28 @@ export function registerFrame(id: number, frame: HTMLIFrameElement | null) {
   frame.addEventListener("load", () => {
     loaded.add(id);
     sendTheme(id);
-    for (const m of queue.get(id) ?? []) frame.contentWindow?.postMessage(m, "*");
+    for (const m of queue.get(id) ?? []) frame.contentWindow?.postMessage({ __alexelPost: true, message: m }, "*");
     queue.delete(id);
   });
 }
 
+const trace = (dir: string, id: number, m: unknown) => {
+  if (!(window as unknown as { __webviewDebug?: boolean }).__webviewDebug) return;
+  const x = m as { type?: string; request?: { type?: string }; message?: { type?: string; request?: { type?: string } } | unknown[] };
+  const t = Array.isArray(x?.message) ? `${x.type}:${String(x.message[0])}` : `${x?.type}:${(x?.message as { type?: string; request?: { type?: string } } | undefined)?.type ?? ""}${x?.request?.type ?? (x?.message as { request?: { type?: string } } | undefined)?.request?.type ?? ""}`;
+  void import("../app/output").then((o) => o.logOutput("Webview", `${dir} ${panels(id)} ${t}`));
+};
+
 export function postToWebview(id: number, message: unknown) {
+  trace("->page", id, message);
   const f = frames.get(id);
-  if (f?.contentWindow && loaded.has(id)) f.contentWindow.postMessage(message, "*");
+  // Dibungkus: skrip awal di dalam iframe mengirim ulang sebagai event satu-origin, seperti di VS Code
+  // (banyak halaman webview menolak pesan yang origin-nya bukan window.location.origin).
+  if (f?.contentWindow && loaded.has(id)) f.contentWindow.postMessage({ __alexelPost: true, message }, "*");
   else queue.set(id, [...(queue.get(id) ?? []), message]);
 }
+
+const panels = (id: number) => useWebviews.getState().panels[id]?.viewType ?? String(id);
 
 let listening = false;
 export function listenWebviewMessages() {
@@ -90,7 +102,13 @@ export function listenWebviewMessages() {
     if (!d || typeof d.__alexelWebview !== "number") return;
     const f = frames.get(d.__alexelWebview);
     if (!f || e.source !== f.contentWindow) return; // hanya dari iframe milik panel itu
+    if (d.type === "msg") trace("<-page", d.__alexelWebview, d.message);
     if (d.type === "msg") hostNotify("webview/message", { id: d.__alexelWebview, message: d.message });
+    // Galat/peringatan dari dalam webview dicatat di Output → Webview (membantu melacak ekstensi yang tak tampil).
+    else if (d.type === "log") {
+      const m = d as unknown as { level: string; text: string };
+      void import("../app/output").then((o) => o.logOutput("Webview", `[${panels(d.__alexelWebview as number)}] ${m.level}: ${String(m.text).slice(0, 2000)}`));
+    }
   });
 }
 
