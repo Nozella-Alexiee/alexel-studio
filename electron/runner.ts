@@ -1,6 +1,7 @@
 // Smart Run: perintah untuk berkas aktif + deteksi target dari package.json, Cargo.toml,
 // Makefile, composer.json, go.mod, deno.json, docker compose. Dijalankan di terminal PTY.
 
+import { parseJsonc } from "./jsonc";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
@@ -287,6 +288,59 @@ function readJson(p: string): Record<string, unknown> | null {
   }
 }
 
+const FOLDER = /\$\{(?:workspaceFolder|workspaceRoot)\}/g;
+
+/** Target dari konfigurasi project: `.alexel/run.json`, `.vscode/tasks.json`, dan `.vscode/launch.json` (program Node/Python). */
+export function configuredTargets(root: string, platform: Platform = process.platform): RunTarget[] {
+  const { sq } = shellOps(platform);
+  const sub = (s: string) => s.replace(FOLDER, root);
+  const cwdOf = (c: unknown) => (typeof c === "string" && c ? path.resolve(root, sub(c)) : root);
+  const out: RunTarget[] = [];
+  const read = (rel: string) => {
+    try {
+      return parseJsonc<Record<string, unknown>>(fs.readFileSync(path.join(root, rel), "utf8"));
+    } catch {
+      return null;
+    }
+  };
+
+  const mine = read(path.join(".alexel", "run.json"));
+  for (const t of Array.isArray(mine?.targets) ? (mine!.targets as Record<string, unknown>[]) : []) {
+    if (typeof t?.label !== "string" || typeof t.command !== "string") continue;
+    out.push(target("config", t.label, withEnv(t.env, t.command, platform), cwdOf(t.cwd), ".alexel/run.json"));
+  }
+
+  const tasks = read(path.join(".vscode", "tasks.json"));
+  for (const t of Array.isArray(tasks?.tasks) ? (tasks!.tasks as Record<string, unknown>[]) : []) {
+    if (typeof t?.label !== "string" || typeof t.command !== "string") continue;
+    const args = (Array.isArray(t.args) ? t.args : []).map((a) => (typeof a === "string" ? a : typeof (a as { value?: unknown })?.value === "string" ? (a as { value: string }).value : "")).map(sub);
+    // type "process": tiap argumen di-quote; "shell" (bawaan): perintah utuh seperti yang ditulis, argumen di-quote.
+    const head = t.type === "process" ? sq(sub(t.command)) : sub(t.command);
+    const opts = (t.options ?? {}) as { cwd?: unknown; env?: unknown };
+    out.push(target("task", t.label, withEnv(opts.env, [head, ...args.map(sq)].join(" "), platform), cwdOf(opts.cwd), ".vscode/tasks.json"));
+  }
+
+  const launch = read(path.join(".vscode", "launch.json"));
+  for (const c of Array.isArray(launch?.configurations) ? (launch!.configurations as Record<string, unknown>[]) : []) {
+    if (c?.request !== "launch" || typeof c.name !== "string" || typeof c.program !== "string") continue;
+    const prog = sq(sub(c.program));
+    const args = (Array.isArray(c.args) ? c.args : []).filter((a): a is string => typeof a === "string").map((a) => sq(sub(a)));
+    const runner = c.type === "node" ? "node" : c.type === "python" || c.type === "debugpy" ? pythonFor(platform, root).cmd : null;
+    if (!runner) continue;
+    out.push(target("launch", `${c.name} (launch.json)`, withEnv(c.env, [runner, prog, ...args].join(" "), platform), cwdOf(c.cwd), ".vscode/launch.json"));
+  }
+  return out;
+}
+
+/** Awalan variabel lingkungan: `$env:K='v'; ` di PowerShell, `K='v' ` di POSIX. Nama tidak valid dilewati. */
+export function withEnv(env: unknown, command: string, platform: Platform): string {
+  if (!env || typeof env !== "object") return command;
+  const { sq, win } = shellOps(platform);
+  const pairs = Object.entries(env as Record<string, unknown>).filter(([k, v]) => /^[A-Za-z_][A-Za-z0-9_]*$/.test(k) && (typeof v === "string" || typeof v === "number"));
+  if (!pairs.length) return command;
+  return win ? `${pairs.map(([k, v]) => `$env:${k}=${sq(String(v))}`).join("; ")}; ${command}` : `${pairs.map(([k, v]) => `${k}=${sq(String(v))}`).join(" ")} ${command}`;
+}
+
 export function detectTargets(root: string, platform: Platform = process.platform): RunTarget[] {
   const { sq } = shellOps(platform);
   const python = () => pythonFor(platform, root).cmd;
@@ -326,6 +380,7 @@ export function detectTargets(root: string, platform: Platform = process.platfor
     out.push(target("go", "go run .", "go run .", root, "go.mod"));
     out.push(target("go", "go test ./...", "go test ./...", root, "go.mod"));
   }
+  out.push(...configuredTargets(root, platform));
   for (const f of ["deno.json", "deno.jsonc"]) {
     const tasks = readJson(path.join(root, f))?.tasks as Record<string, unknown> | undefined;
     if (tasks) for (const n of Object.keys(tasks)) out.push(target("deno", `deno task ${n}`, `deno task ${sq(n)}`, root, f));

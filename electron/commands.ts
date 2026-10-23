@@ -224,6 +224,15 @@ export function buildCommands(ctx: Ctx, hooks: { confirmClose: (win: BrowserWind
       const png = new Blob([Buffer.from(m[1], "base64")], { type: "image/png" });
       await clipboard.write([new ClipboardItem({ "image/png": png })]);
     },
+    path_kinds: (a) =>
+      (Array.isArray(a.paths) ? (a.paths as string[]).slice(0, 20) : []).map((p) => {
+        try {
+          const st = fs.statSync(p);
+          return st.isDirectory() ? "dir" : st.isFile() ? "file" : null;
+        } catch {
+          return null;
+        }
+      }),
     path_is_dir: (a) => {
       try {
         return fs.statSync(a.path).isDirectory();

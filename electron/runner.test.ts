@@ -2,7 +2,8 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
-import { commandForFile, compilerFor, detectTargets, pythonFor } from "./runner";
+import { parseJsonc } from "./jsonc";
+import { commandForFile, compilerFor, configuredTargets, detectTargets, pythonFor } from "./runner";
 
 const tmp = () => fs.realpathSync.native(fs.mkdtempSync(path.join(os.tmpdir(), "alexel-run-")));
 const put = (d: string, rel: string, content = "x") => {
@@ -145,5 +146,61 @@ describe.skipIf(!onWin)("Run Windows: eksekusi nyata lewat PowerShell", () => {
     const r = runIt("npm -v", d);
     expect(r.stdout.trim()).toMatch(/^\d+\.\d+\.\d+/);
     expect(r.status).toBe(0);
+  });
+});
+
+describe("target dari konfigurasi project", () => {
+  const mk = (files: Record<string, string>) => {
+    const d = fs.realpathSync.native(fs.mkdtempSync(path.join(os.tmpdir(), "alexel-cfg-")));
+    for (const [rel, text] of Object.entries(files)) {
+      fs.mkdirSync(path.dirname(path.join(d, rel)), { recursive: true });
+      fs.writeFileSync(path.join(d, rel), text);
+    }
+    return d;
+  };
+
+  it(".vscode/tasks.json (dengan komentar & koma di akhir), shell vs process, cwd, env", () => {
+    const d = mk({
+      ".vscode/tasks.json": `{
+  // komentar
+  "version": "2.0.0",
+  "tasks": [
+    { "label": "build", "type": "shell", "command": "npm run build", "args": ["--", "--mode", "x y"], "options": { "cwd": "\${workspaceFolder}/sub", "env": { "NODE_ENV": "production" } }, },
+    { "label": "proses", "type": "process", "command": "\${workspaceFolder}/bin/tool", "args": ["a b"] },
+    { "bukan": "task" }
+  ]
+}`,
+    });
+    const t = configuredTargets(d, "linux");
+    expect(t.map((x) => x.label)).toEqual(["build", "proses"]);
+    expect(t[0].command).toBe("NODE_ENV=production npm run build -- --mode 'x y'");
+    expect(t[0].cwd).toBe(path.join(d, "sub"));
+    expect(t[1].command).toBe(`${d}/bin/tool 'a b'`);
+    expect(t[0].kind).toBe("task");
+  });
+
+  it("PowerShell: env sebagai $env:, argumen di-quote ala PowerShell", () => {
+    const d = mk({ ".vscode/tasks.json": `{"tasks":[{"label":"x","command":"node","args":["it's"],"options":{"env":{"A":"b c"}}}]}` });
+    expect(configuredTargets(d, "win32")[0].command).toBe("$env:A='b c'; node 'it''s'");
+  });
+
+  it(".alexel/run.json dan launch.json (node/python, tanpa attach)", () => {
+    const d = mk({
+      ".alexel/run.json": `{"targets":[{"label":"dev","command":"npm run dev","env":{"PORT":3000}},{"label":"tanpa-command"}]}`,
+      ".vscode/launch.json": `{"configurations":[{"type":"node","request":"launch","name":"App","program":"\${workspaceFolder}/index.js","args":["-v"]},{"type":"node","request":"attach","name":"Att"},{"type":"chrome","request":"launch","name":"Web","program":"x"}]}`,
+    });
+    const t = configuredTargets(d, "linux");
+    expect(t.map((x) => [x.kind, x.label])).toEqual([["config", "dev"], ["launch", "App (launch.json)"]]);
+    expect(t[0].command).toBe("PORT=3000 npm run dev");
+    expect(t[1].command).toBe(`node ${d}/index.js -v`);
+  });
+
+  it("berkas konfigurasi rusak atau tidak ada = tanpa target, tanpa galat", () => {
+    expect(configuredTargets(mk({ ".vscode/tasks.json": "{ rusak" }), "linux")).toEqual([]);
+    expect(configuredTargets(mk({}), "linux")).toEqual([]);
+  });
+
+  it("jsonc: komentar di dalam string tidak dihapus", () => {
+    expect(parseJsonc('{"u":"http://x//y /* z */", /* c */ "a":[1,2,],}')).toEqual({ u: "http://x//y /* z */", a: [1, 2] });
   });
 });

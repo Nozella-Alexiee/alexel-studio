@@ -3,6 +3,7 @@
 // ditutup atau desain diganti.
 
 import { FitAddon } from "@xterm/addon-fit";
+import { registerLocationLinks } from "./links";
 import { WebLinksAddon } from "@xterm/addon-web-links";
 import { Terminal, type ITheme } from "@xterm/xterm";
 import "@xterm/xterm/css/xterm.css";
@@ -160,6 +161,7 @@ function createRuntime(key: string): Runtime {
   const fit = new FitAddon();
   term.loadAddon(fit);
   term.loadAddon(new WebLinksAddon((_e, uri) => void openExternal(uri)));
+  registerLocationLinks(term, () => getState().terminals.find((t) => t.key === key)?.cwd ?? "");
   term.open(host);
   const rt: Runtime = { key, term, fit, host, ptyId: null, plain: "", ro: null };
   // Windows/Linux: Ctrl+C menyalin bila ada seleksi (tanpa seleksi tetap Ctrl+C ke program); Ctrl+V / Ctrl+Shift+V menempel.

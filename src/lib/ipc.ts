@@ -147,6 +147,7 @@ export const api = {
   runTargets: (projectDir: string) => call<RunTarget[]>("detect_run_targets", { projectDir }),
 
   settingsPath: () => call<string>("settings_path"),
+  pathKinds: (paths: string[]) => call<("file" | "dir" | null)[]>("path_kinds", { paths }),
   updateCheck: () => call<{ version: string | null; kind: "nsis" | "mac-zip" | "appimage" | null; manualReason: string | null; url: string | null }>("update_check"),
   updatePrepare: () => call<{ version: string; kind: string }>("update_prepare"),
   updateApply: () => call<void>("update_apply"),
