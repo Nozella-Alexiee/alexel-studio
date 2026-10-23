@@ -9,6 +9,7 @@ import * as agents from "./agents";
 import * as CP from "./checkpoints";
 import * as dap from "./dap";
 import { checkUpdate, repoSlug } from "./update";
+import { updateApply, updateCheck, updatePrepare } from "./updater";
 import * as claude from "./claude";
 import * as X from "./extensions";
 import * as F from "./fsOps";
@@ -187,6 +188,9 @@ export function buildCommands(ctx: Ctx, hooks: { confirmClose: (win: BrowserWind
     },
     menu_set: (a) => hooks.setMenu(a.spec),
     app_check_update: () => checkUpdate(),
+    update_check: () => updateCheck(),
+    update_prepare: () => updatePrepare(ctx),
+    update_apply: () => updateApply(),
     app_repo: () => repoSlug(),
     app_info: () => ({ version: app.getVersion(), electron: process.versions.electron, chrome: process.versions.chrome, node: process.versions.node, platform: process.platform, arch: process.arch, osBuild: process.platform === "win32" ? os.release().split(".")[2] : undefined }),
     /** Aksi jendela untuk menu bar di dalam jendela (Windows/Linux). */

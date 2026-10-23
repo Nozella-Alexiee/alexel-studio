@@ -130,6 +130,9 @@ Dibangun di atas standar resmi **Debug Adapter Protocol (DAP)**:
 
 ---
 
+### 3b. Memperbarui Aplikasi
+Buka **Pengaturan → Periksa sekarang** (atau notifikasi saat versi baru terbit) lalu pilih **Pasang pembaruan**. Pemasang diunduh dari rilis GitHub repositori ini, diverifikasi dengan SHA-512, dan dipasang saat aplikasi dimulai ulang. Berlaku di Windows, macOS, dan Linux AppImage; pengguna deb/rpm memperbarui lewat apt/dnf.
+
 ### 4. Toko Agen & Marketplace Ekstensi Open VSX
 <div align="center">
   <img src="docs/screenshots/ext.jpg" alt="Marketplace Ekstensi" width="90%" style="border-radius: 10px; border: 1px solid #334155;" />

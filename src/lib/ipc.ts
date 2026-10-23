@@ -147,6 +147,9 @@ export const api = {
   runTargets: (projectDir: string) => call<RunTarget[]>("detect_run_targets", { projectDir }),
 
   settingsPath: () => call<string>("settings_path"),
+  updateCheck: () => call<{ version: string | null; kind: "nsis" | "mac-zip" | "appimage" | null; manualReason: string | null; url: string | null }>("update_check"),
+  updatePrepare: () => call<{ version: string; kind: string }>("update_prepare"),
+  updateApply: () => call<void>("update_apply"),
   checkUpdate: () => call<{ repo: string | null; current: string; latest: string | null; url: string | null; newer: boolean }>("app_check_update"),
   appRepo: () => call<string | null>("app_repo"),
   gitClone: (url: string, parent: string) => call<string>("git_clone", { url, parent }),

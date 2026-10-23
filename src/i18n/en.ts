@@ -1065,4 +1065,13 @@ export const EN: Record<string, string> = {
   "Dokumen berubah saat dirapikan; coba lagi.": "The document changed while formatting; try again.",
   "Rapikan saat menyimpan": "Format on save",
   "Prettier untuk JS/TS, JSON, CSS, HTML, Markdown, dan YAML. Aturan di .prettierrc dipakai.": "Prettier for JS/TS, JSON, CSS, HTML, Markdown and YAML. Rules in .prettierrc are used.",
+  "Alexel Studio ditutup lalu dibuka lagi dengan versi baru. Berkas yang belum disimpan ditanyakan dulu.": "Alexel Studio closes and reopens on the new version. You'll be asked about unsaved files first.",
+  "Mengunduh Alexel Studio {v}… kamu bisa tetap bekerja.": "Downloading Alexel Studio {v}… you can keep working.",
+  "Mulai ulang & perbarui": "Restart & update",
+  "Pasang lewat paket manager (apt/dnf) atau unduh versi baru.": "Update with your package manager (apt/dnf) or download the new version.",
+  "Pasang pembaruan": "Install update",
+  "Pembaruan gagal: {error}": "Update failed: {error}",
+  "Pembaruan {v} siap dipasang": "Update {v} is ready to install",
+  "Periksa sekarang": "Check now",
+  "Windows, macOS, dan Linux (AppImage) bisa memperbarui langsung dari sini; file diverifikasi dengan SHA-512 dari rilis GitHub.": "Windows, macOS and Linux (AppImage) can update right from here; the file is verified with the SHA-512 from the GitHub release.",
 };

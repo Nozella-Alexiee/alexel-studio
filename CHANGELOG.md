@@ -1,5 +1,20 @@
 # Changelog
 
+## 0.6.1
+
+New:
+
+- **Update from inside the app.** When a new version is out, the notification now has **Install
+  update**: the right installer for your system is downloaded from the GitHub release, checked
+  against the SHA-512 in that release's `latest*.yml`, and installed when you restart (you are asked
+  about unsaved files first). Windows: silent NSIS installer; macOS: the `.app` is replaced from the
+  release zip; Linux: AppImage is replaced in place (deb/rpm keep using your package manager).
+  Settings → General → *Check now*, or Help → Check for updates.
+- Builds are still unsigned, so integrity rests on the checksum from the repository's own release.
+
+Versions up to 0.6.0 can't update themselves: install 0.6.1 once from the Releases page, then updates
+come from inside the app.
+
 ## 0.6.0
 
 Extensions are no longer a short, category-locked list:

@@ -306,6 +306,11 @@ export default function SettingsView() {
         <Row label={tl("Cek pembaruan otomatis")} hint={tl("Sekali sehari menanyakan versi terbaru ke GitHub Releases. Tidak ada data lain yang dikirim.")}>
           <Toggle label={tl("Cek pembaruan otomatis")} value={s.updateCheck} onChange={(v) => set({ updateCheck: v })} />
         </Row>
+        <Row label={tl("Periksa pembaruan")} hint={tl("Windows, macOS, dan Linux (AppImage) bisa memperbarui langsung dari sini; file diverifikasi dengan SHA-512 dari rilis GitHub.")}>
+          <button className="btn btn-sm" onClick={() => void A.checkForUpdates(true)}>
+            {tl("Periksa sekarang")}
+          </button>
+        </Row>
         <Row label={tl("RAM & CPU di status bar")} hint={tl("Pemakaian memori dan prosesor Alexel Studio.")}>
           <Toggle label={tl("RAM & CPU di status bar")} value={s.showResources} onChange={(v) => set({ showResources: v })} />
         </Row>

@@ -130,6 +130,9 @@ Built upon the official **Debug Adapter Protocol (DAP)**:
 
 ---
 
+### 3b. Updating
+Open **Settings → Check now** (or the notification that appears when a new version is out) and choose **Install update**. The installer is downloaded from this repository's GitHub release, verified with its SHA-512, and applied on restart. Works on Windows, macOS and Linux AppImage; deb/rpm users update through apt/dnf.
+
 ### 4. Agent Store & Open VSX Extension Marketplace
 <div align="center">
   <img src="docs/screenshots/ext.jpg" alt="Extension Marketplace" width="90%" style="border-radius: 10px; border: 1px solid #334155;" />

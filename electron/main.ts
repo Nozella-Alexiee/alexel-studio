@@ -2,6 +2,7 @@
 // Keamanan: contextIsolation + sandbox, tanpa nodeIntegration, CSP ketat, navigasi & popup diblok,
 // semua command lewat satu pintu IPC dengan whitelist (lihat commands.ts).
 
+import { runScheduledUpdate } from "./updater";
 import { cleanTempBins } from "./runner";
 import { app, BrowserWindow, ipcMain, Menu, net, protocol, session, shell, type MenuItemConstructorOptions } from "electron";
 import fs from "node:fs";
@@ -364,6 +365,8 @@ app.on("second-instance", (_e, argv, workingDirectory) => {
     if (p) ctx.emit("open-path", { path: p });
   }
 });
+
+app.on("quit", () => runScheduledUpdate());
 
 app.on("before-quit", () => {
   quitting = true;

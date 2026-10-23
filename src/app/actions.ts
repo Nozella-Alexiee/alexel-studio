@@ -821,15 +821,44 @@ export async function openLaunchJson() {
 /** Cek versi baru di GitHub Releases. `manual` = dari menu (selalu beri kabar). */
 export async function checkForUpdates(manual = false) {
   try {
-    const r = await api.checkUpdate();
-    if (!r.repo) {
+    const r = await api.updateCheck();
+    if (r.manualReason === "no-repo") {
       if (manual) toast(tl("Pemeriksaan pembaruan belum tersedia di build ini."), "info");
       return;
     }
-    if (r.newer && r.latest && r.url) toast(tl("Alexel Studio {latest} sudah tersedia (kamu memakai {current}).", { latest: r.latest, current: r.current }), "info", { label: tl("Lihat"), run: () => void openExternal(r.url!) });
-    else if (manual) toast(tl("Kamu sudah memakai versi terbaru ({current}).", { current: r.current }), "success");
+    const current = (await api.appInfo().catch(() => null))?.version ?? "";
+    if (!r.version) {
+      if (manual) toast(tl("Kamu sudah memakai versi terbaru ({current}).", { current }), "success");
+      return;
+    }
+    const text = tl("Alexel Studio {latest} sudah tersedia (kamu memakai {current}).", { latest: r.version, current });
+    if (r.kind) toast(text, "info", { label: tl("Pasang pembaruan"), run: () => void installUpdate(r.version!) });
+    else if (r.manualReason === "linux-package") toast(`${text} ${tl("Pasang lewat paket manager (apt/dnf) atau unduh versi baru.")}`, "info", { label: tl("Lihat"), run: () => void openExternal(r.url!) });
+    else toast(text, "info", { label: tl("Lihat"), run: () => void openExternal(r.url!) });
   } catch (e) {
     if (manual) toast(tl("Gagal memeriksa pembaruan: {error}", { error: errMsg(e) }), "error");
+  }
+}
+
+let updating = false;
+
+/** Unduh pembaruan (diverifikasi SHA-512), lalu tawarkan mulai ulang. Berkas yang belum disimpan ditanya dulu. */
+export async function installUpdate(version: string) {
+  if (updating) return;
+  updating = true;
+  const done = stickyToast(tl("Mengunduh Alexel Studio {v}… kamu bisa tetap bekerja.", { v: version }));
+  try {
+    await api.updatePrepare();
+    done();
+    if (await confirmDialog(tl("Pembaruan {v} siap dipasang", { v: version }), tl("Alexel Studio ditutup lalu dibuka lagi dengan versi baru. Berkas yang belum disimpan ditanyakan dulu."), tl("Mulai ulang & perbarui"))) {
+      await api.updateApply();
+      await api.windowAction("quit");
+    }
+  } catch (e) {
+    done();
+    toast(tl("Pembaruan gagal: {error}", { error: errMsg(e) }), "error");
+  } finally {
+    updating = false;
   }
 }
 
