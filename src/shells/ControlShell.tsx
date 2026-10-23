@@ -1,7 +1,7 @@
 // Desain C — Control Room: padat ala IDE. Toolbar run dengan pilihan target Smart Run,
 // rail ikon, sidebar, split editor, panel bawah ter-dock, panel Git/Claude di kanan.
 
-import { ChevronDown, Columns2, Files, FolderOpen, GitBranch, ListTodo, Play, Puzzle, Search, Settings, Square, Network, TerminalSquare } from "lucide-react";
+import { ChevronDown, Columns2, Files, Layers, FolderOpen, GitBranch, ListTodo, Play, Puzzle, Search, Settings, Square, Network, TerminalSquare } from "lucide-react";
 import { Kepi } from "../components/CrabMascot";
 import { useState, type ReactNode } from "react";
 import * as A from "../app/actions";
@@ -16,6 +16,7 @@ import { getState, setLayout, useStore } from "../state/store";
 import { EditorGroups, RightContent, SideContent, SideResizer, StatusBar, openProjectMenu, useFitLayout } from "./common";
 import { prettyKeys } from "../lib/keys";
 import { tl } from "../i18n";
+import { useExtHost } from "../exthost/state";
 
 function RunConfig() {
   const targets = useStore((s) => s.runTargets);
@@ -62,12 +63,14 @@ export default function ControlShell() {
   const split = useStore((s) => s.groups.length > 1);
   const problems = useStore((s) => Object.values(s.problems).reduce((a, x) => a + x.filter((p) => p.severity === "error").length, 0));
 
+  const hasViews = useExtHost((s) => Object.keys(s.treeViews).length > 0);
   const rail: [string, ReactNode, string, () => void, boolean, number?][] = [
     ["files", <Files size={19} />, `Explorer (${prettyKeys("Mod+Shift+E")})`, () => A.toggleSidebar("files"), l.sidebar && l.sideView === "files"],
     ["search", <Search size={19} />, `Cari (${prettyKeys("Mod+Shift+F")})`, () => A.toggleSidebar("search"), l.sidebar && l.sideView === "search"],
     ["git", <GitBranch size={19} />, `Source control (${prettyKeys("Ctrl+Shift+G")})`, () => A.toggleRight("git"), l.right && l.rightView === "git", git?.files.length || undefined],
     ["todo", <ListTodo size={19} />, "TODO", () => A.toggleSidebar("todo"), l.sidebar && l.sideView === "todo"],
     ["ext", <Puzzle size={19} />, "Ekstensi", () => A.toggleSidebar("ext"), l.sidebar && l.sideView === "ext"],
+    ...(hasViews ? ([["exviews", <Layers size={19} />, tl("Tampilan ekstensi"), () => A.toggleSidebar("exviews"), l.sidebar && l.sideView === "exviews"]] as typeof rail) : []),
     ["ports", <Network size={19} />, "Port & proses", () => A.togglePanel("ports"), l.panel && l.panelTab === "ports"],
     ["claude", <Kepi size={21} />, `${tl("Agen AI")} (${prettyKeys("Mod+Alt+B")})`, () => A.toggleRight("claude"), l.right && l.rightView === "claude"],
   ];

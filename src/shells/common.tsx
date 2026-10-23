@@ -22,6 +22,7 @@ const SearchPanel = lazy(() => import("../panels/SearchPanel"));
 const GitPanel = lazy(() => import("../panels/GitPanel"));
 const ClaudePanel = lazy(() => import("../claude/ClaudePanel"));
 const ExtensionsPanel = lazy(() => import("../panels/ExtensionsPanel"));
+const ExtViewsPanel = lazy(() => import("../panels/ExtViews"));
 const OutlinePanel = lazy(() => import("../panels/OutlinePanel"));
 const RunView = lazy(() => import("../panels/RunView"));
 const TodoSide = lazy(() => import("../panels/BottomPanels").then((m) => ({ default: m.TodoPanel })));
@@ -70,6 +71,7 @@ export function SideContent() {
       {layout.sideView === "git" && <GitPanel />}
       {layout.sideView === "todo" && <TodoSide />}
       {layout.sideView === "ext" && <ExtensionsPanel />}
+      {layout.sideView === "exviews" && <ExtViewsPanel />}
       {layout.sideView === "outline" && <OutlinePanel />}
       {layout.sideView === "run" && <RunView />}
     </Suspense>

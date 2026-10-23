@@ -107,3 +107,36 @@ describe("tema ikon berkas", () => {
     expect(t.urls.get("ts")).toBe("nozelext://icons/PKief.material-icon-theme/icons/ts.svg");
   });
 });
+
+import { configProperties, featureSections } from "../extensions/featureList";
+
+describe("tab Fitur ekstensi", () => {
+  const contributes = {
+    commands: [{ command: "x.hello", title: "Hello", category: "Demo" }, { command: "", title: "kosong" }],
+    configuration: [{ title: "A", properties: { "x.a": { type: "boolean", default: true, description: "Satu" }, "x.b": { type: ["string", "null"], default: "q", enum: ["q", "w"], markdownDescription: "**Dua**" } } }, { properties: { "x.c": { type: "number", default: 3 } } }],
+    themes: [{ label: "Gelap", uiTheme: "vs-dark", path: "./t.json" }],
+    views: { explorer: [{ id: "x.view", name: "Tampilan X" }] },
+    keybindings: [{ command: "x.hello", key: "ctrl+h", mac: "cmd+h" }],
+  };
+
+  it("mengelompokkan perintah, pengaturan, tema, tampilan, pintasan", () => {
+    const s = Object.fromEntries(featureSections(contributes).map((x) => [x.id, x]));
+    expect(s.commands.rows).toEqual([{ name: "Demo: Hello", detail: "x.hello" }]);
+    expect(s.settings.rows.map((r) => r.name)).toEqual(["x.a", "x.b", "x.c"]);
+    expect(s.themes.rows[0]).toEqual({ name: "Gelap", detail: "vs-dark" });
+    expect(s.views.rows[0]).toEqual({ name: "Tampilan X", detail: "explorer" });
+    expect(s.keybindings.rows[0].detail).toContain("cmd+h");
+  });
+
+  it("properti konfigurasi: tipe (larik→pertama), bawaan, enum, deskripsi markdown", () => {
+    const p = configProperties(contributes);
+    expect(p.find((x) => x.key === "x.b")).toMatchObject({ type: "string", def: "q", enum: ["q", "w"], desc: "**Dua**" });
+    expect(p.find((x) => x.key === "x.c")).toMatchObject({ type: "number", def: 3 });
+    expect(configProperties(null)).toEqual([]);
+  });
+
+  it("kosong atau tak valid = tanpa bagian", () => {
+    expect(featureSections(null)).toEqual([]);
+    expect(featureSections({})).toEqual([]);
+  });
+});

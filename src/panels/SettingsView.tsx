@@ -12,6 +12,7 @@ import { AGENTS, type AgentId } from "../agents/registry";
 import { isMac } from "../lib/ipc";
 import { EFFORTS, modelChoices, PERM_MODES } from "../claude/options";
 import { tl } from "../i18n";
+import { ExtensionSettings } from "./ExtensionSettings";
 
 function Row({ label, hint, children }: { label: string; hint?: string; children: React.ReactNode }) {
   return (
@@ -446,6 +447,8 @@ export default function SettingsView() {
       </section>
 
       <LanguageServers />
+
+      <ExtensionSettings />
 
       <section className="set-section">
         <h2>{tl("Terminal & berkas")}</h2>

@@ -63,6 +63,10 @@ export interface InstalledExt {
   installedAt: number;
   /** Paket kode ada di `<id>/ext` dan bisa dijalankan extension host (setelah dipercaya). */
   hasCode?: boolean;
+  /** Berkas ikon di folder ekstensi (png/svg), disajikan lewat nozelext://icons/<id>/<icon>. */
+  icon?: string;
+  /** contributes dari package.json (pengaturan, tampilan, menu, …), dipakai UI tanpa membuka paketnya. */
+  contributes?: Record<string, unknown>;
   publisher?: string;
   commands?: { command: string; title: string; category?: string }[];
   keybindings?: { command: string; key: string; mac?: string; win?: string; linux?: string; when?: string; args?: unknown }[];
@@ -149,6 +153,9 @@ export interface ExtDetails {
   readme: string;
   changelog: string;
   compat: Compatibility;
+  icon: string | null;
+  /** contributes dari package.json (untuk tab Fitur); kosong bila terlalu besar. */
+  contributes: Record<string, unknown> | null;
 }
 
 async function getText(url: string | undefined, max = 400_000): Promise<string> {
@@ -168,8 +175,12 @@ export async function extDetails(namespace: string, name: string): Promise<ExtDe
   const m = (await getJson(`${API}/${encodeURIComponent(namespace)}/${encodeURIComponent(name)}`)) as Record<string, any>; // eslint-disable-line @typescript-eslint/no-explicit-any
   const [readme, changelog, manifest] = await Promise.all([getText(m.files?.readme), getText(m.files?.changelog), getText(m.files?.manifest, 2_000_000)]);
   let compat: Compatibility = { level: "none", data: [], code: false, needs: [], alt: null, server: null };
+  let contributes: Record<string, unknown> | null = null;
   try {
-    compat = classifyManifest(JSON.parse(manifest), `${namespace}.${name}`);
+    const pkg = JSON.parse(manifest);
+    compat = classifyManifest(pkg, `${namespace}.${name}`);
+    const c = pkg.contributes ?? null;
+    contributes = c && JSON.stringify(c).length < 300_000 ? c : null;
   } catch {
     /* manifest tidak terbaca */
   }
@@ -193,6 +204,8 @@ export async function extDetails(namespace: string, name: string): Promise<ExtDe
     readme,
     changelog,
     compat,
+    icon: m.files?.icon ?? null,
+    contributes,
   };
 }
 
@@ -368,12 +381,26 @@ async function installInto(dir: string, namespace: string, name: string, version
   }));
   // Ekstensi dengan kode (`main`): seluruh paketnya disalin ke ext/ untuk extension host. Kode hanya
   // berjalan setelah pemakai mempercayai ekstensi ini (lihat exthost/manager.ts).
+  // Ikon ekstensi (png/svg) disalin supaya tampil di daftar terpasang lewat nozelext://.
+  let icon: string | undefined;
+  if (typeof pkg.icon === "string" && /\.(png|svg)$/i.test(pkg.icon)) {
+    try {
+      const raw = unzipSync(buf, { filter: (f) => f.name === inPkg(pkg.icon) })[inPkg(pkg.icon)];
+      if (raw && raw.length < 2_000_000) {
+        const rel = `icon${path.extname(pkg.icon).toLowerCase()}`;
+        fs.writeFileSync(path.join(dir, rel), raw);
+        icon = rel;
+      }
+    } catch {
+      /* tanpa ikon */
+    }
+  }
   const hasCode = typeof pkg.main === "string" && !!pkg.main;
   if (hasCode) extractCode(buf, path.join(dir, "ext"));
   if (!hasCode && !themes.length && !iconThemes.length && !snippets.length && !grammars.length && !languages.some((l: { configuration?: string }) => l.configuration)) {
     throw new Error("Ekstensi ini tidak berisi tema, tema ikon, snippet, grammar, atau konfigurasi bahasa. Alexel Studio tidak menjalankan kode ekstensi.");
   }
-  const manifest: InstalledExt = { id, namespace, name, displayName: pkg.displayName || name, version: pkg.version || meta.version, description: pkg.description || "", themes, iconThemes, snippets, grammars, languages, installedAt: Date.now(), hasCode, publisher: pkg.publisher, activationEvents: pkg.activationEvents, commands: Array.isArray(c.commands) ? c.commands.filter((x: { command?: string; title?: unknown }) => x?.command && typeof x.title === "string") : undefined, keybindings: Array.isArray(c.keybindings) ? c.keybindings.filter((x: { command?: string; key?: string }) => x?.command && x?.key) : undefined };
+  const manifest: InstalledExt = { id, namespace, name, displayName: pkg.displayName || name, version: pkg.version || meta.version, description: pkg.description || "", themes, iconThemes, snippets, grammars, languages, installedAt: Date.now(), hasCode, icon, contributes: JSON.stringify(c).length < 300_000 ? c : undefined, publisher: pkg.publisher, activationEvents: pkg.activationEvents, commands: Array.isArray(c.commands) ? c.commands.filter((x: { command?: string; title?: unknown }) => x?.command && typeof x.title === "string") : undefined, keybindings: Array.isArray(c.keybindings) ? c.keybindings.filter((x: { command?: string; key?: string }) => x?.command && x?.key) : undefined };
   fs.writeFileSync(path.join(dir, "nozel-manifest.json"), JSON.stringify(manifest, null, 2));
   return manifest;
 }

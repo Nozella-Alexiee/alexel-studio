@@ -2,7 +2,8 @@ import { ArrowUpCircle, BadgeCheck, Download, Palette, Puzzle, Search, Shapes, S
 import { useEffect, useRef, useState } from "react";
 import * as A from "../app/actions";
 import { Empty, IconButton, Segmented, Spinner } from "../components/ui";
-import { installExtension, removeExtension, setExtensionEnabled } from "../extensions/install";
+import { installExtension, removeExtension, revokeTrust, setExtensionEnabled, trustExtension } from "../extensions/install";
+import { useExtHost } from "../exthost/state";
 import { CHIPS, checkUpdates, fmtDl, searchExtensions, type Chip, type Result, type SortBy, type Update } from "../extensions/market";
 import { cmpVersion, useExtensions, type InstalledExt } from "../extensions/registry";
 import { errMsg, isNative } from "../lib/ipc";
@@ -77,11 +78,15 @@ function InstalledItem({ ext, update }: { ext: InstalledExt; update?: Update }) 
   const active = useStore((s) => s.settings.extTheme);
   const activeIcons = useStore((s) => s.settings.iconTheme);
   const disabled = useStore((s) => s.settings.disabledExts.includes(ext.id));
+  const trusted = useStore((s) => s.settings.trustedExts.includes(ext.id));
+  const activated = useExtHost((s) => s.activated[ext.id]);
+  const failed = useExtHost((s) => s.failed[ext.id]);
   const [busy, setBusy] = useState(false);
   const canUpdate = update && ext.namespace && ext.name;
   return (
     <div className={`ext-item ext-installed ${disabled ? "is-disabled" : ""}`}>
       <div className="ext-head">
+        {ext.icon ? <img className="ext-icon" src={`nozelext://icons/${encodeURIComponent(ext.id)}/${ext.icon}`} alt="" /> : <div className="ext-icon ph"><Puzzle size={16} /></div>}
         <div className="ext-main">
           <div className="ext-name">
             <button
@@ -106,6 +111,14 @@ function InstalledItem({ ext, update }: { ext: InstalledExt; update?: Update }) 
             {ext.id.startsWith("vscode.") && <span className="todo-tag" title={tl("Grammar bawaan VS Code, dipasang otomatis karena dipakai ekstensi lain")}>{tl("pendukung")}</span>}
             {disabled && <span className="todo-tag">{tl("nonaktif")}</span>}
           </div>
+          {ext.hasCode && !disabled && (
+            <div className={`ext-code-row ${failed ? "is-failed" : ""}`}>
+              {trusted ? (activated !== undefined ? tl("Kode aktif ({ms} ms)", { ms: activated }) : failed ? tl("Gagal aktif: {error}", { error: failed }) : tl("Kode dipercaya")) : tl("Kode belum diizinkan")}
+              <button className="ext-link" onClick={() => (trusted ? revokeTrust(ext.id) : void trustExtension(ext))}>
+                {trusted ? tl("Cabut") : tl("Percayai")}
+              </button>
+            </div>
+          )}
         </div>
         <IconButton label={disabled ? tl("Aktifkan ekstensi") : tl("Nonaktifkan ekstensi")} onClick={() => setExtensionEnabled(ext.id, disabled)}>
           <span className={`switch switch-sm ${disabled ? "" : "is-on"}`} aria-hidden />

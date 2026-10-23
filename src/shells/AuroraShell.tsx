@@ -1,7 +1,7 @@
 // Desain A — Aurora Glass: gelap macOS, sidebar kaca dengan kartu workspace,
 // palette di title bar, agen Claude di kanan, dock terminal melayang.
 
-import { Bug, Columns2, GitBranch, ListTree, PanelBottom, Play, Puzzle, Search, Settings } from "lucide-react";
+import { Layers, Bug, Columns2, GitBranch, ListTree, PanelBottom, Play, Puzzle, Search, Settings } from "lucide-react";
 import { Kepi } from "../components/CrabMascot";
 import * as A from "../app/actions";
 import { openPalette } from "../app/commands";
@@ -13,9 +13,11 @@ import { BottomPanel } from "../panels/BottomPanel";
 import { setLayout, useStore, type SideView } from "../state/store";
 import { EditorGroups, RightContent, SideContent, SideResizer, StatusBar, openProjectMenu, useFitLayout } from "./common";
 import { tl } from "../i18n";
+import { useExtHost } from "../exthost/state";
 
 export default function AuroraShell() {
   const l = useFitLayout(0);
+  const hasViews = useExtHost((s) => Object.keys(s.treeViews).length > 0);
   const root = useStore((s) => s.root);
   const git = useStore((s) => s.git);
   const split = useStore((s) => s.groups.length > 1);
@@ -80,6 +82,7 @@ export default function AuroraShell() {
                   { id: "search", label: tl("Cari") },
                   { id: "todo", label: "TODO" },
                   { id: "ext", label: <Puzzle size={13} />, title: tl("Ekstensi") },
+                  ...(hasViews ? [{ id: "exviews" as SideView, label: <Layers size={13} />, title: tl("Tampilan ekstensi") }] : []),
                   { id: "run", label: <Bug size={13} />, title: "Run & Debug" },
                   { id: "outline", label: <ListTree size={13} />, title: tl("Outline (struktur berkas)") },
                 ]}

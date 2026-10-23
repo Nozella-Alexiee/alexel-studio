@@ -19,6 +19,8 @@ export interface InstalledExt {
   languages: { id: string; aliases?: string[]; extensions?: string[]; filenames?: string[]; configuration?: string }[];
   installedAt: number;
   hasCode?: boolean;
+  icon?: string;
+  contributes?: Record<string, any>; // eslint-disable-line @typescript-eslint/no-explicit-any
   publisher?: string;
   commands?: { command: string; title: string; category?: string }[];
   keybindings?: { command: string; key: string; mac?: string; win?: string; linux?: string; when?: string; args?: unknown }[];

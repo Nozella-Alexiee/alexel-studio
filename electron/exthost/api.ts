@@ -1,6 +1,7 @@
 // Objek `vscode` per ekstensi: menggabungkan namespace + kelas. Yang belum ada tidak membuat ekstensi
 // crash saat aktivasi: dicatat sekali ke Output, lalu mengembalikan fungsi kosong.
 
+import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { languagesApi } from "./api-languages";
@@ -53,10 +54,49 @@ export async function runCommand(hc: HostCtx, id: string, args: unknown[]): Prom
   return hc.rpc.request("ui/executeCommand", { command: id, args: args.map((a) => (a instanceof Uri ? { $uri: a.toString() } : a)) });
 }
 
+/**
+ * Beberapa ekstensi (Todo Tree, pencarian) mencari ripgrep di `appRoot/node_modules/@vscode/ripgrep/bin/rg`.
+ * Alexel Studio tidak membundel ripgrep; bila `rg` ada di PATH, dibuatkan tautan di folder palsu ini.
+ */
+function appRoot(hc: HostCtx): string {
+  const root = path.join(hc.userData, "exthost", "app");
+  try {
+    const found = findInPath(process.platform === "win32" ? "rg.exe" : "rg");
+    if (found) {
+      for (const base of ["node_modules", "node_modules.asar.unpacked"]) {
+        const dir = path.join(root, base, "@vscode", "ripgrep", "bin");
+        const link = path.join(dir, path.basename(found));
+        fs.mkdirSync(dir, { recursive: true });
+        try {
+          fs.rmSync(link, { force: true });
+          fs.symlinkSync(found, link);
+        } catch {
+          fs.copyFileSync(found, link);
+        }
+      }
+    }
+  } catch {
+    /* tanpa ripgrep */
+  }
+  return root;
+}
+
+function findInPath(name: string): string | null {
+  for (const d of (process.env.PATH ?? "").split(path.delimiter)) {
+    const p = path.join(d, name);
+    try {
+      if (fs.statSync(p).isFile()) return p;
+    } catch {
+      /* lanjut */
+    }
+  }
+  return null;
+}
+
 function envApi(hc: HostCtx) {
   return {
     appName: "Alexel Studio",
-    appRoot: process.resourcesPath ?? process.cwd(),
+    appRoot: appRoot(hc),
     appHost: "desktop",
     uriScheme: "alexel",
     language: "en",

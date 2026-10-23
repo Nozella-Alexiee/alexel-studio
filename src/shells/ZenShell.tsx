@@ -1,7 +1,7 @@
 // Desain B — Zen Paper: terang hangat, tanpa activity bar & tab bar. Navigator di kiri
 // (berkas terbuka, ringkasan simbol, tree), satu kolom fokus, omnibar di bawah.
 
-import { ChevronDown, ChevronRight, Columns2, Files, GitBranch, Play, Puzzle, Search, Settings, TerminalSquare, X, Focus, ListTodo } from "lucide-react";
+import { ChevronDown, ChevronRight, Columns2, Files, Layers, GitBranch, Play, Puzzle, Search, Settings, TerminalSquare, X, Focus, ListTodo } from "lucide-react";
 import { Kepi } from "../components/CrabMascot";
 import { useState, type ReactNode } from "react";
 import * as A from "../app/actions";
@@ -20,6 +20,7 @@ import { activeTab, setLayout, useStore } from "../state/store";
 import { EditorGroups, RightContent, SideContent, SideResizer, StatusBar, openProjectMenu, useFitLayout } from "./common";
 import { prettyKeys } from "../lib/keys";
 import { tl } from "../i18n";
+import { useExtHost } from "../exthost/state";
 
 function Section({ title, children, defaultOpen = true, action }: { title: string; children: ReactNode; defaultOpen?: boolean; action?: ReactNode }) {
   const [open, setOpen] = useState(defaultOpen);
@@ -67,6 +68,7 @@ function OpenFiles() {
 
 export default function ZenShell() {
   const l = useFitLayout(0);
+  const hasViews = useExtHost((s) => Object.keys(s.treeViews).length > 0);
   const tab = useStore((s) => activeTab(s));
   const root = useStore((s) => s.root);
   const git = useStore((s) => s.git);
@@ -128,6 +130,7 @@ export default function ZenShell() {
                     ["git", <GitBranch size={14} />, "Git"],
                     ["todo", <ListTodo size={14} />, "TODO"],
                     ["ext", <Puzzle size={14} />, "Ekstensi"],
+                    ...(hasViews ? ([["exviews", <Layers size={14} />, tl("Tampilan ekstensi")]] as const) : []),
                   ] as const
                 ).map(([id, icon, label]) => (
                   <button key={id} role="tab" aria-selected={l.sideView === id} className={l.sideView === id ? "is-on" : ""} onClick={() => setLayout({ sideView: id })} title={label} aria-label={label}>

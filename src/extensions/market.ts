@@ -53,6 +53,8 @@ export interface Details {
   readme: string;
   changelog: string;
   compat: Compat;
+  icon: string | null;
+  contributes: Record<string, any> | null; // eslint-disable-line @typescript-eslint/no-explicit-any
 }
 
 export interface Update {
