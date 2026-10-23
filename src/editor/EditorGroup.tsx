@@ -1,4 +1,4 @@
-import { AlertTriangle, ChevronRight, Columns2, Code2, Eye, Play, Settings as Cog, Sparkle, X } from "lucide-react";
+import { AlertTriangle, ChevronRight, Columns2, Code2, Eye, Play, Puzzle, Settings as Cog, Sparkle, X } from "lucide-react";
 import React, { Suspense, lazy, useEffect, useRef, useState } from "react";
 import * as A from "../app/actions";
 import { runActiveFile } from "../app/run";
@@ -12,6 +12,7 @@ import { HtmlPreview, ImageViewer, MarkdownPreview } from "./Previews";
 import { tl } from "../i18n";
 
 const SettingsView = lazy(() => import("../panels/SettingsView"));
+const ExtensionDetail = lazy(() => import("../panels/ExtensionDetail"));
 const Dashboard = lazy(() => import("../panels/Dashboard"));
 const WelcomePage = lazy(() => import("../panels/Dashboard").then((m) => ({ default: m.Welcome })));
 
@@ -62,7 +63,7 @@ function TabItem({ tab, group, active, drop }: { tab: Tab; group: number; active
       onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && A.activateTab(tab.id, group)}
       onContextMenu={onMenu}
     >
-      {tab.kind === "settings" ? <Cog size={14} aria-hidden /> : tab.kind === "welcome" ? <Sparkle size={14} aria-hidden /> : <FileIcon filename={tab.name} size={14} />}
+      {tab.kind === "settings" ? <Cog size={14} aria-hidden /> : tab.kind === "extension" ? <Puzzle size={14} aria-hidden /> : tab.kind === "welcome" ? <Sparkle size={14} aria-hidden /> : <FileIcon filename={tab.name} size={14} />}
       <span className="tab-name">{tab.name}</span>
       <button
         className="tab-close"
@@ -310,6 +311,16 @@ export function EditorBody({ group, breadcrumb = true }: { group: number; breadc
       <div className="editor-body" {...drop.props}>
         <Suspense fallback={null}>
           <WelcomePage />
+        </Suspense>
+        {drop.overlay}
+      </div>
+    );
+  }
+  if (tab.kind === "extension") {
+    return (
+      <div className="editor-body" {...drop.props}>
+        <Suspense fallback={null}>
+          <ExtensionDetail id={tab.id.replace(/^nozel:ext:/, "")} />
         </Suspense>
         {drop.overlay}
       </div>

@@ -10,8 +10,9 @@ reply within a week.
 
 - The renderer has no Node.js access; it talks to the main process through a small, validated
   command bridge (`electron/preload.ts`, `electron/commands.ts`).
-- Extensions from Open VSX contribute data only (themes, icons, snippets, grammars). Their code
-  is never extracted or executed.
+- Extensions from Open VSX contribute data only (themes, icons, snippets, grammars, language
+  configuration). Their code is never extracted or executed; compatibility is decided from the
+  extension's `package.json` before anything is downloaded.
 - Agent packages and debug adapters are downloaded from fixed sources and verified with
   SHA-256 or sha512 checksums before use.
 - Agents run with the permission mode you choose; Alexel Studio never passes flags that bypass

@@ -1,5 +1,27 @@
 # Changelog
 
+## 0.6.0
+
+Extensions are no longer a short, category-locked list:
+
+- **Search all of Open VSX** (20,000+) with no forced category; categories are now optional chips
+  (All, Themes, Icons, Languages, Snippets, Formatters, Linters, Keymaps), plus sorting (relevance,
+  downloads, rating, newest), a result count, and "Load more" paging.
+- **A recommendations home**: popular themes, icon themes, languages and snippets without searching.
+- **Compatibility badge before you download** (Full / Partial / Needs extension code), computed from
+  the extension's `package.json` (a few KB) instead of failing after a 60 MB download. Unsupported
+  results can't be installed and point to the built-in alternative (Prettier, Git panel, AI agents…).
+- **Extension details tab**: README, changelog, rating, license, and a version picker.
+- **Manage extensions**: Installed tab with enable/disable, update check with "Update all", atomic
+  installs (a failed install leaves the previous version intact).
+- **Language configuration** (`language-configuration.json`) is now read: comment toggling and
+  bracket auto-closing work for TextMate-based languages (Svelte, Prisma, …), and extensions that only
+  provide it can be installed.
+- **Prettier built in**: Shift+Alt+F formats JS/TS, JSON, CSS/SCSS/Less, HTML, Markdown, YAML (uses
+  `.prettierrc`); new "Format on save" setting.
+
+Extension code is still never executed.
+
 ## 0.5.1
 
 Fixed, in all eight designs:

@@ -264,7 +264,7 @@ async function start(ctx: Ctx, key: string, cfg: Cfg): Promise<Session> {
     ctx.emit("agent-done", { run_id: key, code: signal ? 130 : code, stderr: s.stderr.slice(0, 4000), replaced: sessions.has(key) });
   });
   s.ready = (async () => {
-    await s.rpc.request("initialize", { clientInfo: { name: "alexel_studio", title: "Alexel Studio", version: "0.5.1" }, capabilities: null }, 30_000);
+    await s.rpc.request("initialize", { clientInfo: { name: "alexel_studio", title: "Alexel Studio", version: "0.6.0" }, capabilities: null }, 30_000);
     s.rpc.notify("initialized");
     const list = await s.rpc.request<{ data?: any[] }>("model/list", {}, 30_000).catch(() => ({ data: [] })); // eslint-disable-line @typescript-eslint/no-explicit-any
     const models = (list.data ?? []).filter((m) => !m.hidden);
@@ -406,7 +406,7 @@ async function withServer<T>(ctx: Ctx, fn: (rpc: LineRpc) => Promise<T>, onNotif
     onRequest: (id, method) => (/requestApproval|Approval$/.test(method) ? rpc.respond(id, { decision: "decline" }) : rpc.respondError(id, "Tidak didukung.")),
   });
   try {
-    await rpc.request("initialize", { clientInfo: { name: "alexel_studio", title: "Alexel Studio", version: "0.5.1" }, capabilities: null }, 30_000);
+    await rpc.request("initialize", { clientInfo: { name: "alexel_studio", title: "Alexel Studio", version: "0.6.0" }, capabilities: null }, 30_000);
     rpc.notify("initialized");
     return await fn(rpc);
   } finally {

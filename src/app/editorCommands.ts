@@ -7,7 +7,8 @@ import { openSearchPanel, selectNextOccurrence, selectSelectionMatches } from "@
 import type { Command, EditorView } from "@codemirror/view";
 import * as docs from "../editor/documents";
 import { call } from "../lib/ipc";
-import { getState, toast } from "../state/store";
+import { prettierParser, formatWithPrettier, projectPrettierOptions } from "../editor/prettierFormat";
+import { activeTab, getState, toast } from "../state/store";
 import { tl } from "../i18n";
 
 const view = (): EditorView | null => docs.viewOf(getState().focusedGroup) ?? null;
@@ -67,7 +68,31 @@ export function replace() {
   requestAnimationFrame(() => (v.dom.querySelector(".cm-search input[name=replace]") as HTMLInputElement | null)?.focus());
 }
 export const comment = onEditor(toggleComment);
-export const format = needLsp((v) => formatDocument(v), "Rapikan dokumen");
+const lspFormat = needLsp((v) => formatDocument(v), "Rapikan dokumen");
+
+/** Rapikan dokumen: Prettier untuk JS/TS/JSON/CSS/HTML/Markdown/YAML, selain itu lewat server bahasa. */
+export function format() {
+  const v = view();
+  const tab = activeTab();
+  if (!v || !tab || tab.kind !== "text" || !prettierParser(tab.id)) return lspFormat();
+  v.focus();
+  void formatWithPrettierInView(v, tab.id);
+}
+
+async function formatWithPrettierInView(v: EditorView, path: string) {
+  const s = getState();
+  try {
+    const before = v.state.doc.toString();
+    const out = await formatWithPrettier(before, path, { tabWidth: s.settings.tabSize, useTabs: false }, await projectPrettierOptions(s.root));
+    if (out == null || out === before) return;
+    // Dokumen berubah selama Prettier bekerja: jangan menimpa ketikan baru.
+    if (v.state.doc.toString() !== before) return toast(tl("Dokumen berubah saat dirapikan; coba lagi."));
+    const head = Math.min(v.state.selection.main.head, out.length);
+    v.dispatch({ changes: { from: 0, to: before.length, insert: out }, selection: { anchor: head }, userEvent: "format" });
+  } catch (e) {
+    toast(tl("Prettier: {error}", { error: (e instanceof Error ? e.message : String(e)).split("\n")[0] }), "error");
+  }
+}
 export const definition = needLsp((v) => jumpToDefinition(v), "Ke definisi");
 export const references = needLsp((v) => findReferences(v), "Cari referensi");
 export const rename = needLsp((v) => renameSymbol(v), "Ganti nama simbol");

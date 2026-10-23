@@ -113,8 +113,11 @@ export function buildCommands(ctx: Ctx, hooks: { confirmClose: (win: BrowserWind
     dap_build: (a) => dap.buildForDebug(String(a.file ?? "")),
 
     // Ekstensi (Open VSX, data saja)
-    ext_search: (a) => X.extSearch(String(a.query ?? ""), a.category ?? null),
-    ext_install: (a) => X.extInstall(ctx, a.namespace, a.name),
+    ext_search: (a) => X.extSearch({ query: String(a.query ?? ""), category: a.category ?? null, sortBy: a.sortBy, offset: Number(a.offset) || 0, size: Number(a.size) || undefined }),
+    ext_inspect: (a) => X.extInspect(String(a.namespace), String(a.name), String(a.manifestUrl)),
+    ext_details: (a) => X.extDetails(String(a.namespace), String(a.name)),
+    ext_updates: () => X.extUpdates(ctx),
+    ext_install: (a) => X.extInstall(ctx, a.namespace, a.name, a.version ?? null),
     ext_list: () => X.extList(ctx),
     ext_remove: (a) => X.extRemove(ctx, a.id),
     ext_read_file: (a) => X.extReadFile(ctx, a.id, a.path),

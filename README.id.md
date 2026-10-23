@@ -135,9 +135,12 @@ Dibangun di atas standar resmi **Debug Adapter Protocol (DAP)**:
   <img src="docs/screenshots/ext.jpg" alt="Marketplace Ekstensi" width="90%" style="border-radius: 10px; border: 1px solid #334155;" />
 </div>
 
-Pasang tema, language server, dan driver agen otonom baru tanpa hambatan:
+Pasang agen dan ekstensi data VS Code tanpa hambatan:
 * Paket agen resmi divalidasi keutuhan integritasnya dengan checksum SHA-256 sebelum diekstrak.
-* Telusuri ribuan tema dan grammar ramah VS Code langsung dari **Open VSX Registry**.
+* Telusuri seluruh **Open VSX Registry** (20.000+ ekstensi): cari tanpa memilih kategori, urutkan menurut unduhan/rating/terbaru, muat halaman berikutnya, dan baca README, changelog, serta versi tiap ekstensi.
+* Setiap hasil menunjukkan sebelum diunduh apakah akan berfungsi: **Lengkap**, **Sebagian**, atau **Butuh kode ekstensi**. Alexel Studio memakai tema, tema ikon, snippet, grammar TextMate, dan konfigurasi bahasa (komentar, kurung) dari ekstensi; kode JavaScript ekstensi tidak pernah dijalankan, jadi fitur yang butuh kode itu (perintah, debugger, server bahasa bawaan ekstensi) tidak tersedia, dan daftar menunjuk padanan bawaannya bila ada (Prettier, panel Git, agen AI, pratinjau HTML…).
+* Kelola ekstensi terpasang: aktif/nonaktif, perbarui (satu atau semua), pasang versi tertentu. Pemasangan atomik.
+* **Prettier bawaan**: Shift+Alt+F merapikan JS/TS, JSON, CSS/SCSS/Less, HTML, Markdown, dan YAML sesuai `.prettierrc`; bisa juga saat menyimpan.
 
 ---
 
@@ -146,7 +149,7 @@ Pasang tema, language server, dan driver agen otonom baru tanpa hambatan:
   <img src="docs/screenshots/light.jpg" alt="Tema Polar Terang" width="90%" style="border-radius: 10px; border: 1px solid #334155;" />
 </div>
 
-* **6 Desain Tampilan**: Pilih antara 3 desain gelap modern (Aurora, Zen, Control Room) atau 3 desain polar kutub khas pinguin (Antartika, Tuxedo, Kawanan).
+* **8 Desain Tampilan**: Studio ala VS Code (gelap & terang), tiga desain modern (Aurora, Zen, Control Room), dan tiga desain polar khas pinguin (Antartika, Tuxedo, Kawanan). Semua desain dicek kontras WCAG AA.
 * **Maskot Interaktif (Nozi 🐧)**: Pinguin cerdas orisinal bereaksi dinamis terhadap aktivitas Anda: merayakan commit git yang sukses, berpikir saat agen AI bekerja, dan memberi tahu bila ada kesalahan program.
 
 ---

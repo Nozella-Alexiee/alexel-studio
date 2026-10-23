@@ -5,6 +5,7 @@ import { createHash } from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
 import { unzipSync } from "fflate";
+import { classifyManifest, type Compatibility } from "./extCompat";
 import type { Ctx } from "./util";
 
 const API = "https://open-vsx.org/api";
@@ -25,10 +26,30 @@ export interface ExtSummary {
   downloads: number;
   icon: string | null;
   verified: boolean;
+  rating: number | null;
+  reviews: number;
+  /** URL package.json versi ini, untuk pemeriksaan kecocokan sebelum diunduh. */
+  manifestUrl: string | null;
+}
+
+export interface SearchOpts {
+  query?: string;
+  category?: string | null;
+  sortBy?: "relevance" | "downloadCount" | "averageRating" | "timestamp";
+  offset?: number;
+  size?: number;
+}
+
+export interface SearchResult {
+  items: ExtSummary[];
+  total: number;
+  offset: number;
 }
 
 export interface InstalledExt {
   id: string;
+  namespace?: string;
+  name?: string;
   displayName: string;
   version: string;
   description: string;
@@ -36,7 +57,7 @@ export interface InstalledExt {
   iconThemes: { id: string; label: string; path: string }[];
   snippets: { language: string; path: string }[];
   grammars: { language?: string; scopeName: string; path: string; embeddedLanguages?: Record<string, string>; injectTo?: string[] }[];
-  languages: { id: string; aliases?: string[]; extensions?: string[]; filenames?: string[] }[];
+  languages: { id: string; aliases?: string[]; extensions?: string[]; filenames?: string[]; configuration?: string }[];
   installedAt: number;
 }
 
@@ -49,14 +70,22 @@ async function getJson(url: string) {
   return r.json();
 }
 
-export async function extSearch(query: string, category?: string | null): Promise<ExtSummary[]> {
+const SORTS = new Set(["relevance", "downloadCount", "averageRating", "timestamp"]);
+
+/** package.json versi ini ada di samping vsix: `.../file/<nama>.vsix` → `.../file/package.json`. */
+const manifestOf = (download: unknown): string | null => (typeof download === "string" && download.startsWith("https://") ? download.replace(/\/file\/[^/]+$/, "/file/package.json") : null);
+
+export async function extSearch(opts: SearchOpts): Promise<SearchResult> {
   const u = new URL(`${API}/-/search`);
-  u.searchParams.set("query", query);
-  u.searchParams.set("size", "40");
-  u.searchParams.set("sortBy", "relevance");
-  if (category) u.searchParams.set("category", category);
-  const j = (await getJson(u.toString())) as { extensions?: Record<string, any>[] }; // eslint-disable-line @typescript-eslint/no-explicit-any
-  return (j.extensions ?? [])
+  u.searchParams.set("query", opts.query ?? "");
+  u.searchParams.set("size", String(Math.min(Math.max(opts.size ?? 30, 1), 50)));
+  u.searchParams.set("offset", String(Math.max(opts.offset ?? 0, 0)));
+  const sort = opts.sortBy && SORTS.has(opts.sortBy) ? opts.sortBy : "relevance";
+  u.searchParams.set("sortBy", sort);
+  if (sort !== "relevance") u.searchParams.set("sortOrder", "desc");
+  if (opts.category) u.searchParams.set("category", opts.category);
+  const j = (await getJson(u.toString())) as { extensions?: Record<string, any>[]; totalSize?: number; offset?: number }; // eslint-disable-line @typescript-eslint/no-explicit-any
+  const items = (j.extensions ?? [])
     .filter((e) => !e.deprecated)
     .map((e) => ({
       id: `${e.namespace}.${e.name}`,
@@ -68,15 +97,156 @@ export async function extSearch(query: string, category?: string | null): Promis
       downloads: e.downloadCount || 0,
       icon: e.files?.icon ?? null,
       verified: !!e.verified,
+      rating: typeof e.averageRating === "number" ? e.averageRating : null,
+      reviews: e.reviewCount || 0,
+      manifestUrl: manifestOf(e.files?.download),
     }));
+  return { items, total: j.totalSize ?? items.length, offset: j.offset ?? 0 };
+}
+
+const manifestCache = new Map<string, Compatibility>();
+
+/** Cek kecocokan satu ekstensi dari package.json-nya saja (kecil), tanpa mengunduh vsix. */
+export async function extInspect(namespace: string, name: string, manifestUrl: string): Promise<Compatibility> {
+  if (!validId(namespace) || !validId(name)) throw new Error("Nama ekstensi tidak valid.");
+  if (!manifestUrl.startsWith(`${API}/`)) throw new Error("URL manifest tidak valid.");
+  const hit = manifestCache.get(manifestUrl);
+  if (hit) return hit;
+  const r = await fetch(manifestUrl, { signal: AbortSignal.timeout(15_000) });
+  if (!r.ok) throw new Error(`Open VSX menjawab ${r.status}`);
+  const text = await r.text();
+  if (text.length > 2_000_000) throw new Error("Manifest terlalu besar.");
+  const c = classifyManifest(JSON.parse(text), `${namespace}.${name}`);
+  manifestCache.set(manifestUrl, c);
+  if (manifestCache.size > 500) manifestCache.delete(manifestCache.keys().next().value as string);
+  return c;
+}
+
+export interface ExtDetails {
+  id: string;
+  displayName: string;
+  description: string;
+  version: string;
+  versions: string[];
+  rating: number | null;
+  reviews: number;
+  downloads: number;
+  verified: boolean;
+  license: string | null;
+  homepage: string | null;
+  repository: string | null;
+  categories: string[];
+  tags: string[];
+  publisher: string;
+  readme: string;
+  changelog: string;
+  compat: Compatibility;
+}
+
+async function getText(url: string | undefined, max = 400_000): Promise<string> {
+  if (!url?.startsWith("https://")) return "";
+  try {
+    const r = await fetch(url, { signal: AbortSignal.timeout(15_000) });
+    if (!r.ok) return "";
+    return (await r.text()).slice(0, max);
+  } catch {
+    return "";
+  }
+}
+
+/** Halaman detail: README, changelog, versi, rating, dan kecocokan. */
+export async function extDetails(namespace: string, name: string): Promise<ExtDetails> {
+  if (!validId(namespace) || !validId(name)) throw new Error("Nama ekstensi tidak valid.");
+  const m = (await getJson(`${API}/${encodeURIComponent(namespace)}/${encodeURIComponent(name)}`)) as Record<string, any>; // eslint-disable-line @typescript-eslint/no-explicit-any
+  const [readme, changelog, manifest] = await Promise.all([getText(m.files?.readme), getText(m.files?.changelog), getText(m.files?.manifest, 2_000_000)]);
+  let compat: Compatibility = { level: "none", data: [], code: false, needs: [], alt: null };
+  try {
+    compat = classifyManifest(JSON.parse(manifest), `${namespace}.${name}`);
+  } catch {
+    /* manifest tidak terbaca */
+  }
+  const versions = Object.keys(m.allVersions ?? {}).filter((v) => /^\d/.test(v));
+  return {
+    id: `${namespace}.${name}`,
+    displayName: m.displayName || name,
+    description: m.description || "",
+    version: m.version,
+    versions,
+    rating: typeof m.averageRating === "number" ? m.averageRating : null,
+    reviews: m.reviewCount || 0,
+    downloads: m.downloadCount || 0,
+    verified: !!m.verified,
+    license: m.license ?? null,
+    homepage: m.homepage ?? null,
+    repository: m.repository ?? null,
+    categories: Array.isArray(m.categories) ? m.categories : [],
+    tags: Array.isArray(m.tags) ? m.tags.slice(0, 20) : [],
+    publisher: m.namespaceDisplayName || namespace,
+    readme,
+    changelog,
+    compat,
+  };
+}
+
+/** Bandingkan versi semver sederhana: >0 bila a lebih baru dari b. */
+export function cmpVersion(a: string, b: string): number {
+  const pa = a.split(/[.-]/).map((x) => parseInt(x, 10) || 0);
+  const pb = b.split(/[.-]/).map((x) => parseInt(x, 10) || 0);
+  for (let i = 0; i < Math.max(pa.length, pb.length); i++) if ((pa[i] ?? 0) !== (pb[i] ?? 0)) return (pa[i] ?? 0) - (pb[i] ?? 0);
+  return 0;
+}
+
+export interface ExtUpdate {
+  id: string;
+  installed: string;
+  latest: string;
+}
+
+/** Ekstensi terpasang yang punya versi lebih baru di Open VSX. Gagal jaringan = dilewati. */
+export async function extUpdates(ctx: Ctx): Promise<ExtUpdate[]> {
+  const list = extList(ctx).filter((e) => e.namespace && e.name && e.namespace !== "vscode");
+  const out: ExtUpdate[] = [];
+  let i = 0;
+  const worker = async () => {
+    while (i < list.length) {
+      const e = list[i++];
+      try {
+        const m = (await getJson(`${API}/${encodeURIComponent(e.namespace!)}/${encodeURIComponent(e.name!)}`)) as { version?: string };
+        if (m.version && cmpVersion(m.version, e.version) > 0) out.push({ id: e.id, installed: e.version, latest: m.version });
+      } catch {
+        /* lewati */
+      }
+    }
+  };
+  await Promise.all([worker(), worker(), worker(), worker()]);
+  return out;
 }
 
 /** Normalisasi path di dalam vsix: "./themes/a.json" → "extension/themes/a.json". */
 const inPkg = (p: string) => path.posix.join("extension", p.replace(/^\.\//, ""));
 
-export async function extInstall(ctx: Ctx, namespace: string, name: string): Promise<InstalledExt> {
+/** Pasang atomik: tulis ke folder sementara, baru gantikan versi lama setelah semuanya sukses. */
+export async function extInstall(ctx: Ctx, namespace: string, name: string, version?: string | null): Promise<InstalledExt> {
   if (!validId(namespace) || !validId(name)) throw new Error("Nama ekstensi tidak valid.");
-  const meta = (await getJson(`${API}/${encodeURIComponent(namespace)}/${encodeURIComponent(name)}`)) as Record<string, any>; // eslint-disable-line @typescript-eslint/no-explicit-any
+  const id = `${namespace}.${name}`;
+  fs.mkdirSync(extRoot(ctx), { recursive: true });
+  const tmp = path.join(extRoot(ctx), `.tmp-${id}-${process.pid}-${Date.now()}`);
+  fs.mkdirSync(tmp, { recursive: true });
+  try {
+    const m = await installInto(tmp, namespace, name, version);
+    const finalDir = path.join(extRoot(ctx), id);
+    fs.rmSync(finalDir, { recursive: true, force: true });
+    fs.renameSync(tmp, finalDir);
+    return m;
+  } catch (e) {
+    fs.rmSync(tmp, { recursive: true, force: true });
+    throw e;
+  }
+}
+
+async function installInto(dir: string, namespace: string, name: string, version?: string | null): Promise<InstalledExt> {
+  if (version && !/^[\w.+-]+$/.test(version)) throw new Error("Versi tidak valid.");
+  const meta = (await getJson(`${API}/${encodeURIComponent(namespace)}/${encodeURIComponent(name)}${version ? `/${encodeURIComponent(version)}` : ""}`)) as Record<string, any>; // eslint-disable-line @typescript-eslint/no-explicit-any
   const url: string | undefined = meta.files?.download;
   if (!url?.startsWith("https://")) throw new Error("Berkas ekstensi tidak tersedia.");
   const r = await fetch(url, { signal: AbortSignal.timeout(90_000) });
@@ -95,10 +265,6 @@ export async function extInstall(ctx: Ctx, namespace: string, name: string): Pro
   const pkg = JSON.parse(new TextDecoder().decode(pkgRaw));
   const c = pkg.contributes ?? {};
   const id = `${namespace}.${name}`;
-  const dir = path.join(extRoot(ctx), id);
-  fs.rmSync(dir, { recursive: true, force: true });
-  fs.mkdirSync(dir, { recursive: true });
-
   const copy = (rel: string, data: Uint8Array | undefined = files[inPkg(rel)]): string | null => {
     if (!data) return null;
     const out = path.join(dir, path.posix.normalize(rel.replace(/^\.\//, "")));
@@ -147,12 +313,17 @@ export async function extInstall(ctx: Ctx, namespace: string, name: string): Pro
   }
   const snippets = (c.snippets ?? []).filter((s: { path?: string }) => s.path && files[inPkg(s.path)]).map((s: { language: string; path: string }) => ({ language: s.language, path: s.path.replace(/^\.\//, "") }));
   const grammars = (c.grammars ?? []).filter((g: { path?: string; scopeName?: string }) => g.path && g.scopeName && files[inPkg(g.path)]).map((g: { language?: string; scopeName: string; path: string; embeddedLanguages?: Record<string, string>; injectTo?: string[] }) => ({ language: g.language, scopeName: g.scopeName, path: g.path.replace(/^\.\//, ""), embeddedLanguages: g.embeddedLanguages, injectTo: Array.isArray(g.injectTo) ? g.injectTo : undefined }));
-  const languages = (c.languages ?? []).map((l: { id: string; aliases?: string[]; extensions?: string[]; filenames?: string[] }) => ({ id: l.id, aliases: l.aliases, extensions: l.extensions, filenames: l.filenames }));
-  if (!themes.length && !iconThemes.length && !snippets.length && !grammars.length) {
-    fs.rmSync(dir, { recursive: true, force: true });
-    throw new Error("Ekstensi ini tidak berisi tema, tema ikon, snippet, atau grammar. Alexel Studio tidak menjalankan kode ekstensi.");
+  const languages = (c.languages ?? []).map((l: { id: string; aliases?: string[]; extensions?: string[]; filenames?: string[]; configuration?: string }) => ({
+    id: l.id,
+    aliases: l.aliases,
+    extensions: l.extensions,
+    filenames: l.filenames,
+    configuration: typeof l.configuration === "string" && files[inPkg(l.configuration)] ? l.configuration.replace(/^\.\//, "") : undefined,
+  }));
+  if (!themes.length && !iconThemes.length && !snippets.length && !grammars.length && !languages.some((l: { configuration?: string }) => l.configuration)) {
+    throw new Error("Ekstensi ini tidak berisi tema, tema ikon, snippet, grammar, atau konfigurasi bahasa. Alexel Studio tidak menjalankan kode ekstensi.");
   }
-  const manifest: InstalledExt = { id, displayName: pkg.displayName || name, version: pkg.version || meta.version, description: pkg.description || "", themes, iconThemes, snippets, grammars, languages, installedAt: Date.now() };
+  const manifest: InstalledExt = { id, namespace, name, displayName: pkg.displayName || name, version: pkg.version || meta.version, description: pkg.description || "", themes, iconThemes, snippets, grammars, languages, installedAt: Date.now() };
   fs.writeFileSync(path.join(dir, "nozel-manifest.json"), JSON.stringify(manifest, null, 2));
   return manifest;
 }
@@ -167,6 +338,11 @@ export function extList(ctx: Ctx): InstalledExt[] {
   }
   const out: InstalledExt[] = [];
   for (const n of names) {
+    // Sisa pemasangan yang terputus.
+    if (n.startsWith(".tmp-")) {
+      fs.rmSync(path.join(root, n), { recursive: true, force: true });
+      continue;
+    }
     try {
       const m = JSON.parse(fs.readFileSync(path.join(root, n, "nozel-manifest.json"), "utf8")) as InstalledExt;
       m.iconThemes ??= []; // manifest lama (sebelum dukungan tema ikon)

@@ -24,6 +24,8 @@ export interface Settings {
   accent: string | null;
   fontSize: number;
   tabSize: number;
+  /** Rapikan dengan Prettier setiap menyimpan (JS/TS/JSON/CSS/HTML/Markdown/YAML). */
+  formatOnSave: boolean;
   wordWrap: boolean;
   minimap: boolean;
   powerMode: "auto" | "on" | "off";
@@ -69,6 +71,8 @@ export interface Settings {
   extTheme: { ext: string; path: string; label: string; uiTheme: string } | null;
   /** Tema ikon berkas dari ekstensi Open VSX (mis. Material Icon Theme). */
   iconTheme: { ext: string; path: string; label: string } | null;
+  /** Ekstensi yang dimatikan (tetap terpasang, kontribusinya tidak dipakai). */
+  disabledExts: string[];
 }
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -76,6 +80,7 @@ export const DEFAULT_SETTINGS: Settings = {
   accent: null,
   fontSize: 13,
   tabSize: 2,
+  formatOnSave: false,
   wordWrap: false,
   minimap: true,
   powerMode: "auto",
@@ -102,6 +107,7 @@ export const DEFAULT_SETTINGS: Settings = {
   confirmDelete: true,
   extTheme: null,
   iconTheme: null,
+  disabledExts: [],
 };
 
 export interface Layout {
@@ -127,7 +133,7 @@ export const DEFAULT_LAYOUTS: Record<DesignId, Layout> = {
   kawanan: { sidebar: true, sidebarW: 240, sideView: "files", panel: false, panelH: 190, panelTab: "terminal", right: true, rightW: 340, rightView: "claude" },
 };
 
-export type TabKind = "text" | "image" | "settings" | "dashboard" | "welcome";
+export type TabKind = "text" | "image" | "settings" | "dashboard" | "welcome" | "extension";
 
 export interface Tab {
   /** Path absolut, atau id khusus "nozel:settings". */

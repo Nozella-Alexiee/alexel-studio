@@ -454,9 +454,28 @@ function withEol(doc: Doc, text: string) {
 }
 
 /** Simpan ke disk. Mengembalikan true kalau berhasil. */
+/** Format-saat-simpan (Prettier) pada editor yang menampilkan berkas ini; galat sintaks tidak menghalangi simpan. */
+async function formatBeforeSave(path: string) {
+  const i = views.findIndex((v, k) => v && shown[k] === path);
+  const v = i >= 0 ? views[i] : null;
+  if (!v) return;
+  try {
+    const { prettierParser, formatWithPrettier, projectPrettierOptions } = await import("./prettierFormat");
+    if (!prettierParser(path)) return;
+    const s = getState();
+    const before = v.state.doc.toString();
+    const out = await formatWithPrettier(before, path, { tabWidth: s.settings.tabSize, useTabs: false }, await projectPrettierOptions(s.root));
+    if (out == null || out === before || v.state.doc.toString() !== before) return;
+    v.dispatch({ changes: { from: 0, to: before.length, insert: out }, selection: { anchor: Math.min(v.state.selection.main.head, out.length) }, userEvent: "format" });
+  } catch {
+    /* sintaks salah: simpan apa adanya */
+  }
+}
+
 export async function saveDocument(path: string, opts: { quiet?: boolean; force?: boolean } = {}): Promise<boolean> {
   const doc = docs.get(path);
   if (!doc) return false;
+  if (getState().settings.formatOnSave && !opts.quiet) await formatBeforeSave(path);
   const st = liveState(doc, 0) ?? liveState(doc, 1) ?? anyState(doc);
   if (!st) return true;
   const text = st.doc;

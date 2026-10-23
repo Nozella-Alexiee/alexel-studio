@@ -1,7 +1,7 @@
 {
   "name": "alexel-studio",
   "private": true,
-  "version": "0.5.1",
+  "version": "0.6.0",
   "type": "module",
   "description": "Alexel Studio: a free, open source code editor with a real terminal, language servers, a debugger and your choice of AI agents (Claude Code, Codex, Gemini, Antigravity).",
   "author": {
@@ -24,6 +24,7 @@
     "@parcel/watcher": "^2.6.0",
     "bundled-typescript": "npm:typescript@^5.9.3",
     "node-pty": "^1.1.0",
+    "prettier": "^3.9.10",
     "typescript-language-server": "^6.0.2"
   },
   "devDependencies": {

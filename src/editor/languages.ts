@@ -2,7 +2,7 @@
 // supaya bundle awal tetap kecil; tiap bahasa baru diunduh saat pertama dibuka.
 
 import type { Extension } from "@codemirror/state";
-import { extLanguageFor } from "../extensions/registry";
+import { extLanguageFor, languageConfig } from "../extensions/registry";
 import { tl } from "../i18n";
 
 export interface LanguageInfo {
@@ -105,7 +105,14 @@ export function languageFor(filename: string): LanguageInfo {
   // Bahasa dari ekstensi (grammar TextMate), mis. Svelte, Astro, Prisma, Elixir.
   const extLang = extLanguageFor(filename);
   if (extLang) {
-    return { name: extLang.name, id: extLang.id, load: () => import("../extensions/textmate").then((m) => m.textmateLanguage(extLang.id, extLang.scopeName)) };
+    return {
+      name: extLang.name,
+      id: extLang.id,
+      load: async () => {
+        const [m, cfg] = await Promise.all([import("../extensions/textmate"), languageConfig(extLang.configuration)]);
+        return m.textmateLanguage(extLang.id, extLang.scopeName, cfg);
+      },
+    };
   }
 
   // Selebihnya (Shell, Ruby, Swift, Kotlin, TOML, Dockerfile, Lua, ...) dari registry language-data.

@@ -270,6 +270,9 @@ export default function SettingsView() {
         <Row label={tl("Lebar tab")}>
           <Segmented label={tl("Lebar tab")} value={String(s.tabSize)} onChange={(v) => set({ tabSize: Number(v) })} options={[{ id: "2", label: "2" }, { id: "4", label: "4" }, { id: "8", label: "8" }]} />
         </Row>
+        <Row label={tl("Rapikan saat menyimpan")} hint={tl("Prettier untuk JS/TS, JSON, CSS, HTML, Markdown, dan YAML. Aturan di .prettierrc dipakai.")}>
+          <Toggle label={tl("Rapikan saat menyimpan")} value={s.formatOnSave} onChange={(v) => set({ formatOnSave: v })} />
+        </Row>
         <Row label={tl("Bungkus baris panjang")}>
           <Toggle label={tl("Bungkus baris")} value={s.wordWrap} onChange={(v) => set({ wordWrap: v })} />
         </Row>

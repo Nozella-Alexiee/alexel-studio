@@ -135,9 +135,12 @@ Built upon the official **Debug Adapter Protocol (DAP)**:
   <img src="docs/screenshots/ext.jpg" alt="Extension Marketplace" width="90%" style="border-radius: 10px; border: 1px solid #334155;" />
 </div>
 
-Install themes, language servers, and autonomous agent drivers with zero friction:
+Install agents and VS Code data extensions with zero friction:
 * Official agents are verified against SHA-256 integrity checksums before extraction.
-* Browse thousands of VS Code-compatible themes and grammars directly from the **Open VSX Registry**.
+* Browse the whole **Open VSX Registry** (20,000+ extensions): search without picking a category, sort by downloads/rating/newest, page through results, and read each extension's README, changelog and versions.
+* Every result shows up front, before downloading, whether it will work: **Full**, **Partial**, or **Needs extension code**. Alexel Studio uses an extension's themes, icon themes, snippets, TextMate grammars and language configuration (comments, brackets); extension JavaScript is never run, so features that need it (commands, debuggers, language servers shipped inside an extension) are not available, and the list points to the built-in equivalent when there is one (Prettier, Git panel, AI agents, HTML preview…).
+* Manage installed extensions: enable/disable, update (single or all), install a specific version. Installs are atomic.
+* **Prettier is built in**: Shift+Alt+F formats JS/TS, JSON, CSS/SCSS/Less, HTML, Markdown and YAML, honouring `.prettierrc`; optional format on save.
 
 ---
 
@@ -146,7 +149,7 @@ Install themes, language servers, and autonomous agent drivers with zero frictio
   <img src="docs/screenshots/light.jpg" alt="Light Polar Theme" width="90%" style="border-radius: 10px; border: 1px solid #334155;" />
 </div>
 
-* **6 Distinct Visual Themes**: Choose between 3 modern dark/obsidian designs (Aurora, Zen, Control Room) and 3 polar Antarctic themes (Antartika, Tuxedo, Kawanan).
+* **8 Distinct Designs**: the VS Code-like Studio (dark & light), three modern designs (Aurora, Zen, Control Room) and three polar Antarctic ones (Antartika, Tuxedo, Kawanan). Every design is checked for WCAG AA contrast.
 * **Interactive Mascot (Nozi 🐧)**: The original penguin companion reacts dynamically to your environment: celebrates successful git commits, thinks during agent reasoning turns, and raises alerts when errors occur.
 
 ---

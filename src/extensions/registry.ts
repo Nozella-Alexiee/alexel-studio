@@ -16,11 +16,28 @@ export interface InstalledExt {
   iconThemes: { id: string; label: string; path: string }[];
   snippets: { language: string; path: string }[];
   grammars: { language?: string; scopeName: string; path: string; injectTo?: string[] }[];
-  languages: { id: string; aliases?: string[]; extensions?: string[]; filenames?: string[] }[];
+  languages: { id: string; aliases?: string[]; extensions?: string[]; filenames?: string[]; configuration?: string }[];
   installedAt: number;
+  namespace?: string;
+  name?: string;
 }
 
 export const useExtensions = create<{ list: InstalledExt[]; loaded: boolean }>(() => ({ list: [], loaded: false }));
+
+/** Bandingkan versi: >0 bila a lebih baru dari b. */
+export function cmpVersion(a: string, b: string): number {
+  const pa = a.split(/[.-]/).map((x) => parseInt(x, 10) || 0);
+  const pb = b.split(/[.-]/).map((x) => parseInt(x, 10) || 0);
+  for (let i = 0; i < Math.max(pa.length, pb.length); i++) if ((pa[i] ?? 0) !== (pb[i] ?? 0)) return (pa[i] ?? 0) - (pb[i] ?? 0);
+  return 0;
+}
+
+/** Ekstensi yang aktif: terpasang dan tidak dimatikan di Pengaturan. */
+export const isExtDisabled = (id: string) => {
+  const d = getState().settings.disabledExts;
+  return Array.isArray(d) && d.includes(id);
+};
+const activeExts = () => useExtensions.getState().list.filter((e) => !isExtDisabled(e.id));
 
 /** id bahasa VS Code → id bahasa Nozel (lihat editor/languages.ts). */
 const LANG_MAP: Record<string, string> = {
@@ -66,7 +83,7 @@ export function convertSnippetBody(body: string | string[]): string {
 
 async function loadSnippets(list: InstalledExt[]) {
   snippetCache.clear();
-  for (const ext of list) {
+  for (const ext of list.filter((e) => !isExtDisabled(e.id))) {
     for (const sn of ext.snippets) {
       try {
         const json = parseJsonc(await call<string>("ext_read_file", { id: ext.id, path: sn.path })) as Record<string, { prefix?: string | string[]; body?: string | string[]; description?: string }>;
@@ -86,16 +103,26 @@ async function loadSnippets(list: InstalledExt[]) {
   }
 }
 
+/** language-configuration.json milik bahasa ekstensi (komentar, kurung); null bila tidak ada/rusak. */
+export async function languageConfig(ref: { ext: string; path: string } | undefined): Promise<import("./textmate").LanguageConfig | null> {
+  if (!ref) return null;
+  try {
+    return parseJsonc(await call<string>("ext_read_file", { id: ref.ext, path: ref.path })) as import("./textmate").LanguageConfig;
+  } catch {
+    return null;
+  }
+}
+
 /** Bahasa ber-grammar dari ekstensi untuk nama berkas tertentu. */
-export function extLanguageFor(filename: string): { name: string; id: string; scopeName: string } | null {
+export function extLanguageFor(filename: string): { name: string; id: string; scopeName: string; configuration?: { ext: string; path: string } } | null {
   const lower = filename.toLowerCase();
   const base = lower.split("/").pop() ?? lower;
-  for (const ext of useExtensions.getState().list) {
+  for (const ext of activeExts()) {
     for (const lang of ext.languages) {
       const hit = lang.extensions?.some((e) => base.endsWith(e.toLowerCase())) || lang.filenames?.some((f) => f.toLowerCase() === base);
       if (!hit) continue;
       const g = ext.grammars.find((x) => x.language === lang.id);
-      if (g) return { name: lang.aliases?.[0] ?? lang.id, id: lang.id, scopeName: g.scopeName };
+      if (g) return { name: lang.aliases?.[0] ?? lang.id, id: lang.id, scopeName: g.scopeName, configuration: lang.configuration ? { ext: ext.id, path: lang.configuration } : undefined };
     }
   }
   return null;
@@ -122,7 +149,7 @@ const BUILTIN_SCOPES: Record<string, string> = {
 const pendingBuiltin = new Map<string, Promise<boolean>>();
 
 function findGrammar(scopeName: string) {
-  for (const ext of useExtensions.getState().list) {
+  for (const ext of activeExts()) {
     const g = ext.grammars.find((x) => x.scopeName === scopeName);
     if (g) return { ext, g };
   }
@@ -160,7 +187,7 @@ async function grammarReader(scopeName: string) {
 /** Grammar yang menyuntik (injectTo) ke scope tertentu, mis. komentar JSDoc ke source.ts. */
 function injectionsFor(scopeName: string): string[] {
   const out: string[] = [];
-  for (const ext of useExtensions.getState().list) for (const g of ext.grammars) if (g.injectTo?.includes(scopeName)) out.push(g.scopeName);
+  for (const ext of activeExts()) for (const g of ext.grammars) if (g.injectTo?.includes(scopeName)) out.push(g.scopeName);
   return out;
 }
 
@@ -187,6 +214,14 @@ function themeChanged() {
   window.dispatchEvent(new Event("alexel:theme"));
 }
 
+/** Setelah ekstensi dimatikan/dihidupkan: terapkan ulang tema, ikon, snippet, dan deteksi bahasa. */
+export async function reapplyExtensions() {
+  await applySavedIconTheme();
+  (await import("../editor/documents")).redetectLanguages();
+  await loadSnippets(useExtensions.getState().list);
+  await applySavedTheme();
+}
+
 export async function applySavedTheme() {
   const s = getState().settings;
   const t = s.extTheme;
@@ -197,7 +232,7 @@ export async function applySavedTheme() {
     themeChanged();
   };
   if (!t) return plain();
-  const ext = useExtensions.getState().list.find((e) => e.id === t.ext);
+  const ext = activeExts().find((e) => e.id === t.ext);
   if (!ext) return plain();
   try {
     const theme = await resolveTheme((rel) => call<string>("ext_read_file", { id: ext.id, path: rel }), t.path);
@@ -214,9 +249,9 @@ export async function applySavedIconTheme() {
   const { useIconTheme, resolveIconTheme } = await import("./icons");
   // Ekstensi berkas dari bahasa ekstensi (mis. .svelte → svelte) untuk pemetaan languageIds.
   const extLangs = new Map<string, string>();
-  for (const ext of useExtensions.getState().list) for (const l of ext.languages) for (const e of l.extensions ?? []) extLangs.set(e.replace(/^\./, "").toLowerCase(), l.id);
+  for (const ext of activeExts()) for (const l of ext.languages) for (const e of l.extensions ?? []) extLangs.set(e.replace(/^\./, "").toLowerCase(), l.id);
   const t = getState().settings.iconTheme;
-  const ext = t && useExtensions.getState().list.find((e) => e.id === t.ext);
+  const ext = t && activeExts().find((e) => e.id === t.ext);
   if (!t || !ext) {
     useIconTheme.setState({ theme: null, extLangs });
     return;

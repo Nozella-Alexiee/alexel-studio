@@ -1,6 +1,6 @@
 // Menu klik kanan di editor: aksi Claude, aksi LSP, lalu potong/salin/tempel.
 
-import { findReferences, formatDocument, jumpToDefinition, LSPPlugin, renameSymbol } from "@codemirror/lsp-client";
+import { findReferences, jumpToDefinition, LSPPlugin, renameSymbol } from "@codemirror/lsp-client";
 import type { EditorView } from "@codemirror/view";
 import { prettyKeys } from "../app/commands";
 import { openMenu, type MenuItem } from "../components/Overlays";
@@ -8,6 +8,8 @@ import { call } from "../lib/ipc";
 import { viewOf } from "./documents";
 import { tl } from "../i18n";
 import { fixAtCursor, problemsAtCursor } from "./fixWithAi";
+import { prettierParser } from "./prettierFormat";
+import { activeTab } from "../state/store";
 
 function viewAt(target: EventTarget | null): EditorView | null {
   for (const g of [0, 1]) {
@@ -26,6 +28,7 @@ export function openEditorMenu(e: MouseEvent): boolean {
     view.focus();
     void call("edit_action", { action });
   };
+  const path = activeTab()?.kind === "text" ? activeTab()!.id : null;
   const fixable = problemsAtCursor(view).length > 0;
   const items: MenuItem[] = [
     ...(fixable ? [{ label: tl("Perbaiki dengan AI"), keys: prettyKeys("Mod+."), run: () => void fixAtCursor() }] : []),
@@ -35,7 +38,7 @@ export function openEditorMenu(e: MouseEvent): boolean {
     { label: tl("Ke definisi"), keys: "F12", disabled: !lsp, run: () => jumpToDefinition(view) },
     { label: tl("Cari semua referensi"), keys: prettyKeys("Shift+F12"), disabled: !lsp, run: () => findReferences(view) },
     { label: tl("Ganti nama simbol"), keys: "F2", disabled: !lsp, run: () => renameSymbol(view) },
-    { label: tl("Rapikan dokumen"), keys: prettyKeys("Shift+Alt+F"), disabled: !lsp, run: () => formatDocument(view) },
+    { label: tl("Rapikan dokumen"), keys: prettyKeys("Shift+Alt+F"), disabled: !lsp && !(path && prettierParser(path)), run: () => void import("../app/editorCommands").then((m) => m.format()) },
     { label: "", separator: true },
     { label: tl("Potong"), keys: prettyKeys("Mod+X"), disabled: !hasSel, run: edit("cut") },
     { label: tl("Salin"), keys: prettyKeys("Mod+C"), disabled: !hasSel, run: edit("copy") },

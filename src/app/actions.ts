@@ -210,6 +210,15 @@ export function openSettings(group = getState().focusedGroup, section?: string) 
   if (section) setTimeout(() => document.getElementById(`set-${section}`)?.scrollIntoView({ block: "start" }), 150);
 }
 
+/** Halaman detail ekstensi sebagai tab (README, versi, kecocokan). */
+export function openExtension(namespace: string, name: string, displayName?: string, group = getState().focusedGroup) {
+  const id = `nozel:ext:${namespace}.${name}`;
+  if (!getState().tabs[id]) {
+    setState((s) => ({ tabs: { ...s.tabs, [id]: { id, name: displayName ?? name, kind: "extension", dirty: false, lang: "", preview: "code" } } }));
+  }
+  addTabToGroup(id, ensureGroup(group));
+}
+
 export const WELCOME_TAB = "nozel:welcome";
 
 /** Halaman Selamat datang sebagai tab (seperti Help → Welcome di VS Code). */
@@ -685,6 +694,7 @@ export function updateSettings(patch: Partial<Settings>, opts: { agentSwitched?:
   }
   if (patch.design !== undefined || "extTheme" in patch) void import("../extensions/registry").then((m) => m.applySavedTheme());
   if ("iconTheme" in patch) void import("../extensions/registry").then((m) => m.applySavedIconTheme());
+  if ("disabledExts" in patch) void import("../extensions/registry").then((m) => m.reapplyExtensions());
   if (["fontSize", "tabSize", "wordWrap", "minimap", "design"].some((k) => k in patch)) requestAnimationFrame(() => docs.applyEditorSettings());
   if ("keybindings" in patch) void import("./commands").then((m) => m.applyKeybindings(next.keybindings));
   persistSettings();

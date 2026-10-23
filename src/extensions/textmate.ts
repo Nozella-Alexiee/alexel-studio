@@ -78,9 +78,30 @@ interface TmState {
   i: number;
 }
 
-function streamLanguage(name: string, grammar: IGrammar, initial: StateStack) {
+/** Bagian language-configuration.json VS Code yang dipetakan ke data bahasa CodeMirror. */
+export interface LanguageConfig {
+  comments?: { lineComment?: string | { comment?: string }; blockComment?: [string, string] };
+  brackets?: [string, string][];
+  autoClosingPairs?: ([string, string] | { open: string; close: string })[];
+  wordPattern?: string;
+}
+
+export function languageDataFrom(cfg: LanguageConfig | null | undefined): Record<string, unknown> {
+  const data: Record<string, unknown> = {};
+  if (!cfg) return data;
+  const line = typeof cfg.comments?.lineComment === "string" ? cfg.comments.lineComment : cfg.comments?.lineComment?.comment;
+  const block = Array.isArray(cfg.comments?.blockComment) && cfg.comments.blockComment.length === 2 ? { open: cfg.comments.blockComment[0], close: cfg.comments.blockComment[1] } : undefined;
+  if (line || block) data.commentTokens = { ...(line ? { line } : {}), ...(block ? { block } : {}) };
+  // Pasangan kurung/kutip otomatis: dari autoClosingPairs bila ada, kalau tidak dari brackets.
+  const pairs = (cfg.autoClosingPairs ?? cfg.brackets ?? []).map((p) => (Array.isArray(p) ? p : [p.open, p.close])).filter((p) => typeof p[0] === "string" && typeof p[1] === "string" && p[0].length === 1 && p[1].length === 1);
+  if (pairs.length) data.closeBrackets = { brackets: [...new Set(pairs.map((p) => p[0]))] };
+  return data;
+}
+
+function streamLanguage(name: string, grammar: IGrammar, initial: StateStack, languageData: Record<string, unknown> = {}) {
   return StreamLanguage.define<TmState>({
     name,
+    languageData,
     startState: () => ({ stack: initial, tokens: null, i: 0 }),
     copyState: (s) => ({ stack: s.stack, tokens: s.tokens, i: s.i }),
     blankLine: (s) => {
@@ -114,10 +135,10 @@ function streamLanguage(name: string, grammar: IGrammar, initial: StateStack) {
   });
 }
 
-export async function textmateLanguage(name: string, scopeName: string): Promise<Extension> {
+export async function textmateLanguage(name: string, scopeName: string, config?: LanguageConfig | null): Promise<Extension> {
   const reg = await registry();
   const grammar = await reg.loadGrammar(scopeName);
   if (!grammar) throw new Error(tl("Grammar {name} tidak bisa dimuat.", { name: scopeName }));
   const { INITIAL } = await import("vscode-textmate");
-  return streamLanguage(name, grammar, INITIAL);
+  return streamLanguage(name, grammar, INITIAL, languageDataFrom(config));
 }
