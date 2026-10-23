@@ -61,7 +61,7 @@ describe("server IDE (MCP)", () => {
   it("lockfile berisi format yang dicari CLI, token acak, dan hanya loopback", () => {
     const f = path.join(lockDir(), `${server.port}.lock`);
     const j = JSON.parse(fs.readFileSync(f, "utf8"));
-    expect(j).toMatchObject({ pid: process.pid, workspaceFolders: ["/proj"], ideName: "Alexel Studio", transport: "ws", runningInWindows: false, authToken: server.token });
+    expect(j).toMatchObject({ pid: process.pid, workspaceFolders: ["/proj"], ideName: "Alexel Studio", transport: "ws", runningInWindows: process.platform === "win32", authToken: server.token });
     expect(server.token).toMatch(/^[0-9a-f-]{36}$/);
     if (process.platform !== "win32") expect(fs.statSync(f).mode & 0o077).toBe(0);
   });
