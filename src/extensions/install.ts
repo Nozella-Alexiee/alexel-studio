@@ -3,7 +3,6 @@
 import * as A from "../app/actions";
 import { call, errMsg } from "../lib/ipc";
 import { confirmDialog, getState, toast } from "../state/store";
-import { installAgent, agentForPackage } from "../panels/AgentExtensions";
 import { serverStatus } from "../editor/lsp";
 import { installServer } from "./servers";
 import { tl } from "../i18n";
@@ -11,12 +10,6 @@ import { loadExtensions, type InstalledExt } from "./registry";
 
 /** Pasang ekstensi; `quiet` (pembaruan) tidak menawarkan tema lagi. Mengembalikan manifest atau null bila gagal. */
 export async function installExtension(namespace: string, name: string, opts: { version?: string; quiet?: boolean } = {}): Promise<InstalledExt | null> {
-  // Ekstensi agen (Claude Code, Codex): pasang biner agennya ke panel Agen AI.
-  const agent = agentForPackage(namespace, name);
-  if (agent) {
-    await installAgent(agent);
-    return null;
-  }
   try {
     const m = await call<InstalledExt>("ext_install", { namespace, name, version: opts.version ?? null });
     await loadExtensions();

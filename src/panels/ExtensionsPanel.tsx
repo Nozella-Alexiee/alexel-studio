@@ -11,7 +11,7 @@ import { CHIPS, checkUpdates, fmtDl, lookupExtensions, searchExtensions, type Ch
 import { cmpVersion, useExtensions, type InstalledExt } from "../extensions/registry";
 import { errMsg, isNative } from "../lib/ipc";
 import { toast, useStore } from "../state/store";
-import { AgentExtensions, agentForPackage } from "./AgentExtensions";
+import { AgentExtensions } from "./AgentExtensions";
 import { CompatBadge, useCompat } from "./CompatBadge";
 import { tl } from "../i18n";
 
@@ -36,7 +36,8 @@ const HOME: { chip: string; title: () => string }[] = [
 const homeCache = new Map<string, Result[]>();
 
 function ResultItem({ r, installed, onInstall, busy }: { r: Result; installed: boolean; onInstall: (r: Result) => void; busy: string | null }) {
-  const isAgent = !!agentForPackage(r.namespace, r.name);
+  // Claude Code & Codex sekarang dipasang sebagai ekstensi sungguhan (extension host), jadi lencana kecocokan tampil seperti biasa.
+  const isAgent = false;
   const compat = useCompat(isAgent ? { namespace: r.namespace, name: r.name, manifestUrl: null } : r);
   const unsupported = !isAgent && compat?.level === "none";
   return (
