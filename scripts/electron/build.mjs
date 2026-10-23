@@ -17,6 +17,8 @@ export const entries = [
   { entryPoints: ["electron/preload.ts"], outfile: "dist-electron/preload.cjs" },
   // Proses extension host (dijalankan sebagai child process oleh main).
   { entryPoints: ["electron/exthost/host.ts"], outfile: "dist-electron/exthost.cjs" },
+  // Pengekstrak vsix besar (proses anak).
+  { entryPoints: ["electron/extractor.ts"], outfile: "dist-electron/extractor.cjs" },
 ];
 
 export async function buildAll() {

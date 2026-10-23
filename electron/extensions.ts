@@ -3,13 +3,14 @@
 // oleh extension host (exthost/) setelah pemakai mempercayainya.
 // (Server bahasa pilihan di managedServers.ts di-pin SHA-256.)
 
+import { fork } from "node:child_process";
 import { createHash } from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
 import { unzipSync } from "fflate";
 import { parseJsonc } from "./jsonc";
 import { classifyManifest, type Compatibility } from "./extCompat";
-import type { Ctx } from "./util";
+import { childEnv, type Ctx } from "./util";
 
 const API = "https://open-vsx.org/api";
 // Ekstensi AI resmi (Claude Code, Codex) membawa biner CLI sendiri: ratusan MB.
@@ -270,6 +271,36 @@ export async function extUpdates(ctx: Ctx): Promise<ExtUpdate[]> {
 /** Normalisasi path di dalam vsix: "./themes/a.json" → "extension/themes/a.json". */
 const inPkg = (p: string) => path.posix.join("extension", p.replace(/^\.\//, ""));
 
+/**
+ * Ekstrak kode di proses anak (vsix AI resmi bisa ratusan MB; unzip sinkron di main membekukan UI).
+ * Tanpa skrip pengekstrak (mis. di uji), jatuh ke ekstraksi di proses ini.
+ */
+async function extractCodeOffThread(buf: Uint8Array, dest: string): Promise<void> {
+  const script = path.join(__dirname, "extractor.cjs").replace(`app.asar${path.sep}`, `app.asar.unpacked${path.sep}`);
+  if (buf.length < 8 * 1024 * 1024 || !fs.existsSync(script)) {
+    extractCode(buf, dest);
+    return;
+  }
+  const tmp = path.join(path.dirname(dest), `.vsix-${process.pid}-${Date.now()}`);
+  fs.writeFileSync(tmp, buf);
+  try {
+    await new Promise<void>((resolve, reject) => {
+      const child = fork(script, [tmp, dest], { env: childEnv({ ELECTRON_RUN_AS_NODE: "1" }), stdio: ["ignore", "ignore", "pipe", "ipc"], windowsHide: true });
+      let done = false;
+      let err = "";
+      child.stderr?.on("data", (d) => (err += String(d).slice(-500)));
+      child.on("message", (m: { ok: boolean; error?: string }) => {
+        done = true;
+        if (m.ok) resolve();
+        else reject(new Error(m.error ?? "Ekstraksi gagal."));
+      });
+      child.on("exit", () => !done && reject(new Error(`Pengekstrak berhenti tiba-tiba. ${err}`.trim())));
+    });
+  } finally {
+    fs.rmSync(tmp, { force: true });
+  }
+}
+
 const MAX_CODE_FILES = 30_000;
 const MAX_CODE_BYTES = 1200 * 1024 * 1024;
 
@@ -438,7 +469,7 @@ async function installInto(dir: string, namespace: string, name: string, version
     }
   }
   const hasCode = typeof pkg.main === "string" && !!pkg.main;
-  if (hasCode) extractCode(buf, path.join(dir, "ext"));
+  if (hasCode) await extractCodeOffThread(buf, path.join(dir, "ext"));
   if (!hasCode && !themes.length && !iconThemes.length && !snippets.length && !grammars.length && !languages.some((l: { configuration?: string }) => l.configuration)) {
     throw new Error("Ekstensi ini tidak berisi tema, tema ikon, snippet, grammar, konfigurasi bahasa, maupun kode yang bisa dijalankan.");
   }

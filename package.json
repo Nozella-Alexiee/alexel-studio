@@ -113,7 +113,8 @@
       "node_modules/@parcel/**",
       "node_modules/typescript-language-server/**",
       "node_modules/bundled-typescript/**",
-      "dist-electron/exthost.cjs"
+      "dist-electron/exthost.cjs",
+      "dist-electron/extractor.cjs"
     ],
     "npmRebuild": false,
     "mac": {
