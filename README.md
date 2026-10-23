@@ -138,10 +138,11 @@ Open **Settings → Check now** (or the notification that appears when a new ver
   <img src="docs/screenshots/ext.jpg" alt="Extension Marketplace" width="90%" style="border-radius: 10px; border: 1px solid #334155;" />
 </div>
 
-Install agents and VS Code data extensions with zero friction:
+Install agents and VS Code extensions with zero friction:
 * Official agents are verified against SHA-256 integrity checksums before extraction.
 * Browse the whole **Open VSX Registry** (20,000+ extensions): search without picking a category, sort by downloads/rating/newest, page through results, and read each extension's README, changelog and versions.
-* Every result shows up front, before downloading, whether it will work: **Full**, **Partial**, or **Needs extension code**. Alexel Studio uses an extension's themes, icon themes, snippets, TextMate grammars and language configuration (comments, brackets); extension JavaScript is never run, so features that need it (commands, debuggers, language servers shipped inside an extension) are not available, and the list points to the built-in equivalent when there is one (Prettier, Git panel, AI agents, HTML preview…).
+* Every result shows up front, before downloading, what it can do: **Full** (themes, icon themes, snippets, grammars, language configuration), or **Runs code (experimental)**. Extensions that contain code run in a separate **extension host** with a growing subset of the VS Code API *after you trust them* (completion, hover, definitions, formatting, diagnostics, decorations, commands & keybindings, status bar items, quick pick, settings, tree views, webviews, language-client based extensions). Verified with the real Prettier, ESLint, Red Hat YAML, Prisma, Error Lens, Todo Tree, REST Client, Code Spell Checker and others; it is **not** a full VS Code, so some extensions will only partly work.
+* Extension details page (Details / Features / Changelog), extension settings UI, recommendations for your project, update checks, enable/disable, trust control.
 * Manage installed extensions: enable/disable, update (single or all), install a specific version. Installs are atomic.
 * **One-click language servers** for YAML, Prisma and Dockerfile (pinned + SHA-256 verified, confirmed before they run).
 * **Prettier is built in**: Shift+Alt+F formats JS/TS, JSON, CSS/SCSS/Less, HTML, Markdown and YAML, honouring `.prettierrc`; optional format on save.

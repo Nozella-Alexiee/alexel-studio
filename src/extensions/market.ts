@@ -115,6 +115,8 @@ export function inspectExtension(r: Pick<Result, "namespace" | "name" | "manifes
   return p;
 }
 
+export const lookupExtensions = (ids: string[]) => call<Result[]>("ext_lookup", { ids });
+
 export const fetchDetails = (namespace: string, name: string) => call<Details>("ext_details", { namespace, name });
 export const checkUpdates = () => call<Update[]>("ext_updates");
 

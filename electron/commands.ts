@@ -118,6 +118,7 @@ export function buildCommands(ctx: Ctx, hooks: { confirmClose: (win: BrowserWind
 
     // Ekstensi (Open VSX, data saja)
     ext_search: (a) => X.extSearch({ query: String(a.query ?? ""), category: a.category ?? null, sortBy: a.sortBy, offset: Number(a.offset) || 0, size: Number(a.size) || undefined }),
+    ext_lookup: (a) => X.extLookup(Array.isArray(a.ids) ? a.ids.map(String) : []),
     ext_inspect: (a) => X.extInspect(String(a.namespace), String(a.name), String(a.manifestUrl)),
     ext_details: (a) => X.extDetails(String(a.namespace), String(a.name)),
     ext_updates: () => X.extUpdates(ctx),

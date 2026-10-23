@@ -1,6 +1,6 @@
 // Kecocokan ekstensi VS Code dengan Alexel Studio, dihitung dari package.json-nya sebelum diunduh.
 // Alexel Studio hanya memakai kontribusi data (tema, tema ikon, snippet, grammar, konfigurasi
-// bahasa); kode JavaScript ekstensi tidak dijalankan.
+// bahasa) atau kode (`main`) yang dijalankan extension host setelah dipercaya pemakai.
 
 import { MANAGED } from "./managedServers";
 
@@ -10,7 +10,7 @@ export interface Compatibility {
   level: CompatLevel;
   /** Kontribusi data yang akan dipakai, mis. ["themes", "snippets"]. */
   data: string[];
-  /** Ekstensi membawa kode (main/browser) yang tidak dijalankan. */
+  /** Ekstensi membawa kode (main/browser): dijalankan extension host setelah dipercaya. */
   code: boolean;
   /** Bagian yang sebenarnya dicari pemakai tetapi butuh kode ekstensi, mis. ["commands"]. */
   needs: string[];

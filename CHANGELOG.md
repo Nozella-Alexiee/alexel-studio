@@ -1,5 +1,39 @@
 # Changelog
 
+## 0.7.0 (belum dirilis)
+
+Extensions that look and behave like VS Code's:
+
+- **Extension host** (experimental): extensions that contain code run in a separate Node process with a
+  growing subset of the `vscode` API, *only after you trust them*. Verified with the real Prettier,
+  ESLint, Red Hat YAML, Prisma, Error Lens, Todo Tree, REST Client, Code Spell Checker, Markdown All in
+  One, Rainbow CSV, Tailwind CSS and Live Server. Covers commands & keybindings, status bar items,
+  messages/quick pick/input box, completion, hover, definition, references, rename, formatting, code
+  actions, diagnostics, decorations (Error Lens), settings, tree views, webviews, language-client
+  based extensions, ESM extensions.
+- Extension details page with **Details / Features / Changelog**, extension icons, per-extension
+  **settings UI** (`contributes.configuration`), **recommendations for your project**, trust control,
+  runtime status, and an "Extension views" sidebar for tree views.
+- Pinned one-click language servers (YAML, Prisma, Dockerfile) and built-in Prettier remain.
+
+Editor integration for agents:
+
+- **Claude Code in the Alexel Studio terminal** now connects to the editor like in VS Code: it sees your
+  selection, open files and problems, can open files, and shows diffs for you to accept or reject.
+  Localhost-only MCP server with a random token + `~/.claude/ide` lockfile (`electron/ide.ts`); `claude`
+  in any Alexel terminal auto-connects; **Cmd/Ctrl+Alt+K** sends the file/selection as an @-mention.
+  (The panel's stream mode can't attach IDE servers, so the panel keeps sending its own context.)
+- **Fast** and **Thinking** switches for Claude Code, applied live.
+
+Run:
+
+- File links in the terminal (`src/a.ts:12:5`, `a.ts(12,5)`, Python tracebacks, Rust `-->`) open on
+  Cmd/Ctrl+click.
+- Run targets from `.alexel/run.json`, `.vscode/tasks.json` and `.vscode/launch.json` (Node/Python).
+
+Fixed/polish: Run & Debug in Zen/Control, TODO and Outline in the Studio rail, status bar no longer
+clips on narrow windows, Tuxedo double borders.
+
 ## 0.6.2
 
 New:

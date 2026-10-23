@@ -1136,4 +1136,7 @@ export const EN: Record<string, string> = {
   "Thinking: Claude berpikir dulu sebelum menjawab. Matikan untuk respons lebih singkat. Berlaku langsung.": "Thinking: Claude thinks before answering. Turn off for shorter responses. Applies immediately.",
   "Berpikir": "Thinking",
   "Mode cepat diminta, tapi tidak aktif untuk akun/model ini ({reason}).": "Fast mode was requested but isn't active for this account/model ({reason}).",
+  "Tema, ikon, snippet, grammar, dan konfigurasi bahasa langsung dipakai. Ekstensi yang berisi kode baru dijalankan setelah kamu mempercayainya (eksperimental, API VS Code terbatas).": "Themes, icons, snippets, grammars and language configuration are used right away. Extensions that contain code only run after you trust them (experimental, limited VS Code API).",
+  "Direkomendasikan untuk project ini": "Recommended for this project",
+  "Karena project memakai {x}": "Because the project uses {x}",
 };

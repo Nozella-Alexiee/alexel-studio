@@ -4,7 +4,10 @@ import * as A from "../app/actions";
 import { Empty, IconButton, Segmented, Spinner } from "../components/ui";
 import { installExtension, removeExtension, revokeTrust, setExtensionEnabled, trustExtension } from "../extensions/install";
 import { useExtHost } from "../exthost/state";
-import { CHIPS, checkUpdates, fmtDl, searchExtensions, type Chip, type Result, type SortBy, type Update } from "../extensions/market";
+import { recommend } from "../extensions/recommend";
+import { projectFiles } from "../lib/projectFiles";
+import { api } from "../lib/ipc";
+import { CHIPS, checkUpdates, fmtDl, lookupExtensions, searchExtensions, type Chip, type Result, type SortBy, type Update } from "../extensions/market";
 import { cmpVersion, useExtensions, type InstalledExt } from "../extensions/registry";
 import { errMsg, isNative } from "../lib/ipc";
 import { toast, useStore } from "../state/store";
@@ -181,6 +184,29 @@ function InstalledItem({ ext, update }: { ext: InstalledExt; update?: Update }) 
 /** Beranda: kelompok terkurasi (teratas menurut unduhan) tanpa perlu mencari. */
 function Home({ install, busy, installedIds, go }: { install: (r: Result) => void; busy: string | null; installedIds: Set<string>; go: (chip: string) => void }) {
   const [data, setData] = useState<Record<string, Result[]>>(() => Object.fromEntries(homeCache));
+  const root = useStore((s) => s.root);
+  const [rec, setRec] = useState<{ r: Result; why: string }[] | null>(null);
+  // Rekomendasi untuk project yang sedang dibuka (berkas + dependensi package.json).
+  useEffect(() => {
+    if (!root) return setRec([]);
+    let alive = true;
+    void (async () => {
+      const files = (await projectFiles(root).catch(() => [] as string[])) ?? [];
+      let deps: string[] = [];
+      try {
+        const pkg = JSON.parse((await api.readText(`${root}/package.json`)).content);
+        deps = [...Object.keys(pkg.dependencies ?? {}), ...Object.keys(pkg.devDependencies ?? {})];
+      } catch {
+        /* bukan project Node */
+      }
+      const picks = recommend(files, deps, new Set(useExtensions.getState().list.map((e) => e.id)), 6);
+      const found = await lookupExtensions(picks.map((p) => p.id)).catch(() => [] as Result[]);
+      if (alive) setRec(found.map((r) => ({ r, why: picks.find((p) => p.id.toLowerCase() === r.id.toLowerCase())?.why ?? "" })));
+    })();
+    return () => {
+      alive = false;
+    };
+  }, [root]);
   useEffect(() => {
     let alive = true;
     for (const h of HOME) {
@@ -199,6 +225,19 @@ function Home({ install, busy, installedIds, go }: { install: (r: Result) => voi
   }, []);
   return (
     <>
+      {rec && rec.length > 0 && (
+        <section>
+          <div className="git-section-head">
+            <span>{tl("Direkomendasikan untuk project ini")}</span>
+          </div>
+          {rec.filter((x) => !installedIds.has(x.r.id)).map(({ r, why }) => (
+            <div key={r.id}>
+              {why && <div className="hint pad-x ext-why">{tl("Karena project memakai {x}", { x: why })}</div>}
+              <ResultItem r={r} installed={false} onInstall={install} busy={busy} />
+            </div>
+          ))}
+        </section>
+      )}
       {HOME.map((h) => (
         <section key={h.chip}>
           <div className="git-section-head">
@@ -354,7 +393,7 @@ export default function ExtensionsPanel() {
                 ))}
               </select>
             )}
-            <p className="hint ext-note">{tl("Alexel Studio memakai tema, tema ikon, snippet, grammar, dan konfigurasi bahasa dari ekstensi. Kode JavaScript ekstensi tidak pernah dijalankan.")}</p>
+            <p className="hint ext-note">{tl("Tema, ikon, snippet, grammar, dan konfigurasi bahasa langsung dipakai. Ekstensi yang berisi kode baru dijalankan setelah kamu mempercayainya (eksperimental, API VS Code terbatas).")}</p>
           </>
         )}
       </div>

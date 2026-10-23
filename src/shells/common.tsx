@@ -280,17 +280,17 @@ export function StatusBar({ variant }: { variant: "aurora" | "zen" | "control" |
           </span>
           {!zen && (
             <button
-              className="status-item"
+              className="status-item sb-secondary"
               title={tl("Ukuran indentasi")}
               onClick={(e) => openMenu(e, [2, 4, 8].map((n) => ({ label: `${n === tabSize ? "✓ " : ""}${tl("Spasi: {n}", { n })}`, run: () => A.updateSettings({ tabSize: n }) })))}
             >
               {tl("Spasi: {n}", { n: tabSize })}
             </button>
           )}
-          {!zen && <span className="status-item" title={tl("Encoding berkas")}>UTF-8</span>}
+          {!zen && <span className="status-item sb-secondary" title={tl("Encoding berkas")}>UTF-8</span>}
           {doc && (!zen || doc.eol === "crlf") && (
             <button
-              className="status-item"
+              className="status-item sb-secondary"
               title={tl("Akhir baris")}
               onClick={(e) =>
                 openMenu(e, [

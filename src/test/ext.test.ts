@@ -140,3 +140,26 @@ describe("tab Fitur ekstensi", () => {
     expect(featureSections({})).toEqual([]);
   });
 });
+
+import { recommend } from "../extensions/recommend";
+
+describe("rekomendasi ekstensi per project", () => {
+  it("dependensi lebih kuat dari ekstensi berkas; yang terpasang dilewati; selalu ada pelengkap", () => {
+    const files = ["package.json", "src/a.ts", "schema.prisma", "docker-compose.yml", "k8s/a.yaml", "k8s/b.yaml", "README.md"];
+    const r = recommend(files, ["prisma", "tailwindcss"], new Set(["redhat.vscode-yaml"]), 8).map((x) => x.id);
+    expect(r.slice(0, 2).sort()).toEqual(["Prisma.prisma", "bradlc.vscode-tailwindcss"]);
+    expect(r).toContain("docker.docker");
+    expect(r).not.toContain("redhat.vscode-yaml");
+    expect(r).toContain("yzhang.markdown-all-in-one");
+    expect(r).toContain("usernamehw.errorlens");
+  });
+
+  it("batas jumlah dan project kosong", () => {
+    expect(recommend([], [], new Set(), 3).length).toBe(2); // hanya pelengkap
+    expect(recommend(["a.py", "b.go", "c.rs", "d.php", "e.rb"], [], new Set(), 2).length).toBe(2);
+  });
+
+  it("nama id dicocokkan tanpa membedakan huruf besar/kecil", () => {
+    expect(recommend(["a.prisma"], [], new Set(["prisma.PRISMA"])).map((x) => x.id)).not.toContain("Prisma.prisma");
+  });
+});

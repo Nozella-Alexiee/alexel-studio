@@ -329,7 +329,8 @@
 }
 [data-design="tuxedo"] .shell-control .ctl-tile {
   border-radius: 0;
-  border-width: 0 1px 0 0;
+  /* Garis pemisah antar-panel sudah dibuat resizer 1px; tile tanpa border supaya tidak dobel. */
+  border-width: 0;
 }
 [data-design="tuxedo"] .shell-control .rail {
   margin-right: 0;

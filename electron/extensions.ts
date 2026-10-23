@@ -1,6 +1,7 @@
 // Ekstensi dari Open VSX — HANYA kontribusi data: tema warna, snippet, grammar TextMate,
-// dan definisi bahasa. Kode JavaScript ekstensi tidak pernah diekstrak apalagi dijalankan.
-// (Pengecualian terkurasi: server bahasa pilihan di managedServers.ts, di-pin SHA-256.)
+// dan definisi bahasa. Ekstensi yang berisi kode (`main`) disalin utuh ke <id>/ext dan hanya dijalankan
+// oleh extension host (exthost/) setelah pemakai mempercayainya.
+// (Server bahasa pilihan di managedServers.ts di-pin SHA-256.)
 
 import { createHash } from "node:crypto";
 import fs from "node:fs";
@@ -115,6 +116,28 @@ export async function extSearch(opts: SearchOpts): Promise<SearchResult> {
       manifestUrl: manifestOf(e.files?.download),
     }));
   return { items, total: j.totalSize ?? items.length, offset: j.offset ?? 0 };
+}
+
+/** Ringkasan beberapa ekstensi sekaligus dari id `namespace.nama` (untuk rekomendasi); yang gagal dilewati. */
+export async function extLookup(ids: string[]): Promise<ExtSummary[]> {
+  const out: ExtSummary[] = [];
+  await Promise.all(
+    ids.slice(0, 20).map(async (id) => {
+      const i = id.indexOf(".");
+      const ns = id.slice(0, i);
+      const name = id.slice(i + 1);
+      if (i < 1 || !validId(ns) || !validId(name)) return;
+      try {
+        const e = (await getJson(`${API}/${encodeURIComponent(ns)}/${encodeURIComponent(name)}`)) as Record<string, any>; // eslint-disable-line @typescript-eslint/no-explicit-any
+        if (e.deprecated) return;
+        out.push({ id: `${e.namespace}.${e.name}`, namespace: e.namespace, name: e.name, version: e.version, displayName: e.displayName || e.name, description: e.description || "", downloads: e.downloadCount || 0, icon: e.files?.icon ?? null, verified: !!e.verified, rating: typeof e.averageRating === "number" ? e.averageRating : null, reviews: e.reviewCount || 0, manifestUrl: manifestOf(e.files?.download) });
+      } catch {
+        /* tidak ada di Open VSX */
+      }
+    })
+  );
+  // Urutan sama dengan permintaan.
+  return ids.map((id) => out.find((o) => o.id.toLowerCase() === id.toLowerCase())).filter((x): x is ExtSummary => !!x);
 }
 
 const manifestCache = new Map<string, Compatibility>();
@@ -417,7 +440,7 @@ async function installInto(dir: string, namespace: string, name: string, version
   const hasCode = typeof pkg.main === "string" && !!pkg.main;
   if (hasCode) extractCode(buf, path.join(dir, "ext"));
   if (!hasCode && !themes.length && !iconThemes.length && !snippets.length && !grammars.length && !languages.some((l: { configuration?: string }) => l.configuration)) {
-    throw new Error("Ekstensi ini tidak berisi tema, tema ikon, snippet, grammar, atau konfigurasi bahasa. Alexel Studio tidak menjalankan kode ekstensi.");
+    throw new Error("Ekstensi ini tidak berisi tema, tema ikon, snippet, grammar, konfigurasi bahasa, maupun kode yang bisa dijalankan.");
   }
   const manifest: InstalledExt = { id, namespace, name, displayName: pkg.displayName || name, version: pkg.version || meta.version, description: pkg.description || "", themes, iconThemes, snippets, grammars, languages, installedAt: Date.now(), hasCode, icon, contributes: JSON.stringify(c).length < 300_000 ? c : undefined, publisher: pkg.publisher, activationEvents: pkg.activationEvents, commands: Array.isArray(c.commands) ? c.commands.filter((x: { command?: string; title?: unknown }) => x?.command && typeof x.title === "string") : undefined, keybindings: Array.isArray(c.keybindings) ? c.keybindings.filter((x: { command?: string; key?: string }) => x?.command && x?.key) : undefined };
   fs.writeFileSync(path.join(dir, "nozel-manifest.json"), JSON.stringify(manifest, null, 2));

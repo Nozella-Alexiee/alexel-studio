@@ -1,7 +1,7 @@
 // Desain C — Control Room: padat ala IDE. Toolbar run dengan pilihan target Smart Run,
 // rail ikon, sidebar, split editor, panel bawah ter-dock, panel Git/Claude di kanan.
 
-import { ChevronDown, Columns2, Files, Layers, FolderOpen, GitBranch, ListTodo, Play, Puzzle, Search, Settings, Square, Network, TerminalSquare } from "lucide-react";
+import { Bug, ChevronDown, Columns2, Files, Layers, FolderOpen, GitBranch, ListTodo, Play, Puzzle, Search, Settings, Square, Network, TerminalSquare } from "lucide-react";
 import { Kepi } from "../components/CrabMascot";
 import { useState, type ReactNode } from "react";
 import * as A from "../app/actions";
@@ -68,6 +68,7 @@ export default function ControlShell() {
     ["files", <Files size={19} />, `Explorer (${prettyKeys("Mod+Shift+E")})`, () => A.toggleSidebar("files"), l.sidebar && l.sideView === "files"],
     ["search", <Search size={19} />, `Cari (${prettyKeys("Mod+Shift+F")})`, () => A.toggleSidebar("search"), l.sidebar && l.sideView === "search"],
     ["git", <GitBranch size={19} />, `Source control (${prettyKeys("Ctrl+Shift+G")})`, () => A.toggleRight("git"), l.right && l.rightView === "git", git?.files.length || undefined],
+    ["run", <Bug size={19} />, `Run & Debug (${prettyKeys("Mod+Shift+D")})`, () => A.toggleSidebar("run"), l.sidebar && l.sideView === "run"],
     ["todo", <ListTodo size={19} />, "TODO", () => A.toggleSidebar("todo"), l.sidebar && l.sideView === "todo"],
     ["ext", <Puzzle size={19} />, "Ekstensi", () => A.toggleSidebar("ext"), l.sidebar && l.sideView === "ext"],
     ...(hasViews ? ([["exviews", <Layers size={19} />, tl("Tampilan ekstensi"), () => A.toggleSidebar("exviews"), l.sidebar && l.sideView === "exviews"]] as typeof rail) : []),

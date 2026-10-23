@@ -1113,3 +1113,18 @@ button.status-item:hover {
     display: flex;
   }
 }
+
+/* Status bar di jendela sempit: item sekunder disembunyikan supaya tidak terpotong. */
+.statusbar {
+  overflow: hidden;
+}
+.statusbar .status-item {
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+@media (max-width: 1000px) {
+  .statusbar .sb-secondary,
+  .statusbar .sb-mem {
+    display: none;
+  }
+}
