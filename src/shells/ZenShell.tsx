@@ -20,7 +20,7 @@ import { activeTab, setLayout, useStore } from "../state/store";
 import { EditorGroups, RightContent, SideContent, SideResizer, StatusBar, openProjectMenu, useFitLayout } from "./common";
 import { prettyKeys } from "../lib/keys";
 import { tl } from "../i18n";
-import { useExtHost } from "../exthost/state";
+import { useHasExtViews } from "../exthost/views";
 
 function Section({ title, children, defaultOpen = true, action }: { title: string; children: ReactNode; defaultOpen?: boolean; action?: ReactNode }) {
   const [open, setOpen] = useState(defaultOpen);
@@ -68,7 +68,7 @@ function OpenFiles() {
 
 export default function ZenShell() {
   const l = useFitLayout(0);
-  const hasViews = useExtHost((s) => Object.keys(s.treeViews).length > 0);
+  const hasViews = useHasExtViews();
   const tab = useStore((s) => activeTab(s));
   const root = useStore((s) => s.root);
   const git = useStore((s) => s.git);

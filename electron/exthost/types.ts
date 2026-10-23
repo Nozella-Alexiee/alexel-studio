@@ -845,3 +845,100 @@ export class DataTransfer {
     this.m.forEach((v, k) => cb(v, k, this));
   }
 }
+
+export enum QuickInputButtonLocation {
+  Title = 1,
+  Inline = 2,
+  Input = 3,
+}
+
+export enum TextEditorCursorStyle {
+  Line = 1,
+  Block = 2,
+  Underline = 3,
+  LineThin = 4,
+  BlockOutline = 5,
+  UnderlineThin = 6,
+}
+
+// ---- notebook (hanya bentuk datanya; notebook belum didukung editor) --------------------
+
+export class NotebookCellOutputItem {
+  constructor(public data: Uint8Array, public mime: string) {}
+  static text(value: string, mime = "text/plain") {
+    return new NotebookCellOutputItem(new TextEncoder().encode(value), mime);
+  }
+  static json(value: unknown, mime = "application/json") {
+    return new NotebookCellOutputItem(new TextEncoder().encode(JSON.stringify(value)), mime);
+  }
+  static stdout(value: string) {
+    return NotebookCellOutputItem.text(value, "application/vnd.code.notebook.stdout");
+  }
+  static stderr(value: string) {
+    return NotebookCellOutputItem.text(value, "application/vnd.code.notebook.stderr");
+  }
+  static error(err: Error) {
+    return NotebookCellOutputItem.json({ name: err.name, message: err.message, stack: err.stack }, "application/vnd.code.notebook.error");
+  }
+}
+export class NotebookCellOutput {
+  constructor(public items: NotebookCellOutputItem[], public metadata?: Record<string, unknown>) {}
+}
+export class NotebookCellData {
+  outputs?: NotebookCellOutput[];
+  constructor(public kind: NotebookCellKind, public value: string, public languageId: string) {}
+}
+export class NotebookData {
+  metadata?: Record<string, unknown>;
+  constructor(public cells: NotebookCellData[]) {}
+}
+export class NotebookRange {
+  constructor(public start: number, public end: number) {}
+  get isEmpty() {
+    return this.start === this.end;
+  }
+}
+export class NotebookEdit {
+  static replaceCells(range: NotebookRange, cells: NotebookCellData[]) {
+    return { range, cells };
+  }
+  static insertCells(index: number, cells: NotebookCellData[]) {
+    return { range: new NotebookRange(index, index), cells };
+  }
+  static deleteCells(range: NotebookRange) {
+    return { range, cells: [] as NotebookCellData[] };
+  }
+}
+
+export enum IndentAction {
+  None = 0,
+  Indent = 1,
+  IndentOutdent = 2,
+  Outdent = 3,
+}
+
+// ---- Testing API (tanpa UI: objek berfungsi supaya ekstensi tidak gagal aktif) ----------
+
+export enum TestRunProfileKind {
+  Run = 1,
+  Debug = 2,
+  Coverage = 3,
+}
+export class TestTag {
+  constructor(readonly id: string) {}
+}
+export class TestMessage {
+  expectedOutput?: string;
+  actualOutput?: string;
+  location?: Location;
+  constructor(public message: string | MarkdownString) {}
+  static diff(message: string | MarkdownString, expected: string, actual: string) {
+    const m = new TestMessage(message);
+    m.expectedOutput = expected;
+    m.actualOutput = actual;
+    return m;
+  }
+}
+export class TestRunRequest {
+  constructor(public include?: unknown[], public exclude?: unknown[], public profile?: unknown, public continuous?: boolean, public preserveFocus?: boolean) {}
+}

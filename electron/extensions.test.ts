@@ -113,3 +113,15 @@ describe("pencarian", () => {
     expect(r.items[0]).toMatchObject({ id: "esbenp.prettier-vscode", rating: 4.3, reviews: 17, manifestUrl: "https://open-vsx.org/api/esbenp/prettier-vscode/12.4.0/file/package.json" });
   });
 });
+
+import { isExecutable } from "./extensions";
+describe("deteksi biner", () => {
+  it("Mach-O (arm64 & universal), ELF, dan shebang dikenali; teks biasa tidak", () => {
+    expect(isExecutable(Uint8Array.from([0xcf, 0xfa, 0xed, 0xfe, 0x0c]))).toBe(true);
+    expect(isExecutable(Uint8Array.from([0xca, 0xfe, 0xba, 0xbe]))).toBe(true);
+    expect(isExecutable(Uint8Array.from([0x7f, 0x45, 0x4c, 0x46]))).toBe(true);
+    expect(isExecutable(new TextEncoder().encode("#!/bin/sh\n"))).toBe(true);
+    expect(isExecutable(new TextEncoder().encode("{\"a\":1}"))).toBe(false);
+    expect(isExecutable(Uint8Array.from([1, 2]))).toBe(false);
+  });
+});

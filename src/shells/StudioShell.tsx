@@ -17,7 +17,7 @@ import { BottomPanel } from "../panels/BottomPanel";
 import { setLayout, useStore } from "../state/store";
 import { EditorGroups, RightContent, SideContent, SideResizer, StatusBar, useFitLayout } from "./common";
 import { tl } from "../i18n";
-import { useExtHost } from "../exthost/state";
+import { useHasExtViews } from "../exthost/views";
 
 export default function StudioShell() {
   const l = useFitLayout(48);
@@ -25,7 +25,7 @@ export default function StudioShell() {
   const git = useStore((s) => s.git);
   const debugging = useDebug((s) => s.status === "running" || s.status === "paused" || s.status === "starting");
 
-  const hasViews = useExtHost((s) => Object.keys(s.treeViews).length > 0);
+  const hasViews = useHasExtViews();
   const items: [string, ReactNode, string, () => void, boolean, number?][] = [
     ["files", <Files size={22} strokeWidth={1.6} />, `Explorer (${prettyKeys("Mod+Shift+E")})`, () => A.toggleSidebar("files"), l.sidebar && l.sideView === "files"],
     ["search", <Search size={22} strokeWidth={1.6} />, `Cari (${prettyKeys("Mod+Shift+F")})`, () => A.toggleSidebar("search"), l.sidebar && l.sideView === "search"],

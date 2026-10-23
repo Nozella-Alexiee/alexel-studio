@@ -7,7 +7,7 @@ import { clearOutput, logOutput, useOutput } from "../app/output";
 import * as docs from "../editor/documents";
 import { uriToPath } from "../editor/lsp";
 import { openExternal } from "../lib/ipc";
-import { ask, getState, promptDialog, setProblemsFrom, setState, stickyToast, toast, type Problem } from "../state/store";
+import { ask, getState, promptDialog, setLayout, setProblemsFrom, setState, stickyToast, toast, type Problem } from "../state/store";
 import { tl } from "../i18n";
 import { applyHostDecorations, defineDecorationType, removeDecorationType, refreshHostDiagnostics } from "./features";
 import { useExtHost, type HostProvider, type StatusItem } from "./state";
@@ -50,6 +50,10 @@ async function builtinCommand(command: string, args: Any[]): Promise<unknown> {
       if (v) startCompletion(v);
       return undefined;
     }
+    case "workbench.action.newGroupRight":
+    case "workbench.action.splitEditor":
+    case "workbench.action.splitEditorRight":
+      return A.splitEditor();
     case "workbench.action.reloadWindow":
       location.reload();
       return undefined;
@@ -272,6 +276,14 @@ export function handleEvent(e: string, p: Any) {
     case "ui/terminalShow":
     case "ui/terminalDispose":
       break;
+    case "ui/webviewViewRegistered":
+      host.setState((s) => {
+        const webviewViews = { ...s.webviewViews };
+        if (p.removed) delete webviewViews[p.viewId];
+        else webviewViews[p.viewId] = { owner: p.owner };
+        return { webviewViews };
+      });
+      break;
     case "ui/treeRegistered":
       host.setState((s) => {
         const treeViews = { ...s.treeViews };
@@ -285,7 +297,8 @@ export function handleEvent(e: string, p: Any) {
       break;
     case "ui/webview": {
       void import("./webview").then((w) => {
-        if (p.op === "create") w.openWebviewTab(p.id, p.title, p.viewType, p.owner, p.column);
+        if (p.op === "create" && p.viewId) w.registerViewWebview(p.id, p.viewId, p.title, p.viewType, p.owner);
+        else if (p.op === "create") w.openWebviewTab(p.id, p.title, p.viewType, p.owner, p.column);
         else if (p.op === "html") w.useWebviews.setState((s) => (s.panels[p.id] ? { panels: { ...s.panels, [p.id]: { ...s.panels[p.id], rev: s.panels[p.id].rev + 1 } } } : {}));
         else if (p.op === "title") {
           w.useWebviews.setState((s) => (s.panels[p.id] ? { panels: { ...s.panels, [p.id]: { ...s.panels[p.id], title: p.title } } } : {}));
@@ -297,6 +310,9 @@ export function handleEvent(e: string, p: Any) {
       });
       break;
     }
+    case "ui/revealView":
+      setLayout({ sidebar: true, sideView: "exviews" });
+      break;
     case "ui/reveal": {
       const sel = p.range as { s: { l: number; c: number } };
       void A.openFile(pathOf(p.uri), { line: sel.s.l + 1, col: sel.s.c + 1 });

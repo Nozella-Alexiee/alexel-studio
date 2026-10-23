@@ -8,6 +8,7 @@ import path from "node:path";
 import { build } from "esbuild";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { Rpc, type Msg } from "./rpc";
+import { ownerHost } from "./webviews";
 
 let dir: string;
 let child: ChildProcess;
@@ -192,7 +193,7 @@ describe("extension host", () => {
 
   it("webview: panel dibuat, HTML & pesan dua arah, URI sumber daya, dan dispose dari renderer", async () => {
     const uri = await rpc.request("command/execute", { id: "demo.web" });
-    expect(uri).toBe("nozelweb://r/" + events.find((e) => e.e === "ui/webview" && e.p.op === "create")!.p.id + "/x/y%20z.css");
+    expect(uri).toBe(`nozelweb://${ownerHost("me.demo")}/r/` + events.find((e) => e.e === "ui/webview" && e.p.op === "create")!.p.id + "/x/y%20z.css");
     const create = events.find((e) => e.e === "ui/webview" && e.p.op === "create")!.p;
     expect(create).toMatchObject({ viewType: "demo.view", title: "Demo", owner: "me.demo" });
     expect(create.roots).toEqual(expect.arrayContaining([expect.stringContaining("ext")]));

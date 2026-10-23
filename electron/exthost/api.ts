@@ -47,6 +47,23 @@ export async function runCommand(hc: HostCtx, id: string, args: unknown[]): Prom
     }
     return c.fn.apply(c.thisArg, args);
   }
+  // VS Code mendaftarkan `<idTampilan>.focus` untuk setiap tampilan: buka sidebar tampilan ekstensi.
+  if (id.endsWith(".focus") && (hc.treeProviders.has(id.slice(0, -6)) || [...hc.extensions.values()].some((e) => JSON.stringify(e.manifest.contributes?.views ?? {}).includes(`"${id.slice(0, -6)}"`)))) {
+    hc.rpc.notify("ui/revealView", { viewId: id.slice(0, -6) });
+    return undefined;
+  }
+  if (id === "vscode.openWith") {
+    const editor = hc.customEditors.get(String(args[1]));
+    if (editor) {
+      const uri = Uri.revive(args[0]);
+      const opts = (args[2] ?? {}) as { viewColumn?: number };
+      const doc = editor.provider.openCustomDocument ? await editor.provider.openCustomDocument(uri, { backupId: undefined }, T.CancellationToken.None) : { uri, dispose() {} };
+      const panel = editor.make(uri.path.split("/").pop() || String(args[1]), opts.viewColumn ?? T.ViewColumn.Active);
+      if (editor.provider.resolveCustomEditor) await editor.provider.resolveCustomEditor(doc, panel, T.CancellationToken.None);
+      else if (editor.provider.resolveCustomTextEditor) await editor.provider.resolveCustomTextEditor(await (buildApi(hc, editor.ext).workspace as { openTextDocument(u: Uri): Promise<unknown> }).openTextDocument(uri), panel, T.CancellationToken.None);
+      return undefined;
+    }
+  }
   if (id === "setContext") {
     hc.rpc.notify("ui/setContext", { key: args[0], value: args[1] });
     return undefined;
@@ -150,6 +167,17 @@ function extensionsApi(hc: HostCtx) {
   };
 }
 
+/** Controller pengujian tanpa UI: koleksi item sungguhan, run profile dan run kosong. */
+function testController(id: string, label: string) {
+  const make = () => {
+    const m = new Map<string, any>(); // eslint-disable-line @typescript-eslint/no-explicit-any
+    return { get size() { return m.size; }, add: (i: { id: string }) => void m.set(i.id, i), delete: (k: string) => void m.delete(k), get: (k: string) => m.get(k), replace: (list: { id: string }[]) => { m.clear(); list.forEach((i) => m.set(i.id, i)); }, forEach: (cb: (i: unknown) => void) => m.forEach((v) => cb(v)), [Symbol.iterator]: () => m.entries() };
+  };
+  const item = (itemId: string, itemLabel: string, uri?: Uri) => ({ id: itemId, label: itemLabel, uri, children: make(), tags: [] as unknown[], canResolveChildren: false, busy: false, range: undefined, error: undefined, description: undefined, sortText: undefined, parent: undefined });
+  const ctl = { id, label, items: make(), createTestItem: item, createRunProfile: (_l: string, kind: number) => ({ kind, label: _l, isDefault: false, tag: undefined, runHandler: undefined, dispose() {} }), createTestRun: () => ({ name: undefined, token: { isCancellationRequested: false }, enqueued() {}, started() {}, skipped() {}, failed() {}, errored() {}, passed() {}, appendOutput() {}, end() {}, onDidDispose: new T.EventEmitter<void>().event }), resolveHandler: undefined, refreshHandler: undefined, invalidateTestResults() {}, dispose() {} };
+  return ctl;
+}
+
 const warned = new Set<string>();
 /** Namespace yang belum diimplementasikan: setiap anggota fungsi kosong; peringatan dicatat sekali. */
 function lenient<O extends object>(hc: HostCtx, ext: LoadedExt | null, name: string, impl: O): O {
@@ -191,7 +219,7 @@ export function buildApi(hc: HostCtx, ext: LoadedExt | null): Record<string, unk
     authentication: lenient(hc, ext, "authentication", { getSession: async () => undefined, registerAuthenticationProvider: () => new T.Disposable(() => {}) }),
     comments: lenient(hc, ext, "comments", {}),
     notebooks: lenient(hc, ext, "notebooks", {}),
-    tests: lenient(hc, ext, "tests", {}),
+    tests: lenient(hc, ext, "tests", { createTestController: (id: string, label: string) => testController(id, label) }),
     chat: lenient(hc, ext, "chat", {}),
     lm: lenient(hc, ext, "lm", { tools: [], selectChatModels: async () => [] }),
     l10n: { t: (m: string | { message: string }, ...a: unknown[]) => String(typeof m === "string" ? m : m.message).replace(/\{(\d+)\}/g, (_m, i) => String(a[Number(i)] ?? "")), bundle: undefined, uri: undefined },
@@ -216,6 +244,12 @@ export function buildApi(hc: HostCtx, ext: LoadedExt | null): Record<string, unk
 export function buildContext(hc: HostCtx, ext: LoadedExt): Record<string, unknown> {
   const base = path.join(hc.userData, "exthost", ext.id);
   const wsKey = Buffer.from(hc.root ?? "none").toString("base64url").slice(0, 24);
+  // Folder induk harus ada: ekstensi sering memanggil mkdir (tidak rekursif) pada globalStoragePath.
+  try {
+    fs.mkdirSync(base, { recursive: true });
+  } catch {
+    /* diabaikan */
+  }
   const globalState = new Memento(path.join(base, "global.json"));
   const workspaceState = new Memento(path.join(base, `ws-${wsKey}.json`));
   ext.mementos = [globalState, workspaceState];

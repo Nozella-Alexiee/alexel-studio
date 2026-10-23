@@ -5,13 +5,24 @@
 import fs from "node:fs";
 import path from "node:path";
 
+/**
+ * Origin tiap ekstensi berbeda (host `w<hash>`): webview boleh memakai localStorage/IndexedDB miliknya
+ * sendiri (allow-same-origin) tanpa bisa membaca penyimpanan ekstensi lain atau aplikasi (app://).
+ */
+export function ownerHost(owner: string | undefined): string {
+  let h = 0x811c9dc5;
+  for (const c of owner ?? "anon") h = Math.imul(h ^ c.charCodeAt(0), 0x01000193) >>> 0;
+  return `w${h.toString(16).padStart(8, "0")}`;
+}
+
 interface Panel {
   html: string;
   roots: string[];
+  host: string;
 }
 const panels = new Map<number, Panel>();
 
-export const webviewCreate = (id: number, roots: string[]) => panels.set(id, { html: "", roots: roots.map((r) => path.resolve(r)) });
+export const webviewCreate = (id: number, roots: string[], owner?: string) => panels.set(id, { html: "", roots: roots.map((r) => path.resolve(r)), host: ownerHost(owner) });
 export const webviewHtml = (id: number, html: string) => {
   const p = panels.get(id);
   if (p) p.html = html;
@@ -34,17 +45,19 @@ export interface WebResponse {
 /** Selesaikan URL `nozelweb://v/<id>/…` (dokumen) atau `nozelweb://r/<id>/<path ter-encode>` (sumber daya). */
 export function resolveWebview(url: string): WebResponse {
   const u = new URL(url);
-  const parts = u.pathname.split("/").filter(Boolean);
-  const id = Number(parts[0]);
+  // nozelweb://w<hash>/v/<id>/index.html (dokumen) atau /r/<id>/<path> (sumber daya)
+  const [kind, idStr, ...rest] = u.pathname.split("/").filter(Boolean);
+  const id = Number(idStr);
   const panel = panels.get(id);
-  if (!panel) return { status: 404, body: "Not found", mime: "text/plain" };
-  if (u.host === "v") {
+  if (!panel || u.host !== panel.host) return { status: 404, body: "Not found", mime: "text/plain" };
+  const parts = [idStr, ...rest];
+  if (kind === "v") {
     // Skrip awal harus jalan sebelum skrip halaman: taruh paling atas dokumen.
     const html = panel.html || "<!doctype html><html><body></body></html>";
     const injected = /<head[^>]*>/i.test(html) ? html.replace(/<head[^>]*>/i, (m) => m + bootstrap(id)) : bootstrap(id) + html;
     return { status: 200, body: injected, mime: "text/html; charset=utf-8", csp: true };
   }
-  if (u.host === "r") {
+  if (kind === "r") {
     const rel = decodeURIComponent(parts.slice(1).join("/"));
     // Bentuk yang dikenali: "/abs/path" (encode utuh), "abs/path" (posix tanpa "/" awal), "C:/path" (Windows).
     const file = path.resolve(/^[A-Za-z]:[\\/]/.test(rel) || rel.startsWith("/") ? rel : "/" + rel);

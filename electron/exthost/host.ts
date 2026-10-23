@@ -6,6 +6,7 @@ import fs from "node:fs";
 import Module from "node:module";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { inspect } from "node:util";
 import { BUILTIN_DEFAULTS } from "./builtin";
 import { buildApi, buildContext, runCommand } from "./api";
 import { languageFromPath } from "./api-workspace";
@@ -42,6 +43,8 @@ const hc: HostCtx = {
   decorationTypes: new Map(),
   treeProviders: new Map(),
   webviews: new Map(),
+  webviewViews: new Map(),
+  customEditors: new Map(),
   events: newEvents(),
   activate: (id, reason) => activate(id, reason),
   activateByEvent: (event) => activateByEvent(event),
@@ -126,9 +129,9 @@ async function activate(id: string, reason = "manual"): Promise<void> {
       hc.log(ext, `activated (${reason}) in ${Date.now() - started} ms`);
       rpc.notify("ui/extensionActivated", { id: ext.id, ms: Date.now() - started });
     } catch (e) {
-      const msg = e instanceof Error ? e.stack ?? e.message : String(e);
+      const msg = e instanceof Error ? e.stack ?? e.message : inspect(e, { depth: 3 });
       hc.log(ext, `activation failed: ${msg}`);
-      rpc.notify("ui/extensionFailed", { id: ext.id, error: e instanceof Error ? e.message : String(e) });
+      rpc.notify("ui/extensionFailed", { id: ext.id, error: e instanceof Error ? e.message : inspect(e, { depth: 1 }).slice(0, 300) });
     } finally {
       ext.activating = null;
     }
@@ -293,6 +296,23 @@ rpc.events.set("fs/changed", (p: { kind: "create" | "change" | "delete"; path: s
 rpc.events.set("webview/message", (p: { id: number; message: unknown }) => hc.webviews.get(p.id)?.message(p.message));
 rpc.events.set("webview/dispose", (p: { id: number }) => hc.webviews.get(p.id)?.disposed());
 rpc.events.set("webview/state", (p: { id: number; active: boolean; visible: boolean }) => hc.webviews.get(p.id)?.state(p));
+
+/** Tampilan webview di sidebar dibuka pemakai: buat webview-nya lalu serahkan ke provider ekstensi. */
+const resolvedViews = new Map<string, number>();
+rpc.requests.set("webviewView/resolve", async (p: { viewId: string; title?: string }) => {
+  await activateByEvent(`onView:${p.viewId}`);
+  const entry = hc.webviewViews.get(p.viewId);
+  if (!entry) throw new Error(`Tampilan ${p.viewId} belum terdaftar`);
+  const known = resolvedViews.get(p.viewId);
+  if (known !== undefined && hc.webviews.has(known)) return { id: known };
+  const panel = entry.make(p.title ?? p.viewId);
+  const visibility = new T.EventEmitter<void>();
+  const view = { viewType: p.viewId, webview: panel.webview, title: p.title, description: undefined as string | undefined, badge: undefined, visible: true, onDidChangeVisibility: visibility.event, onDidDispose: panel.onDidDispose, show: () => {} };
+  const id = panel.__id as number;
+  resolvedViews.set(p.viewId, id);
+  await entry.provider.resolveWebviewView(view, { state: undefined }, token);
+  return { id };
+});
 
 rpc.requests.set("command/execute", (p: { id: string; args?: unknown[] }) => runCommand(hc, p.id, p.args ?? []));
 rpc.requests.set("debug/state", () => ({ active: hc.activeEditor?.uri ?? null, docs: [...hc.docs.keys()].map((k) => k.split("/").pop()), commands: hc.commands.size }));

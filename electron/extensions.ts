@@ -277,7 +277,7 @@ const MAX_CODE_BYTES = 1200 * 1024 * 1024;
 /** Biner (Mach-O/ELF) atau skrip shebang: zip tidak membawa bit eksekusi, jadi dikenali dari isinya. */
 export function isExecutable(b: Uint8Array): boolean {
   if (b.length < 4) return false;
-  const m = (b[0] << 24) | (b[1] << 16) | (b[2] << 8) | b[3];
+  const m = ((b[0] << 24) | (b[1] << 16) | (b[2] << 8) | b[3]) >>> 0;
   return m === 0x7f454c46 || m === 0xfeedface || m === 0xfeedfacf || m === 0xcefaedfe || m === 0xcffaedfe || m === 0xcafebabe || (b[0] === 0x23 && b[1] === 0x21);
 }
 

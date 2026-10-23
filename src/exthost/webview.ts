@@ -5,10 +5,17 @@ import { getState, setState } from "../state/store";
 import { hostNotify } from "./client";
 
 export const WEBVIEW_PREFIX = "nozel:webview:";
+/** Sama dengan ownerHost() di electron/exthost/webviews.ts: origin berbeda tiap ekstensi. */
+export function ownerHost(owner: string | undefined): string {
+  let h = 0x811c9dc5;
+  for (const c of owner ?? "anon") h = Math.imul(h ^ c.charCodeAt(0), 0x01000193) >>> 0;
+  return `w${h.toString(16).padStart(8, "0")}`;
+}
+export const webviewSrc = (id: number, owner: string | undefined) => `nozelweb://${ownerHost(owner)}/v/${id}/index.html`;
 export const webviewTabId = (id: number) => `${WEBVIEW_PREFIX}${id}`;
 export const webviewIdOf = (tabId: string): number | null => (tabId.startsWith(WEBVIEW_PREFIX) ? Number(tabId.slice(WEBVIEW_PREFIX.length)) : null);
 
-export const useWebviews = create<{ panels: Record<number, { title: string; rev: number; viewType: string; owner?: string }> }>(() => ({ panels: {} }));
+export const useWebviews = create<{ panels: Record<number, { title: string; rev: number; viewType: string; owner?: string }>; views: Record<string, number> }>(() => ({ panels: {}, views: {} }));
 
 const frames = new Map<number, HTMLIFrameElement>();
 const loaded = new Set<number>();
@@ -87,6 +94,11 @@ export function listenWebviewMessages() {
   });
 }
 
+/** Webview untuk tampilan sidebar (tanpa tab): hanya dicatat; iframe-nya dirender panel Tampilan ekstensi. */
+export function registerViewWebview(id: number, viewId: string, title: string, viewType: string, owner?: string) {
+  useWebviews.setState((s) => ({ panels: { ...s.panels, [id]: { title, rev: 0, viewType, owner } }, views: { ...s.views, [viewId]: id } }));
+}
+
 export function openWebviewTab(id: number, title: string, viewType: string, owner: string | undefined, column: number) {
   useWebviews.setState((s) => ({ panels: { ...s.panels, [id]: { title, rev: 0, viewType, owner } } }));
   const tid = webviewTabId(id);
@@ -99,7 +111,8 @@ export function closeWebviewTab(id: number) {
   useWebviews.setState((s) => {
     const panels = { ...s.panels };
     delete panels[id];
-    return { panels };
+    const views = Object.fromEntries(Object.entries(s.views).filter(([, v]) => v !== id));
+    return { panels, views };
   });
   frames.delete(id);
   loaded.delete(id);

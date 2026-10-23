@@ -73,8 +73,8 @@ export class ExtHostManager {
       if (m.t === "evt") {
         if (m.m === "ready") return ready();
         if (m.m === "ui/webview") {
-          const w = m.p as { op: string; id: number; roots?: string[]; html?: string };
-          if (w.op === "create") webviewCreate(w.id, w.roots ?? []);
+          const w = m.p as { op: string; id: number; roots?: string[]; html?: string; owner?: string };
+          if (w.op === "create") webviewCreate(w.id, w.roots ?? [], w.owner);
           else if (w.op === "html") webviewHtml(w.id, String(w.html ?? ""));
           else if (w.op === "dispose") webviewDispose(w.id);
         }

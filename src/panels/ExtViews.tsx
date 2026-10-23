@@ -6,7 +6,9 @@ import { useCallback, useEffect, useState } from "react";
 import { Empty, Spinner } from "../components/ui";
 import { hostCall } from "../exthost/client";
 import { useExtHost } from "../exthost/state";
-import { useExtensions } from "../extensions/registry";
+import { useExtViews } from "../exthost/views";
+import { useWebviews } from "../exthost/webview";
+import WebviewFrame from "./WebviewFrame";
 import { toast } from "../state/store";
 import { tl } from "../i18n";
 
@@ -66,29 +68,38 @@ function TreeNode({ viewId, node, depth, version }: { viewId: string; node: Node
   );
 }
 
+function WebviewSection({ viewId, title }: { viewId: string; title: string }) {
+  const id = useWebviews((s) => s.views[viewId]);
+  const [err, setErr] = useState<string | null>(null);
+  useEffect(() => {
+    if (id !== undefined) return;
+    hostCall("webviewView/resolve", { viewId, title }).catch((e) => setErr(e instanceof Error ? e.message : String(e)));
+  }, [viewId, title, id]);
+  if (err) return <div className="hint pad-x">{err}</div>;
+  if (id === undefined) return <div className="pad"><Spinner size={12} /></div>;
+  return <WebviewFrame id={id} className="webview-frame webview-side" />;
+}
+
 export default function ExtViewsPanel() {
-  const views = useExtHost((s) => s.treeViews);
-  const list = useExtensions((s) => s.list);
+  const entries = useExtViews();
   const [closed, setClosed] = useState<Set<string>>(new Set());
-  const names = new Map<string, string>();
-  for (const e of list) for (const group of Object.values((e.contributes?.views ?? {}) as Record<string, { id: string; name?: string }[]>)) for (const v of group) names.set(v.id, v.name ?? v.id);
-  const ids = Object.keys(views);
-  if (!ids.length) return <Empty icon={<Layers size={24} />} title={tl("Tampilan ekstensi")}>{tl("Belum ada tampilan dari ekstensi. Pasang dan percayai ekstensi seperti Todo Tree.")}</Empty>;
+  const views = useExtHost((s) => s.treeViews);
+  if (!entries.length) return <Empty icon={<Layers size={24} />} title={tl("Tampilan ekstensi")}>{tl("Belum ada tampilan dari ekstensi. Pasang dan percayai ekstensi seperti Claude Code, Codex, atau Todo Tree.")}</Empty>;
   return (
     <div className="ext-views">
       <div className="side-head">
         <span className="side-title">{tl("Tampilan ekstensi")}</span>
       </div>
-      <div className="side-scroll">
-        {ids.map((id) => {
+      <div className="ext-views-body">
+        {entries.map(({ id, name, kind }) => {
           const isClosed = closed.has(id);
           return (
-            <section key={id}>
+            <section key={id} className={kind === "webview" && !isClosed ? "ext-view-web" : ""}>
               <button className="git-section-head ext-view-head" onClick={() => setClosed((c) => { const n = new Set(c); if (n.has(id)) n.delete(id); else n.add(id); return n; })} aria-expanded={!isClosed}>
                 {isClosed ? <ChevronRight size={12} aria-hidden /> : <ChevronDown size={12} aria-hidden />}
-                <span>{names.get(id) ?? id}</span>
+                <span>{name}</span>
               </button>
-              {!isClosed && <Children viewId={id} depth={0} version={views[id].version} />}
+              {!isClosed && (kind === "webview" ? <WebviewSection viewId={id} title={name} /> : <div className="side-scroll"><Children viewId={id} depth={0} version={views[id]?.version ?? 0} /></div>)}
             </section>
           );
         })}

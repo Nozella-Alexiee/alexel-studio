@@ -16,7 +16,7 @@ import { getState, setLayout, useStore } from "../state/store";
 import { EditorGroups, RightContent, SideContent, SideResizer, StatusBar, openProjectMenu, useFitLayout } from "./common";
 import { prettyKeys } from "../lib/keys";
 import { tl } from "../i18n";
-import { useExtHost } from "../exthost/state";
+import { useHasExtViews } from "../exthost/views";
 
 function RunConfig() {
   const targets = useStore((s) => s.runTargets);
@@ -63,7 +63,7 @@ export default function ControlShell() {
   const split = useStore((s) => s.groups.length > 1);
   const problems = useStore((s) => Object.values(s.problems).reduce((a, x) => a + x.filter((p) => p.severity === "error").length, 0));
 
-  const hasViews = useExtHost((s) => Object.keys(s.treeViews).length > 0);
+  const hasViews = useHasExtViews();
   const rail: [string, ReactNode, string, () => void, boolean, number?][] = [
     ["files", <Files size={19} />, `Explorer (${prettyKeys("Mod+Shift+E")})`, () => A.toggleSidebar("files"), l.sidebar && l.sideView === "files"],
     ["search", <Search size={19} />, `Cari (${prettyKeys("Mod+Shift+F")})`, () => A.toggleSidebar("search"), l.sidebar && l.sideView === "search"],

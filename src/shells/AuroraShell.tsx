@@ -13,11 +13,11 @@ import { BottomPanel } from "../panels/BottomPanel";
 import { setLayout, useStore, type SideView } from "../state/store";
 import { EditorGroups, RightContent, SideContent, SideResizer, StatusBar, openProjectMenu, useFitLayout } from "./common";
 import { tl } from "../i18n";
-import { useExtHost } from "../exthost/state";
+import { useHasExtViews } from "../exthost/views";
 
 export default function AuroraShell() {
   const l = useFitLayout(0);
-  const hasViews = useExtHost((s) => Object.keys(s.treeViews).length > 0);
+  const hasViews = useHasExtViews();
   const root = useStore((s) => s.root);
   const git = useStore((s) => s.git);
   const split = useStore((s) => s.groups.length > 1);

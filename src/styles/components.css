@@ -4491,3 +4491,26 @@ button.ext-link:not(:disabled):hover {
   border: 0;
   background: var(--bg);
 }
+.ext-views {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  flex: 1;
+}
+.ext-views-body {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  flex: 1;
+  overflow: auto;
+}
+.ext-view-web {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 320px;
+}
+.webview-side {
+  flex: 1;
+  min-height: 0;
+}

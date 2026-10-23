@@ -63,6 +63,10 @@ export interface HostCtx {
   activeEditor: EditorInfo | null;
   decorationTypes: Map<number, unknown>;
   treeProviders: Map<string, { provider: any; ext: LoadedExt | null }>; // eslint-disable-line @typescript-eslint/no-explicit-any
+  /** Tampilan webview di sidebar (viewId → provider). */
+  webviewViews: Map<string, { provider: { resolveWebviewView(view: unknown, ctx: unknown, token: unknown): unknown }; ext: LoadedExt | null; make: (title: string) => Record<string, unknown> }>;
+  /** Editor kustom (viewType → provider), dibuka lewat vscode.openWith. */
+  customEditors: Map<string, { provider: Record<string, any>; ext: LoadedExt | null; make: (title: string, column: unknown) => Record<string, unknown> }>; // eslint-disable-line @typescript-eslint/no-explicit-any
   /** Panel webview yang hidup (id → penangan peristiwa dari renderer). */
   webviews: Map<number, { message: (m: unknown) => void; disposed: () => void; state: (s: { active: boolean; visible: boolean }) => void }>;
   events: {

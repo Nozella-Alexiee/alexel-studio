@@ -40,6 +40,8 @@ export interface ExtHostState {
   commands: Record<string, HostCommand>;
   providers: Record<number, HostProvider>;
   treeViews: Record<string, { owner?: string; version: number }>;
+  /** Tampilan webview di sidebar yang sudah didaftarkan ekstensi (viewId → pemilik). */
+  webviewViews: Record<string, { owner?: string }>;
   progress: Record<number, { title?: string; message?: string; percent?: number; location: number }>;
   contexts: Record<string, unknown>;
   languageConfigs: Record<string, unknown>;
@@ -55,6 +57,7 @@ const initial: ExtHostState = {
   commands: {},
   providers: {},
   treeViews: {},
+  webviewViews: {},
   progress: {},
   contexts: {},
   languageConfigs: {},
