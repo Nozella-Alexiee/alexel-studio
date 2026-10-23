@@ -10,6 +10,7 @@ import { TourHost } from "./components/Tour";
 import { api, call, confirmWindowClose, isDemo, on, pathForFile } from "./lib/ipc";
 import { CommandPalette } from "./panels/CommandPalette";
 import { QuickPickHost } from "./panels/QuickPick";
+import { IdeDiffHost } from "./panels/IdeDiff";
 import { ask, getState, isSaver, setState, useStore } from "./state/store";
 import { tl } from "./i18n";
 
@@ -29,6 +30,7 @@ function useBackgroundTasks() {
       booted = true;
       void restoreAll().then(() => {
         void import("./extensions/registry").then((m) => m.loadExtensions()).then(() => import("./exthost/boot")).then((b) => b.bootExtHost());
+        void import("./ide/ide").then((m) => m.bootIde());
         void detectAgent(getState().settings.agent);
         // Cek pembaruan sekali sehari (bisa dimatikan di Pengaturan).
         try {
@@ -196,6 +198,7 @@ export default function App() {
       )}
       <CommandPalette />
       <QuickPickHost />
+      <IdeDiffHost />
       <DialogHost />
       <ContextMenuHost />
       <Toasts />

@@ -3,6 +3,7 @@
 // ditutup atau desain diganti.
 
 import { FitAddon } from "@xterm/addon-fit";
+import { ideEnv } from "../ide/ide";
 import { registerLocationLinks } from "./links";
 import { WebLinksAddon } from "@xterm/addon-web-links";
 import { Terminal, type ITheme } from "@xterm/xterm";
@@ -219,7 +220,8 @@ export async function newTerminal(opts: { kind?: TermSession["kind"]; title?: st
   const sess: TermSession = { key, ptyId: null, title, kind, cwd, command: opts.command, status: "starting", startedAt: Date.now() };
   setState((st) => ({ terminals: [...st.terminals, sess], activeTerminal: key }));
   const rt = createRuntime(key);
-  rt.env = opts.env;
+  // `claude` di terminal mana pun otomatis tersambung ke editor (seleksi, diagnostik, diff), seperti di VS Code.
+  rt.env = { ...ideEnv(), ...opts.env };
   if (opts.command && kind !== "shell") rt.term.write(`\x1b[36m$ ${opts.command}\x1b[0m\r\n`);
   const { togglePanel } = await import("../app/actions");
   const l = getState().layouts[getState().settings.design];

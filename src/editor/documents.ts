@@ -762,3 +762,26 @@ export function setSelectionsAt(path: string, sels: { anchor: { l: number; c: nu
   };
   v.dispatch({ selection: EditorSelection.create(sels.map((s) => EditorSelection.range(at(s.anchor), at(s.active)))) });
 }
+
+/** Pilih rentang [from, to] (offset) di editor yang menampilkan berkas ini dan gulir ke sana. */
+export function selectRangeIn(path: string, from: number, to: number): boolean {
+  const g = shown.findIndex((p) => p === path);
+  const v = g >= 0 ? views[g] : null;
+  if (!v) return false;
+  const len = v.state.doc.length;
+  v.dispatch({ selection: { anchor: Math.min(from, len), head: Math.min(to, len) }, effects: EditorView.scrollIntoView(Math.min(from, len), { y: "center" }) });
+  return true;
+}
+
+/** Seleksi utama (dan posisinya) di editor yang menampilkan berkas ini. */
+export function selectionOf(path: string): { text: string; start: { line: number; character: number }; end: { line: number; character: number }; isEmpty: boolean } | null {
+  const g = shown.findIndex((p) => p === path);
+  const v = g >= 0 ? views[g] : null;
+  if (!v) return null;
+  const r = v.state.selection.main;
+  const pos = (o: number) => {
+    const l = v.state.doc.lineAt(o);
+    return { line: l.number - 1, character: o - l.from };
+  };
+  return { text: v.state.sliceDoc(r.from, r.to), start: pos(r.from), end: pos(r.to), isEmpty: r.empty };
+}

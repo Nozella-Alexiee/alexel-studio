@@ -2,6 +2,7 @@
 // Keamanan: contextIsolation + sandbox, tanpa nodeIntegration, CSP ketat, navigasi & popup diblok,
 // semua command lewat satu pintu IPC dengan whitelist (lihat commands.ts).
 
+import { stopIde } from "./ide";
 import { stopExtHost } from "./exthost/manager";
 import { runScheduledUpdate } from "./updater";
 import { cleanTempBins } from "./runner";
@@ -80,7 +81,7 @@ setTimeout(() => cleanTempBins(), 5000); // sisa biner Run sebelumnya
 const ctx: Ctx = {
   userData: app.getPath("userData"),
   emit: (event, payload) => {
-    if (win && !win.isDestroyed()) win.webContents.send("nozel:event", event, event === "pty-data" || event === "agent-event" || event === "exthost-request" || event === "exthost-event" || event === "lsp-message" || event === "dap-message" ? payload : toUiPaths(payload));
+    if (win && !win.isDestroyed()) win.webContents.send("nozel:event", event, event === "pty-data" || event === "agent-event" || event === "ide-request" || event === "exthost-request" || event === "exthost-event" || event === "lsp-message" || event === "dap-message" ? payload : toUiPaths(payload));
   },
   // Path dari UI memakai "/" juga di Windows; API shell Windows butuh "\\".
   trash: (p) => shell.trashItem(path.normalize(p)),
@@ -379,6 +380,7 @@ function stopWindowProcesses() {
   killAllDap();
   killAllLsp();
   stopExtHost();
+  stopIde();
   void unwatch();
 }
 

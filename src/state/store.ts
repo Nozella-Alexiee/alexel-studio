@@ -75,6 +75,8 @@ export interface Settings {
   disabledExts: string[];
   /** Ekstensi bersertifikat "percaya" untuk menjalankan kodenya di extension host. */
   trustedExts: string[];
+  /** Hubungkan agen Claude Code & CLI di terminal ke editor (seleksi, diagnostik, diff). */
+  ideIntegration: boolean;
   /** Pengaturan ekstensi (kunci datar "ekstensi.kunci"), dipakai vscode.workspace.getConfiguration. */
   extSettings: Record<string, unknown>;
 }
@@ -113,6 +115,7 @@ export const DEFAULT_SETTINGS: Settings = {
   iconTheme: null,
   disabledExts: [],
   trustedExts: [],
+  ideIntegration: true,
   extSettings: {},
 };
 
@@ -269,6 +272,15 @@ export interface QuickPickRequest {
   resolve: (picked: number[] | null) => void;
 }
 
+export interface IdeDiffRequest {
+  /** Nama tab dari agen (dipakai close_tab). */
+  tab: string;
+  path: string;
+  oldText: string;
+  newText: string;
+  resolve: (accepted: boolean | "closed") => void;
+}
+
 export interface PaletteState {
   open: boolean;
   /** "" = berkas, ">" = perintah, ":" = baris, "@" = simbol */
@@ -328,6 +340,7 @@ interface State {
 
   palette: PaletteState;
   quickPick: QuickPickRequest | null;
+  ideDiff: IdeDiffRequest | null;
   toasts: Toast[];
   dialog: DialogRequest | null;
   snapshotOpen: boolean;
@@ -382,6 +395,7 @@ export const useStore = create<State>(() => ({
 
   palette: { open: false, initial: "" },
   quickPick: null,
+  ideDiff: null,
   toasts: [],
   dialog: null,
   snapshotOpen: false,

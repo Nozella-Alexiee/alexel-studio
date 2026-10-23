@@ -4371,3 +4371,22 @@ button.ext-link:not(:disabled):hover {
   pointer-events: none;
   white-space: pre;
 }
+
+/* ---------- Diff dari agen (integrasi IDE) ---------- */
+.ide-diff {
+  width: min(1100px, 94vw);
+  max-width: none;
+}
+.ide-diff-body {
+  height: min(62vh, 640px);
+  overflow: auto;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  margin: 8px 0 12px;
+}
+.ide-diff-body .cm-mergeView {
+  height: 100%;
+}
+.ide-diff-body .cm-mergeViewEditors {
+  min-height: 100%;
+}

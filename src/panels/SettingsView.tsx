@@ -283,6 +283,9 @@ export default function SettingsView() {
         <Row label={tl("Lebar tab")}>
           <Segmented label={tl("Lebar tab")} value={String(s.tabSize)} onChange={(v) => set({ tabSize: Number(v) })} options={[{ id: "2", label: "2" }, { id: "4", label: "4" }, { id: "8", label: "8" }]} />
         </Row>
+        <Row label={tl("Integrasi editor untuk agen")} hint={tl("Claude Code yang kamu jalankan di terminal Alexel Studio bisa melihat seleksi, berkas terbuka, dan masalah di editor, serta menampilkan diff untuk kamu setujui (seperti ekstensi VS Code-nya). Hanya lewat 127.0.0.1 dengan token acak. Panel Agen AI sudah mengirim konteks sendiri.")}>
+          <Toggle label={tl("Integrasi editor untuk agen")} value={s.ideIntegration} onChange={(v) => set({ ideIntegration: v })} />
+        </Row>
         <Row label={tl("Rapikan saat menyimpan")} hint={tl("Prettier untuk JS/TS, JSON, CSS, HTML, Markdown, dan YAML. Aturan di .prettierrc dipakai.")}>
           <Toggle label={tl("Rapikan saat menyimpan")} value={s.formatOnSave} onChange={(v) => set({ formatOnSave: v })} />
         </Row>

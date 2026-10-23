@@ -145,6 +145,7 @@ export const COMMANDS: Command[] = [
   { id: "runTarget", label: tl("Smart Run: pilih target…"), group: "Run", run: () => openPalette("!"), when: hasRoot },
   { id: "stopRun", label: tl("Hentikan semua yang berjalan"), group: "Run", run: () => void import("../terminal/terminals").then(async (T) => { for (const t of getState().terminals) if (t.kind === "run" && t.status === "running") await T.stopTerminal(t.key); }), when: () => getState().terminals.some((t) => t.kind === "run" && t.status === "running") },
 
+  { id: "atMention", label: tl("Kirim berkas/seleksi ke Claude Code di terminal (@)"), group: tl("Agen AI"), keys: "Mod+Alt+K", run: () => void import("../ide/ide").then((m) => m.sendAtMention()), when: hasText },
   { id: "claude", label: tl("Panel Agen AI"), group: tl("Agen AI"), keys: "Mod+Alt+B", run: () => A.toggleRight("claude") },
   { id: "askClaude", label: tl("Agen AI: buka & fokus"), group: tl("Agen AI"), keys: isMac ? "Mod+Escape" : "Ctrl+Alt+I", run: focusClaude }, // Ctrl+Esc membuka menu Start di Windows
   { id: "askClaude2", label: tl("Tanya agen AI"), group: tl("Agen AI"), keys: "Mod+L", run: focusClaude, hidden: true },

@@ -1,6 +1,7 @@
 // Daftar command yang boleh dipanggil renderer. Nama & bentuk data sama dengan versi Tauri
 // (lihat src/lib/ipc.ts), jadi frontend tidak perlu berubah.
 
+import { ideServer, stopIde } from "./ide";
 import { hostManager } from "./exthost/manager";
 import { managedInstall as installManaged, managedRemove } from "./managedServers";
 import { app, BrowserWindow, clipboard, ClipboardItem, dialog, powerMonitor, shell } from "electron";
@@ -196,6 +197,23 @@ export function buildCommands(ctx: Ctx, hooks: { confirmClose: (win: BrowserWind
     },
     menu_set: (a) => hooks.setMenu(a.spec),
     app_check_update: () => checkUpdate(),
+    ide_start: (a) => ideServer(ctx, app.getVersion()).start(a.root ?? null),
+    ide_stop: () => {
+      stopIde();
+      return null;
+    },
+    ide_notify: (a) => {
+      ideServer(ctx, app.getVersion()).notify(String(a.method), a.params);
+      return null;
+    },
+    ide_reply: (a) => {
+      ideServer(ctx, app.getVersion()).reply(Number(a.id), a.result, a.error === undefined ? undefined : String(a.error));
+      return null;
+    },
+    ide_status: () => {
+      const s = ideServer(ctx, app.getVersion());
+      return { running: s.running, port: s.port, clients: s.clientCount() };
+    },
     exthost_start: (a) => hostManager(ctx).start({ root: a.root ?? null, settings: a.settings ?? {}, core: a.core, trusted: a.trusted ?? [], disabled: a.disabled ?? [] }),
     exthost_stop: () => hostManager(ctx).stop(),
     exthost_call: (a) => hostManager(ctx).call(String(a.m), a.p),
