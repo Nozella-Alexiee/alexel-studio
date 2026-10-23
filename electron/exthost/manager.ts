@@ -12,6 +12,7 @@ import { Rpc, type Msg } from "./rpc";
 export interface HostStart {
   root: string | null;
   settings: Record<string, unknown>;
+  core?: Record<string, unknown>;
   trusted: string[];
   disabled: string[];
 }
@@ -91,7 +92,7 @@ export class ExtHostManager {
       if (!this.stopping) this.ctx.emit("exthost-exit", { code, stderr: errBuf });
     });
     await Promise.race([readyP, new Promise((_r, rej) => setTimeout(() => rej(new Error("Extension host tidak siap")), 15_000))]);
-    await rpc.request("init", { extensions: exts.map((e) => ({ id: e.id, dir: e.dir, manifest: e.manifest })), root: o.root, userData: this.ctx.userData, settings: o.settings });
+    await rpc.request("init", { extensions: exts.map((e) => ({ id: e.id, dir: e.dir, manifest: e.manifest })), root: o.root, userData: this.ctx.userData, settings: o.settings, core: o.core });
     void rpc.request("startup").catch(() => {});
     return { count: exts.length };
   }

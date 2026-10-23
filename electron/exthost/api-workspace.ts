@@ -13,10 +13,10 @@ const deepClone = <T>(v: T): T => (v === undefined ? v : JSON.parse(JSON.stringi
 
 export function configurationApi(hc: HostCtx, _ext: LoadedExt | null) {
   const keysUnder = (prefix: string): string[] => {
-    const all = new Set<string>([...hc.defaults.keys(), ...Object.keys(hc.settings)]);
+    const all = new Set<string>([...hc.defaults.keys(), ...Object.keys(hc.core), ...Object.keys(hc.settings)]);
     return [...all].filter((k) => k === prefix || k.startsWith(prefix + "."));
   };
-  const lookup = (key: string): unknown => (key in hc.settings ? hc.settings[key] : hc.defaults.get(key));
+  const lookup = (key: string): unknown => (key in hc.settings ? hc.settings[key] : key in hc.core ? hc.core[key] : hc.defaults.get(key));
 
   const get = (section: string | undefined, key: string): unknown => {
     const full = section ? `${section}.${key}` : key;

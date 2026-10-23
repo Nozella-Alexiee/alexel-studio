@@ -461,6 +461,12 @@ export async function promptDialog(title: string, opts: { message?: string; defa
 // ---------- Masalah (diagnostik) dari banyak sumber: linter bawaan, server bahasa, ekstensi ----------
 
 const problemSources = new Map<string, Map<string, Problem[]>>();
+const problemListeners = new Set<(source: string, path: string, list: Problem[]) => void>();
+/** Dengarkan perubahan masalah per sumber (mis. diteruskan ke extension host). */
+export function onProblemsFrom(cb: (source: string, path: string, list: Problem[]) => void) {
+  problemListeners.add(cb);
+  return () => problemListeners.delete(cb);
+}
 
 /** Setel daftar masalah satu berkas dari satu sumber; `problems` adalah gabungan semua sumber. */
 export function setProblemsFrom(source: string, path: string, list: Problem[]) {
@@ -468,6 +474,7 @@ export function setProblemsFrom(source: string, path: string, list: Problem[]) {
   if (!m) problemSources.set(source, (m = new Map()));
   if (list.length) m.set(path, list);
   else m.delete(path);
+  for (const l of problemListeners) l(source, path, list);
   const merged = [...problemSources.values()].flatMap((x) => x.get(path) ?? []);
   const prev = getState().problems[path];
   if (!prev?.length && !merged.length) return;

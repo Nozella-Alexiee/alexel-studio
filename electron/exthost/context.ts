@@ -58,6 +58,8 @@ export interface HostCtx {
   /** Pengaturan pemakai (kunci datar "a.b.c") dan bawaan dari contributes.configuration. */
   settings: Record<string, unknown>;
   defaults: Map<string, unknown>;
+  /** Pengaturan inti dari Alexel Studio (editor.tabSize, files.autoSave, …); di bawah pengaturan pemakai. */
+  core: Record<string, unknown>;
   activeEditor: EditorInfo | null;
   decorationTypes: Map<number, unknown>;
   treeProviders: Map<string, { provider: any; ext: LoadedExt | null }>; // eslint-disable-line @typescript-eslint/no-explicit-any

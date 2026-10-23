@@ -13,6 +13,19 @@ let restarts = 0;
 
 export const hostRunning = () => useExtHost.getState().running;
 
+/** Pengaturan Alexel Studio yang terlihat ekstensi sebagai pengaturan inti VS Code. */
+function coreSettings(): Record<string, unknown> {
+  const s = getState().settings;
+  return {
+    "editor.tabSize": s.tabSize,
+    "editor.fontSize": s.fontSize,
+    "editor.wordWrap": s.wordWrap ? "on" : "off",
+    "editor.formatOnSave": s.formatOnSave,
+    "editor.minimap.enabled": s.minimap,
+    "files.autoSave": s.autoSave === "delay" ? "afterDelay" : "off",
+  };
+}
+
 export async function hostCall<T = unknown>(m: string, p?: unknown): Promise<T> {
   return call<T>("exthost_call", { m, p });
 }
@@ -47,7 +60,7 @@ export async function startHost(): Promise<void> {
   const s = getState();
   useExtHost.setState({ starting: true });
   try {
-    const r = await call<{ count: number }>("exthost_start", { root: s.root, settings: s.settings.extSettings, trusted: s.settings.trustedExts, disabled: s.settings.disabledExts });
+    const r = await call<{ count: number }>("exthost_start", { root: s.root, settings: s.settings.extSettings, core: coreSettings(), trusted: s.settings.trustedExts, disabled: s.settings.disabledExts });
     resetExtHost();
     if (r.count > 0) {
       useExtHost.setState({ running: true, count: r.count });
@@ -94,12 +107,12 @@ export function watchHostInputs() {
     restarts = 0;
     scheduleRestart();
   });
-  // Pengaturan ekstensi berubah: cukup kabari host (tanpa restart).
-  let cfg = JSON.stringify(getState().settings.extSettings);
+  // Pengaturan berubah: cukup kabari host (tanpa restart).
+  let cfg = JSON.stringify([getState().settings.extSettings, coreSettings()]);
   useStore.subscribe((s) => {
-    const next = JSON.stringify(s.settings.extSettings);
+    const next = JSON.stringify([s.settings.extSettings, coreSettings()]);
     if (next === cfg) return;
     cfg = next;
-    if (hostRunning()) hostNotify("config/set", { settings: s.settings.extSettings });
+    if (hostRunning()) hostNotify("config/set", { settings: s.settings.extSettings, core: coreSettings() });
   });
 }

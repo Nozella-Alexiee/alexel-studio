@@ -3,7 +3,7 @@
 import type { EditorState } from "@codemirror/state";
 import * as docs from "../editor/documents";
 import { fileUri } from "../editor/lsp";
-import { activeTab, getState, useStore } from "../state/store";
+import { activeTab, getState, onProblemsFrom, useStore } from "../state/store";
 import { hostNotify } from "./client";
 import { vscodeLanguageId } from "./lang";
 
@@ -47,6 +47,9 @@ export function startSync() {
   stopSync();
   for (const d of docs.openDocs()) open(d);
   activeEditor();
+  for (const [path, list] of Object.entries(getState().problems)) {
+    hostNotify("diag/external", { source: "initial", uri: fileUri(path), items: list.map((p) => ({ range: { s: { l: p.line - 1, c: p.col - 1 }, e: { l: p.line - 1, c: p.col } }, message: p.message, severity: p.severity === "error" ? 0 : p.severity === "warning" ? 1 : 2, source: p.source })) });
+  }
   off.push(
     docs.onDocEvent((e) => {
       switch (e.type) {
@@ -79,6 +82,13 @@ export function startSync() {
           break;
         }
       }
+    })
+  );
+  // Diagnostik dari linter bawaan & server bahasa terlihat oleh ekstensi (languages.getDiagnostics, ErrorLens, …).
+  off.push(
+    onProblemsFrom((source, path, list) => {
+      if (source.startsWith("host:")) return;
+      hostNotify("diag/external", { source, uri: fileUri(path), items: list.map((p) => ({ range: { s: { l: p.line - 1, c: p.col - 1 }, e: { l: p.line - 1, c: p.col } }, message: p.message, severity: p.severity === "error" ? 0 : p.severity === "warning" ? 1 : 2, source: p.source })) });
     })
   );
   let last = "";

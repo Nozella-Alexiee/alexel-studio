@@ -193,10 +193,30 @@ class TextWidget extends WidgetType {
   }
 }
 
+/** ThemeColor VS Code → variabel warna desain aktif (perkiraan; id tak dikenal = warna teks redup). */
+function themeVar(id: string): string {
+  const k = id.toLowerCase();
+  if (/error|danger|invalid/.test(k)) return "var(--danger)";
+  if (/warn/.test(k)) return "var(--warning)";
+  if (/info|hint/.test(k)) return "var(--info, var(--accent))";
+  if (/success|added|ok|passed/.test(k)) return "var(--success)";
+  if (/foreground|text/.test(k)) return "var(--fg-muted)";
+  if (/selection|highlight|find|match/.test(k)) return "var(--accent)";
+  return "var(--fg-muted)";
+}
+
+const colorOf = (v: Any, background: boolean): string => {
+  if (v && typeof v === "object" && v.id) {
+    const c = themeVar(String(v.id));
+    return background ? `color-mix(in srgb, ${c} 16%, transparent)` : c;
+  }
+  return String(v);
+};
+
 const cssOf = (o: Any): string => {
   if (!o) return "";
   const map: Record<string, string> = { backgroundColor: "background-color", color: "color", border: "border", borderRadius: "border-radius", fontWeight: "font-weight", fontStyle: "font-style", textDecoration: "text-decoration", opacity: "opacity", outline: "outline", margin: "margin", width: "width", height: "height", letterSpacing: "letter-spacing", cursor: "cursor" };
-  return Object.entries(map).map(([k, css]) => (o[k] ? `${css}:${typeof o[k] === "object" && o[k].id ? `var(--ext-${String(o[k].id).replace(/\./g, "-")}, currentColor)` : o[k]}` : "")).filter(Boolean).join(";");
+  return Object.entries(map).map(([k, css]) => (o[k] ? `${css}:${k === "color" || k === "backgroundColor" || k === "border" || k === "outline" ? colorOf(o[k], k === "backgroundColor") : o[k]}` : "")).filter(Boolean).join(";");
 };
 
 function buildDecorations(state: EditorState, path: string): DecorationSet {

@@ -140,9 +140,9 @@ export function buildApi(hc: HostCtx, ext: LoadedExt | null): Record<string, unk
     ...T,
     Uri,
     commands: commandsApi(hc, ext),
-    window: windowApi(hc, ext),
-    workspace: workspaceApi(hc, ext),
-    languages: languagesApi(hc, ext),
+    window: lenient(hc, ext, "window", windowApi(hc, ext)),
+    workspace: lenient(hc, ext, "workspace", workspaceApi(hc, ext)),
+    languages: lenient(hc, ext, "languages", languagesApi(hc, ext)),
     env: envApi(hc),
     extensions: extensionsApi(hc),
     tasks: lenient(hc, ext, "tasks", { registerTaskProvider: () => new T.Disposable(() => {}), taskExecutions: [] }),
@@ -156,7 +156,18 @@ export function buildApi(hc: HostCtx, ext: LoadedExt | null): Record<string, unk
     lm: lenient(hc, ext, "lm", { tools: [], selectChatModels: async () => [] }),
     l10n: { t: (m: string | { message: string }, ...a: unknown[]) => String(typeof m === "string" ? m : m.message).replace(/\{(\d+)\}/g, (_m, i) => String(a[Number(i)] ?? "")), bundle: undefined, uri: undefined },
   };
-  const out = new Proxy(api, { get: (t, p: string | symbol) => (p in t || typeof p === "symbol" ? (t as Record<string | symbol, unknown>)[p] : undefined) });
+  const out = new Proxy(api, {
+    get: (t, p: string | symbol) => {
+      if (typeof p === "symbol" || p in t) return (t as Record<string | symbol, unknown>)[p];
+      // Anggota yang tidak ada: dicatat sekali supaya celah API mudah ditemukan (lihat Output → Extension Host).
+      const k = `<top>.${p}`;
+      if (!warned.has(k) && p !== "then" && p !== "default" && p !== "__esModule") {
+        warned.add(k);
+        hc.log(ext, `vscode.${p} tidak ada`);
+      }
+      return undefined;
+    },
+  });
   apis.set(key, out);
   return out;
 }

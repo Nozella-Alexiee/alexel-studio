@@ -196,7 +196,7 @@ export function buildCommands(ctx: Ctx, hooks: { confirmClose: (win: BrowserWind
     },
     menu_set: (a) => hooks.setMenu(a.spec),
     app_check_update: () => checkUpdate(),
-    exthost_start: (a) => hostManager(ctx).start({ root: a.root ?? null, settings: a.settings ?? {}, trusted: a.trusted ?? [], disabled: a.disabled ?? [] }),
+    exthost_start: (a) => hostManager(ctx).start({ root: a.root ?? null, settings: a.settings ?? {}, core: a.core, trusted: a.trusted ?? [], disabled: a.disabled ?? [] }),
     exthost_stop: () => hostManager(ctx).stop(),
     exthost_call: (a) => hostManager(ctx).call(String(a.m), a.p),
     exthost_notify: (a) => {

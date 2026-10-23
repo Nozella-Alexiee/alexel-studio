@@ -5,6 +5,8 @@
 import fs from "node:fs";
 import Module from "node:module";
 import path from "node:path";
+import { fileURLToPath } from "node:url";
+import { BUILTIN_DEFAULTS } from "./builtin";
 import { buildApi, buildContext, runCommand } from "./api";
 import { languageFromPath } from "./api-workspace";
 import { newEvents, type EditorInfo, type ExtManifest, type HostCtx, type LoadedExt } from "./context";
@@ -15,6 +17,9 @@ import { Rpc, type Msg } from "./rpc";
 import { matchSelector, type DocumentFilter } from "./selector";
 import * as T from "./types";
 import { Uri } from "./uri";
+
+process.env.VSCODE_NLS_CONFIG = JSON.stringify({ locale: "en", availableLanguages: {}, _languagePackSupport: false });
+process.env.VSCODE_PID = String(process.pid);
 
 const send = (m: Msg) => {
   if (process.send) process.send(m);
@@ -31,7 +36,8 @@ const hc: HostCtx = {
   providers: new Map(),
   diagnostics: new Map(),
   settings: {},
-  defaults: new Map(),
+  defaults: new Map(Object.entries(BUILTIN_DEFAULTS)),
+  core: {},
   activeEditor: null,
   decorationTypes: new Map(),
   treeProviders: new Map(),
@@ -56,6 +62,30 @@ M._load = function (request, parent, isMain) {
   if (request === "vscode") return buildApi(hc, extByFile(parent?.filename));
   return origLoad.call(this, request, parent, isMain);
 };
+
+// Ekstensi berformat ESM (`import ... from "vscode"`): hook resolusi/pemuatan sinkron di thread yang sama.
+const registerHooks = (Module as unknown as { registerHooks?: (h: unknown) => void }).registerHooks;
+(globalThis as Record<string, unknown>).__alexelVscode = (id: string) => buildApi(hc, hc.extensions.get(id) ?? null);
+if (typeof registerHooks === "function") {
+  registerHooks({
+    resolve(spec: string, ctx: { parentURL?: string }, next: (s: string, c: unknown) => unknown) {
+      if (spec !== "vscode") return next(spec, ctx);
+      let parent: string | undefined;
+      try {
+        parent = ctx.parentURL ? fileURLToPath(ctx.parentURL) : undefined;
+      } catch {
+        parent = undefined;
+      }
+      return { url: `alexel-vscode:${encodeURIComponent(extByFile(parent)?.id ?? "")}`, format: "module", shortCircuit: true };
+    },
+    load(url: string, ctx: unknown, next: (u: string, c: unknown) => unknown) {
+      if (!url.startsWith("alexel-vscode:")) return next(url, ctx);
+      const id = decodeURIComponent(url.slice("alexel-vscode:".length));
+      const names = Object.keys(buildApi(hc, hc.extensions.get(id) ?? null)).filter((k) => /^[A-Za-z_$][\w$]*$/.test(k) && k !== "default");
+      return { format: "module", shortCircuit: true, source: `const api = globalThis.__alexelVscode(${JSON.stringify(id)});\nexport default api;\nexport const { ${names.join(", ")} } = api;\n` };
+    },
+  });
+}
 
 // Galat tak tertangkap dari kode ekstensi tidak boleh menjatuhkan host.
 process.on("uncaughtException", (e) => hc.log(null, `uncaughtException: ${e instanceof Error ? e.stack ?? e.message : String(e)}`));
@@ -164,12 +194,13 @@ interface WireChange {
   text: string;
 }
 
-rpc.requests.set("init", (p: { extensions: { id: string; dir: string; manifest: ExtManifest }[]; root: string | null; userData: string; settings: Record<string, unknown> }) => {
+rpc.requests.set("init", (p: { extensions: { id: string; dir: string; manifest: ExtManifest }[]; root: string | null; userData: string; settings: Record<string, unknown>; core?: Record<string, unknown> }) => {
   hc.root = p.root;
   hc.userData = p.userData;
   hc.settings = p.settings ?? {};
+  hc.core = p.core ?? {};
   hc.extensions.clear();
-  hc.defaults.clear();
+  hc.defaults = new Map(Object.entries(BUILTIN_DEFAULTS));
   for (const e of p.extensions) {
     let real = e.dir;
     try {
@@ -239,11 +270,22 @@ rpc.events.set("editor/selection", (p: EditorInfo) => {
   ed.selections = p.selections.map((s) => new T.Selection(new T.Position(s.anchor.l, s.anchor.c), new T.Position(s.active.l, s.active.c)));
   hc.events.selection.fire({ textEditor: ed, selections: ed.selections, kind: undefined });
 });
-rpc.events.set("config/set", (p: { settings: Record<string, unknown> }) => {
-  const before = hc.settings;
+rpc.events.set("config/set", (p: { settings: Record<string, unknown>; core?: Record<string, unknown> }) => {
+  const before = { ...hc.core, ...hc.settings };
   hc.settings = p.settings ?? {};
-  const changed = new Set<string>([...Object.keys(before), ...Object.keys(hc.settings)].filter((k) => JSON.stringify(before[k]) !== JSON.stringify(hc.settings[k])));
+  if (p.core) hc.core = p.core;
+  const merged = { ...hc.core, ...hc.settings };
+  const changed = new Set<string>([...Object.keys(before), ...Object.keys(merged)].filter((k) => JSON.stringify(before[k]) !== JSON.stringify(merged[k])));
   if (changed.size) hc.events.config.fire({ affectsConfiguration: (s: string) => [...changed].some((k) => k === s || k.startsWith(s + ".") || s.startsWith(k + ".")) });
+});
+/** Diagnostik dari linter/server bahasa editor: terlihat lewat vscode.languages.getDiagnostics. */
+rpc.events.set("diag/external", (p: { source: string; uri: string; items: { range: C.JRange; message: string; severity: number; source?: string }[] }) => {
+  const owner = `alexel:${p.source}`;
+  let m = hc.diagnostics.get(owner);
+  if (!m) hc.diagnostics.set(owner, (m = new Map()));
+  if (p.items.length) m.set(p.uri, p.items.map((d) => Object.assign(new T.Diagnostic(C.toRange(d.range), d.message, d.severity), { source: d.source ?? p.source })));
+  else m.delete(p.uri);
+  hc.events.diagnostics.fire({ uris: [Uri.parse(p.uri)] });
 });
 rpc.events.set("fs/changed", (p: { kind: "create" | "change" | "delete"; path: string }) => hc.events.fsChanged.fire({ kind: p.kind, uri: Uri.file(p.path) }));
 

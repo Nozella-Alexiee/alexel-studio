@@ -35,7 +35,7 @@ export class EventEmitter<T> {
       try {
         l(data);
       } catch (e) {
-        console.error("[exthost] listener error:", e);
+        console.error("[exthost] listener error:", e instanceof Error ? e.stack ?? e.message : e);
       }
     }
   }
@@ -261,6 +261,9 @@ export class WorkspaceEdit {
   delete(uri: Uri, range: Range) {
     this.entry(uri).edits.push(TextEdit.delete(range));
   }
+  createFile(_uri: Uri, _options?: unknown) {}
+  deleteFile(_uri: Uri, _options?: unknown) {}
+  renameFile(_old: Uri, _new: Uri, _options?: unknown) {}
   has(uri: Uri) {
     return this.edits.has(uri.toString());
   }
@@ -530,4 +533,315 @@ export enum TreeItemCollapsibleState {
   None = 0,
   Collapsed = 1,
   Expanded = 2,
+}
+
+// ---- tipe tambahan yang dipakai vscode-languageclient & ekstensi bahasa -------------------
+
+export enum SymbolTag {
+  Deprecated = 1,
+}
+export class CallHierarchyItem {
+  tags?: SymbolTag[];
+  constructor(public kind: SymbolKind, public name: string, public detail: string, public uri: Uri, public range: Range, public selectionRange: Range) {}
+}
+export class CallHierarchyIncomingCall {
+  constructor(public from: CallHierarchyItem, public fromRanges: Range[]) {}
+}
+export class CallHierarchyOutgoingCall {
+  constructor(public to: CallHierarchyItem, public fromRanges: Range[]) {}
+}
+export class TypeHierarchyItem {
+  tags?: SymbolTag[];
+  constructor(public kind: SymbolKind, public name: string, public detail: string, public uri: Uri, public range: Range, public selectionRange: Range) {}
+}
+export class SelectionRange {
+  constructor(public range: Range, public parent?: SelectionRange) {}
+}
+export enum FoldingRangeKind {
+  Comment = 1,
+  Imports = 2,
+  Region = 3,
+}
+export class FoldingRange {
+  constructor(public start: number, public end: number, public kind?: FoldingRangeKind) {}
+}
+export class SemanticTokensLegend {
+  constructor(public tokenTypes: string[], public tokenModifiers: string[] = []) {}
+}
+export class SemanticTokens {
+  constructor(public data: Uint32Array, public resultId?: string) {}
+}
+export class SemanticTokensEdit {
+  constructor(public start: number, public deleteCount: number, public data?: Uint32Array) {}
+}
+export class SemanticTokensEdits {
+  constructor(public edits: SemanticTokensEdit[], public resultId?: string) {}
+}
+export class SemanticTokensBuilder {
+  private data: number[] = [];
+  private prevLine = 0;
+  private prevChar = 0;
+  constructor(private legend?: SemanticTokensLegend) {}
+  push(a: number | Range, b?: number | string, c?: number | string, d?: number | string[], e?: number): void {
+    let line: number, char: number, length: number, type: number, mods: number;
+    if (a instanceof Range) {
+      line = a.start.line;
+      char = a.start.character;
+      length = a.end.character - a.start.character;
+      type = Math.max(0, this.legend?.tokenTypes.indexOf(b as string) ?? 0);
+      mods = 0;
+      for (const m of (c as unknown as string[]) ?? []) mods |= 1 << Math.max(0, this.legend?.tokenModifiers.indexOf(m) ?? 0);
+    } else {
+      [line, char, length, type, mods] = [a, b as number, c as number, d as number, e ?? 0];
+    }
+    const dl = line - this.prevLine;
+    this.data.push(dl, dl === 0 ? char - this.prevChar : char, length, type, mods);
+    this.prevLine = line;
+    this.prevChar = char;
+  }
+  build(resultId?: string) {
+    return new SemanticTokens(new Uint32Array(this.data), resultId);
+  }
+}
+export enum InlayHintKind {
+  Type = 1,
+  Parameter = 2,
+}
+export class InlayHintLabelPart {
+  tooltip?: string | MarkdownString;
+  location?: Location;
+  command?: { command: string; title: string; arguments?: unknown[] };
+  constructor(public value: string) {}
+}
+export class InlayHint {
+  kind?: InlayHintKind;
+  textEdits?: TextEdit[];
+  tooltip?: string | MarkdownString;
+  paddingLeft?: boolean;
+  paddingRight?: boolean;
+  constructor(public position: Position, public label: string | InlayHintLabelPart[], kind?: InlayHintKind) {
+    this.kind = kind;
+  }
+}
+export class Color {
+  constructor(public red: number, public green: number, public blue: number, public alpha: number) {}
+}
+export class ColorInformation {
+  constructor(public range: Range, public color: Color) {}
+}
+export class ColorPresentation {
+  textEdit?: TextEdit;
+  additionalTextEdits?: TextEdit[];
+  constructor(public label: string) {}
+}
+export class ParameterInformation {
+  constructor(public label: string | [number, number], public documentation?: string | MarkdownString) {}
+}
+export class SignatureInformation {
+  parameters: ParameterInformation[] = [];
+  activeParameter?: number;
+  constructor(public label: string, public documentation?: string | MarkdownString) {}
+}
+export class SignatureHelp {
+  signatures: SignatureInformation[] = [];
+  activeSignature = 0;
+  activeParameter = 0;
+}
+export enum SignatureHelpTriggerKind {
+  Invoke = 1,
+  TriggerCharacter = 2,
+  ContentChange = 3,
+}
+export enum TextEditorSelectionChangeKind {
+  Keyboard = 1,
+  Mouse = 2,
+  Command = 3,
+}
+export enum TextDocumentChangeReason {
+  Undo = 1,
+  Redo = 2,
+}
+export enum ExtensionKind {
+  UI = 1,
+  Workspace = 2,
+}
+export enum QuickPickItemKind {
+  Separator = -1,
+  Default = 0,
+}
+export class InlineValueText {
+  constructor(public range: Range, public text: string) {}
+}
+export class InlineValueVariableLookup {
+  constructor(public range: Range, public variableName?: string, public caseSensitiveLookup = true) {}
+}
+export class InlineValueEvaluatableExpression {
+  constructor(public range: Range, public expression?: string) {}
+}
+export class EvaluatableExpression {
+  constructor(public range: Range, public expression?: string) {}
+}
+export class LinkedEditingRanges {
+  constructor(public ranges: Range[], public wordPattern?: RegExp) {}
+}
+export class DocumentDropEdit {
+  constructor(public insertText: string | SnippetString) {}
+}
+export class WorkspaceSymbol {
+  constructor(public name: string, public kind: SymbolKind, public containerName: string, public location: Location | { uri: Uri }) {}
+}
+export enum TaskScope {
+  Global = 1,
+  Workspace = 2,
+}
+export class TaskGroup {
+  static readonly Clean = new TaskGroup("clean", "Clean");
+  static readonly Build = new TaskGroup("build", "Build");
+  static readonly Rebuild = new TaskGroup("rebuild", "Rebuild");
+  static readonly Test = new TaskGroup("test", "Test");
+  constructor(readonly id: string, readonly label: string) {}
+}
+export enum TaskRevealKind {
+  Always = 1,
+  Silent = 2,
+  Never = 3,
+}
+export enum TaskPanelKind {
+  Shared = 1,
+  Dedicated = 2,
+  New = 3,
+}
+export class ShellExecution {
+  constructor(public commandLine?: string | unknown, public args?: unknown, public options?: unknown) {}
+}
+export class ProcessExecution {
+  constructor(public process: string, public args?: string[], public options?: unknown) {}
+}
+export class CustomExecution {
+  constructor(public callback: unknown) {}
+}
+export class Task {
+  group?: TaskGroup;
+  presentationOptions: Record<string, unknown> = {};
+  problemMatchers: string[] = [];
+  isBackground = false;
+  constructor(public definition: unknown, public scope: unknown, public name: string, public source: string, public execution?: unknown, problemMatchers?: string | string[]) {
+    if (problemMatchers) this.problemMatchers = Array.isArray(problemMatchers) ? problemMatchers : [problemMatchers];
+  }
+}
+export class SourceBreakpoint {
+  constructor(public location: Location, public enabled = true, public condition?: string, public hitCondition?: string, public logMessage?: string) {}
+}
+export class FunctionBreakpoint {
+  constructor(public functionName: string, public enabled = true, public condition?: string, public hitCondition?: string, public logMessage?: string) {}
+}
+export class DebugAdapterExecutable {
+  constructor(public command: string, public args: string[] = [], public options?: unknown) {}
+}
+export class DebugAdapterServer {
+  constructor(public port: number, public host?: string) {}
+}
+export enum TerminalLocation {
+  Panel = 1,
+  Editor = 2,
+}
+export enum EnvironmentVariableMutatorType {
+  Replace = 1,
+  Append = 2,
+  Prepend = 3,
+}
+export enum CommentMode {
+  Editing = 0,
+  Preview = 1,
+}
+export enum NotebookCellKind {
+  Markup = 1,
+  Code = 2,
+}
+export enum LogLevel {
+  Off = 0,
+  Trace = 1,
+  Debug = 2,
+  Info = 3,
+  Warning = 4,
+  Error = 5,
+}
+
+export enum LanguageStatusSeverity {
+  Information = 0,
+  Warning = 1,
+  Error = 2,
+}
+export enum InlineCompletionTriggerKind {
+  Invoke = 0,
+  Automatic = 1,
+}
+export class InlineCompletionItem {
+  constructor(public insertText: string | SnippetString, public range?: Range, public command?: { command: string; title: string; arguments?: unknown[] }) {}
+}
+export class InlineCompletionList {
+  constructor(public items: InlineCompletionItem[]) {}
+}
+export enum ColorThemeKind {
+  Light = 1,
+  Dark = 2,
+  HighContrast = 3,
+  HighContrastLight = 4,
+}
+export enum FileChangeType {
+  Changed = 1,
+  Created = 2,
+  Deleted = 3,
+}
+export enum TextEditorLineNumbersStyle {
+  Off = 0,
+  On = 1,
+  Relative = 2,
+}
+export enum NotebookEditorRevealType {
+  Default = 0,
+  InCenter = 1,
+  InCenterIfOutsideViewport = 2,
+  AtTop = 3,
+}
+export enum TerminalExitReason {
+  Unknown = 0,
+  Shutdown = 1,
+  Process = 2,
+  User = 3,
+  Extension = 4,
+}
+export enum DebugConsoleMode {
+  Separate = 0,
+  MergeWithParent = 1,
+}
+export enum TreeItemCheckboxState {
+  Unchecked = 0,
+  Checked = 1,
+}
+export enum CommentThreadCollapsibleState {
+  Collapsed = 0,
+  Expanded = 1,
+}
+export class ThemeIconColor {}
+export class DataTransferItem {
+  constructor(public value: unknown) {}
+  async asString() {
+    return String(this.value);
+  }
+  asFile() {
+    return undefined;
+  }
+}
+export class DataTransfer {
+  private m = new Map<string, DataTransferItem>();
+  get(mime: string) {
+    return this.m.get(mime);
+  }
+  set(mime: string, item: DataTransferItem) {
+    this.m.set(mime, item);
+  }
+  forEach(cb: (item: DataTransferItem, mime: string, dt: DataTransfer) => void) {
+    this.m.forEach((v, k) => cb(v, k, this));
+  }
 }
