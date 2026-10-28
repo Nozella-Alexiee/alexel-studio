@@ -126,9 +126,10 @@ export function removeWorkspaceFolder(dir: string) {
 
 /** Isi .code-workspace → daftar folder absolut (relatif terhadap folder berkasnya). */
 export function workspaceFolders(file: string, text: string): string[] {
-  let data: { folders?: { path?: unknown }[] } | null = null;
+  type WsFile = { folders?: { path?: unknown }[] } | null;
+  let data: WsFile;
   try {
-    data = parseJsonc(text) as typeof data;
+    data = parseJsonc(text) as WsFile;
   } catch {
     return [];
   }
