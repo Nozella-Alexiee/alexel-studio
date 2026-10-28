@@ -47,6 +47,7 @@ const MIME: Record<string, string> = {
   mp3: "audio/mpeg",
   wasm: "application/wasm",
   txt: "text/plain; charset=utf-8",
+  pdf: "application/pdf",
   md: "text/plain; charset=utf-8",
 };
 

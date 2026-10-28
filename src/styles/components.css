@@ -4639,3 +4639,84 @@ button.ext-link:not(:disabled):hover {
   white-space: pre;
   pointer-events: none;
 }
+
+/* Warna pasangan kurung: tema gelap (bawaan) dan terang. */
+:root {
+  --bracket-0: #e5c07b;
+  --bracket-1: #d38fe6;
+  --bracket-2: #4fc1d6;
+}
+:root[data-scheme="light"] {
+  --bracket-0: #9a6700;
+  --bracket-1: #8a3ebf;
+  --bracket-2: #0b7285;
+}
+
+/* Tab tersemat: ikon pin selalu terlihat, nama sedikit lebih rapat. */
+.tab.is-pinned .tab-pin {
+  color: var(--fg-muted);
+  opacity: 1;
+}
+.tab.is-pinned .tab-name {
+  max-width: 140px;
+}
+
+/* Belah terminal: dua sesi berdampingan. */
+.term-split {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+}
+.term-split > .term-stage {
+  flex: 1 1 50%;
+  min-width: 0;
+}
+.term-stage-right {
+  border-left: 1px solid var(--border);
+}
+
+/* PDF & hex viewer */
+.pdf-frame {
+  flex: 1;
+  width: 100%;
+  border: 0;
+  background: var(--surface-1);
+}
+.hex-view {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+.hex-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 12px;
+  font-size: var(--ui-small);
+  color: var(--fg-muted);
+  border-bottom: 1px solid var(--border);
+}
+.hex-scroll {
+  flex: 1;
+  overflow: auto;
+  font-family: var(--font-mono);
+  font-size: 12.5px;
+}
+.hex-row {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 20px;
+  line-height: 20px;
+  display: flex;
+  gap: 18px;
+  padding: 0 14px;
+  white-space: pre;
+}
+.hex-off {
+  color: var(--fg-subtle);
+}
+.hex-ascii {
+  color: var(--fg-muted);
+}

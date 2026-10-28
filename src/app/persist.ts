@@ -2,7 +2,7 @@
 
 import { applyDesign, DESIGNS } from "../design/designs";
 import { api } from "../lib/ipc";
-import { DEFAULT_LAYOUTS, DEFAULT_SETTINGS, getState, setState, toast, type Group, type Layout, type Settings } from "../state/store";
+import { DEFAULT_LAYOUTS, DEFAULT_SETTINGS, getState, isFileTab, setState, toast, type Group, type Layout, type Settings } from "../state/store";
 import { tl } from "../i18n";
 
 interface SessionFile {
@@ -11,6 +11,7 @@ interface SessionFile {
   groups: Group[];
   focused: number;
   layouts: Record<string, Layout>;
+  pinned?: string[];
 }
 
 let sessionTimer = 0;
@@ -25,9 +26,10 @@ export function persistSession() {
     const file: SessionFile = {
       v: 1,
       root: s.root,
-      groups: s.groups.map((g) => ({ tabs: g.tabs.filter((t) => s.tabs[t]?.kind === "text" || s.tabs[t]?.kind === "image" || t === "nozel:settings"), active: g.active })),
+      groups: s.groups.map((g) => ({ tabs: g.tabs.filter((t) => (s.tabs[t] && isFileTab(s.tabs[t].kind)) || t === "nozel:settings"), active: g.active })),
       focused: s.focusedGroup,
       layouts: s.layouts,
+      pinned: Object.values(s.tabs).filter((t) => t.pinned).map((t) => t.id),
     };
     void api.storeSave("session", JSON.stringify(file)).catch(() => {});
   }, 500);
@@ -87,6 +89,11 @@ function sanitizeSettings(raw: Partial<Settings> | null, migrate = false): Setti
   s.claudeThinking = s.claudeThinking !== false;
   s.formatOnSave = s.formatOnSave === true;
   s.gitBlame = s.gitBlame === true;
+  s.indentGuides = s.indentGuides !== false;
+  s.bracketColors = s.bracketColors !== false;
+  s.colorSwatches = s.colorSwatches !== false;
+  s.emmet = s.emmet !== false;
+  s.stickyScroll = s.stickyScroll !== false;
   if (!["auto", "id", "en"].includes(s.language)) s.language = "auto";
   if (!["claude", "codex", "gemini", "antigravity", "acp"].includes(s.agent)) s.agent = "claude";
   if (!s.agentPrefs || typeof s.agentPrefs !== "object") s.agentPrefs = {};
@@ -128,7 +135,7 @@ export async function restoreAll() {
   if (session?.root) {
     const { openProject } = await import("./actions");
     try {
-      await openProject(session.root, { restoreTabs: { groups: session.groups ?? [], focused: session.focused ?? 0 } });
+      await openProject(session.root, { restoreTabs: { groups: session.groups ?? [], focused: session.focused ?? 0, pinned: Array.isArray(session.pinned) ? session.pinned.filter((x): x is string => typeof x === "string") : [] } });
     } catch {
       /* folder sudah tidak ada */
     }

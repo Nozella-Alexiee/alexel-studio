@@ -1,4 +1,4 @@
-import { AlertTriangle, ChevronRight, Columns2, Code2, Eye, Play, Puzzle, Settings as Cog, Sparkle, X } from "lucide-react";
+import { AlertTriangle, ChevronRight, Columns2, Code2, Eye, Pin, Play, Puzzle, Settings as Cog, Sparkle, X } from "lucide-react";
 import React, { Suspense, lazy, useEffect, useRef, useState } from "react";
 import * as A from "../app/actions";
 import { runActiveFile } from "../app/run";
@@ -6,7 +6,7 @@ import { FileIcon } from "../components/FileIcon";
 import { openMenu } from "../components/Overlays";
 import { IconButton, Segmented } from "../components/ui";
 import { relative } from "../lib/paths";
-import { setState, useStore, type Tab } from "../state/store";
+import { isFileTab, setState, useStore, type Tab } from "../state/store";
 import { CodeEditor } from "./CodeEditor";
 import { HtmlPreview, ImageViewer, MarkdownPreview } from "./Previews";
 import { tl } from "../i18n";
@@ -15,6 +15,8 @@ const SettingsView = lazy(() => import("../panels/SettingsView"));
 const ExtensionDetail = lazy(() => import("../panels/ExtensionDetail"));
 const WebviewTab = lazy(() => import("../panels/WebviewTab"));
 const Dashboard = lazy(() => import("../panels/Dashboard"));
+const PdfViewer = lazy(() => import("./BinaryViews").then((m) => ({ default: m.PdfViewer })));
+const HexViewer = lazy(() => import("./BinaryViews").then((m) => ({ default: m.HexViewer })));
 const WelcomePage = lazy(() => import("../panels/Dashboard").then((m) => ({ default: m.Welcome })));
 
 /** Tab yang sedang diseret (dataTransfer tidak bisa dibaca saat dragover, jadi disimpan di sini). */
@@ -27,9 +29,10 @@ function TabItem({ tab, group, active, drop }: { tab: Tab; group: number; active
     openMenu(e, [
       { label: tl("Tutup"), keys: "Mod+W", run: () => void A.closeTab(tab.id, group) },
       { label: tl("Tutup tab lain"), run: () => void A.closeOtherTabs(tab.id, group) },
-      { label: tl("Tutup semua"), run: () => void A.closeAllTabs() },
+      { label: tl("Tutup semua"), run: () => void A.closeUnpinnedTabs() },
+      { label: tab.pinned ? tl("Lepas sematan") : tl("Sematkan"), run: () => A.togglePinTab(tab.id) },
       { separator: true, label: "" },
-      ...(tab.kind === "text" || tab.kind === "image"
+      ...(isFileTab(tab.kind)
         ? [
             { label: tl("Salin path"), run: () => void A.copyPath(tab.id) },
             { label: tl("Salin path relatif"), run: () => void A.copyPath(tab.id, true) },
@@ -46,7 +49,7 @@ function TabItem({ tab, group, active, drop }: { tab: Tab; group: number; active
       aria-selected={active}
       tabIndex={active ? 0 : -1}
       data-tab={tab.id}
-      className={`tab ${active ? "is-active" : ""} ${tab.dirty ? "is-dirty" : ""} ${mark ? `git-${mark}` : ""} ${errors ? "has-errors" : ""} ${drop ? `drop-${drop}` : ""}`}
+      className={`tab ${active ? "is-active" : ""} ${tab.pinned ? "is-pinned" : ""} ${tab.dirty ? "is-dirty" : ""} ${mark ? `git-${mark}` : ""} ${errors ? "has-errors" : ""} ${drop ? `drop-${drop}` : ""}`}
       draggable
       onDragStart={(e) => {
         dragTab = { id: tab.id, group };
@@ -58,25 +61,39 @@ function TabItem({ tab, group, active, drop }: { tab: Tab; group: number; active
         dragTab = null;
         e.currentTarget.classList.remove("is-dragging");
       }}
-      title={tab.kind === "text" || tab.kind === "image" ? tab.id : tab.name}
+      title={isFileTab(tab.kind) ? tab.id : tab.name}
       onClick={() => A.activateTab(tab.id, group)}
-      onAuxClick={(e) => e.button === 1 && void A.closeTab(tab.id, group)}
+      onAuxClick={(e) => e.button === 1 && !tab.pinned && void A.closeTab(tab.id, group)}
       onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && A.activateTab(tab.id, group)}
       onContextMenu={onMenu}
     >
       {tab.kind === "settings" ? <Cog size={14} aria-hidden /> : tab.kind === "extension" || tab.kind === "webview" ? <Puzzle size={14} aria-hidden /> : tab.kind === "welcome" ? <Sparkle size={14} aria-hidden /> : <FileIcon filename={tab.name} size={14} />}
       <span className="tab-name">{tab.name}</span>
-      <button
-        className="tab-close"
-        aria-label={tab.dirty ? tl("{name} belum disimpan — tutup", { name: tab.name }) : tl("Tutup {name}", { name: tab.name })}
-        onClick={(e) => {
-          e.stopPropagation();
-          void A.closeTab(tab.id, group);
-        }}
-      >
-        <span className="tab-dot" aria-hidden />
-        <X size={13} className="tab-x" aria-hidden />
-      </button>
+      {tab.pinned ? (
+        <button
+          className="tab-close tab-pin"
+          aria-label={tl("Lepas sematan {name}", { name: tab.name })}
+          title={tl("Lepas sematan")}
+          onClick={(e) => {
+            e.stopPropagation();
+            A.togglePinTab(tab.id);
+          }}
+        >
+          <Pin size={12} aria-hidden />
+        </button>
+      ) : (
+        <button
+          className="tab-close"
+          aria-label={tab.dirty ? tl("{name} belum disimpan — tutup", { name: tab.name }) : tl("Tutup {name}", { name: tab.name })}
+          onClick={(e) => {
+            e.stopPropagation();
+            void A.closeTab(tab.id, group);
+          }}
+        >
+          <span className="tab-dot" aria-hidden />
+          <X size={13} className="tab-x" aria-hidden />
+        </button>
+      )}
     </div>
   );
 }
@@ -343,6 +360,15 @@ export function EditorBody({ group, breadcrumb = true }: { group: number; breadc
         <Suspense fallback={null}>
           <SettingsView />
         </Suspense>
+        {drop.overlay}
+      </div>
+    );
+  }
+  if (tab.kind === "pdf" || tab.kind === "binary") {
+    return (
+      <div className="editor-body" {...drop.props}>
+        {breadcrumb && root && <Breadcrumb path={tab.id} />}
+        <Suspense fallback={null}>{tab.kind === "pdf" ? <PdfViewer path={tab.id} /> : <HexViewer path={tab.id} />}</Suspense>
         {drop.overlay}
       </div>
     );

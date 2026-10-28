@@ -100,6 +100,7 @@ export const api = {
   listDir: (dirPath: string) => call<FileEntry[]>("list_dir", { dirPath }),
   readText: (path: string) => call<TextFile>("read_file_text", { path }),
   readImage: (path: string) => call<ImageFileData>("read_file_image", { path }),
+  readHead: (path: string, max?: number) => call<{ data: string; size: number }>("read_file_head", { path, max }),
   writeText: (path: string, content: string) => call<number>("write_file_text", { path, content }),
   writeBase64: (path: string, data: string) => call<void>("write_file_base64", { path, data }),
   mtime: (path: string) => call<number>("file_mtime", { path }),

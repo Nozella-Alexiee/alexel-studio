@@ -13,6 +13,7 @@ import {
   ask,
   confirmDialog,
   getState,
+  isFileTab,
   isSaver,
   promptDialog,
   setLayout,
@@ -38,7 +39,7 @@ export async function openProjectDialog() {
   if (p) await openProject(p);
 }
 
-export async function openProject(root: string, opts: { restoreTabs?: { groups: Group[]; focused: number } } = {}) {
+export async function openProject(root: string, opts: { restoreTabs?: { groups: Group[]; focused: number; pinned?: string[] } } = {}) {
   const prev = getState().root;
   if (prev && prev !== root) {
     const ok = await closeAllTabs();
@@ -79,6 +80,7 @@ export async function openProject(root: string, opts: { restoreTabs?: { groups: 
       }
       if (grp.active && getState().tabs[grp.active]) activateTab(grp.active, g);
     }
+    for (const id of opts.restoreTabs.pinned ?? []) if (getState().tabs[id] && !getState().tabs[id].pinned) togglePinTab(id);
     setState({ focusedGroup: Math.min(opts.restoreTabs.focused, getState().groups.length - 1) });
   }
   persistSession();
@@ -186,6 +188,10 @@ async function createTab(path: string, opts: { quiet?: boolean; preview?: Tab["p
     setState((s) => ({ tabs: { ...s.tabs, [path]: { id: path, name, kind: "image", dirty: false, lang: "Gambar", preview: "code" } } }));
     return true;
   }
+  if (/\.pdf$/i.test(path)) {
+    setState((s) => ({ tabs: { ...s.tabs, [path]: { id: path, name, kind: "pdf", dirty: false, lang: "PDF", preview: "code" } } }));
+    return true;
+  }
   try {
     const doc = await docs.openDocument(path);
     const lang = doc.langName;
@@ -197,8 +203,12 @@ async function createTab(path: string, opts: { quiet?: boolean; preview?: Tab["p
   } catch (e) {
     const msg = errMsg(e);
     if (!opts.quiet) {
-      if (msg.startsWith("BINARY")) toast(tl("{name} adalah berkas biner, tidak dibuka di editor.", { name }), "info");
-      else toast(msg.replace(/^(ENCODING|BINARY): /, ""), "error");
+      if (!msg.startsWith("BINARY")) toast(msg.replace(/^(ENCODING|BINARY): /, ""), "error");
+    }
+    // Berkas biner: buka penampil hex baca-saja (seperti VS Code "Hex Editor").
+    if (msg.startsWith("BINARY")) {
+      setState((s) => ({ tabs: { ...s.tabs, [path]: { id: path, name, kind: "binary", dirty: false, lang: "Biner", preview: "code" } } }));
+      return true;
     }
     return false;
   }
@@ -319,7 +329,7 @@ export async function closeTab(id: string, g = getState().focusedGroup): Promise
       m.closeWebviewTab(wid);
     }
   }
-  if ((tab.kind === "text" || tab.kind === "image") && !getState().tabs[id]) {
+  if (isFileTab(tab.kind) && !getState().tabs[id]) {
     closedTabs.push(id);
     if (closedTabs.length > 30) closedTabs.shift();
   }
@@ -369,10 +379,32 @@ export function moveTab(id: string, from: number, to: number, beforeId?: string 
 }
 
 export async function closeOtherTabs(keep: string, g = getState().focusedGroup) {
-  for (const id of [...(getState().groups[g]?.tabs ?? [])]) if (id !== keep && !(await closeTab(id, g))) return;
+  for (const id of [...(getState().groups[g]?.tabs ?? [])]) if (id !== keep && !getState().tabs[id]?.pinned && !(await closeTab(id, g))) return;
 }
 
-/** Tutup semua tab; tanya sekali untuk semua editan yang belum disimpan. */
+/** Sematkan / lepas tab: tab tersemat dipindah ke kiri (urutan relatif tetap). */
+export function togglePinTab(id: string) {
+  setState((s) => {
+    const t = s.tabs[id];
+    if (!t) return {};
+    const tabs = { ...s.tabs, [id]: { ...t, pinned: !t.pinned } };
+    const order = (list: string[]) => [...list.filter((x) => tabs[x]?.pinned), ...list.filter((x) => !tabs[x]?.pinned)];
+    return { tabs, groups: s.groups.map((g) => ({ ...g, tabs: order(g.tabs) })) };
+  });
+  persistSession();
+}
+
+/** Tab yang ditutup "Tutup semua": tab tersemat dilewati kecuali `includePinned` (tutup folder/keluar). */
+export async function closeUnpinnedTabs(): Promise<boolean> {
+  const s = getState();
+  if (!Object.values(s.tabs).some((t) => t.pinned)) return closeAllTabs();
+  for (let g = s.groups.length - 1; g >= 0; g--) {
+    for (const id of [...(getState().groups[g]?.tabs ?? [])]) if (!getState().tabs[id]?.pinned && !(await closeTab(id, g))) return false;
+  }
+  return true;
+}
+
+/** Tutup semua tab (termasuk yang tersemat); tanya sekali untuk semua editan yang belum disimpan. */
 export async function closeAllTabs(): Promise<boolean> {
   const dirty = Object.values(getState().tabs).filter((t) => t.dirty);
   if (dirty.length) {

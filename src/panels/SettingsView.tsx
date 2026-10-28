@@ -293,6 +293,21 @@ export default function SettingsView() {
         <Row label={tl("Git blame di baris aktif")} hint={tl("Penulis, waktu, dan pesan commit terakhir untuk baris kursor, seperti GitLens.")}>
           <Toggle label={tl("Git blame di baris aktif")} value={s.gitBlame} onChange={(v) => set({ gitBlame: v })} />
         </Row>
+        <Row label={tl("Garis bantu indentasi")}>
+          <Toggle label={tl("Garis bantu indentasi")} value={s.indentGuides} onChange={(v) => set({ indentGuides: v })} />
+        </Row>
+        <Row label={tl("Warnai pasangan kurung")} hint={tl("Kurung ( [ { diberi warna per kedalaman supaya pasangannya mudah dilihat.")}>
+          <Toggle label={tl("Warnai pasangan kurung")} value={s.bracketColors} onChange={(v) => set({ bracketColors: v })} />
+        </Row>
+        <Row label={tl("Kotak warna")} hint={tl("Contoh warna di depan #hex, rgb(), dan hsl(); klik untuk memilih warna.")}>
+          <Toggle label={tl("Kotak warna")} value={s.colorSwatches} onChange={(v) => set({ colorSwatches: v })} />
+        </Row>
+        <Row label="Sticky scroll" hint={tl("Baris pembuka fungsi/kelas/blok yang sedang digulir tetap terlihat di atas editor.")}>
+          <Toggle label="Sticky scroll" value={s.stickyScroll} onChange={(v) => set({ stickyScroll: v })} />
+        </Row>
+        <Row label="Emmet" hint={tl("Ketik singkatan seperti ul>li*3 lalu Tab di HTML, CSS, dan JSX.")}>
+          <Toggle label="Emmet" value={s.emmet} onChange={(v) => set({ emmet: v })} />
+        </Row>
         <Row label={tl("Bungkus baris panjang")}>
           <Toggle label={tl("Bungkus baris")} value={s.wordWrap} onChange={(v) => set({ wordWrap: v })} />
         </Row>

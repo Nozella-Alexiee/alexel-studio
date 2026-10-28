@@ -51,6 +51,7 @@ of this package.
 | bundled-typescript (typescript) | 5.9.3 | Apache-2.0 | https://github.com/microsoft/TypeScript |
 | dompurify | 3.4.17 | (MPL-2.0 OR Apache-2.0) | https://github.com/cure53/DOMPurify |
 | electron | 44.7.2 | MIT | https://github.com/electron/electron |
+| emmet | 2.4.11 | MIT | https://github.com/emmetio/emmet |
 | fflate | 0.8.3 | MIT | https://github.com/101arrowz/fflate |
 | ignore | 7.0.12 | MIT | https://github.com/kaelzhang/node-ignore |
 | lucide-react | 1.55.0 | ISC | https://github.com/lucide-icons/lucide |

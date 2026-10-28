@@ -25,6 +25,11 @@ import { api, errMsg } from "../lib/ipc";
 import { basename, isInside } from "../lib/paths";
 import { clearProblemsOf, getState, isSaver, setProblemsFrom, setState, type Problem, type Settings } from "../state/store";
 import { blameExtension, refreshBlame } from "./blame";
+import { bracketColors } from "./bracketColors";
+import { colorSwatches } from "./colorPicker";
+import { emmetExtension } from "./emmet";
+import { indentGuides } from "./indentGuides";
+import { stickyScroll } from "./stickyScroll";
 import { hunkMenu } from "./gitHunks";
 import { gitGutter, refreshGitGutter } from "./gitGutter";
 import { languageFor } from "./languages";
@@ -112,6 +117,10 @@ function settingsExt(s: Settings, saver: boolean): Extension {
   ];
   if (s.wordWrap) ext.push(EditorView.lineWrapping);
   if (s.minimap && !saver) ext.push(minimap);
+  if (s.indentGuides) ext.push(indentGuides);
+  if (s.bracketColors) ext.push(bracketColors);
+  if (s.colorSwatches) ext.push(colorSwatches);
+  if (s.stickyScroll) ext.push(stickyScroll);
   return ext;
 }
 
@@ -148,6 +157,7 @@ function baseExtensions(doc: Doc, group: number): Extension {
     highlightSelectionMatches(),
     keymap.of([...closeBracketsKeymap, ...defaultKeymap, ...searchKeymap, ...historyKeymap, ...foldKeymap, ...completionKeymap, ...lintKeymap, indentWithTab]),
     nozelEditorTheme,
+    emmetExtension(doc.path),
     snippetExtension(doc.langId),
     lintGutter(),
     hostFeatures(doc),

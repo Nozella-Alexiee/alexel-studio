@@ -85,6 +85,16 @@ export interface Settings {
   extSettings: Record<string, unknown>;
   /** Tampilkan penulis & commit terakhir di akhir baris kursor (git blame). */
   gitBlame: boolean;
+  /** Garis bantu indentasi di editor. */
+  indentGuides: boolean;
+  /** Warnai pasangan kurung per kedalaman. */
+  bracketColors: boolean;
+  /** Kotak warna + pemilih warna di depan literal warna. */
+  colorSwatches: boolean;
+  /** Singkatan Emmet + Tab di HTML/CSS/JSX. */
+  emmet: boolean;
+  /** Baris pembuka blok tetap terlihat di atas saat menggulir. */
+  stickyScroll: boolean;
 }
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -126,6 +136,11 @@ export const DEFAULT_SETTINGS: Settings = {
   ideIntegration: true,
   extSettings: {},
   gitBlame: false,
+  indentGuides: true,
+  bracketColors: true,
+  colorSwatches: true,
+  emmet: true,
+  stickyScroll: true,
 };
 
 export interface Layout {
@@ -151,7 +166,9 @@ export const DEFAULT_LAYOUTS: Record<DesignId, Layout> = {
   kawanan: { sidebar: true, sidebarW: 240, sideView: "files", panel: false, panelH: 190, panelTab: "terminal", right: true, rightW: 340, rightView: "claude" },
 };
 
-export type TabKind = "text" | "image" | "settings" | "dashboard" | "welcome" | "extension" | "webview";
+export type TabKind = "text" | "image" | "pdf" | "binary" | "settings" | "dashboard" | "welcome" | "extension" | "webview";
+/** Tab yang mewakili berkas di disk (bukan halaman khusus). */
+export const isFileTab = (k: TabKind) => k === "text" || k === "image" || k === "pdf" || k === "binary";
 
 export interface Tab {
   /** Path absolut, atau id khusus "nozel:settings". */
@@ -165,6 +182,8 @@ export interface Tab {
   conflict?: boolean;
   /** Berkas dihapus dari luar. */
   missing?: boolean;
+  /** Tab disematkan: selalu di kiri, tidak ikut "tutup tab lain/semua tab". */
+  pinned?: boolean;
 }
 
 export interface Group {
@@ -330,6 +349,8 @@ interface State {
 
   terminals: TermSession[];
   activeTerminal: string | null;
+  /** Terminal kedua yang tampil berdampingan (belah terminal); null = satu terminal. */
+  terminalSplit: string | null;
 
   chat: ChatMessage[];
   /** Kunci proses percakapan yang sedang menjawab (null = diam). */
@@ -397,6 +418,7 @@ export const useStore = create<State>(() => ({
 
   terminals: [],
   activeTerminal: null,
+  terminalSplit: null,
 
   chat: [],
   chatRunning: null,

@@ -344,3 +344,15 @@ export function writeToKey(key: string, text: string) {
   const rt = runtimes.get(key);
   if (rt?.ptyId != null) void api.ptyWrite(rt.ptyId, text);
 }
+
+/** Belah terminal: shell baru tampil di kanan terminal aktif; dipanggil lagi = gabung. */
+export async function toggleSplitTerminal() {
+  const s = getState();
+  if (s.terminalSplit && s.terminals.some((t) => t.key === s.terminalSplit)) {
+    setState({ terminalSplit: null });
+    return;
+  }
+  const left = s.activeTerminal ?? s.terminals[s.terminals.length - 1]?.key ?? (await newTerminal({ kind: "shell", focus: false }));
+  const right = await newTerminal({ kind: "shell" });
+  setState({ activeTerminal: left, terminalSplit: right });
+}

@@ -38,6 +38,7 @@ export function buildCommands(ctx: Ctx, hooks: { confirmClose: (win: BrowserWind
     list_dir: (a) => F.listDir(a.dirPath),
     read_file_text: (a) => F.readText(a.path),
     read_file_image: (a) => F.readImage(a.path),
+    read_file_head: (a) => F.readHead(String(a.path ?? ""), Number(a.max) || undefined),
     write_file_text: (a) => F.writeText(ctx, a.path, a.content),
     write_file_base64: (a) => F.writeAtomic(a.path, Buffer.from(a.data, "base64")),
     file_mtime: (a) => F.mtimeMs(a.path),

@@ -99,6 +99,21 @@ export async function readImage(p: string) {
   return { data_url: `data:${MIME[ext] ?? "application/octet-stream"};base64,${b64}`, size_bytes: st.size, format: ext };
 }
 
+/** Awal berkas (maks `max` byte) sebagai base64, untuk penampil hex berkas biner. */
+export async function readHead(p: string, max = 1024 * 1024) {
+  const st = await fsp.stat(p).catch(() => null);
+  if (!st || !st.isFile()) throw new Error("Berkas tidak ditemukan.");
+  const n = Math.min(st.size, Math.max(0, Math.min(max, 4 * 1024 * 1024)));
+  const fh = await fsp.open(p, "r");
+  try {
+    const buf = Buffer.alloc(n);
+    await fh.read(buf, 0, n, 0);
+    return { data: buf.toString("base64"), size: st.size };
+  } finally {
+    await fh.close();
+  }
+}
+
 /** Tulis atomik: berkas sementara di folder yang sama lalu rename. Izin & target symlink dipertahankan. */
 export async function writeAtomic(p: string, data: string | Buffer) {
   let target = p;

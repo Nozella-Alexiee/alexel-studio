@@ -16,7 +16,7 @@ import { relative } from "../lib/paths";
 import { PanelContent, PanelTabs } from "../panels/BottomPanel";
 import { Outline } from "../panels/OutlinePanel";
 import { FileTree } from "../panels/Explorer";
-import { activeTab, setLayout, useStore } from "../state/store";
+import { activeTab, isFileTab, setLayout, useStore } from "../state/store";
 import { EditorGroups, RightContent, SideContent, SideResizer, StatusBar, openProjectMenu, useFitLayout } from "./common";
 import { prettyKeys } from "../lib/keys";
 import { tl } from "../i18n";
@@ -74,7 +74,7 @@ export default function ZenShell() {
   const git = useStore((s) => s.git);
   const split = useStore((s) => s.groups.length > 1);
   const penguin = usePenguinVariant();
-  const rel = tab?.kind === "text" || tab?.kind === "image" ? relative(root ?? "", tab.id) : tab?.name;
+  const rel = tab && isFileTab(tab.kind) ? relative(root ?? "", tab.id) : tab?.name;
 
   return (
     <div className="shell shell-zen">

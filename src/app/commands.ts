@@ -97,7 +97,8 @@ export const COMMANDS: Command[] = [
   { id: "save", label: tl("Simpan"), group: tl("Berkas"), keys: "Mod+S", run: A.saveActive, when: hasText },
   { id: "saveAll", label: tl("Simpan semua"), group: tl("Berkas"), keys: "Mod+Alt+S", run: A.saveAll },
   { id: "closeTab", label: tl("Tutup tab"), group: tl("Berkas"), keys: "Mod+W", run: () => void A.closeTab(getState().groups[getState().focusedGroup]?.active ?? ""), when: hasTab },
-  { id: "closeAll", label: tl("Tutup semua tab"), group: tl("Berkas"), run: () => void A.closeAllTabs() },
+  { id: "closeAll", label: tl("Tutup semua tab"), group: tl("Berkas"), run: () => void A.closeUnpinnedTabs() },
+  { id: "pinTab", label: tl("Sematkan / lepas tab"), group: tl("Berkas"), run: () => { const id = activeTab()?.id; if (id) A.togglePinTab(id); }, when: () => !!activeTab() },
   { id: "revealFile", label: tl("Tampilkan berkas aktif di Explorer"), group: tl("Berkas"), run: () => A.revealInTree(activeTab()!.id), when: hasText },
   { id: "nextTab", label: tl("Tab berikutnya"), group: "Editor", keys: "Ctrl+Tab", run: () => A.cycleTab(1) },
   { id: "prevTab", label: tl("Tab sebelumnya"), group: "Editor", keys: "Ctrl+Shift+Tab", run: () => A.cycleTab(-1) },
@@ -122,6 +123,7 @@ export const COMMANDS: Command[] = [
   { id: "iconThemeOff", label: tl("Lepas tema ikon berkas"), group: tl("Desain"), run: () => A.updateSettings({ iconTheme: null }), when: () => !!getState().settings.iconTheme },
   { id: "panel", label: tl("Tampilkan/sembunyikan panel bawah"), group: tl("Tampilan"), keys: "Mod+J", run: () => A.togglePanel() },
   { id: "terminal", label: "Terminal", group: "Terminal", keys: "Ctrl+`", run: toggleTerminal },
+  { id: "splitTerminal", label: tl("Belah / gabung terminal"), group: "Terminal", keys: "Mod+Shift+5", run: () => void import("../terminal/terminals").then((T) => T.toggleSplitTerminal()) },
   { id: "newTerminal", label: tl("Terminal baru"), group: "Terminal", keys: "Ctrl+Shift+`", run: openShell },
   { id: "problems", label: tl("Masalah (error & peringatan)"), group: tl("Tampilan"), keys: "Mod+Shift+M", run: () => A.togglePanel("problems") },
   { id: "output", label: "Output", group: tl("Tampilan"), keys: "Mod+Shift+U", run: () => A.togglePanel("output") },
@@ -245,7 +247,7 @@ export function recordCombo(e: KeyboardEvent): string | null {
  * Di Windows/Linux Mod = Ctrl, jadi Ctrl+R (cari riwayat), Ctrl+L (bersihkan), Ctrl+B dan Ctrl+J milik readline/shell
  * dan tidak boleh dicuri; di macOS Mod = ⌘ sehingga aman.
  */
-const TERMINAL_SAFE = new Set(["palette", ...(isMac ? ["run", "runNoDebug", "askClaude2", "sidebar", "panel"] : []), "stopRun", "runTarget", "debugRestart", "debugStart", "debugStop", "debugStepOver", "debugStepInto", "debugStepOut", "debugPause", "askClaude", "quickOpen", "palette2", "terminal", "newTerminal", "settings", "cycleDesign", "explorer", "search", "git", "extensions"]);
+const TERMINAL_SAFE = new Set(["palette", "splitTerminal", ...(isMac ? ["run", "runNoDebug", "askClaude2", "sidebar", "panel"] : []), "stopRun", "runTarget", "debugRestart", "debugStart", "debugStop", "debugStepOver", "debugStepInto", "debugStepOut", "debugPause", "askClaude", "quickOpen", "palette2", "terminal", "newTerminal", "settings", "cycleDesign", "explorer", "search", "git", "extensions"]);
 
 /** Global key handler (fase capture, supaya didahulukan dari CodeMirror). */
 export function handleGlobalKey(e: KeyboardEvent) {
