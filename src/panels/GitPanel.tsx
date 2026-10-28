@@ -1,6 +1,9 @@
-import { ArrowDown, ArrowUp, Check, GitBranch, Minus, Plus, RefreshCw, Sparkles, Undo2, ChevronDown } from "lucide-react";
+import { Archive, ArrowDown, ArrowUp, Check, GitBranch, Minus, MoreHorizontal, Plus, RefreshCw, Sparkles, Undo2, ChevronDown } from "lucide-react";
 import React, { useEffect, useState } from "react";
 import * as A from "../app/actions";
+import * as G from "../app/gitOps";
+import { layoutGraph, type GraphRow } from "../lib/gitGraph";
+import { openCommit } from "./CommitView";
 import { refreshHeads } from "../editor/documents";
 import { FileIcon } from "../components/FileIcon";
 import { openMenu } from "../components/Overlays";
@@ -8,8 +11,8 @@ import { Empty, IconButton, Spinner } from "../components/ui";
 import { api, errMsg } from "../lib/ipc";
 import { join } from "../lib/paths";
 import { timeAgo } from "../lib/format";
-import type { Commit, GitFile } from "../lib/types";
-import { ask, confirmDialog, getState, promptDialog, toast, useStore } from "../state/store";
+import type { Commit, GitFile, GitOp, StashEntry } from "../lib/types";
+import { ask, confirmDialog, getState, toast, useStore } from "../state/store";
 import { prettyKeys, modKey } from "../lib/keys";
 import { tl } from "../i18n";
 
@@ -30,6 +33,8 @@ export default function GitPanel() {
   const [busy, setBusy] = useState<string | null>(null);
   const [log, setLog] = useState<Commit[]>([]);
   const [writing, setWriting] = useState<string | null>(null);
+  const [stashes, setStashes] = useState<StashEntry[]>([]);
+  const [op, setOp] = useState<{ op: GitOp | null; conflicts: number }>({ op: null, conflicts: 0 });
 
   /** ✨ Tulis pesan commit dengan agen AI dari diff yang di-stage (atau semua perubahan). */
   const writeMessage = async () => {
@@ -62,11 +67,13 @@ export default function GitPanel() {
   useEffect(() => {
     if (!git?.is_repo || !repo) return setLog([]);
     let alive = true;
-    api.gitLog(repo, 30).then((l) => alive && setLog(l)).catch(() => {});
+    api.gitLog(repo, 80, true).then((l) => alive && setLog(l)).catch(() => {});
+    api.gitStashList(repo).then((l) => alive && setStashes(l)).catch(() => alive && setStashes([]));
+    api.gitOpState(repo).then((o) => alive && setOp(o)).catch(() => {});
     return () => {
       alive = false;
     };
-  }, [git?.is_repo, repo, git?.ahead, git?.branch, git?.files.length]);
+  }, [git?.is_repo, repo, git?.ahead, git?.behind, git?.branch, git?.files]);
 
   const run = async (label: string, fn: () => Promise<unknown>, okMsg?: string) => {
     setBusy(label);
@@ -136,15 +143,26 @@ export default function GitPanel() {
     openMenu(ev, [
       ...b.local.map((name) => ({ label: name === b.current ? `✓ ${name}` : name, disabled: name === b.current, run: () => void run("checkout", () => api.gitCheckout(repo, name), tl("Pindah ke {name}", { name })).then(refreshHeads) })),
       { separator: true, label: "" },
-      {
-        label: tl("Branch baru…"),
-        run: async () => {
-          const n = await promptDialog(tl("Branch baru"), { placeholder: tl("fitur/nama"), validate: (v) => (/^[\w./-]+$/.test(v) && !v.startsWith("-") ? null : tl("Nama branch tidak valid.")) });
-          if (n) await run("checkout", () => api.gitCheckout(repo, n, true), `Branch ${n} dibuat`);
-        },
-      },
+      { label: tl("Branch baru…"), run: () => void G.createBranch() },
+      { label: tl("Ganti nama branch ini…"), run: () => void G.renameBranch() },
+      { label: tl("Hapus branch…"), danger: true, run: () => void G.deleteBranch() },
     ]);
   };
+
+  const moreMenu = (e: React.MouseEvent) =>
+    openMenu(e, [
+      { label: "Fetch", run: () => void G.fetchAll() },
+      { label: tl("Merge branch ke {branch}…", { branch: git.branch || "HEAD" }), run: () => void G.mergeBranch() },
+      { label: tl("Rebase ke…"), run: () => void G.rebaseBranch() },
+      { separator: true, label: "" },
+      { label: tl("Stash perubahan…"), disabled: !git.files.length, run: () => void G.stashChanges() },
+      { label: tl("Terapkan stash terakhir (pop)"), disabled: !stashes.length, run: () => void G.popLatestStash() },
+      { separator: true, label: "" },
+      { label: tl("Buat tag…"), run: () => void G.createTag() },
+      { label: tl("Hapus tag…"), run: () => void G.deleteTag() },
+      { separator: true, label: "" },
+      { label: tl("Commit ulang (amend) dengan pesan ini"), run: () => void run("commit", () => api.gitCommit(repo, msg.trim(), true), tl("Commit diperbarui")).then((ok) => ok && setMsg("")) },
+    ]);
 
   const Item = ({ f, isStaged }: { f: GitFile; isStaged: boolean }) => {
     const l = letter(f, isStaged);
@@ -192,8 +210,26 @@ export default function GitPanel() {
           <IconButton label={tl("Muat ulang")} onClick={() => void A.refreshGit()}>
             {busy ? <Spinner size={12} /> : <RefreshCw size={14} />}
           </IconButton>
+          <IconButton label={tl("Aksi Git lainnya")} onClick={moreMenu}>
+            <MoreHorizontal size={14} />
+          </IconButton>
         </div>
       </div>
+
+      {op.op && (
+        <div className="git-op-banner" role="status">
+          <span>
+            {tl("{op} sedang berjalan", { op: op.op })}
+            {op.conflicts > 0 ? ` · ${tl("{n} berkas konflik", { n: op.conflicts })}` : ` · ${tl("konflik selesai, stage lalu lanjutkan")}`}
+          </span>
+          <button className="btn btn-primary btn-sm" onClick={() => void G.continueOp()} disabled={op.conflicts > 0}>
+            {tl("Lanjutkan")}
+          </button>
+          <button className="btn btn-ghost btn-sm" onClick={() => void G.abortOp()}>
+            {tl("Batalkan")}
+          </button>
+        </div>
+      )}
 
       <div className="git-commit">
         <div className="git-commit-box">
@@ -262,22 +298,102 @@ export default function GitPanel() {
         {!changes.length && !staged.length && <div className="hint pad-x">{tl("Bersih. Tidak ada perubahan.")}</div>}
       </section>
 
-      {log.length > 0 && (
+      {stashes.length > 0 && (
         <section className="git-section">
           <div className="git-section-head">
-            <span>{tl("Riwayat")}</span>
+            <span>Stash</span>
+            <span className="count-badge">{stashes.length}</span>
           </div>
-          <ol className="git-log">
-            {log.map((c, i) => (
-              <li key={c.sha} className="git-commit-row" title={`${c.sha}\n${c.author}`}>
-                <span className={`git-node ${i === 0 ? "is-head" : ""}`} aria-hidden />
-                <span className="git-subject">{c.subject}</span>
-                <span className="git-time">{timeAgo(c.time_s * 1000)}</span>
-              </li>
-            ))}
-          </ol>
+          {stashes.map((st) => (
+            <div key={st.ref} className="git-row" onContextMenu={(e) => openMenu(e, [{ label: tl("Terapkan"), run: () => void G.applyStash(st.ref, false) }, { label: tl("Terapkan & buang (pop)"), run: () => void G.applyStash(st.ref, true) }, { label: tl("Buang"), danger: true, run: () => void G.dropStash(st.ref) }])}>
+              <span className="git-file git-stash" title={st.ref}>
+                <Archive size={13} aria-hidden />
+                <span className="git-name">{st.message || st.ref}</span>
+                <span className="git-dir">{timeAgo(st.time_s * 1000)}</span>
+              </span>
+              <div className="git-row-actions">
+                <IconButton label={tl("Terapkan & buang (pop)")} onClick={() => void G.applyStash(st.ref, true)}>
+                  <ArrowUp size={13} />
+                </IconButton>
+                <IconButton label={tl("Buang")} onClick={() => void G.dropStash(st.ref)}>
+                  <Minus size={13} />
+                </IconButton>
+              </div>
+            </div>
+          ))}
         </section>
       )}
+
+      {log.length > 0 && <History log={log} />}
     </div>
+  );
+}
+
+const ROW_H = 24;
+const LANE_W = 12;
+const LANE_COLORS = ["var(--accent)", "var(--success)", "var(--warning)", "var(--info, var(--accent))", "var(--danger)"];
+const laneX = (i: number) => LANE_W / 2 + i * LANE_W + 2;
+const laneColor = (i: number) => LANE_COLORS[i % LANE_COLORS.length];
+
+/** Satu baris graph: garis lewat, garis masuk ke titik, garis keluar ke parent, lalu titik commit. */
+function GraphCell({ row, width, head }: { row: GraphRow; width: number; head: boolean }) {
+  const mid = ROW_H / 2;
+  const x = laneX(row.lane);
+  return (
+    <svg className="git-graph-cell" width={laneX(width - 1) + LANE_W / 2 + 2} height={ROW_H} aria-hidden>
+      {row.through.map((i) => (
+        <line key={`t${i}`} x1={laneX(i)} y1={0} x2={laneX(i)} y2={ROW_H} stroke={laneColor(i)} />
+      ))}
+      {row.into.map((i) => (
+        <line key={`i${i}`} x1={laneX(i)} y1={0} x2={x} y2={mid} stroke={laneColor(i)} />
+      ))}
+      {row.out.map((i) => (
+        <line key={`o${i}`} x1={x} y1={mid} x2={laneX(i)} y2={ROW_H} stroke={laneColor(i)} />
+      ))}
+      <circle cx={x} cy={mid} r={head ? 4.5 : 3.5} fill={head ? laneColor(row.lane) : "var(--surface-1)"} stroke={laneColor(row.lane)} strokeWidth={2} />
+    </svg>
+  );
+}
+
+function History({ log }: { log: Commit[] }) {
+  const rows = React.useMemo(() => layoutGraph(log), [log]);
+  const width = Math.min(8, Math.max(1, ...rows.map((r) => r.width)));
+  return (
+    <section className="git-section">
+      <div className="git-section-head">
+        <span>{tl("Riwayat")}</span>
+      </div>
+      <ol className="git-log git-graph">
+        {log.map((c, i) => {
+          const refs = c.refs.split(", ").filter(Boolean).map((r) => r.replace(/^HEAD -> /, "").replace(/^tag: /, "🏷 "));
+          return (
+            <li key={c.sha}>
+              <button
+                className="git-commit-row"
+                title={`${c.short} · ${c.author}\n${c.subject}`}
+                onClick={() => openCommit(c.sha, c.subject)}
+                onContextMenu={(e) =>
+                  openMenu(e, [
+                    { label: tl("Lihat commit"), run: () => openCommit(c.sha, c.subject) },
+                    { label: tl("Cherry-pick"), run: () => void G.cherryPick(c.sha, c.subject) },
+                    { label: tl("Revert"), run: () => void G.revertCommit(c.sha, c.subject) },
+                    { label: tl("Branch dari sini…"), run: () => void G.createBranch(c.sha) },
+                    { label: tl("Tag di sini…"), run: () => void G.createTag(c.sha) },
+                    { label: tl("Salin sha"), run: () => void navigator.clipboard.writeText(c.sha) },
+                  ])
+                }
+              >
+                <GraphCell row={rows[i]} width={width} head={/HEAD/.test(c.refs) || (i === 0 && !log.some((x) => /HEAD/.test(x.refs)))} />
+                {refs.map((r) => (
+                  <span key={r} className="git-ref">{r}</span>
+                ))}
+                <span className="git-subject">{c.subject}</span>
+                <span className="git-time">{timeAgo(c.time_s * 1000)}</span>
+              </button>
+            </li>
+          );
+        })}
+      </ol>
+    </section>
   );
 }

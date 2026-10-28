@@ -11,7 +11,7 @@ import { tl } from "../i18n";
  * Kunci Tab di dalam dialog dan kembalikan fokus saat ditutup. Dipasang SEKALI per dialog terbuka
  * (bukan tiap render), supaya fokus tidak dilempar balik ke editor saat pengguna mengetik.
  */
-function useFocusTrap(ref: React.RefObject<HTMLElement | null>, onEscape: () => void, active: unknown) {
+export function useFocusTrap(ref: React.RefObject<HTMLElement | null>, onEscape: () => void, active: unknown) {
   const esc = useRef(onEscape);
   esc.current = onEscape;
   useEffect(() => {

@@ -84,11 +84,29 @@ export function refreshGitGutter(view: EditorView) {
   p?.schedule(10);
 }
 
-export function gitGutter(getHead: () => string | null | undefined): Extension {
+/** Klik penanda: (view, nomor baris 1-based, event) → true bila ditangani. */
+export type HunkClick = (view: EditorView, line: number, ev: MouseEvent) => boolean;
+
+export function gitGutter(getHead: () => string | null | undefined, onClick?: HunkClick): Extension {
   return [
     headSource.of(getHead),
     gitField,
     updater,
-    gutter({ class: "cm-git-gutter", markers: (v) => v.state.field(gitField).set }),
+    gutter({
+      class: "cm-git-gutter",
+      markers: (v) => v.state.field(gitField).set,
+      domEventHandlers: onClick
+        ? {
+            mousedown: (view, block, ev) => {
+              const line = view.state.doc.lineAt(block.from).number;
+              let marked = false;
+              view.state.field(gitField).set.between(block.from, block.from, () => {
+                marked = true;
+              });
+              return marked && onClick(view, line, ev as MouseEvent);
+            },
+          }
+        : {},
+    }),
   ];
 }

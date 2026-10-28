@@ -161,6 +161,17 @@ export const COMMANDS: Command[] = [
   ...DESIGNS.map((d) => ({ id: `design:${d.id}`, label: `Desain: ${d.name}`, group: tl("Desain"), run: () => A.setDesign(d.id) })),
   { id: "resetLayout", label: tl("Kembalikan tata letak desain ini"), group: tl("Desain"), run: A.resetLayout },
   { id: "power", label: tl("Mode hemat daya: ganti (otomatis / nyala / mati)"), group: tl("Umum"), run: () => { const m = getState().settings.powerMode; A.updateSettings({ powerMode: m === "auto" ? "on" : m === "on" ? "off" : "auto" }); } },
+  { id: "gitFetch", label: tl("Git: fetch semua remote"), group: "Git", run: () => void import("./gitOps").then((G) => G.fetchAll()), when: () => !!getState().git?.is_repo },
+  { id: "gitStash", label: tl("Git: stash perubahan…"), group: "Git", run: () => void import("./gitOps").then((G) => G.stashChanges()), when: () => !!getState().git?.files.length },
+  { id: "gitStashPop", label: tl("Git: terapkan stash terakhir (pop)"), group: "Git", run: () => void import("./gitOps").then((G) => G.popLatestStash()), when: () => !!getState().git?.is_repo },
+  { id: "gitMerge", label: tl("Git: merge branch…"), group: "Git", run: () => void import("./gitOps").then((G) => G.mergeBranch()), when: () => !!getState().git?.is_repo },
+  { id: "gitRebase", label: tl("Git: rebase ke…"), group: "Git", run: () => void import("./gitOps").then((G) => G.rebaseBranch()), when: () => !!getState().git?.is_repo },
+  { id: "gitAbort", label: tl("Git: batalkan merge/rebase/cherry-pick"), group: "Git", run: () => void import("./gitOps").then((G) => G.abortOp()), when: () => !!getState().git?.is_repo },
+  { id: "gitContinue", label: tl("Git: lanjutkan merge/rebase/cherry-pick"), group: "Git", run: () => void import("./gitOps").then((G) => G.continueOp()), when: () => !!getState().git?.is_repo },
+  { id: "gitBranchNew", label: tl("Git: branch baru…"), group: "Git", run: () => void import("./gitOps").then((G) => G.createBranch()), when: () => !!getState().git?.is_repo },
+  { id: "gitBranchDelete", label: tl("Git: hapus branch…"), group: "Git", run: () => void import("./gitOps").then((G) => G.deleteBranch()), when: () => !!getState().git?.is_repo },
+  { id: "gitTag", label: tl("Git: buat tag…"), group: "Git", run: () => void import("./gitOps").then((G) => G.createTag()), when: () => !!getState().git?.is_repo },
+  { id: "gitBlame", label: tl("Git: blame baris aktif (nyala/mati)"), group: "Git", run: () => A.updateSettings({ gitBlame: !getState().settings.gitBlame }) },
   { id: "refresh", label: tl("Muat ulang tree & status git"), group: tl("Umum"), run: () => { void A.refreshTree(); void A.refreshGit(); } },
 ];
 

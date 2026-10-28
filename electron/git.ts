@@ -150,10 +150,10 @@ export async function gitPull(dir: string): Promise<string> {
   return (r.stdout + r.stderr).trim();
 }
 
-export async function gitLog(dir: string, limit: number) {
+export async function gitLog(dir: string, limit: number, all = false) {
   let out: string;
   try {
-    out = await git(dir, ["log", `-n${Math.min(500, Math.max(1, limit))}`, "--format=%H%x1f%h%x1f%s%x1f%an%x1f%at%x1f%D%x1e"], "git log");
+    out = await git(dir, ["log", `-n${Math.min(500, Math.max(1, limit))}`, ...(all ? ["--all", "--topo-order"] : []), "--format=%H%x1f%h%x1f%s%x1f%an%x1f%at%x1f%D%x1f%P%x1e"], "git log");
   } catch (e) {
     if (/does not have any commits|bad default revision/.test((e as Error).message)) return [];
     throw e;
@@ -162,7 +162,7 @@ export async function gitLog(dir: string, limit: number) {
     .split("\x1e")
     .map((rec) => rec.replace(/^\n/, "").split("\x1f"))
     .filter((f) => f.length >= 6)
-    .map((f) => ({ sha: f[0], short: f[1], subject: f[2], author: f[3], time_s: Number(f[4]) || 0, refs: f[5].trim() }));
+    .map((f) => ({ sha: f[0], short: f[1], subject: f[2], author: f[3], time_s: Number(f[4]) || 0, refs: f[5].trim(), parents: (f[6] ?? "").trim().split(" ").filter(Boolean) }));
 }
 
 export async function gitBranches(dir: string) {
@@ -178,9 +178,10 @@ export async function gitBranches(dir: string) {
   return { current, local };
 }
 
-export async function gitCheckout(dir: string, branch: string, create: boolean) {
-  if (!branch.trim() || branch.startsWith("-") || branch.includes("..")) throw new Error("Nama branch tidak valid.");
-  await git(dir, create ? ["checkout", "-q", "-b", branch] : ["checkout", "-q", branch], "Checkout");
+export async function gitCheckout(dir: string, branch: string, create: boolean, start?: string | null) {
+  if (!validRef(branch)) throw new Error("Nama branch tidak valid.");
+  if (start && !validSha(start) && !validRef(start)) throw new Error("Titik awal branch tidak valid.");
+  await git(dir, create ? ["checkout", "-q", "-b", branch, ...(start ? [start] : [])] : ["checkout", "-q", branch], "Checkout");
 }
 
 /**
@@ -271,4 +272,227 @@ export async function gitAutoCommitFile(dir: string, file: string, push: boolean
   const r = await runCapture("git", ["push"], { cwd: dir, env: gitEnv(), timeoutMs: NETWORK });
   if (!r.success) throw new Error(`Commit ${short} dibuat, tapi push gagal: ${r.stderr.trim()}`);
   return `Commit ${short} dan push berhasil`;
+}
+
+// ---------- Operasi lanjutan: stash, fetch, branch/tag, merge/rebase/cherry-pick, hunk, blame ----------
+
+/** Nama ref aman: bukan opsi, tanpa `..`, spasi, atau karakter yang ditolak git. */
+export function validRef(name: string): boolean {
+  return /^(?!-)(?!.*\.\.)(?!.*\/\/)(?!.*@\{)[^\s~^:?*[\\\x00-\x1f\x7f]+$/.test(name) && !name.endsWith(".lock") && !name.endsWith("/") && !name.endsWith(".");
+}
+const validSha = (s: string) => /^[0-9a-f]{4,64}$/i.test(s);
+const validStash = (s: string) => /^stash@\{\d{1,4}\}$/.test(s);
+/** Tanpa editor interaktif: merge/rebase/cherry-pick --continue memakai pesan bawaan. */
+const noEditor = () => ({ ...gitEnv(), GIT_EDITOR: "true", GIT_SEQUENCE_EDITOR: "true" });
+
+export interface StashEntry {
+  ref: string;
+  message: string;
+  time_s: number;
+}
+
+export async function gitStashList(dir: string): Promise<StashEntry[]> {
+  const out = await git(dir, ["stash", "list", "--format=%gd%x1f%gs%x1f%at"], "stash list");
+  return out
+    .split("\n")
+    .filter(Boolean)
+    .map((l) => l.split("\x1f"))
+    .map((f) => ({ ref: f[0], message: f[1] ?? "", time_s: Number(f[2]) || 0 }));
+}
+
+export async function gitStashPush(dir: string, message: string, untracked: boolean) {
+  const args = ["stash", "push"];
+  if (untracked) args.push("--include-untracked");
+  if (message.trim()) args.push("-m", message.trim());
+  const out = await git(dir, args, "Stash");
+  if (/No local changes to save/i.test(out)) throw new Error("Tidak ada perubahan untuk di-stash.");
+}
+
+/** Terapkan stash; `pop` sekaligus membuangnya bila berhasil. Konflik dilaporkan, bukan dilempar. */
+export async function gitStashApply(dir: string, ref: string, pop: boolean): Promise<OpResult> {
+  if (!validStash(ref)) throw new Error("Stash tidak valid.");
+  return opRun(dir, ["stash", pop ? "pop" : "apply", ref], pop ? "Stash pop" : "Stash apply");
+}
+
+export async function gitStashDrop(dir: string, ref: string) {
+  if (!validStash(ref)) throw new Error("Stash tidak valid.");
+  await git(dir, ["stash", "drop", ref], "Stash drop");
+}
+
+export async function gitFetch(dir: string): Promise<string> {
+  const r = await runCapture("git", ["fetch", "--all", "--prune"], { cwd: dir, env: gitEnv(), timeoutMs: NETWORK });
+  orErr(r, "Fetch");
+  return (r.stdout + r.stderr).trim();
+}
+
+export async function gitBranchDelete(dir: string, name: string, force: boolean) {
+  if (!validRef(name)) throw new Error("Nama branch tidak valid.");
+  await git(dir, ["branch", force ? "-D" : "-d", "--", name], "Hapus branch");
+}
+
+export async function gitBranchRename(dir: string, from: string, to: string) {
+  if (!validRef(from) || !validRef(to)) throw new Error("Nama branch tidak valid.");
+  await git(dir, ["branch", "-m", from, to], "Ganti nama branch");
+}
+
+export async function gitRemoteBranches(dir: string): Promise<string[]> {
+  const out = await git(dir, ["branch", "-r", "--format=%(refname:short)"], "git branch -r");
+  return out.split("\n").map((l) => l.trim()).filter((l) => l && !l.endsWith("/HEAD"));
+}
+
+export interface TagEntry {
+  name: string;
+  sha: string;
+  subject: string;
+}
+
+export async function gitTags(dir: string): Promise<TagEntry[]> {
+  const out = await git(dir, ["tag", "--list", "--sort=-creatordate", "--format=%(refname:short)%1f%(objectname:short)%1f%(subject)"], "git tag");
+  return out
+    .split("\n")
+    .filter(Boolean)
+    .map((l) => l.split("\x1f"))
+    .map((f) => ({ name: f[0], sha: f[1] ?? "", subject: f[2] ?? "" }));
+}
+
+export async function gitTagCreate(dir: string, name: string, target: string | null, message: string) {
+  if (!validRef(name)) throw new Error("Nama tag tidak valid.");
+  if (target && !validSha(target) && !validRef(target)) throw new Error("Target tag tidak valid.");
+  const args = ["tag"];
+  if (message.trim()) args.push("-a", "-m", message.trim());
+  args.push("--", name);
+  if (target) args.push(target);
+  await git(dir, args, "Buat tag");
+}
+
+export async function gitTagDelete(dir: string, name: string) {
+  if (!validRef(name)) throw new Error("Nama tag tidak valid.");
+  await git(dir, ["tag", "-d", name], "Hapus tag");
+}
+
+export type GitOp = "merge" | "rebase" | "cherry-pick" | "revert";
+
+export interface OpResult {
+  ok: boolean;
+  /** Ada berkas konflik yang harus diselesaikan dulu. */
+  conflicts: boolean;
+  output: string;
+}
+
+async function conflictCount(dir: string): Promise<number> {
+  return (await git(dir, ["diff", "--name-only", "--diff-filter=U"], "diff")).split("\n").filter(Boolean).length;
+}
+
+/** Jalankan operasi yang bisa berhenti di konflik: konflik bukan galat, melainkan status. */
+async function opRun(dir: string, args: string[], what: string, timeoutMs = 60_000): Promise<OpResult> {
+  const r = await runCapture("git", args, { cwd: dir, env: noEditor(), timeoutMs });
+  const output = (r.stdout + r.stderr).trim();
+  if (r.timedOut) throw new Error(`${what} terlalu lama dan dihentikan.`);
+  if (r.success) return { ok: true, conflicts: false, output };
+  const conflicts = (await conflictCount(dir)) > 0 || /CONFLICT/.test(output);
+  if (conflicts) return { ok: false, conflicts: true, output };
+  throw new Error(`${what} gagal: ${output}`);
+}
+
+/** Operasi yang sedang berjalan (berhenti karena konflik) dan jumlah berkas konflik. */
+export async function gitOpState(dir: string): Promise<{ op: GitOp | null; conflicts: number }> {
+  const gitDir = path.resolve(dir, (await git(dir, ["rev-parse", "--git-dir"], "rev-parse")).trim());
+  const has = (f: string) => fs.existsSync(path.join(gitDir, f));
+  const op: GitOp | null = has("rebase-merge") || has("rebase-apply") ? "rebase" : has("MERGE_HEAD") ? "merge" : has("CHERRY_PICK_HEAD") ? "cherry-pick" : has("REVERT_HEAD") ? "revert" : null;
+  return { op, conflicts: op ? await conflictCount(dir) : 0 };
+}
+
+export async function gitMerge(dir: string, branch: string): Promise<OpResult> {
+  if (!validRef(branch)) throw new Error("Nama branch tidak valid.");
+  return opRun(dir, ["merge", "--no-edit", branch], "Merge");
+}
+
+export async function gitRebase(dir: string, onto: string): Promise<OpResult> {
+  if (!validRef(onto)) throw new Error("Nama branch tidak valid.");
+  return opRun(dir, ["rebase", onto], "Rebase", 120_000);
+}
+
+export async function gitCherryPick(dir: string, sha: string): Promise<OpResult> {
+  if (!validSha(sha)) throw new Error("Commit tidak valid.");
+  return opRun(dir, ["cherry-pick", sha], "Cherry-pick");
+}
+
+export async function gitRevertCommit(dir: string, sha: string): Promise<OpResult> {
+  if (!validSha(sha)) throw new Error("Commit tidak valid.");
+  return opRun(dir, ["revert", "--no-edit", sha], "Revert");
+}
+
+/** Lanjutkan operasi setelah konflik diselesaikan (berkas sudah di-stage). */
+export async function gitOpContinue(dir: string): Promise<OpResult> {
+  const { op, conflicts } = await gitOpState(dir);
+  if (!op) throw new Error("Tidak ada merge/rebase yang sedang berjalan.");
+  if (conflicts) return { ok: false, conflicts: true, output: `${conflicts} berkas masih konflik.` };
+  if (op === "merge") return opRun(dir, ["commit", "--no-edit"], "Merge");
+  return opRun(dir, [op, "--continue"], op);
+}
+
+export async function gitOpAbort(dir: string) {
+  const { op } = await gitOpState(dir);
+  if (!op) return;
+  await git(dir, [op, "--abort"], `${op} --abort`);
+}
+
+/**
+ * Terapkan patch (mis. satu bagian perubahan dari gutter) ke index (`cached`) atau ke berkas.
+ * Patch dikirim lewat stdin dan dibatasi ukurannya.
+ */
+export async function gitApplyPatch(dir: string, patch: string, cached: boolean, reverse: boolean) {
+  if (patch.length > 2_000_000) throw new Error("Patch terlalu besar.");
+  if (!patch.startsWith("diff --git ")) throw new Error("Patch tidak valid.");
+  const args = ["apply", "--unidiff-zero", "--whitespace=nowarn"];
+  if (cached) args.push("--cached");
+  if (reverse) args.push("--reverse");
+  args.push("-");
+  orErr(await runCapture("git", args, { cwd: dir, env: gitEnv(), timeoutMs: SHORT, input: patch }), "Terapkan patch");
+}
+
+export interface BlameCommit {
+  sha: string;
+  author: string;
+  time_s: number;
+  summary: string;
+}
+
+/** Blame `--porcelain` → commit unik + sha per baris (1-based di indeks 0). */
+export function parseBlame(out: string): { commits: Record<string, BlameCommit>; lines: string[] } {
+  const commits: Record<string, BlameCommit> = {};
+  const lines: string[] = [];
+  let cur: BlameCommit | null = null;
+  let curLine = 0;
+  for (const l of out.split("\n")) {
+    const head = /^([0-9a-f]{40}) \d+ (\d+)/.exec(l);
+    if (head) {
+      cur = commits[head[1]] ??= { sha: head[1], author: "", time_s: 0, summary: "" };
+      curLine = Number(head[2]);
+      continue;
+    }
+    if (!cur) continue;
+    if (l.startsWith("author ")) cur.author = l.slice(7);
+    else if (l.startsWith("author-time ")) cur.time_s = Number(l.slice(12)) || 0;
+    else if (l.startsWith("summary ")) cur.summary = l.slice(8);
+    else if (l.startsWith("\t")) lines[curLine - 1] = cur.sha;
+  }
+  return { commits, lines };
+}
+
+/** Blame berkas (isi di disk). Berkas baru / bukan repo → null. */
+export async function gitBlame(file: string): Promise<ReturnType<typeof parseBlame> | null> {
+  const dir = path.dirname(file);
+  if (!fs.existsSync(file)) return null;
+  const r = await runCapture("git", ["blame", "--porcelain", "--", path.basename(file)], { cwd: dir, env: gitEnv(), timeoutMs: 30_000 });
+  return r.success ? parseBlame(r.stdout) : null;
+}
+
+/** Isi satu commit untuk ditinjau: ringkasan + patch (dipotong). */
+export async function gitShowCommit(dir: string, sha: string): Promise<{ text: string; truncated: boolean }> {
+  if (!validSha(sha)) throw new Error("Commit tidak valid.");
+  let text = await git(dir, ["show", "--no-color", "--no-ext-diff", "--diff-merges=first-parent", "--stat=120", "--patch", "--format=commit %H%nAuthor: %an <%ae>%nDate:   %ad%n%n%w(0,4,4)%B", sha], "git show", 30_000);
+  const truncated = text.length > 400_000;
+  if (truncated) text = text.slice(0, 400_000);
+  return { text, truncated };
 }

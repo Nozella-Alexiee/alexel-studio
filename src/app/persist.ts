@@ -86,6 +86,7 @@ function sanitizeSettings(raw: Partial<Settings> | null, migrate = false): Setti
   s.claudeFast = s.claudeFast === true;
   s.claudeThinking = s.claudeThinking !== false;
   s.formatOnSave = s.formatOnSave === true;
+  s.gitBlame = s.gitBlame === true;
   if (!["auto", "id", "en"].includes(s.language)) s.language = "auto";
   if (!["claude", "codex", "gemini", "antigravity", "acp"].includes(s.agent)) s.agent = "claude";
   if (!s.agentPrefs || typeof s.agentPrefs !== "object") s.agentPrefs = {};

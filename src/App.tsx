@@ -18,6 +18,7 @@ const AuroraShell = lazy(() => import("./shells/AuroraShell"));
 const ZenShell = lazy(() => import("./shells/ZenShell"));
 const ControlShell = lazy(() => import("./shells/ControlShell"));
 const StudioShell = lazy(() => import("./shells/StudioShell"));
+const CommitViewHost = lazy(() => import("./panels/CommitView").then((m) => ({ default: m.CommitViewHost })));
 const CompareModal = lazy(() => import("./panels/compare").then((m) => ({ default: m.CompareModal })));
 const SnapshotDialog = lazy(() => import("./panels/SnapshotDialog").then((m) => ({ default: m.SnapshotDialog })));
 
@@ -205,6 +206,7 @@ export default function App() {
       <TourHost />
       <Suspense fallback={null}>
         {compare && <CompareModal />}
+        <CommitViewHost />
         {snapshot && <SnapshotDialog />}
       </Suspense>
     </>

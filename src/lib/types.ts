@@ -94,6 +94,34 @@ export interface Commit {
   author: string;
   time_s: number;
   refs: string;
+  /** Sha parent (kosong = commit pertama, >1 = merge). */
+  parents?: string[];
+}
+
+export interface StashEntry {
+  ref: string;
+  message: string;
+  time_s: number;
+}
+
+export interface TagEntry {
+  name: string;
+  sha: string;
+  subject: string;
+}
+
+export type GitOp = "merge" | "rebase" | "cherry-pick" | "revert";
+
+export interface GitOpResult {
+  ok: boolean;
+  conflicts: boolean;
+  output: string;
+}
+
+export interface BlameInfo {
+  commits: Record<string, { sha: string; author: string; time_s: number; summary: string }>;
+  /** sha per baris (indeks 0 = baris 1); sha nol = belum di-commit. */
+  lines: string[];
 }
 
 export interface Branches {

@@ -186,3 +186,47 @@ export function unifiedRows(diff: string, limit = 120): { rows: DiffRow[]; added
   }
   return { rows: rows.slice(0, limit), added, removed, more: Math.max(0, rows.length - limit) };
 }
+
+/** Satu bagian perubahan (relatif ke HEAD) yang memuat baris `line` (1-based) dokumen sekarang. */
+export interface GitHunk {
+  /** Indeks baris lama (0-based) awal perubahan. */
+  oldStart: number;
+  oldLines: string[];
+  /** Indeks baris baru (0-based) awal perubahan. */
+  newStart: number;
+  newLines: string[];
+}
+
+export function hunkAtLine(prev: string, next: string, line: number): GitHunk | null {
+  const a = splitLines(prev);
+  const b = splitLines(next);
+  let shift = 0;
+  for (const e of myers(a, b)) {
+    const oldStart = e.posNew + shift;
+    shift += e.a - e.b;
+    // Hapus murni ditandai di baris sesudahnya (di akhir berkas: baris terakhir), seperti gutter.
+    const first = e.b === 0 ? Math.min(e.posNew + 1, Math.max(b.length, 1)) : e.posNew + 1;
+    const last = e.b === 0 ? first : e.posNew + e.b;
+    if (line >= first && line <= last) {
+      return { oldStart, oldLines: a.slice(oldStart, oldStart + e.a), newStart: e.posNew, newLines: b.slice(e.posNew, e.posNew + e.b) };
+    }
+  }
+  return null;
+}
+
+/**
+ * Patch `git apply --unidiff-zero` untuk satu bagian. `rel` = path relatif terhadap akar repo (pakai /).
+ * Penanda "\\ No newline at end of file" ditambahkan bila bagian menyentuh baris terakhir tanpa newline.
+ */
+export function hunkPatch(rel: string, prev: string, next: string, h: GitHunk): string {
+  const oldTotal = splitLines(prev).length;
+  const newTotal = splitLines(next).length;
+  const a = h.oldLines.length ? `${h.oldStart + 1},${h.oldLines.length}` : `${h.oldStart},0`;
+  const b = h.newLines.length ? `${h.newStart + 1},${h.newLines.length}` : `${h.newStart},0`;
+  const out = [`diff --git a/${rel} b/${rel}`, `--- a/${rel}`, `+++ b/${rel}`, `@@ -${a} +${b} @@`];
+  for (const l of h.oldLines) out.push(`-${l}`);
+  if (h.oldLines.length && h.oldStart + h.oldLines.length === oldTotal && prev !== "" && !prev.endsWith("\n")) out.push("\\ No newline at end of file");
+  for (const l of h.newLines) out.push(`+${l}`);
+  if (h.newLines.length && h.newStart + h.newLines.length === newTotal && next !== "" && !next.endsWith("\n")) out.push("\\ No newline at end of file");
+  return out.join("\n") + "\n";
+}

@@ -24,6 +24,8 @@ import {
 import { api, errMsg } from "../lib/ipc";
 import { basename, isInside } from "../lib/paths";
 import { clearProblemsOf, getState, isSaver, setProblemsFrom, setState, type Problem, type Settings } from "../state/store";
+import { blameExtension, refreshBlame } from "./blame";
+import { hunkMenu } from "./gitHunks";
 import { gitGutter, refreshGitGutter } from "./gitGutter";
 import { languageFor } from "./languages";
 import { inlineClaude } from "./inlineClaude";
@@ -151,7 +153,8 @@ function baseExtensions(doc: Doc, group: number): Extension {
     hostFeatures(doc),
     lintComp.of(doc.lsp ? [] : lezerLinter(doc, saver)),
     lspComp.of(doc.lsp && group === doc.lspGroup ? doc.lsp : []),
-    gitGutter(() => doc.head),
+    gitGutter(() => doc.head, (view, line, ev) => (typeof doc.head === "string" ? hunkMenu(view, doc.path, doc.head, line, ev) : false)),
+    blameExtension(doc.path),
     langComp.of(doc.language ?? []),
     reviewComp.of(reviewExts.get(doc.path) ?? []),
     settingsComp.of(currentSettingsExt()),
@@ -385,7 +388,10 @@ async function loadHead(doc: Doc) {
     doc.head = null;
   }
   views.forEach((v, g) => {
-    if (v && shown[g] === doc.path) refreshGitGutter(v);
+    if (v && shown[g] === doc.path) {
+      refreshGitGutter(v);
+      refreshBlame(v);
+    }
   });
 }
 
@@ -537,6 +543,7 @@ export async function saveDocument(path: string, opts: { quiet?: boolean; force?
     markDirty(doc, now.doc);
     setState((s) => (s.tabs[path] ? { tabs: { ...s.tabs, [path]: { ...s.tabs[path], conflict: false, missing: false } } } : {}));
     emitDoc({ type: "save", path });
+    for (const v of viewsShowing(path)) refreshBlame(v);
     const { afterSave } = await import("../app/actions");
     afterSave(path, opts.quiet);
     if (!opts.quiet) void import("../components/PenguinMascot").then((m) => m.flashPenguin("jempol", 2500));

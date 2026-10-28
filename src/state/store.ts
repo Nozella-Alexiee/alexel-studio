@@ -83,6 +83,8 @@ export interface Settings {
   ideIntegration: boolean;
   /** Pengaturan ekstensi (kunci datar "ekstensi.kunci"), dipakai vscode.workspace.getConfiguration. */
   extSettings: Record<string, unknown>;
+  /** Tampilkan penulis & commit terakhir di akhir baris kursor (git blame). */
+  gitBlame: boolean;
 }
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -123,6 +125,7 @@ export const DEFAULT_SETTINGS: Settings = {
   trustedExts: [],
   ideIntegration: true,
   extSettings: {},
+  gitBlame: false,
 };
 
 export interface Layout {

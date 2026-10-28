@@ -290,6 +290,9 @@ export default function SettingsView() {
         <Row label={tl("Rapikan saat menyimpan")} hint={tl("Prettier untuk JS/TS, JSON, CSS, HTML, Markdown, dan YAML. Aturan di .prettierrc dipakai.")}>
           <Toggle label={tl("Rapikan saat menyimpan")} value={s.formatOnSave} onChange={(v) => set({ formatOnSave: v })} />
         </Row>
+        <Row label={tl("Git blame di baris aktif")} hint={tl("Penulis, waktu, dan pesan commit terakhir untuk baris kursor, seperti GitLens.")}>
+          <Toggle label={tl("Git blame di baris aktif")} value={s.gitBlame} onChange={(v) => set({ gitBlame: v })} />
+        </Row>
         <Row label={tl("Bungkus baris panjang")}>
           <Toggle label={tl("Bungkus baris")} value={s.wordWrap} onChange={(v) => set({ wordWrap: v })} />
         </Row>
