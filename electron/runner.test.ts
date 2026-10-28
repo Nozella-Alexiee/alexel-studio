@@ -184,6 +184,11 @@ describe("target dari konfigurasi project", () => {
     expect(configuredTargets(d, "win32")[0].command).toBe("$env:A='b c'; node 'it''s'");
   });
 
+  it("PowerShell: task type process dijalankan dengan operator &", () => {
+    const d = mk({ ".vscode/tasks.json": `{"tasks":[{"label":"p","type":"process","command":"C:/tools/my tool.exe","args":["a b"]}]}` });
+    expect(configuredTargets(d, "win32")[0].command).toBe("& 'C:/tools/my tool.exe' 'a b'");
+  });
+
   it(".alexel/run.json dan launch.json (node/python, tanpa attach)", () => {
     const d = mk({
       ".alexel/run.json": `{"targets":[{"label":"dev","command":"npm run dev","env":{"PORT":3000}},{"label":"tanpa-command"}]}`,

@@ -65,14 +65,17 @@ export function registerFrame(id: number, frame: HTMLIFrameElement | null) {
     loaded.delete(id);
     return;
   }
+  // `loaded` tidak direset di sini: load bisa terjadi sebelum efek ini jalan (dibersihkan saat frame lama dilepas).
   frames.set(id, frame);
-  loaded.delete(id);
-  frame.addEventListener("load", () => {
-    loaded.add(id);
-    sendTheme(id);
-    for (const m of queue.get(id) ?? []) frame.contentWindow?.postMessage({ __alexelPost: true, message: m }, "*");
-    queue.delete(id);
-  });
+}
+
+/** Dipanggil dari `onLoad` iframe (terpasang saat elemen dibuat, jadi tidak ketinggalan peristiwa load). */
+export function frameLoaded(id: number, frame: HTMLIFrameElement) {
+  if (frames.get(id) !== frame) frames.set(id, frame);
+  loaded.add(id);
+  sendTheme(id);
+  for (const m of queue.get(id) ?? []) frame.contentWindow?.postMessage({ __alexelPost: true, message: m }, "*");
+  queue.delete(id);
 }
 
 const trace = (dir: string, id: number, m: unknown) => {

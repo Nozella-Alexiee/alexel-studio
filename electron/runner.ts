@@ -292,7 +292,7 @@ const FOLDER = /\$\{(?:workspaceFolder|workspaceRoot)\}/g;
 
 /** Target dari konfigurasi project: `.alexel/run.json`, `.vscode/tasks.json`, dan `.vscode/launch.json` (program Node/Python). */
 export function configuredTargets(root: string, platform: Platform = process.platform): RunTarget[] {
-  const { sq } = shellOps(platform);
+  const { sq, exec } = shellOps(platform);
   const sub = (s: string) => s.replace(FOLDER, root);
   const cwdOf = (c: unknown) => (typeof c === "string" && c ? path.resolve(root, sub(c)) : root);
   const out: RunTarget[] = [];
@@ -315,7 +315,7 @@ export function configuredTargets(root: string, platform: Platform = process.pla
     if (typeof t?.label !== "string" || typeof t.command !== "string") continue;
     const args = (Array.isArray(t.args) ? t.args : []).map((a) => (typeof a === "string" ? a : typeof (a as { value?: unknown })?.value === "string" ? (a as { value: string }).value : "")).map(sub);
     // type "process": tiap argumen di-quote; "shell" (bawaan): perintah utuh seperti yang ditulis, argumen di-quote.
-    const head = t.type === "process" ? sq(sub(t.command)) : sub(t.command);
+    const head = t.type === "process" ? exec(sq(sub(t.command))) : sub(t.command);
     const opts = (t.options ?? {}) as { cwd?: unknown; env?: unknown };
     out.push(target("task", t.label, withEnv(opts.env, [head, ...args.map(sq)].join(" "), platform), cwdOf(opts.cwd), ".vscode/tasks.json"));
   }

@@ -2,7 +2,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
-import { ownerHost, resolveWebview, webviewCreate, webviewDispose, webviewHtml } from "./webviews";
+import { ownerHost, prepareWebviewHtml, resolveWebview, webviewCreate, webviewDispose, webviewHtml } from "./webviews";
 
 const H = ownerHost(undefined);
 
@@ -122,5 +122,14 @@ describe("webview: ekstraksi nonce CSP untuk bootstrap", () => {
     // Pastikan nonce yang disuntikkan ke script bootstrap juga ada di CSP meta
     expect(body).toContain(`'nonce-${nonce}'`);
     webviewDispose(23);
+  });
+});
+
+describe("prepareWebviewHtml tanpa <head>", () => {
+  it("menyisipkan bootstrap setelah doctype dan tidak salah kenal <header>", () => {
+    const a = prepareWebviewHtml(1, "<!DOCTYPE html><html><body><header>x</header></body></html>");
+    expect(a.startsWith("<!DOCTYPE html><html>")).toBe(true);
+    expect(a.indexOf("acquireVsCodeApi")).toBeGreaterThan(a.indexOf("<html>"));
+    expect(a.indexOf("acquireVsCodeApi")).toBeLessThan(a.indexOf("<header>"));
   });
 });

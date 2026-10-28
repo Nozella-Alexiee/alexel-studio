@@ -127,6 +127,7 @@ export async function handleRequest(m: string, p: Any): Promise<unknown> {
       return typeof r === "string" ? Number(r) : null;
     }
     case "ui/quickPick":
+      getState().quickPick?.resolve(null);
       return new Promise((resolve) => setState({ quickPick: { items: p.items, canPickMany: !!p.canPickMany, placeHolder: p.placeHolder, title: p.title, resolve } }));
     case "ui/inputBox": {
       let first = true;

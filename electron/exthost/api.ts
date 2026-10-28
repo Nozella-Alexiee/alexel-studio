@@ -43,8 +43,15 @@ export async function runCommand(hc: HostCtx, id: string, args: unknown[]): Prom
   const c = hc.commands.get(id);
   if (c) {
     if (c.editor) {
-      const win = buildApi(hc, null).window as { activeTextEditor?: unknown };
-      return c.fn.call(c.thisArg, win.activeTextEditor, {}, ...args);
+      const win = buildApi(hc, null).window as { activeTextEditor?: { edit(cb: (b: unknown) => void): Promise<boolean> } };
+      const ed = win.activeTextEditor;
+      if (!ed) return undefined; // seperti VS Code: tanpa editor aktif, perintah editor tidak berjalan
+      let result: unknown;
+      // Pembangun edit sungguhan (replace/insert/delete) diterapkan setelah fungsi ekstensi selesai.
+      await ed.edit((b) => {
+        result = c.fn.call(c.thisArg, ed, b, ...args);
+      });
+      return result;
     }
     return c.fn.apply(c.thisArg, args);
   }

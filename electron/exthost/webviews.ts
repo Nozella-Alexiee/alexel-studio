@@ -93,7 +93,12 @@ export function prepareWebviewHtml(id: number, html: string): string {
   }
 
   const boot = bootstrap(id, nonce);
-  return /<head[^>]*>/i.test(html) ? html.replace(/<head[^>]*>/i, (m) => m + boot) : boot + html;
+  const headRe = /<head(?:\s[^>]*)?>/i; // bukan <header>
+  if (headRe.test(html)) return html.replace(headRe, (m) => m + boot);
+  // Tanpa <head>: sisipkan setelah doctype/<html> supaya halaman tidak jatuh ke quirks mode.
+  const m = /^\s*(?:<!doctype[^>]*>\s*)?(?:<html(?:\s[^>]*)?>\s*)?/i.exec(html);
+  const at = m ? m[0].length : 0;
+  return html.slice(0, at) + boot + html.slice(at);
 }
 
 /** Skrip awal: API acquireVsCodeApi + penerapan tema dari aplikasi (variabel --vscode-*). */

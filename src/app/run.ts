@@ -33,13 +33,21 @@ function reportMissing(m: { tool: string; install: string }) {
   });
 }
 
+let starting = false;
+
 export async function runTarget(t: RunTarget, title = t.label) {
   if (t.missing) return reportMissing(t.missing);
-  // Simpan semua dulu supaya yang dijalankan sama dengan yang terlihat.
-  for (const tab of Object.values(getState().tabs)) if (tab.dirty) await docs.saveDocument(tab.id, { quiet: true });
-  const { runCommand } = await import("../terminal/terminals");
-  // Fokus tetap di editor: Ctrl+R / F5 berikutnya harus tetap bisa dipakai (terminal menelan tombol).
-  await runCommand(t.command, t.cwd, title, { focus: false });
+  if (starting) return; // F5/klik ganda saat target masih disiapkan: jangan buka dua terminal
+  starting = true;
+  try {
+    // Simpan semua dulu supaya yang dijalankan sama dengan yang terlihat.
+    for (const tab of Object.values(getState().tabs)) if (tab.dirty) await docs.saveDocument(tab.id, { quiet: true });
+    const { runCommand } = await import("../terminal/terminals");
+    // Fokus tetap di editor: Ctrl+R / F5 berikutnya harus tetap bisa dipakai (terminal menelan tombol).
+    await runCommand(t.command, t.cwd, title, { focus: false });
+  } finally {
+    starting = false;
+  }
 }
 
 export async function openShell() {

@@ -70,12 +70,14 @@ function toCompletion(it: Any): Completion {
     } : undefined,
     boost: it.preselect ? 10 : 0,
     apply: (view: EditorView, completion: Completion, from: number, to: number) => {
-      const r = it.range ? { from: offsetOf(view.state, it.range.s), to: offsetOf(view.state, it.range.e) } : { from, to };
+      let r = it.range ? { from: offsetOf(view.state, it.range.s), to: offsetOf(view.state, it.range.e) } : { from, to };
       const text: string = it.insert ?? it.label;
       if (it.additional?.length) {
-        // Edit tambahan (mis. import otomatis) dihitung terhadap dokumen sebelum penyisipan.
+        // Edit tambahan (mis. import otomatis) dihitung terhadap dokumen sebelum penyisipan; posisi sisipan ikut bergeser.
         const extra = (it.additional as { range: JRange; newText: string }[]).map((e) => ({ from: offsetOf(view.state, e.range.s), to: offsetOf(view.state, e.range.e), insert: e.newText }));
-        view.dispatch({ changes: extra });
+        const cs = view.state.changes(extra);
+        view.dispatch({ changes: cs });
+        r = { from: cs.mapPos(r.from, -1), to: cs.mapPos(r.to, 1) };
       }
       if (it.snippet) snippet(convertSnippetBody(text))(view, completion, r.from, r.to);
       else view.dispatch({ changes: { from: r.from, to: r.to, insert: text }, selection: { anchor: r.from + text.length }, userEvent: "input.complete" });

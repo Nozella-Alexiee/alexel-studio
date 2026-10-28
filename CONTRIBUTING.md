@@ -28,7 +28,7 @@ npm test
 - Match the surrounding code: naming, comment density and formatting.
 - User-facing text is currently written in Indonesian; keep new strings short and plain.
 - Do not add telemetry or network calls that the user did not ask for.
-- Never execute code from extensions, and never pass flags that skip an agent's permission checks.
+- Extension code (`main`) may only run inside the extension host and only for extensions the user has explicitly trusted. Never run it in the main process or the renderer, and never pass flags that skip an agent's permission checks.
 
 ## Where things live
 
