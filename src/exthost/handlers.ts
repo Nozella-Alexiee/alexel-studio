@@ -178,6 +178,11 @@ export async function handleRequest(m: string, p: Any): Promise<unknown> {
       A.updateSettings({ extSettings: next });
       return null;
     }
+    case "ui/runTask": {
+      const { runTarget } = await import("../app/run");
+      await runTarget({ id: `ext-task:${p.label}`, label: String(p.label), command: String(p.command), cwd: String(p.cwd), kind: "task", detail: tl("Task ekstensi") });
+      return null;
+    }
     case "ui/terminalCreate": {
       const { newTerminal } = await import("../terminal/terminals");
       const key = await newTerminal({ kind: "shell", title: p.name || "Terminal", cwd: p.cwd, command: p.shellPath ? `${p.shellPath} ${(p.shellArgs ?? []).join(" ")}` : undefined, focus: false });
@@ -311,6 +316,12 @@ export function handleEvent(e: string, p: Any) {
       });
       break;
     }
+    case "ui/tests":
+      void import("./tests").then((t) => t.onTestsSnapshot(p.controllers));
+      break;
+    case "ui/testRun":
+      void import("./tests").then((t) => t.onTestRun(p));
+      break;
     case "ui/revealView":
       setLayout({ sidebar: true, sideView: "exviews" });
       break;
@@ -339,6 +350,7 @@ export function clearHostUi() {
   progressToasts.clear();
   terminalKeys.clear();
   channelOwners.clear();
+  void import("./tests").then((t) => t.resetTests());
 }
 
 /** Diagnostik mentah dari host (untuk ditampilkan sebagai garis bergelombang di editor). */

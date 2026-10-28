@@ -26,6 +26,7 @@ import {
   type Settings,
   type Tab,
 } from "../state/store";
+import type { RunTarget } from "../lib/types";
 import { persistSession, persistSettings } from "./persist";
 import { isMac, setTitlebarOverlay } from "../lib/ipc";
 import { tl } from "../i18n";
@@ -709,7 +710,11 @@ export async function refreshRunTargets() {
   if (!root) return;
   try {
     const t = await api.runTargets(root);
-    if (getState().root === root) setState({ runTargets: t });
+    // Task dari ekstensi (vscode.tasks.registerTaskProvider), bila extension host berjalan.
+    const { hostCall, hostRunning } = await import("../exthost/client");
+    const ext = hostRunning() ? await hostCall<{ id: string; label: string; source: string; command: string; cwd: string }[]>("tasks/list").catch(() => []) : [];
+    const extTargets: RunTarget[] = ext.map((x) => ({ id: `ext:${x.id}`, label: x.source ? `${x.label} (${x.source})` : x.label, command: x.command, cwd: x.cwd, kind: "task", detail: tl("Task ekstensi") }));
+    if (getState().root === root) setState({ runTargets: [...t, ...extTargets] });
   } catch {
     /* project tanpa konfigurasi run */
   }

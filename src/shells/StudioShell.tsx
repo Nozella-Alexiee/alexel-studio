@@ -1,7 +1,7 @@
 // Desain Studio: tata letak seperti VS Code. Title bar dengan menu (Windows/Linux) dan command
 // center, activity bar, sidebar, editor + panel bawah, sidebar sekunder untuk Claude, status bar.
 
-import { Layers, ListTodo, ListTree, Bug, Files, GitBranch, PanelBottom, PanelLeft, PanelRight, Puzzle, Search, Settings } from "lucide-react";
+import { FlaskConical, Layers, ListTodo, ListTree, Bug, Files, GitBranch, PanelBottom, PanelLeft, PanelRight, Puzzle, Search, Settings } from "lucide-react";
 import type { ReactNode } from "react";
 import * as A from "../app/actions";
 import { openPalette } from "../app/commands";
@@ -18,6 +18,7 @@ import { setLayout, useStore } from "../state/store";
 import { EditorGroups, RightContent, SideContent, SideResizer, StatusBar, useFitLayout } from "./common";
 import { tl } from "../i18n";
 import { useHasExtViews } from "../exthost/views";
+import { useTests } from "../exthost/tests";
 
 export default function StudioShell() {
   const l = useFitLayout(48);
@@ -26,6 +27,7 @@ export default function StudioShell() {
   const debugging = useDebug((s) => s.status === "running" || s.status === "paused" || s.status === "starting");
 
   const hasViews = useHasExtViews();
+  const hasTests = useTests((s) => s.controllers.length > 0);
   const items: [string, ReactNode, string, () => void, boolean, number?][] = [
     ["files", <Files size={22} strokeWidth={1.6} />, `Explorer (${prettyKeys("Mod+Shift+E")})`, () => A.toggleSidebar("files"), l.sidebar && l.sideView === "files"],
     ["search", <Search size={22} strokeWidth={1.6} />, `Cari (${prettyKeys("Mod+Shift+F")})`, () => A.toggleSidebar("search"), l.sidebar && l.sideView === "search"],
@@ -34,6 +36,7 @@ export default function StudioShell() {
     ["todo", <ListTodo size={22} strokeWidth={1.6} />, "TODO", () => A.toggleSidebar("todo"), l.sidebar && l.sideView === "todo"],
     ["outline", <ListTree size={22} strokeWidth={1.6} />, tl("Outline (struktur berkas)"), () => A.toggleSidebar("outline"), l.sidebar && l.sideView === "outline"],
     ["ext", <Puzzle size={22} strokeWidth={1.6} />, `Ekstensi (${prettyKeys("Mod+Shift+X")})`, () => A.toggleSidebar("ext"), l.sidebar && l.sideView === "ext"],
+    ...(hasTests ? ([["tests", <FlaskConical size={22} strokeWidth={1.6} />, "Tests", () => A.toggleSidebar("tests"), l.sidebar && l.sideView === "tests"]] as typeof items) : []),
     ...(hasViews ? ([["exviews", <Layers size={22} strokeWidth={1.6} />, tl("Tampilan ekstensi"), () => A.toggleRight("extviews"), l.right && l.rightView === "extviews"]] as typeof items) : []),
   ];
 

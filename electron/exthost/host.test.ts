@@ -82,6 +82,22 @@ exports.activate = function (context) {
     return panel.webview.asWebviewUri(vscode.Uri.file("/x/y z.css")).toString();
   }));
   context.subscriptions.push(vscode.commands.registerCommand("demo.disposed", () => !!globalThis.__disposed));
+  context.subscriptions.push(vscode.languages.registerCodeLensProvider("plaintext", { provideCodeLenses() { return [new vscode.CodeLens(new vscode.Range(0, 0, 0, 0), { title: "Jalankan", command: "demo.hello", arguments: ["lens"] })]; } }));
+  context.subscriptions.push(vscode.languages.registerInlayHintsProvider("plaintext", { provideInlayHints() { const h = new vscode.InlayHint(new vscode.Position(0, 4), ": kata"); h.paddingLeft = true; return [h]; } }));
+  context.subscriptions.push(vscode.languages.registerColorProvider("plaintext", { provideDocumentColors() { return [new vscode.ColorInformation(new vscode.Range(0, 0, 0, 4), new vscode.Color(1, 0, 0, 1))]; }, provideColorPresentations() { return []; } }));
+  context.subscriptions.push(vscode.languages.registerInlineCompletionItemProvider({ language: "plaintext" }, { provideInlineCompletionItems(doc, pos) { return [new vscode.InlineCompletionItem("lo dunia!", new vscode.Range(pos, pos))]; } }));
+  const ctl = vscode.tests.createTestController("demoTests", "Demo Tests");
+  const suite = ctl.createTestItem("suite", "Suite", vscode.Uri.file("/x/a.test.js"));
+  const t1 = ctl.createTestItem("lulus", "lulus"); const t2 = ctl.createTestItem("gagal", "gagal");
+  suite.children.add(t1); suite.children.add(t2); ctl.items.add(suite);
+  ctl.createRunProfile("Run", vscode.TestRunProfileKind.Run, async (req) => {
+    const run = ctl.createTestRun(req);
+    const all = req.include || [suite];
+    const walk = (i) => { if (i.children.size) i.children.forEach(walk); else { run.started(i); if (i.id === "lulus") run.passed(i, 5); else run.failed(i, new vscode.TestMessage("harusnya 2"), 7); } };
+    all.forEach(walk); run.appendOutput("selesai"); run.end();
+  }, true);
+  context.subscriptions.push(vscode.tasks.registerTaskProvider("demo", { provideTasks() { return [new vscode.Task({ type: "demo" }, vscode.TaskScope.Workspace, "build", "demo", new vscode.ShellExecution("npm run build")), new vscode.Task({ type: "demo" }, vscode.TaskScope.Workspace, "proses", "demo", new vscode.ProcessExecution("/opt/my tool", ["a b"]))]; }, resolveTask(t) { return t; } }));
+  context.subscriptions.push(vscode.commands.registerCommand("demo.runTask", async () => { const ts = await vscode.tasks.fetchTasks({ type: "demo" }); await vscode.tasks.executeTask(ts[0]); return ts.length; }));
   return { ping: () => "pong" };
 };
 exports.deactivate = function () {};
@@ -209,5 +225,36 @@ describe("extension host", () => {
   it("perintah bawaan editor diteruskan ke UI; modul vscode tak dikenal tidak membuat crash", async () => {
     await rpc.request("command/execute", { id: "editor.action.formatDocument" });
     expect(uiRequests.some((u) => u.m === "ui/executeCommand" && u.p.command === "editor.action.formatDocument")).toBe(true);
+  });
+
+  it("provider tambahan: CodeLens, inlay hints, warna, inline completion", async () => {
+    const lens = (await rpc.request("provide", { kind: "codeLens", uri: uri() })) as any[]; // eslint-disable-line @typescript-eslint/no-explicit-any
+    expect(lens[0]).toMatchObject({ title: "Jalankan", command: "demo.hello", arguments: ["lens"] });
+    const hints = (await rpc.request("provide", { kind: "inlayHints", uri: uri(), range: { s: { l: 0, c: 0 }, e: { l: 2, c: 0 } } })) as any[]; // eslint-disable-line @typescript-eslint/no-explicit-any
+    expect(hints[0]).toMatchObject({ pos: { l: 0, c: 4 }, label: ": kata", left: true });
+    const colors = (await rpc.request("provide", { kind: "color", uri: uri() })) as any[]; // eslint-disable-line @typescript-eslint/no-explicit-any
+    expect(colors[0]).toMatchObject({ r: 255, g: 0, b: 0, a: 1 });
+    const ghost = (await rpc.request("provide", { kind: "inlineCompletion", uri: uri(), pos: { l: 0, c: 3 } })) as any; // eslint-disable-line @typescript-eslint/no-explicit-any
+    expect(ghost).toMatchObject({ text: "lo dunia!" });
+  });
+
+  it("Testing API: pohon dikirim ke UI, run mengirim hasil per item", async () => {
+    await waitFor(() => events.some((e) => e.e === "ui/tests" && e.p.controllers.length));
+    const snap = events.filter((e) => e.e === "ui/tests").at(-1)!.p.controllers[0];
+    expect(snap).toMatchObject({ id: "demoTests", label: "Demo Tests", profiles: [{ kind: 1, isDefault: true }] });
+    expect(snap.items[0].children.map((c: { key: string }) => c.key)).toEqual(["demoTests/suite/gagal", "demoTests/suite/lulus"]);
+    await rpc.request("tests/run", { ctl: "demoTests", keys: ["demoTests/suite/gagal"] });
+    await waitFor(() => events.some((e) => e.e === "ui/testRun" && e.p.state === "end"));
+    const states = events.filter((e) => e.e === "ui/testRun").map((e) => `${e.p.key ?? ""}:${e.p.state}`);
+    expect(states).toEqual(expect.arrayContaining(["demoTests/suite/gagal:failed", ":output", ":end"]));
+    expect(states).not.toContain("demoTests/suite/lulus:passed");
+    expect(events.find((e) => e.e === "ui/testRun" && e.p.state === "failed")!.p).toMatchObject({ message: "harusnya 2", duration: 7 });
+  });
+
+  it("tasks API: daftar untuk Smart Run dan executeTask dijalankan di UI", async () => {
+    const list = (await rpc.request("tasks/list")) as any[]; // eslint-disable-line @typescript-eslint/no-explicit-any
+    expect(list.map((t) => [t.label, t.source, t.command])).toEqual([["build", "demo", "npm run build"], ["proses", "demo", process.platform === "win32" ? '& "/opt/my tool" "a b"' : '"/opt/my tool" "a b"']]);
+    expect(await rpc.request("command/execute", { id: "demo.runTask" })).toBe(2);
+    expect(uiRequests.find((u) => u.m === "ui/runTask")!.p).toMatchObject({ label: "build (demo)", command: "npm run build" });
   });
 });

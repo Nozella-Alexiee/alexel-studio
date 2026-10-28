@@ -101,13 +101,13 @@ export class ExtHostManager {
     });
     child.on("exit", (code) => {
       rpc.failAll("Extension host berhenti");
+      // Host lama bisa baru keluar setelah host pengganti dimulai: jangan sentuh milik host baru.
+      if (this.child !== child) return;
       webviewClear();
       for (const w of this.pending.values()) w.reject(new Error("Extension host berhenti"));
       this.pending.clear();
-      if (this.child === child) {
-        this.child = null;
-        this.rpc = null;
-      }
+      this.child = null;
+      this.rpc = null;
       if (!this.stopping) this.ctx.emit("exthost-exit", { code, stderr: errBuf });
     });
     try {
@@ -128,6 +128,10 @@ export class ExtHostManager {
     this.child = null;
     this.rpc = null;
     if (!child) return;
+    // Handler "exit" mengabaikan host yang sudah bukan host aktif, jadi bersihkan di sini.
+    webviewClear();
+    for (const w of this.pending.values()) w.reject(new Error("Extension host berhenti"));
+    this.pending.clear();
     try {
       await rpc?.request("shutdown", undefined, 3000);
     } catch {

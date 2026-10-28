@@ -10,6 +10,8 @@ import { windowApi } from "./api-window";
 import { workspaceApi } from "./api-workspace";
 import type { HostCtx, LoadedExt } from "./context";
 import { Memento } from "./memento";
+import { createTestController } from "./tests";
+import { tasksApi } from "./tasks";
 import * as T from "./types";
 import { Uri } from "./uri";
 
@@ -176,16 +178,6 @@ function extensionsApi(hc: HostCtx) {
 }
 
 /** Controller pengujian tanpa UI: koleksi item sungguhan, run profile dan run kosong. */
-function testController(id: string, label: string) {
-  const make = () => {
-    const m = new Map<string, any>(); // eslint-disable-line @typescript-eslint/no-explicit-any
-    return { get size() { return m.size; }, add: (i: { id: string }) => void m.set(i.id, i), delete: (k: string) => void m.delete(k), get: (k: string) => m.get(k), replace: (list: { id: string }[]) => { m.clear(); list.forEach((i) => m.set(i.id, i)); }, forEach: (cb: (i: unknown) => void) => m.forEach((v) => cb(v)), [Symbol.iterator]: () => m.entries() };
-  };
-  const item = (itemId: string, itemLabel: string, uri?: Uri) => ({ id: itemId, label: itemLabel, uri, children: make(), tags: [] as unknown[], canResolveChildren: false, busy: false, range: undefined, error: undefined, description: undefined, sortText: undefined, parent: undefined });
-  const ctl = { id, label, items: make(), createTestItem: item, createRunProfile: (_l: string, kind: number) => ({ kind, label: _l, isDefault: false, tag: undefined, runHandler: undefined, dispose() {} }), createTestRun: () => ({ name: undefined, token: { isCancellationRequested: false }, enqueued() {}, started() {}, skipped() {}, failed() {}, errored() {}, passed() {}, appendOutput() {}, end() {}, onDidDispose: new T.EventEmitter<void>().event }), resolveHandler: undefined, refreshHandler: undefined, invalidateTestResults() {}, dispose() {} };
-  return ctl;
-}
-
 const warned = new Set<string>();
 /** Namespace yang belum diimplementasikan: setiap anggota fungsi kosong; peringatan dicatat sekali. */
 function lenient<O extends object>(hc: HostCtx, ext: LoadedExt | null, name: string, impl: O): O {
@@ -221,13 +213,13 @@ export function buildApi(hc: HostCtx, ext: LoadedExt | null): Record<string, unk
     languages: lenient(hc, ext, "languages", languagesApi(hc, ext)),
     env: envApi(hc),
     extensions: extensionsApi(hc),
-    tasks: lenient(hc, ext, "tasks", { registerTaskProvider: () => new T.Disposable(() => {}), taskExecutions: [] }),
+    tasks: lenient(hc, ext, "tasks", tasksApi(hc, ext)),
     debug: lenient(hc, ext, "debug", { breakpoints: [], activeDebugSession: undefined, registerDebugConfigurationProvider: () => new T.Disposable(() => {}), registerDebugAdapterDescriptorFactory: () => new T.Disposable(() => {}), registerDebugAdapterTrackerFactory: () => new T.Disposable(() => {}) }),
     scm: lenient(hc, ext, "scm", {}),
     authentication: lenient(hc, ext, "authentication", { getSession: async () => undefined, registerAuthenticationProvider: () => new T.Disposable(() => {}) }),
     comments: lenient(hc, ext, "comments", {}),
     notebooks: lenient(hc, ext, "notebooks", {}),
-    tests: lenient(hc, ext, "tests", { createTestController: (id: string, label: string) => testController(id, label) }),
+    tests: lenient(hc, ext, "tests", { createTestController: (id: string, label: string) => createTestController(hc, id, label) }),
     chat: lenient(hc, ext, "chat", {}),
     lm: lenient(hc, ext, "lm", { tools: [], selectChatModels: async () => [] }),
     l10n: { t: (m: string | { message: string }, ...a: unknown[]) => String(typeof m === "string" ? m : m.message).replace(/\{(\d+)\}/g, (_m, i) => String(a[Number(i)] ?? "")), bundle: undefined, uri: undefined },

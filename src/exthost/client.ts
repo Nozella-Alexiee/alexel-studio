@@ -67,6 +67,8 @@ export async function startHost(): Promise<void> {
     if (r.count > 0) {
       useExtHost.setState({ running: true, count: r.count });
       startSync();
+      // Task dari ekstensi baru tersedia setelah ekstensinya aktif.
+      setTimeout(() => void import("../app/actions").then((A) => A.refreshRunTargets()), 4000);
     }
   } catch (e) {
     console.warn("Extension host gagal dimulai", e);

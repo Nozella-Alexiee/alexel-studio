@@ -10,7 +10,7 @@ let providerSeq = 0;
 let collectionSeq = 0;
 
 /** Provider yang fiturnya dijembatani ke editor Alexel Studio. Sisanya didaftarkan tetapi tanpa tampilan. */
-export const BRIDGED = new Set(["completion", "hover", "definition", "declaration", "typeDefinition", "implementation", "references", "formatting", "rangeFormatting", "codeAction", "documentSymbol", "rename", "signatureHelp", "codeLens", "documentHighlight", "documentLink", "foldingRange", "inlayHints"]);
+export const BRIDGED = new Set(["completion", "hover", "definition", "declaration", "typeDefinition", "implementation", "references", "formatting", "rangeFormatting", "codeAction", "documentSymbol", "rename", "signatureHelp", "codeLens", "documentHighlight", "documentLink", "foldingRange", "inlayHints", "color", "inlineCompletion"]);
 
 export function languagesApi(hc: HostCtx, ext: LoadedExt | null) {
   const register = (kind: string, selector: DocumentSelector, provider: unknown, extra: Record<string, unknown> = {}) => {

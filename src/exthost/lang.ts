@@ -3,7 +3,7 @@
 import { extname } from "../lib/paths";
 
 /** Id bahasa Alexel → id VS Code, untuk bahasa yang namanya berbeda. */
-const BY_ALEXEL: Record<string, string> = { ts: "typescript", js: "javascript", py: "python", rs: "rust", md: "markdown", yml: "yaml", sh: "shellscript", bash: "shellscript", zsh: "shellscript", rb: "ruby", kt: "kotlin", cs: "csharp", pl: "perl", hs: "haskell", ex: "elixir", exs: "elixir", erl: "erlang", clj: "clojure", htm: "html", jsonc: "jsonc", mysql: "sql", pgsql: "sql" };
+const BY_ALEXEL: Record<string, string> = { txt: "plaintext", text: "plaintext", ts: "typescript", js: "javascript", py: "python", rs: "rust", md: "markdown", yml: "yaml", sh: "shellscript", bash: "shellscript", zsh: "shellscript", rb: "ruby", kt: "kotlin", cs: "csharp", pl: "perl", hs: "haskell", ex: "elixir", exs: "elixir", erl: "erlang", clj: "clojure", htm: "html", jsonc: "jsonc", mysql: "sql", pgsql: "sql" };
 
 export function vscodeLanguageId(path: string, langId: string): string {
   const ext = extname(path);

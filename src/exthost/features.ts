@@ -11,6 +11,7 @@ import { convertSnippetBody } from "../extensions/registry";
 import { globMatch } from "../lib/glob";
 import { renderRemoteMarkdown } from "../lib/markdown";
 import { hostCall } from "./client";
+import { hostEditorExtras } from "./editorExtras";
 import { hostDiagRaw } from "./handlers";
 import { vscodeLanguageId } from "./lang";
 import { useExtHost, type HostProvider } from "./state";
@@ -274,6 +275,7 @@ export function hostFeatures(doc: { path: string }): Extension {
     hoverSource(path),
     linter((view) => hostDiagnosticsFor(view, path), { delay: 100 }),
     decorationField(path),
+    hostEditorExtras(path),
   ];
 }
 

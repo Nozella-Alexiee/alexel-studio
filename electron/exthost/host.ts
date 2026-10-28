@@ -17,6 +17,8 @@ import { globMatch } from "./glob";
 import { Rpc, type Msg } from "./rpc";
 import { matchSelector, type DocumentFilter } from "./selector";
 import * as T from "./types";
+import * as Tests from "./tests";
+import { listTasks } from "./tasks";
 import { Uri } from "./uri";
 
 process.env.VSCODE_NLS_CONFIG = JSON.stringify({ locale: "en", availableLanguages: {}, _languagePackSupport: false });
@@ -498,6 +500,22 @@ rpc.requests.set("provide", async (p: { kind: string; uri: string; pos?: C.JPos;
       const lists = await collect<{ start: number; end: number; kind?: number }[]>("foldingRange", doc, (pr) => pr.provideFoldingRanges?.(doc, {}, token));
       return lists.flat();
     }
+    case "color": {
+      const lists = await collect<{ range: T.Range; color: { red: number; green: number; blue: number; alpha: number } }[]>("color", doc, (pr) => pr.provideDocumentColors?.(doc, token));
+      return lists.flat().map((c) => ({ range: C.range(c.range), r: Math.round(c.color.red * 255), g: Math.round(c.color.green * 255), b: Math.round(c.color.blue * 255), a: c.color.alpha }));
+    }
+    case "inlineCompletion": {
+      const ctx = { triggerKind: o.explicit ? 0 : 1, selectedCompletionInfo: undefined };
+      const lists = await collect<unknown>("inlineCompletion", doc, (pr) => pr.provideInlineCompletionItems?.(doc, pos, ctx, token));
+      for (const l of lists) {
+        const items = (Array.isArray(l) ? l : (l as { items?: unknown[] })?.items ?? []) as { insertText: string | { value: string }; range?: T.Range; command?: { command: string; arguments?: unknown[] } }[];
+        const it = items[0];
+        if (!it) continue;
+        const text = typeof it.insertText === "string" ? it.insertText : it.insertText?.value ?? "";
+        if (text) return { text, range: it.range ? C.range(it.range) : null, command: it.command ? { command: it.command.command, arguments: it.command.arguments } : undefined };
+      }
+      return null;
+    }
     case "inlayHints": {
       const range = p.range ? C.toRange(p.range) : new T.Range(0, 0, doc.lineCount, 0);
       const lists = await collect<{ position: T.Position; label: string | { value: string }[]; kind?: number; paddingLeft?: boolean; paddingRight?: boolean }[]>("inlayHints", doc, (pr) => pr.provideInlayHints?.(doc, range, token));
@@ -507,6 +525,15 @@ rpc.requests.set("provide", async (p: { kind: string; uri: string; pos?: C.JPos;
       return null;
   }
 });
+
+// ---- Testing (panel Tests) ---------------------------------------------------------------
+
+rpc.requests.set("tasks/list", () => listTasks(hc));
+rpc.requests.set("tests/list", () => Tests.snapshot());
+rpc.requests.set("tests/resolve", (p: { key?: string | null; ctl?: string }) => Tests.resolveTests(p.key ?? null, p.ctl));
+rpc.requests.set("tests/refresh", (p: { ctl: string }) => Tests.refreshTests(p.ctl));
+rpc.requests.set("tests/run", (p: { ctl: string; keys?: string[]; kind?: number }) => Tests.runTests(p.ctl, p.keys ?? [], p.kind ?? 1));
+rpc.events.set("tests/cancel", () => Tests.cancelRuns());
 
 // ---- TreeView (panel Ekstensi di sidebar) -------------------------------------------------
 
