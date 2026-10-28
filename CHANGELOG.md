@@ -1,5 +1,34 @@
 # Changelog
 
+## Unreleased
+
+Closing the everyday gaps with VS Code:
+
+- **Git**: stash (list/push/apply/pop/drop), fetch, merge, rebase, cherry-pick and revert with a
+  conflict banner (Continue / Abort), branch rename/delete, tags, stage or revert a single change from
+  the editor gutter, current-line blame (optional), a commit graph for all branches, and a commit view
+  with per-file diffs.
+- **Editor**: indent guides, bracket pair colorization, Emmet (HTML/CSS/JSX, via the MIT `emmet`
+  library), color swatches with a picker, sticky scroll, pinned tabs, split terminal, PDF preview and a
+  read-only hex viewer for binary files.
+- **Extensions**: CodeLens, inlay hints, document highlights, links (Cmd/Ctrl+click), folding ranges,
+  color providers and inline completions (ghost text) are now shown in the editor; a **Tests** view
+  for `vscode.tests` controllers; extension tasks (`vscode.tasks`) in Smart Run; ripgrep is bundled.
+- **Official Claude Code & Codex extensions** look like in VS Code: each gets its own tab in the right
+  panel (with its icon), activity-bar views (e.g. Claude Code sessions) get a rail icon, webviews get
+  the full `--vscode-*` theme (700+ colors), and the reported API version is 1.106 so both use their
+  secondary-sidebar layout.
+- **Workspaces**: open `.code-workspace` files, several folders in the Explorer, search and Quick Open
+  across all folders; save the workspace as a file.
+- **Profiles**: save settings & shortcuts as named profiles, export/import them as JSON (with the
+  extension list).
+- **Workspace Trust** (light): folders with tasks/launch/run configuration open in restricted mode until
+  you trust them; code extensions don't run there.
+- **Accessibility**: labelled inputs, high-contrast (forced colors) support, and a static check that
+  every icon button, input and image has an accessible name.
+- Fixes: `.txt` files are `plaintext` for extensions; an old extension host exiting late no longer
+  clears the new host's UI; extension-host webview load race; completion offsets after import edits.
+
 ## 0.7.0
 
 Extensions that look and behave like VS Code's:

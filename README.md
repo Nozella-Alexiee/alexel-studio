@@ -173,6 +173,17 @@ Install agents and VS Code extensions with zero friction:
 
 ---
 
+### 8. Everyday Editor, Git & Workspace Tools
+* **Git**: stash, fetch, merge / rebase / cherry-pick / revert with a conflict banner, branch & tag management, stage or revert a single change from the gutter, current-line blame, a commit graph and a commit view.
+* **Editor**: indent guides, bracket pair colors, Emmet, color picker, sticky scroll, pinned tabs, split terminal, PDF preview and a hex viewer.
+* **Extensions**: CodeLens, inlay hints, ghost-text suggestions, a Tests view and extension tasks; the official Claude Code and Codex extensions get their own panel tabs like in VS Code.
+* **Workspaces & profiles**: multi-root `.code-workspace` files, settings profiles you can export/import, and Workspace Trust (restricted mode for untrusted folders).
+* **Accessibility**: labelled controls and high-contrast (forced colors) support.
+
+**Not there yet** (honest list): Remote SSH/WSL/Containers, Live Share, Jupyter notebooks, cloud settings sync, code signing (macOS/Windows builds are unsigned), UI languages besides English and Indonesian, and the full VS Code extension API, so some extensions only partly work.
+
+---
+
 ## ⚙️ System Architecture
 
 ```mermaid

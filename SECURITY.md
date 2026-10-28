@@ -19,6 +19,12 @@ reply within a week.
   a separate origin (`nozelweb://`) and can read local files only from folders the panel was allowed.
   Packages are extracted path-safely, with file-count and size limits; SHA-256 from Open VSX is
   verified when published. There is no code signing, so only trust publishers you know.
+- **Workspace Trust**: a folder that contains run configuration (`.vscode/tasks.json`,
+  `.vscode/launch.json`, `.alexel/run.json`), or that would be opened by trusted code extensions,
+  starts in restricted mode until you trust it: the extension host is not started and the folder's run
+  targets are hidden. Trusting a folder also trusts its sub-folders; profiles never carry trust.
+- ripgrep (used by extensions such as Todo Tree) is bundled from the official release, pinned by
+  version and SHA-256 in `scripts/ripgrep/targets.mjs`.
 - A short, pinned list of language servers (YAML, Prisma, Dockerfile) can be installed in one click.
   They come from Open VSX, are pinned by version and SHA-256 in `electron/managedServers.ts`, only
   the server files are extracted, and they run as child processes after an explicit confirmation.

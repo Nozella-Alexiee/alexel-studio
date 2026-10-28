@@ -173,6 +173,17 @@ Pasang agen dan ekstensi data VS Code tanpa hambatan:
 
 ---
 
+### 8. Alat Harian: Editor, Git & Workspace
+* **Git**: stash, fetch, merge / rebase / cherry-pick / revert dengan banner konflik, kelola branch & tag, stage atau kembalikan satu bagian perubahan dari gutter, blame baris aktif, graph commit, dan tampilan commit.
+* **Editor**: garis bantu indentasi, warna pasangan kurung, Emmet, pemilih warna, sticky scroll, tab tersemat, belah terminal, pratinjau PDF, dan penampil hex.
+* **Ekstensi**: CodeLens, inlay hints, saran sebaris (ghost text), panel Tests, dan task ekstensi; ekstensi resmi Claude Code dan Codex mendapat tab panel sendiri seperti di VS Code.
+* **Workspace & profil**: berkas `.code-workspace` multi-root, profil pengaturan yang bisa diekspor/diimpor, dan Workspace Trust (mode terbatas untuk folder yang belum dipercaya).
+* **Aksesibilitas**: kontrol berlabel dan dukungan mode kontras tinggi (forced colors).
+
+**Yang belum ada** (jujur): Remote SSH/WSL/Container, Live Share, notebook Jupyter, sinkronisasi pengaturan lewat cloud, tanda tangan kode (build macOS/Windows belum ditandatangani), bahasa UI selain Inggris dan Indonesia, dan API ekstensi VS Code yang lengkap, jadi sebagian ekstensi hanya jalan sebagian.
+
+---
+
 ## ⚙️ Arsitektur Sistem
 
 ```mermaid
