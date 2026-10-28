@@ -9,7 +9,7 @@ import { uriToPath } from "../editor/lsp";
 import { openExternal } from "../lib/ipc";
 import { ask, getState, promptDialog, setLayout, setProblemsFrom, setState, stickyToast, toast, type Problem } from "../state/store";
 import { tl } from "../i18n";
-import { applyHostDecorations, defineDecorationType, removeDecorationType, refreshHostDiagnostics } from "./features";
+import { applyHostDecorations, clearHostDecorations, defineDecorationType, removeDecorationType, refreshHostDiagnostics } from "./features";
 import { useExtHost, type HostProvider, type StatusItem } from "./state";
 
 type Any = any; // eslint-disable-line @typescript-eslint/no-explicit-any
@@ -319,6 +319,25 @@ export function handleEvent(e: string, p: Any) {
       break;
     }
   }
+}
+
+/** Bersihkan semua sisa UI milik host lama: webview, dekorasi, diagnostik, progres, terminal ekstensi. */
+export function clearHostUi() {
+  void import("./webview").then((w) => {
+    for (const id of Object.keys(w.useWebviews.getState().panels)) w.closeWebviewTab(Number(id));
+  });
+  clearHostDecorations();
+  const paths = new Set<string>();
+  for (const k of hostDiagRaw.keys()) paths.add(k.slice(k.indexOf("|") + 1));
+  const owners = new Set<string>();
+  for (const k of hostDiagRaw.keys()) owners.add(k.slice(0, k.indexOf("|")));
+  hostDiagRaw.clear();
+  for (const o of owners) for (const path of paths) setProblemsFrom(`host:${o}`, path, []);
+  for (const path of paths) refreshHostDiagnostics(path);
+  for (const done of progressToasts.values()) done();
+  progressToasts.clear();
+  terminalKeys.clear();
+  channelOwners.clear();
 }
 
 /** Diagnostik mentah dari host (untuk ditampilkan sebagai garis bergelombang di editor). */

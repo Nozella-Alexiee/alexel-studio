@@ -9,6 +9,10 @@ import { edits as jEdits } from "./convert";
 import { Disposable, EventEmitter, FileSystemError, FileType, Position, Range, RelativePattern, TextEdit, WorkspaceEdit } from "./types";
 import { Uri } from "./uri";
 
+/** `p` ada di dalam (atau sama dengan) folder `dir`; "/proj" tidak cocok dengan "/proj2". */
+const within = (dir: string, p: string) => p === dir || p.startsWith(dir.replace(/[\\/]+$/, "") + path.sep);
+
+let untitledSeq = 0;
 const deepClone = <T>(v: T): T => (v === undefined ? v : JSON.parse(JSON.stringify(v)));
 
 export function configurationApi(hc: HostCtx, _ext: LoadedExt | null) {
@@ -170,17 +174,17 @@ export function workspaceApi(hc: HostCtx, ext: LoadedExt | null) {
     onWillCreateFiles: new EventEmitter<unknown>().event,
     onWillDeleteFiles: new EventEmitter<unknown>().event,
     onWillRenameFiles: new EventEmitter<unknown>().event,
-    getWorkspaceFolder: (uri: Uri) => folders()?.find((f) => uri.fsPath.startsWith(f.uri.fsPath)),
+    getWorkspaceFolder: (uri: Uri) => folders()?.find((f) => within(f.uri.fsPath, uri.fsPath)),
     asRelativePath(p: string | Uri, includeFolder?: boolean) {
       const fsPath = typeof p === "string" ? p : p.fsPath;
-      if (!hc.root || !fsPath.startsWith(hc.root)) return fsPath;
+      if (!hc.root || !within(hc.root, fsPath)) return fsPath;
       const rel = path.relative(hc.root, fsPath).replace(/\\/g, "/");
       return includeFolder ? `${path.basename(hc.root)}/${rel}` : rel;
     },
     async openTextDocument(arg?: Uri | string | { language?: string; content?: string }) {
       if (arg && typeof arg === "object" && !(arg instanceof Uri) && ("content" in arg || "language" in arg)) {
         const o = arg as { language?: string; content?: string };
-        const uri = Uri.from({ scheme: "untitled", path: `Untitled-${hc.docs.size + 1}` });
+        const uri = Uri.from({ scheme: "untitled", path: `Untitled-${++untitledSeq}` });
         const doc = new HostDocument(uri, o.language ?? "plaintext", 1, o.content ?? "");
         hc.docs.set(uri.toString(), doc);
         return doc;
@@ -191,6 +195,29 @@ export function workspaceApi(hc: HostCtx, ext: LoadedExt | null) {
       return readDocFromDisk(hc, uri);
     },
     async applyEdit(edit: WorkspaceEdit): Promise<boolean> {
+      // Operasi berkas (buat/hapus/ganti nama) dijalankan langsung di host; gagal = seluruh edit dianggap gagal.
+      for (const o of edit.fileOps) {
+        try {
+          if (o.op === "create") {
+            if (fs.existsSync(o.uri.fsPath)) {
+              if (o.ignoreIfExists) continue;
+              if (!o.overwrite) return false;
+            }
+            fs.mkdirSync(path.dirname(o.uri.fsPath), { recursive: true });
+            fs.writeFileSync(o.uri.fsPath, "");
+          } else if (o.op === "delete") fs.rmSync(o.uri.fsPath, { recursive: !!o.recursive, force: false });
+          else if (o.op === "rename" && o.to) {
+            if (fs.existsSync(o.to.fsPath) && !o.overwrite) {
+              if (o.ignoreIfExists) continue;
+              return false;
+            }
+            fs.mkdirSync(path.dirname(o.to.fsPath), { recursive: true });
+            fs.renameSync(o.uri.fsPath, o.to.fsPath);
+          }
+        } catch {
+          return false;
+        }
+      }
       const files = edit.entries().map(([u, e]) => ({ uri: u.toString(), edits: jEdits(e) }));
       return !!(await hc.rpc.request<boolean>("ui/applyEdit", { files }));
     },

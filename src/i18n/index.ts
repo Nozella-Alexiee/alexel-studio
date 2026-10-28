@@ -11,8 +11,8 @@ function detect(): Lang {
   try {
     const v = localStorage.getItem(KEY);
     if (v === "id" || v === "en") return v;
-    // Pengguna lama (versi Nozel berbahasa Indonesia) tetap memakai bahasa Indonesia.
-    if (localStorage.getItem("nozel:design") || localStorage.getItem("nozel.tourDone")) return "id";
+    // Pengguna lama (antarmuka Indonesia) dimigrasikan oleh persist.ts lewat settings.json (language: "id");
+    // di sini "auto" murni mengikuti bahasa sistem (kunci cache desain ada di setiap instalasi, jadi bukan penanda).
   } catch {
     /* localStorage tidak tersedia */
   }

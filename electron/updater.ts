@@ -3,7 +3,7 @@
 // aplikasi keluar. Windows: pemasang NSIS senyap; macOS: ganti .app dari zip; Linux: ganti AppImage.
 // Tidak ada tanda tangan kode di build ini, jadi keutuhan = checksum dari rilis resmi repositori.
 
-import { spawn, spawnSync } from "node:child_process";
+import { spawn } from "node:child_process";
 import { createHash } from "node:crypto";
 import fs from "node:fs";
 import os from "node:os";
@@ -57,6 +57,16 @@ async function latestRelease(repo: string): Promise<{ tag: string; url: string; 
   return { tag: j.tag_name, url: j.html_url, assets: (j.assets ?? []).map((a) => ({ name: a.name, url: a.browser_download_url })) };
 }
 
+/** Unduh feed latest*.yml: wajib HTTP 200 (halaman galat 404/HTML jangan dianggap feed kosong). */
+async function fetchFeed(url: string) {
+  const r = await fetch(url, { signal: AbortSignal.timeout(15_000) });
+  if (!r.ok) throw new Error(`Feed pembaruan tidak bisa diunduh (${r.status}).`);
+  const feed = parseFeed(await r.text());
+  // Versi dipakai sebagai bagian nama folder sementara: hanya bentuk semver yang diterima.
+  if (!/^\d+\.\d+\.\d+([-+.\w]*)$/.test(feed.version)) throw new Error("Feed pembaruan tidak valid.");
+  return feed;
+}
+
 const isAppImage = () => process.platform === "linux" && !!process.env.APPIMAGE;
 
 /** Bundel .app yang sedang berjalan (macOS), atau null di build pengembangan. */
@@ -74,7 +84,7 @@ export async function updateCheck(): Promise<UpdateOffer> {
   if (!app.isPackaged) return { version, kind: null, manualReason: "dev", url: rel.url };
   const feedAsset = rel.assets.find((a) => a.name === feedName(process.platform));
   if (!feedAsset) return { version, kind: null, manualReason: "no-feed", url: rel.url };
-  const feed = parseFeed(await (await fetch(feedAsset.url, { signal: AbortSignal.timeout(15_000) })).text());
+  const feed = await fetchFeed(feedAsset.url);
   const pick = pickInstaller(feed, { platform: process.platform, arch: process.arch, appImage: isAppImage() });
   if (!pick) return { version, kind: null, manualReason: process.platform === "linux" ? "linux-package" : "no-asset", url: rel.url };
   if (process.platform === "darwin" && !macBundle()) return { version, kind: null, manualReason: "dev", url: rel.url };
@@ -88,7 +98,7 @@ export async function updatePrepare(ctx: Ctx): Promise<{ version: string; kind: 
   const rel = await latestRelease(repo);
   const feedAsset = rel.assets.find((a) => a.name === feedName(process.platform));
   if (!feedAsset) throw new Error("Feed pembaruan tidak ada di rilis.");
-  const feed = parseFeed(await (await fetch(feedAsset.url, { signal: AbortSignal.timeout(15_000) })).text());
+  const feed = await fetchFeed(feedAsset.url);
   if (!newerThan(feed.version, app.getVersion())) throw new Error("Sudah versi terbaru.");
   const pick = pickInstaller(feed, { platform: process.platform, arch: process.arch, appImage: isAppImage() });
   const name = pick && safeName(pick.file.url);
@@ -100,18 +110,24 @@ export async function updatePrepare(ctx: Ctx): Promise<{ version: string; kind: 
   fs.rmSync(dir, { recursive: true, force: true });
   fs.mkdirSync(dir, { recursive: true });
   const dest = path.join(dir, name);
-  const res = await fetch(asset.url, { headers: { "User-Agent": "Alexel-Studio" } });
+  // Unduhan macet tidak boleh mengunci pembaruan selamanya: batas total 30 menit.
+  const res = await fetch(asset.url, { headers: { "User-Agent": "Alexel-Studio" }, signal: AbortSignal.timeout(30 * 60_000) });
   if (!res.ok || !res.body) throw new Error(`Gagal mengunduh pembaruan (${res.status}).`);
   const total = pick.file.size;
   const hash = createHash("sha512");
   const out = fs.createWriteStream(dest);
+  // Galat tulis setelah dibatalkan (folder sudah dihapus) tidak boleh menjadi unhandled error.
+  let writeErr: Error | null = null;
+  out.on("error", (e) => (writeErr = e));
   let got = 0;
   let last = 0;
   try {
     for await (const chunk of res.body as unknown as AsyncIterable<Uint8Array>) {
+      got += chunk.length;
+      // Server tidak boleh mengirim lebih dari ukuran di feed (cegah disk penuh sebelum checksum dicek).
+      if (got > total) throw new Error("Berkas pembaruan lebih besar dari yang diumumkan; dibatalkan.");
       hash.update(chunk);
       if (!out.write(chunk)) await new Promise((r) => out.once("drain", r));
-      got += chunk.length;
       const pct = Math.min(99, Math.floor((got / total) * 100));
       if (pct !== last) {
         last = pct;
@@ -119,6 +135,7 @@ export async function updatePrepare(ctx: Ctx): Promise<{ version: string; kind: 
       }
     }
     await new Promise<void>((r, j) => out.end((e: unknown) => (e ? j(e) : r())));
+    if (writeErr) throw writeErr;
   } catch (e) {
     out.destroy();
     fs.rmSync(dir, { recursive: true, force: true });
@@ -130,8 +147,16 @@ export async function updatePrepare(ctx: Ctx): Promise<{ version: string; kind: 
   }
   if (pick.kind === "mac-zip") {
     // ditto = pengekstrak zip bawaan macOS yang menjaga atribut & symlink bundel .app.
-    const x = spawnSync("/usr/bin/ditto", ["-x", "-k", dest, path.join(dir, "app")]);
-    if (x.status !== 0) throw new Error("Gagal mengekstrak pembaruan.");
+    // Asinkron: pembukaan zip ±130 MB tidak membekukan jendela.
+    const code = await new Promise<number | null>((resolve) => {
+      const p = spawn("/usr/bin/ditto", ["-x", "-k", dest, path.join(dir, "app")], { stdio: "ignore" });
+      p.on("error", () => resolve(-1));
+      p.on("close", resolve);
+    });
+    if (code !== 0) {
+      fs.rmSync(dir, { recursive: true, force: true });
+      throw new Error("Gagal mengekstrak pembaruan.");
+    }
   }
   prepared = { version: feed.version, kind: pick.kind, file: dest };
   ctx.emit("update-progress", { pct: 100 });
@@ -162,7 +187,13 @@ export function runScheduledUpdate() {
   try {
     if (u.kind === "nsis") {
       // Opsi yang sama dengan electron-updater: senyap, tandai sebagai pembaruan, jalankan lagi setelahnya.
-      spawn(u.file, ["/S", "--updated", "--force-run"], { detached: true, stdio: "ignore" }).unref();
+      const p = spawn(u.file, ["/S", "--updated", "--force-run"], { detached: true, stdio: "ignore" });
+      // Kegagalan asinkron (EACCES/ENOENT) jangan jadi uncaught exception di handler quit.
+      p.on("error", (e) => {
+        console.error("Pemasang pembaruan gagal dijalankan:", e);
+        void shell.openPath(path.dirname(u.file));
+      });
+      p.unref();
     } else if (u.kind === "appimage") {
       const cur = process.env.APPIMAGE!;
       fs.copyFileSync(u.file, `${cur}.new`);

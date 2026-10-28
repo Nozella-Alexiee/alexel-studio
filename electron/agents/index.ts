@@ -47,7 +47,8 @@ const drivers: Partial<Record<AgentId, AgentDriver>> = {
   claude: {
     status: async (ctx) => {
       const inst = useExtClaude(ctx);
-      return { ...(await claude.claudeDetect()), source: inst ? "extension" : "system" };
+      const res = await claude.claudeDetect();
+      return { ...res, source: inst ? "extension" : res.path?.includes("extensions") ? "extension" : "system" };
     },
     send: (ctx, key, cfg, content) => {
       useExtClaude(ctx);

@@ -6,11 +6,13 @@ import { confirmDialog, getState, toast } from "../state/store";
 import { serverStatus } from "../editor/lsp";
 import { installServer } from "./servers";
 import { tl } from "../i18n";
+import { scheduleRestart, stopHost } from "../exthost/client";
 import { loadExtensions, type InstalledExt } from "./registry";
 
 /** Pasang ekstensi; `quiet` (pembaruan) tidak menawarkan tema lagi. Mengembalikan manifest atau null bila gagal. */
 export async function installExtension(namespace: string, name: string, opts: { version?: string; quiet?: boolean } = {}): Promise<InstalledExt | null> {
   try {
+    await stopHost();
     const m = await call<InstalledExt>("ext_install", { namespace, name, version: opts.version ?? null });
     await loadExtensions();
     toast(tl("{name} terpasang", { name: m.displayName }), "success");
@@ -29,6 +31,8 @@ export async function installExtension(namespace: string, name: string, opts: { 
   } catch (e) {
     toast(errMsg(e), "error");
     return null;
+  } finally {
+    scheduleRestart();
   }
 }
 
@@ -57,13 +61,17 @@ export async function removeExtension(ext: InstalledExt): Promise<boolean> {
   if (s.extTheme?.ext === ext.id) A.updateSettings({ extTheme: null });
   if (s.iconTheme?.ext === ext.id) A.updateSettings({ iconTheme: null });
   if (s.disabledExts.includes(ext.id)) A.updateSettings({ disabledExts: s.disabledExts.filter((x) => x !== ext.id) });
+  await stopHost();
   try {
     await call("ext_remove", { id: ext.id });
   } catch (e) {
     toast(errMsg(e), "error");
+    scheduleRestart();
     return false;
   }
+  if (s.trustedExts.includes(ext.id)) A.updateSettings({ trustedExts: getState().settings.trustedExts.filter((x) => x !== ext.id) });
   await loadExtensions();
+  scheduleRestart();
   return true;
 }
 

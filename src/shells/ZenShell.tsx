@@ -201,6 +201,16 @@ export default function ZenShell() {
           <>
             <SideResizer side="right" />
             <aside className="right-panel zen-chat" aria-label={tl("Agen AI")}>
+              {(hasViews || l.rightView === "extviews") && (
+                <div className="ctl-right-tabs" role="tablist">
+                  <button role="tab" aria-selected={l.rightView === "claude"} className={l.rightView === "claude" ? "is-on" : ""} onClick={() => setLayout({ rightView: "claude" })}>
+                    CLAUDE
+                  </button>
+                  <button role="tab" aria-selected={l.rightView === "extviews"} className={l.rightView === "extviews" ? "is-on" : ""} onClick={() => setLayout({ rightView: "extviews" })}>
+                    {tl("Ekstensi").toUpperCase()}
+                  </button>
+                </div>
+              )}
               <RightContent />
             </aside>
           </>

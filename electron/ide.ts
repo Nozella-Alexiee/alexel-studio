@@ -15,8 +15,8 @@ import type { Ctx } from "./util";
 
 export const lockDir = () => path.join(process.env.CLAUDE_CONFIG_DIR || path.join(os.homedir(), ".claude"), "ide");
 
-/** Hapus lockfile milik Alexel Studio yang prosesnya sudah mati (aplikasi ditutup paksa). */
-export function cleanStaleLocks() {
+/** Hapus lockfile milik Alexel Studio yang prosesnya sudah mati (aplikasi ditutup paksa) atau port lama dari PID ini. */
+export function cleanStaleLocks(currentPort?: number) {
   try {
     for (const n of fs.readdirSync(lockDir())) {
       if (!n.endsWith(".lock")) continue;
@@ -24,6 +24,14 @@ export function cleanStaleLocks() {
       try {
         const j = JSON.parse(fs.readFileSync(f, "utf8")) as { pid?: number; ideName?: string };
         if (j.ideName !== "Alexel Studio" || !j.pid) continue;
+        const portFromFilename = parseInt(n.replace(/\.lock$/, ""), 10);
+        if (isNaN(portFromFilename)) continue;
+        if (j.pid === process.pid) {
+          if (currentPort !== undefined && portFromFilename !== currentPort) {
+            fs.rmSync(f, { force: true });
+          }
+          continue;
+        }
         try {
           process.kill(j.pid, 0);
         } catch (e) {
@@ -58,7 +66,7 @@ export class IdeServer {
   private server: http.Server | null = null;
   private wss: WebSocketServer | null = null;
   private clients = new Set<WebSocket>();
-  private pending = new Map<number, { resolve: (v: unknown) => void; reject: (e: Error) => void }>();
+  private pending = new Map<number, { resolve: (v: unknown) => void; reject: (e: Error) => void; ws: WebSocket; rpcId?: number | string }>();
   private seq = 0;
   port = 0;
   token = "";
@@ -119,6 +127,7 @@ export class IdeServer {
 
   private writeLock() {
     try {
+      cleanStaleLocks(this.port);
       fs.mkdirSync(lockDir(), { recursive: true, mode: 0o700 });
       this.lockFile = path.join(lockDir(), `${this.port}.lock`);
       fs.writeFileSync(this.lockFile, JSON.stringify({ pid: process.pid, workspaceFolders: this.folders, ideName: "Alexel Studio", transport: "ws", runningInWindows: process.platform === "win32", authToken: this.token }), { mode: 0o600 });
@@ -138,8 +147,19 @@ export class IdeServer {
       }
       void this.onMessage(ws, msg);
     });
-    ws.on("close", () => this.clients.delete(ws));
-    ws.on("error", () => this.clients.delete(ws));
+    ws.on("close", () => this.dropClient(ws));
+    ws.on("error", () => this.dropClient(ws));
+  }
+
+  /** Klien putus (CLI ditutup/diinterupsi): permintaannya dibatalkan dan editor menutup diff yang masih terbuka. */
+  private dropClient(ws: WebSocket) {
+    this.clients.delete(ws);
+    for (const [id, w] of [...this.pending]) {
+      if (w.ws !== ws) continue;
+      this.pending.delete(id);
+      w.reject(new Error("Klien terputus"));
+      this.ctx.emit("ide-cancel", { id });
+    }
   }
 
   private send(ws: WebSocket, msg: Rpc) {
@@ -157,6 +177,18 @@ export class IdeServer {
         return;
       case "notifications/initialized":
         return;
+      case "notifications/cancelled": {
+        // CLI membatalkan request (mis. pemakai menekan Esc): batalkan juga di editor.
+        const rid = msg.params?.requestId;
+        for (const [id, w] of [...this.pending]) {
+          if (w.ws === ws && w.rpcId === rid) {
+            this.pending.delete(id);
+            w.reject(new Error("Dibatalkan"));
+            this.ctx.emit("ide-cancel", { id });
+          }
+        }
+        return;
+      }
       case "ping":
         return reply({});
       case "tools/list":
@@ -169,7 +201,7 @@ export class IdeServer {
         const name = String(msg.params?.name ?? "");
         if (!IDE_TOOLS.some((t) => t.name === name)) return fail(-32602, `Tool tidak dikenal: ${name}`);
         try {
-          const content = await this.callRenderer(name, msg.params?.arguments ?? {});
+          const content = await this.callRenderer(name, msg.params?.arguments ?? {}, ws, msg.id);
           reply({ content });
         } catch (e) {
           reply({ isError: true, content: [{ type: "text", text: e instanceof Error ? e.message : String(e) }] });
@@ -182,10 +214,10 @@ export class IdeServer {
   }
 
   /** Jalankan tool di renderer (editor): mengembalikan blok content MCP. */
-  private callRenderer(tool: string, args: unknown): Promise<{ type: "text"; text: string }[]> {
+  private callRenderer(tool: string, args: unknown, ws: WebSocket, rpcId?: number | string): Promise<{ type: "text"; text: string }[]> {
     return new Promise((resolve, reject) => {
       const id = ++this.seq;
-      this.pending.set(id, { resolve: resolve as (v: unknown) => void, reject });
+      this.pending.set(id, { resolve: resolve as (v: unknown) => void, reject, ws, rpcId });
       this.ctx.emit("ide-request", { id, tool, args });
       // openDiff menunggu keputusan pemakai; tool lain harus cepat.
       if (tool !== "openDiff")

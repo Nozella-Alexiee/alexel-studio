@@ -18,10 +18,102 @@ export function setPreferredClaude(p: string | null) {
 }
 
 export function findClaude(): string | null {
-  if (preferred) return preferred;
+  if (preferred && fs.existsSync(preferred)) return preferred;
   // Penginstal native menaruh claude(.exe) di ~/.local/bin; npm memasang shim claude(.cmd).
   const home = os.homedir();
-  return findExecutable("claude", [path.join(home, ".local", "bin"), path.join(home, ".claude", "local")]) ?? bundledWithDesktop();
+  const direct = findExecutable("claude", [
+    path.join(home, ".local", "bin"),
+    path.join(home, ".claude", "local"),
+    path.join(home, ".local", "share", "claude", "versions", "current"),
+  ]);
+  if (direct) return direct;
+  return findExtensionBundledClaude() ?? bundledWithDesktop();
+}
+
+/** Biner Claude yang dibundel ekstensi resmi (Alexel Studio, VS Code, Cursor). */
+export function findExtensionBundledClaude(): string | null {
+  const home = os.homedir();
+  const exeName = process.platform === "win32" ? "claude.exe" : "claude";
+  const candidates: string[] = [];
+
+  // 1. Ekstensi di Alexel Studio (userData/extensions)
+  const appDataDirs = [
+    process.env.NOZEL_USER_DATA,
+    process.platform === "darwin" ? path.join(home, "Library", "Application Support", "alexel-studio") : null,
+    process.platform === "win32" ? (process.env.APPDATA ? path.join(process.env.APPDATA, "alexel-studio") : null) : null,
+    path.join(home, ".config", "alexel-studio"),
+  ].filter((d): d is string => !!d);
+
+  for (const base of appDataDirs) {
+    const extDir = path.join(base, "extensions");
+    try {
+      if (fs.existsSync(extDir)) {
+        for (const f of fs.readdirSync(extDir)) {
+          if (/anthropic\.claude-code/i.test(f)) {
+            candidates.push(
+              path.join(extDir, f, "ext", "resources", "native-binary", exeName),
+              path.join(extDir, f, "resources", "native-binary", exeName),
+              path.join(extDir, f, "ext", "bin", exeName),
+              path.join(extDir, f, "bin", exeName)
+            );
+          }
+        }
+      }
+    } catch {}
+  }
+
+  // 2. Ekstensi di VS Code, VS Code Insiders, Cursor
+  const editorExtDirs = [
+    path.join(home, ".vscode", "extensions"),
+    path.join(home, ".vscode-insiders", "extensions"),
+    path.join(home, ".cursor", "extensions"),
+  ];
+
+  for (const extDir of editorExtDirs) {
+    try {
+      if (fs.existsSync(extDir)) {
+        for (const f of fs.readdirSync(extDir)) {
+          if (/anthropic\.claude-code/i.test(f)) {
+            candidates.push(
+              path.join(extDir, f, "resources", "native-binary", exeName),
+              path.join(extDir, f, "ext", "resources", "native-binary", exeName),
+              path.join(extDir, f, "bin", exeName)
+            );
+          }
+        }
+      }
+    } catch {}
+  }
+
+  // 3. Versi native di ~/.local/share/claude/versions (urutkan terbaru dulu)
+  const claudeVersionsDir = path.join(home, ".local", "share", "claude", "versions");
+  try {
+    if (fs.existsSync(claudeVersionsDir)) {
+      const vers = fs
+        .readdirSync(claudeVersionsDir)
+        .map((v) => {
+          const full = path.join(claudeVersionsDir, v);
+          try {
+            return { path: full, mtime: fs.statSync(full).mtimeMs };
+          } catch {
+            return null;
+          }
+        })
+        .filter((x): x is { path: string; mtime: number } => !!x);
+      vers.sort((a, b) => b.mtime - a.mtime);
+      for (const v of vers) candidates.push(v.path);
+    }
+  } catch {}
+
+  for (const p of candidates) {
+    try {
+      if (fs.existsSync(p) && fs.statSync(p).isFile()) {
+        if (process.platform !== "win32") fs.accessSync(p, fs.constants.X_OK);
+        return p;
+      }
+    } catch {}
+  }
+  return null;
 }
 
 function spawnCli(cli: string, args: string[], cwd: string) {
@@ -437,7 +529,7 @@ export function claudeOnce(runId: string, projectDir: string, prompt: string, mo
   if (!cli) throw new Error("Claude Code CLI belum terpasang.");
   const cwd = projectDir && fs.existsSync(projectDir) ? projectDir : os.homedir();
   // Edit kecil di tempat: model cepat + effort rendah (model bawaan bisa butuh beberapa menit).
-  const args = ["-p", "--output-format", "json", "--permission-mode", "plan", "--max-turns", "3"];
+  const args = ["-p", "--output-format", "json", "--permission-mode", "plan", "--max-turns", "3", "--no-session-persistence"];
   if (model === "fast") args.push("--model", "sonnet", "--effort", "low");
   return new Promise((resolve, reject) => {
     const child = spawnCli(cli, args, cwd);

@@ -24,6 +24,8 @@ export interface LoadedExt {
   dir: string;
   manifest: ExtManifest;
   active: boolean;
+  /** Aktivasi gagal: tidak dicoba lagi otomatis (registrasi setengah jadi sudah dibersihkan). */
+  failed?: boolean;
   activating: Promise<void> | null;
   exports: unknown;
   context: unknown;

@@ -125,4 +125,77 @@ describe("lockfile basi", () => {
     expect(fs.existsSync(path.join(dir, "2222.lock"))).toBe(true);
     expect(fs.existsSync(path.join(dir, "3333.lock"))).toBe(true);
   });
+
+  it("lockfile dari port lama milik PID yang sama dibersihkan saat port baru aktif", async () => {
+    const { cleanStaleLocks } = await import("./ide");
+    const dir = lockDir();
+    fs.mkdirSync(dir, { recursive: true });
+    fs.writeFileSync(path.join(dir, "4444.lock"), JSON.stringify({ pid: process.pid, ideName: "Alexel Studio" }));
+    fs.writeFileSync(path.join(dir, "5555.lock"), JSON.stringify({ pid: process.pid, ideName: "Alexel Studio" }));
+    cleanStaleLocks(5555);
+    expect(fs.existsSync(path.join(dir, "4444.lock"))).toBe(false);
+    expect(fs.existsSync(path.join(dir, "5555.lock"))).toBe(true);
+    fs.rmSync(path.join(dir, "5555.lock"), { force: true });
+  });
+
+  it("berkas lock non-numerik tidak dihapus sembarangan", async () => {
+    const { cleanStaleLocks } = await import("./ide");
+    const dir = lockDir();
+    fs.mkdirSync(dir, { recursive: true });
+    const nonNumeric = path.join(dir, "custom.lock");
+    fs.writeFileSync(nonNumeric, JSON.stringify({ pid: process.pid, ideName: "Alexel Studio" }));
+    cleanStaleLocks(5555);
+    expect(fs.existsSync(nonNumeric)).toBe(true);
+    fs.rmSync(nonNumeric, { force: true });
+  });
+});
+
+describe("pembatalan permintaan IDE", () => {
+  const mk = async () => {
+    const events: { event: string; p: any }[] = []; // eslint-disable-line @typescript-eslint/no-explicit-any
+    const dir = fs.realpathSync.native(fs.mkdtempSync(path.join(os.tmpdir(), "alexel-ide-c-")));
+    process.env.CLAUDE_CONFIG_DIR = dir;
+    const s = new IdeServer({ userData: dir, emit: (event: string, p: unknown) => events.push({ event, p }) } as unknown as Ctx, "1.0.0");
+    await s.start("/p");
+    const connect = () =>
+      new Promise<WebSocket>((resolve, reject) => {
+        const ws = new WebSocket(`ws://127.0.0.1:${s.port}`, ["mcp"], { headers: { "x-claude-code-ide-authorization": s.token } });
+        ws.once("open", () => resolve(ws));
+        ws.once("error", reject);
+      });
+    const waitFor = async (cond: () => boolean) => {
+      for (let i = 0; i < 100 && !cond(); i++) await new Promise((r) => setTimeout(r, 20));
+      expect(cond()).toBe(true);
+    };
+    return { s, events, connect, waitFor, dir };
+  };
+
+  it("CLI putus saat openDiff menunggu: permintaan dibatalkan dan editor diberi tahu (ide-cancel)", async () => {
+    const { s, events, connect, waitFor, dir } = await mk();
+    const ws = await connect();
+    ws.send(JSON.stringify({ jsonrpc: "2.0", id: 1, method: "tools/call", params: { name: "openDiff", arguments: { old_file_path: "/a", new_file_path: "/a", new_file_contents: "x", tab_name: "t" } } }));
+    await waitFor(() => events.some((e) => e.event === "ide-request"));
+    const reqId = events.find((e) => e.event === "ide-request")!.p.id;
+    ws.close();
+    await waitFor(() => events.some((e) => e.event === "ide-cancel"));
+    expect(events.find((e) => e.event === "ide-cancel")!.p.id).toBe(reqId);
+    s.stop();
+    fs.rmSync(dir, { recursive: true, force: true });
+  });
+
+  it("notifications/cancelled dari CLI membatalkan request yang bersangkutan saja", async () => {
+    const { s, events, connect, waitFor, dir } = await mk();
+    const ws = await connect();
+    const call = (id: number) => ws.send(JSON.stringify({ jsonrpc: "2.0", id, method: "tools/call", params: { name: "openDiff", arguments: { old_file_path: "/a", new_file_path: "/a", new_file_contents: "x", tab_name: `t${id}` } } }));
+    call(10);
+    call(11);
+    await waitFor(() => events.filter((e) => e.event === "ide-request").length === 2);
+    ws.send(JSON.stringify({ jsonrpc: "2.0", method: "notifications/cancelled", params: { requestId: 10 } }));
+    await waitFor(() => events.some((e) => e.event === "ide-cancel"));
+    const reqs = events.filter((e) => e.event === "ide-request").map((e) => e.p.id);
+    expect(events.filter((e) => e.event === "ide-cancel").map((e) => e.p.id)).toEqual([reqs[0]]);
+    ws.close();
+    s.stop();
+    fs.rmSync(dir, { recursive: true, force: true });
+  });
 });

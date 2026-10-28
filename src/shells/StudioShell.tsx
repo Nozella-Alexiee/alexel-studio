@@ -120,11 +120,21 @@ export default function StudioShell() {
           <>
             <SideResizer side="right" />
             <aside className="right-panel st-right" aria-label={tl("Sidebar kanan")}>
-              {l.rightView !== "claude" && (
+              {(hasViews || l.rightView !== "claude") && (
                 <div className="ctl-right-tabs" role="tablist">
-                  <button role="tab" aria-selected={false} onClick={() => setLayout({ rightView: "claude" })}>
+                  <button role="tab" aria-selected={l.rightView === "claude"} className={l.rightView === "claude" ? "is-on" : ""} onClick={() => setLayout({ rightView: "claude" })}>
                     CLAUDE
                   </button>
+                  {(hasViews || l.rightView === "extviews") && (
+                    <button role="tab" aria-selected={l.rightView === "extviews"} className={l.rightView === "extviews" ? "is-on" : ""} onClick={() => setLayout({ rightView: "extviews" })}>
+                      {tl("Ekstensi").toUpperCase()}
+                    </button>
+                  )}
+                  {l.rightView === "git" && (
+                    <button role="tab" aria-selected={true} className="is-on" onClick={() => setLayout({ rightView: "git" })}>
+                      GIT
+                    </button>
+                  )}
                 </div>
               )}
               <RightContent />

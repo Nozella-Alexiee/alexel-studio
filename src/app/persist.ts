@@ -49,7 +49,7 @@ function parse<T>(s: string | null): T | null {
   }
 }
 
-function sanitizeSettings(raw: Partial<Settings> | null): Settings {
+function sanitizeSettings(raw: Partial<Settings> | null, migrate = false): Settings {
   const s = { ...DEFAULT_SETTINGS, ...(raw ?? {}) };
   if (!DESIGNS.some((d) => d.id === s.design)) s.design = DEFAULT_SETTINGS.design;
   s.fontSize = Math.min(28, Math.max(9, Number(s.fontSize) || 13));
@@ -75,7 +75,17 @@ function sanitizeSettings(raw: Partial<Settings> | null): Settings {
   s.showResources = s.showResources === true;
   s.updateCheck = s.updateCheck !== false;
   // Pengguna versi lama (antarmuka Indonesia) tetap berbahasa Indonesia.
-  if (raw && !("language" in raw)) s.language = "id";
+  // Hanya saat memulihkan sesi: settings.json yang ditulis tangan tanpa baris language tidak boleh membalik bahasa.
+  if (migrate && raw && !("language" in raw)) s.language = "id";
+  // Berkas yang diedit tangan bisa membawa tipe salah; konsumen memakai .includes/.map tanpa pemeriksaan.
+  const strs = (v: unknown): string[] => (Array.isArray(v) ? v.filter((x): x is string => typeof x === "string").slice(0, 500) : []);
+  s.trustedExts = strs(s.trustedExts);
+  s.disabledExts = strs(s.disabledExts);
+  if (!s.extSettings || typeof s.extSettings !== "object" || Array.isArray(s.extSettings)) s.extSettings = {};
+  s.ideIntegration = s.ideIntegration !== false;
+  s.claudeFast = s.claudeFast === true;
+  s.claudeThinking = s.claudeThinking !== false;
+  s.formatOnSave = s.formatOnSave === true;
   if (!["auto", "id", "en"].includes(s.language)) s.language = "auto";
   if (!["claude", "codex", "gemini", "antigravity", "acp"].includes(s.agent)) s.agent = "claude";
   if (!s.agentPrefs || typeof s.agentPrefs !== "object") s.agentPrefs = {};
@@ -94,7 +104,7 @@ export async function restoreAll() {
     api.storeLoad("session").catch(() => null),
     api.storeLoad("recents").catch(() => null),
   ]);
-  const settings = sanitizeSettings(parse<Partial<Settings>>(settingsRaw));
+  const settings = sanitizeSettings(parse<Partial<Settings>>(settingsRaw), true);
   const session = parse<SessionFile>(sessionRaw);
   const recents = parse<string[]>(recentsRaw)?.filter((r) => typeof r === "string") ?? [];
   const layouts = { ...DEFAULT_LAYOUTS };
@@ -140,7 +150,7 @@ export async function settingsFileSaved(path: string) {
     toast(tl("settings.json bukan JSON yang valid; pengaturan tidak diubah."), "error");
     return;
   }
-  const next = sanitizeSettings({ ...raw, claudeConsent: raw.claudeConsent ?? getState().settings.claudeConsent });
+  const next = sanitizeSettings({ ...raw, claudeConsent: raw.claudeConsent ?? getState().settings.claudeConsent, language: raw.language ?? getState().settings.language });
   const { updateSettings } = await import("./actions");
   updateSettings(next);
   toast(tl("Pengaturan dari settings.json diterapkan."), "success");

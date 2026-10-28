@@ -7,7 +7,7 @@ import { fork } from "node:child_process";
 import { createHash } from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
-import { unzipSync } from "fflate";
+import { unzipSync, type UnzipFileFilter } from "fflate";
 import { parseJsonc } from "./jsonc";
 import { classifyManifest, type Compatibility } from "./extCompat";
 import { childEnv, type Ctx } from "./util";
@@ -289,6 +289,7 @@ async function extractCodeOffThread(buf: Uint8Array, dest: string): Promise<void
       let done = false;
       let err = "";
       child.stderr?.on("data", (d) => (err += String(d).slice(-500)));
+      child.on("error", (e) => !done && ((done = true), reject(e)));
       child.on("message", (m: { ok: boolean; error?: string }) => {
         done = true;
         if (m.ok) resolve();
@@ -299,6 +300,19 @@ async function extractCodeOffThread(buf: Uint8Array, dest: string): Promise<void
   } finally {
     fs.rmSync(tmp, { force: true });
   }
+}
+
+/**
+ * Filter unzip yang membatasi ukuran SEBELUM dikembang: fflate mengembang semua entri yang lolos filter ke memori,
+ * jadi vsix kecil berisi zip bomb bisa menghabiskan memori proses utama jika batas baru dicek sesudahnya.
+ */
+export function boundedFilter(pred: (name: string) => boolean, maxTotal: number, maxEntry = maxTotal): UnzipFileFilter {
+  let total = 0;
+  return (f) => {
+    if (!pred(f.name)) return false;
+    if (f.originalSize > maxEntry || (total += f.originalSize) > maxTotal) throw new Error("Ekstensi terlalu besar (ukuran terkembang melebihi batas).");
+    return true;
+  };
 }
 
 const MAX_CODE_FILES = 30_000;
@@ -313,7 +327,7 @@ export function isExecutable(b: Uint8Array): boolean {
 }
 
 export function extractCode(buf: Uint8Array, dest: string): number {
-  const files = unzipSync(buf, { filter: (f) => f.name.startsWith("extension/") && !f.name.endsWith("/") && !f.name.endsWith(".map") });
+  const files = unzipSync(buf, { filter: boundedFilter((n) => n.startsWith("extension/") && !n.endsWith("/") && !n.endsWith(".map"), MAX_CODE_BYTES, 600 * 1024 * 1024) });
   const names = Object.keys(files);
   if (names.length > MAX_CODE_FILES) throw new Error("Ekstensi memuat terlalu banyak berkas.");
   let total = 0;
@@ -374,7 +388,7 @@ async function installInto(dir: string, namespace: string, name: string, version
     const got = createHash("sha256").update(buf).digest("hex");
     if (expect && /^[0-9a-f]{64}$/i.test(expect) && expect.toLowerCase() !== got) throw new Error("Checksum ekstensi tidak cocok, pemasangan dibatalkan.");
   }
-  const files = unzipSync(buf, { filter: (f) => f.name === "extension/package.json" || DATA_EXT.test(f.name) });
+  const files = unzipSync(buf, { filter: boundedFilter((n) => n === "extension/package.json" || DATA_EXT.test(n), 300 * 1024 * 1024, 60 * 1024 * 1024) });
   const pkgRaw = files["extension/package.json"];
   if (!pkgRaw) throw new Error("Paket ekstensi tidak valid.");
   const pkg = JSON.parse(new TextDecoder().decode(pkgRaw));
@@ -436,7 +450,7 @@ async function installInto(dir: string, namespace: string, name: string, version
   }
   if (wantIcons.size) {
     if (wantIcons.size > MAX_ICON_FILES) throw new Error("Tema ikon terlalu besar.");
-    const imgs = unzipSync(buf, { filter: (f) => wantIcons.has(f.name) });
+    const imgs = unzipSync(buf, { filter: boundedFilter((n) => wantIcons.has(n), MAX_ICON_BYTES, 10 * 1024 * 1024) });
     let total = 0;
     for (const [k, data] of Object.entries(imgs)) {
       if ((total += data.length) > MAX_ICON_BYTES) throw new Error("Tema ikon terlalu besar.");
@@ -491,9 +505,13 @@ export function extList(ctx: Ctx): InstalledExt[] {
   }
   const out: InstalledExt[] = [];
   for (const n of names) {
-    // Sisa pemasangan yang terputus.
-    if (n.startsWith(".tmp-")) {
-      fs.rmSync(path.join(root, n), { recursive: true, force: true });
+    // Sisa pemasangan yang terputus. Folder sementara yang masih baru milik pemasangan yang sedang berjalan: jangan disentuh.
+    if (n.startsWith(".tmp-") || n.startsWith(".vsix-")) {
+      try {
+        if (Date.now() - fs.statSync(path.join(root, n)).mtimeMs > 15 * 60_000) fs.rmSync(path.join(root, n), { recursive: true, force: true });
+      } catch {
+        /* sudah hilang */
+      }
       continue;
     }
     try {

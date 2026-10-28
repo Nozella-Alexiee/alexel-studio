@@ -83,7 +83,7 @@ setTimeout(() => cleanTempBins(), 5000); // sisa biner Run sebelumnya
 const ctx: Ctx = {
   userData: app.getPath("userData"),
   emit: (event, payload) => {
-    if (win && !win.isDestroyed()) win.webContents.send("nozel:event", event, event === "pty-data" || event === "agent-event" || event === "ide-request" || event === "exthost-request" || event === "exthost-event" || event === "lsp-message" || event === "dap-message" ? payload : toUiPaths(payload));
+    if (win && !win.isDestroyed()) win.webContents.send("nozel:event", event, event === "pty-data" || event === "agent-event" || event === "ide-request" || event === "ide-cancel" || event === "exthost-request" || event === "exthost-event" || event === "lsp-message" || event === "dap-message" ? payload : toUiPaths(payload));
   },
   // Path dari UI memakai "/" juga di Windows; API shell Windows butuh "\\".
   trash: (p) => shell.trashItem(path.normalize(p)),
@@ -164,7 +164,7 @@ function serveApp() {
   protocol.handle("app", async (req) => {
     const { pathname } = new URL(req.url);
     let file = path.normalize(path.join(RENDERER_DIR, decodeURIComponent(pathname)));
-    if (!file.startsWith(RENDERER_DIR)) return new Response("Forbidden", { status: 403 });
+    if (file !== RENDERER_DIR && !file.startsWith(RENDERER_DIR + path.sep)) return new Response("Forbidden", { status: 403 });
     if (!fs.existsSync(file) || fs.statSync(file).isDirectory()) file = path.join(RENDERER_DIR, "index.html");
     const res = await net.fetch(pathToFileURL(file).toString());
     const headers = new Headers(res.headers);

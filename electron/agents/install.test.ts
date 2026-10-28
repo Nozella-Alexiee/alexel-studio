@@ -3,7 +3,7 @@ import os from "node:os";
 import path from "node:path";
 import { zipSync } from "fflate";
 import { describe, expect, it } from "vitest";
-import { checkVersion, openVsxTarget, pickEntries, PACKAGES, readZipEntries, safeEntryName, safeJoin } from "./install";
+import { checkVersion, installedAgent, openVsxTarget, pickEntries, PACKAGES, readZipEntries, safeEntryName, safeJoin } from "./install";
 
 describe("pasang agen dari VSIX", () => {
   it("target platform Open VSX", () => {
@@ -48,5 +48,18 @@ describe("pasang agen dari VSIX", () => {
     expect(list.map((x) => x.name).sort()).toEqual(["extension/extension.js", "extension/resources/native-binary/claude"]);
     expect(list.find((x) => x.name.endsWith("claude"))?.usize).toBe(1000);
     fs.rmSync(dir, { recursive: true, force: true });
+  });
+
+  it("mendeteksi biner Claude dari ekstensi di userData/extensions", () => {
+    const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "alexel-inst-"));
+    const extDir = path.join(tmp, "extensions", "Anthropic.claude-code", "ext", "resources", "native-binary");
+    fs.mkdirSync(extDir, { recursive: true });
+    const dummy = path.join(extDir, process.platform === "win32" ? "claude.exe" : "claude");
+    fs.writeFileSync(dummy, "#!/bin/sh\n", { mode: 0o755 });
+    const res = installedAgent({ userData: tmp } as any, "claude");
+    expect(res).not.toBeNull();
+    expect(res?.version).toBe("extension");
+    expect(res?.binary).toBe(dummy);
+    fs.rmSync(tmp, { recursive: true, force: true });
   });
 });

@@ -513,6 +513,8 @@ export async function saveDocument(path: string, opts: { quiet?: boolean; force?
   const text = st.doc;
   const tab = getState().tabs[path];
   if (tab?.conflict && !opts.force) {
+    // Simpan otomatis tidak membuka dialog konflik berulang (ketukan berikutnya akan memicunya lagi); tab sudah ditandai.
+    if (opts.quiet) return false;
     const { resolveConflict } = await import("../app/conflicts");
     return resolveConflict(path);
   }
@@ -522,6 +524,7 @@ export async function saveDocument(path: string, opts: { quiet?: boolean; force?
       const disk = await api.mtime(path).catch(() => 0);
       if (disk && doc.mtime && disk > doc.mtime + 1) {
         setState((s) => ({ tabs: { ...s.tabs, [path]: { ...s.tabs[path], conflict: true } } }));
+        if (opts.quiet) return false;
         const { resolveConflict } = await import("../app/conflicts");
         return resolveConflict(path);
       }

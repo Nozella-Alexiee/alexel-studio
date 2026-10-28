@@ -166,6 +166,13 @@ export function removeDecorationType(key: number) {
     if (m.delete(key)) for (const v of docs.viewsShowing(path)) v.dispatch({ effects: decChanged.of(null) });
   }
 }
+/** Buang semua dekorasi dari host (host berhenti/dimulai ulang). */
+export function clearHostDecorations() {
+  const paths = [...decByPath.keys()];
+  decTypes.clear();
+  decByPath.clear();
+  for (const path of paths) for (const v of docs.viewsShowing(path)) v.dispatch({ effects: decChanged.of(null) });
+}
 export function applyHostDecorations(path: string, type: number, items: DecItem[]) {
   let m = decByPath.get(path);
   if (!m) decByPath.set(path, (m = new Map()));

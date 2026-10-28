@@ -118,7 +118,7 @@ export function DialogHost() {
           {d.kind === "choice" ? (
             <>
               <button className="btn" onClick={() => close(null)}>
-                {d.cancelLabel ?? "Batal"}
+                {d.cancelLabel ?? tl("Batal")}
               </button>
               {d.choices?.map((c, i) => (
                 <button key={c.id} ref={i === 0 ? okBtn : undefined} className={`btn ${c.danger ? "btn-danger" : i === 0 ? "btn-primary" : ""}`} onClick={() => close(c.id)}>
@@ -130,7 +130,7 @@ export function DialogHost() {
             <>
               {d.cancelLabel !== "" && (
                 <button className="btn" onClick={() => close(null)}>
-                  {d.cancelLabel ?? "Batal"}
+                  {d.cancelLabel ?? tl("Batal")}
                 </button>
               )}
               <button ref={okBtn} className={`btn ${d.danger ? "btn-danger" : "btn-primary"}`} onClick={submit}>

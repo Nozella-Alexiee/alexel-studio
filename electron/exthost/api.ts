@@ -1,6 +1,7 @@
 // Objek `vscode` per ekstensi: menggabungkan namespace + kelas. Yang belum ada tidak membuat ekstensi
 // crash saat aktivasi: dicatat sekali ke Output, lalu mengembalikan fungsi kosong.
 
+import { createHash } from "node:crypto";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
@@ -243,7 +244,8 @@ export function buildApi(hc: HostCtx, ext: LoadedExt | null): Record<string, unk
 /** ExtensionContext untuk `activate(context)`. */
 export function buildContext(hc: HostCtx, ext: LoadedExt): Record<string, unknown> {
   const base = path.join(hc.userData, "exthost", ext.id);
-  const wsKey = Buffer.from(hc.root ?? "none").toString("base64url").slice(0, 24);
+  // Hash seluruh path project: memotong base64 cuma memakai 18 byte pertama (project saudara berbagi state).
+  const wsKey = createHash("sha1").update(hc.root ?? "none").digest("hex").slice(0, 16);
   // Folder induk harus ada: ekstensi sering memanggil mkdir (tidak rekursif) pada globalStoragePath.
   try {
     fs.mkdirSync(base, { recursive: true });

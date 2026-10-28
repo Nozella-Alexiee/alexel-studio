@@ -1139,4 +1139,7 @@ export const EN: Record<string, string> = {
   "Tema, ikon, snippet, grammar, dan konfigurasi bahasa langsung dipakai. Ekstensi yang berisi kode baru dijalankan setelah kamu mempercayainya (eksperimental, API VS Code terbatas).": "Themes, icons, snippets, grammars and language configuration are used right away. Extensions that contain code only run after you trust them (experimental, limited VS Code API).",
   "Direkomendasikan untuk project ini": "Recommended for this project",
   "Karena project memakai {x}": "Because the project uses {x}",
+  "Di luar folder project: {path}": "Outside the project folder: {path}",
+  "Dibandingkan dengan: {path}": "Compared with: {path}",
+  "Belum ada tampilan dari ekstensi. Pasang dan percayai ekstensi seperti Claude Code, Codex, atau Todo Tree.": "No extension views yet. Install and trust extensions such as Claude Code, Codex, or Todo Tree.",
 };

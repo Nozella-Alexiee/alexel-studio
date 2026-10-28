@@ -67,3 +67,60 @@ describe("webview: bentuk URL sumber daya dari asWebviewUri", () => {
     webviewDispose(11);
   });
 });
+
+describe("webview: ekstraksi nonce CSP untuk bootstrap", () => {
+  it("mengekstraksi nonce dari meta Content-Security-Policy dan menyisipkannya ke tag <script>", () => {
+    webviewCreate(20, []);
+    webviewHtml(
+      20,
+      '<!DOCTYPE html><html><head><meta http-equiv="Content-Security-Policy" content="default-src \'none\'; script-src \'nonce-secret12345\';"><title>Ext</title></head><body><script nonce="secret12345">run()</script></body></html>'
+    );
+    const r = resolveWebview(`nozelweb://${H}/v/20/index.html`);
+    expect(r.status).toBe(200);
+    const body = String(r.body);
+    expect(body).toContain('<script nonce="secret12345">');
+    expect(body).toContain("acquireVsCodeApi");
+    webviewDispose(20);
+  });
+
+  it("mengekstraksi nonce dari atribut script jika meta CSP tidak ada", () => {
+    webviewCreate(21, []);
+    webviewHtml(21, '<!DOCTYPE html><html><head><title>Ext</title></head><body><script nonce="abc999xyz">run()</script></body></html>');
+    const r = resolveWebview(`nozelweb://${H}/v/21/index.html`);
+    expect(r.status).toBe(200);
+    const body = String(r.body);
+    expect(body).toContain('<script nonce="abc999xyz">');
+    webviewDispose(21);
+  });
+
+  it("memprioritaskan nonce script-src bila style-src memiliki nonce berbeda sebelumnya", () => {
+    webviewCreate(22, []);
+    webviewHtml(
+      22,
+      '<!DOCTYPE html><html><head><meta http-equiv="Content-Security-Policy" content="default-src \'none\'; style-src \'nonce-style111\'; script-src \'nonce-script222\';"><title>Ext</title></head><body><script nonce="script222">run()</script></body></html>'
+    );
+    const r = resolveWebview(`nozelweb://${H}/v/22/index.html`);
+    expect(r.status).toBe(200);
+    const body = String(r.body);
+    expect(body).toContain('<script nonce="script222">');
+    expect(body).not.toContain('<script nonce="style111">');
+    webviewDispose(22);
+  });
+
+  it("menyuntikkan nonce dinamis ke meta CSP & bootstrap script jika dokumen menerapkan CSP ketat tanpa nonce (pola Codex)", () => {
+    webviewCreate(23, []);
+    webviewHtml(
+      23,
+      '<!DOCTYPE html><html><head><meta http-equiv="Content-Security-Policy" content="default-src \'none\'; script-src nozelweb:; style-src nozelweb: \'unsafe-inline\';"><title>Codex</title></head><body><script type="module" src="./assets/index.js"></script></body></html>'
+    );
+    const r = resolveWebview(`nozelweb://${H}/v/23/index.html`);
+    expect(r.status).toBe(200);
+    const body = String(r.body);
+    const scriptNonceMatch = body.match(/<script\s+nonce="([A-Za-z0-9+/=_-]+)">\(function/);
+    expect(scriptNonceMatch).toBeTruthy();
+    const nonce = scriptNonceMatch![1];
+    // Pastikan nonce yang disuntikkan ke script bootstrap juga ada di CSP meta
+    expect(body).toContain(`'nonce-${nonce}'`);
+    webviewDispose(23);
+  });
+});

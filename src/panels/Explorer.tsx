@@ -45,12 +45,14 @@ function TreeRow({ row, active, focused, onFocusRow }: { row: Row; active: boole
 
   const activate = () => {
     onFocusRow();
+    setState({ selectedTreePath: entry.path });
     if (entry.is_dir) void A.toggleDir(entry.path);
     else void A.openFile(entry.path);
   };
 
   const menu = (e: React.MouseEvent) => {
     onFocusRow();
+    setState({ selectedTreePath: entry.path });
     openMenu(e, [
       ...(entry.is_dir
         ? [
@@ -125,6 +127,7 @@ export function FileTree() {
   const root = useStore((s) => s.root);
   const rows = useRows(root);
   const active = useStore((s) => activeTabId(s));
+  const selectedTreePath = useStore((s) => s.selectedTreePath);
   const [focusIdx, setFocusIdx] = useState(0);
   const box = useRef<HTMLDivElement>(null);
 
@@ -136,6 +139,7 @@ export function FileTree() {
         e.preventDefault();
         const j = Math.max(0, Math.min(rows.length - 1, n));
         setFocusIdx(j);
+        setState({ selectedTreePath: rows[j].entry.path });
         box.current?.querySelector<HTMLElement>(`[data-path="${CSS.escape(rows[j].entry.path)}"]`)?.focus();
       };
       if (!row) return;
@@ -201,7 +205,7 @@ export function FileTree() {
       }}
     >
       {rows.map((r, i) => (
-        <TreeRow key={r.entry.path} row={r} active={r.entry.path === active} focused={i === Math.min(focusIdx, rows.length - 1)} onFocusRow={() => setFocusIdx(i)} />
+        <TreeRow key={r.entry.path} row={r} active={r.entry.path === (selectedTreePath ?? active)} focused={i === Math.min(focusIdx, rows.length - 1)} onFocusRow={() => { setFocusIdx(i); setState({ selectedTreePath: r.entry.path }); }} />
       ))}
       {rows.length === 0 && <div className="empty-body pad">{tl("Folder ini kosong.")}</div>}
     </div>
@@ -210,21 +214,22 @@ export function FileTree() {
 
 export function ExplorerHeader({ title = "Explorer" }: { title?: string }) {
   const root = useStore((s) => s.root);
+  const selectedTreePath = useStore((s) => s.selectedTreePath);
   return (
     <div className="side-head">
       <span className="side-title">{title}</span>
       {root && (
         <div className="side-actions">
-          <IconButton label={tl("Berkas baru")} keys="Mod+N" onClick={() => void A.newFile(null)}>
+          <IconButton label={tl("Berkas baru")} keys="Mod+N" onClick={() => void A.newFile(selectedTreePath)}>
             <FilePlus2 size={14} />
           </IconButton>
-          <IconButton label={tl("Folder baru")} onClick={() => void A.newFolder(null)}>
+          <IconButton label={tl("Folder baru")} onClick={() => void A.newFolder(selectedTreePath)}>
             <FolderPlus size={14} />
           </IconButton>
           <IconButton label={tl("Muat ulang")} onClick={() => void A.refreshTree()}>
             <RefreshCw size={14} />
           </IconButton>
-          <IconButton label={tl("Tutup semua folder")} onClick={() => setState({ expanded: root ? { [root]: true } : {} })}>
+          <IconButton label={tl("Tutup semua folder")} onClick={() => setState({ expanded: root ? { [root]: true } : {}, selectedTreePath: null })}>
             <ListCollapse size={14} />
           </IconButton>
         </div>

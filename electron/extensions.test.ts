@@ -79,11 +79,16 @@ describe("pasang ekstensi", () => {
     expect(extList(ctx)[0].version).toBe("1.0.0");
   });
 
-  it("sisa pemasangan terputus dibersihkan", () => {
+  it("sisa pemasangan terputus (lama) dibersihkan, tapi yang baru (pemasangan sedang berjalan) tidak disentuh", () => {
     const userData = tmp();
-    fs.mkdirSync(path.join(userData, "extensions", ".tmp-pub.ext-1-2"), { recursive: true });
+    const old = path.join(userData, "extensions", ".tmp-pub.ext-1-2");
+    const fresh = path.join(userData, "extensions", ".tmp-pub.ext-3-4");
+    fs.mkdirSync(old, { recursive: true });
+    fs.mkdirSync(fresh, { recursive: true });
+    const ago = new Date(Date.now() - 30 * 60_000);
+    fs.utimesSync(old, ago, ago);
     expect(extList(ctxFor(userData))).toEqual([]);
-    expect(fs.readdirSync(path.join(userData, "extensions"))).toEqual([]);
+    expect(fs.readdirSync(path.join(userData, "extensions"))).toEqual([".tmp-pub.ext-3-4"]);
   });
 });
 
@@ -125,3 +130,38 @@ describe("deteksi biner", () => {
     expect(isExecutable(Uint8Array.from([1, 2]))).toBe(false);
   });
 });
+
+import { boundedFilter, extractCode } from "./extensions";
+
+describe("batas ukuran sebelum mengembang (zip bomb)", () => {
+  const bomb = () => zipSync({ "extension/package.json": strToU8("{}"), "extension/data.bin": new Uint8Array(6 * 1024 * 1024) });
+
+  it("entri yang terkembang melebihi batas ditolak sebelum dikembang", () => {
+    const f = boundedFilter(() => true, 1024 * 1024);
+    expect(() => f({ name: "x", size: 10, originalSize: 5 * 1024 * 1024, compression: 8 })).toThrow(/terlalu besar/);
+  });
+
+  it("batas kumulatif: beberapa entri kecil yang jumlahnya melebihi batas", () => {
+    const f = boundedFilter(() => true, 100, 100);
+    expect(f({ name: "a", size: 1, originalSize: 60, compression: 8 })).toBe(true);
+    expect(() => f({ name: "b", size: 1, originalSize: 60, compression: 8 })).toThrow();
+  });
+
+  it("entri yang tidak lolos pola tidak dihitung", () => {
+    const f = boundedFilter((n) => n.endsWith(".json"), 10);
+    expect(f({ name: "besar.bin", size: 1, originalSize: 1e9, compression: 8 })).toBe(false);
+  });
+
+  it("zip kecil yang mengembang jadi 6 MB ditolak extractCode lewat filter (tanpa menulis apa pun)", () => {
+    const dest = fs.realpathSync.native(fs.mkdtempSync(path.join(os.tmpdir(), "alexel-bomb-")));
+    const orig = process.env.NODE_ENV;
+    // Batas dikecilkan lewat pemanggilan langsung filter yang sama dengan extractCode.
+    expect(() => unzipOnly(bomb(), 1024 * 1024)).toThrow(/terlalu besar/);
+    expect(() => extractCode(bomb(), dest)).not.toThrow(); // 6 MB masih di bawah batas produksi
+    process.env.NODE_ENV = orig;
+    fs.rmSync(dest, { recursive: true, force: true });
+  });
+});
+
+import { unzipSync } from "fflate";
+const unzipOnly = (buf: Uint8Array, max: number) => unzipSync(buf, { filter: boundedFilter((n) => n.startsWith("extension/"), max) });

@@ -281,7 +281,13 @@ export interface QuickPickRequest {
 export interface IdeDiffRequest {
   /** Nama tab dari agen (dipakai close_tab). */
   tab: string;
+  /** id permintaan di server IDE (untuk pembatalan dari CLI). */
+  reqId?: number;
   path: string;
+  /** Path berkas lama bila berbeda dari yang akan ditulis. */
+  oldPath?: string;
+  /** Berkas yang akan ditulis berada di luar folder project. */
+  outside?: boolean;
   oldText: string;
   newText: string;
   resolve: (accepted: boolean | "closed") => void;
@@ -302,6 +308,7 @@ interface State {
   recents: string[];
   dirs: Record<string, FileEntry[]>;
   expanded: Record<string, true>;
+  selectedTreePath: string | null;
   git: GitStatus | null;
   /** path absolut → kode status git (untuk dekorasi tree/tab) */
   gitMarks: Record<string, string>;
@@ -370,6 +377,7 @@ export const useStore = create<State>(() => ({
   recents: [],
   dirs: {},
   expanded: {},
+  selectedTreePath: null,
   git: null,
   gitMarks: {},
   gitDirs: {},
@@ -423,6 +431,8 @@ export const useLayout = () => useStore((s) => s.layouts[s.settings.design]);
 
 export function setLayout(patch: Partial<Layout>) {
   setState((s) => ({ layouts: { ...s.layouts, [s.settings.design]: { ...s.layouts[s.settings.design], ...patch } } }));
+  // Lebar sidebar/panel yang digeser disimpan per desain (persistSession ditunda sendiri).
+  void import("../app/persist").then((m) => m.persistSession()).catch(() => {});
 }
 
 export function currentLayout(): Layout {
@@ -464,11 +474,13 @@ export function stickyToast(text: string): () => void {
   return () => setState((s) => ({ toasts: s.toasts.filter((t) => t.id !== id) }));
 }
 
+/** Dialog diantrekan: satu tampil sekali; dialog baru menunggu yang sedang terbuka (tidak lagi membatalkannya diam-diam). */
+let askQueue: Promise<unknown> = Promise.resolve();
 export function ask(req: Omit<DialogRequest, "resolve">): Promise<string | boolean | null> {
-  return new Promise((resolve) => {
-    getState().dialog?.resolve(null);
-    setState({ dialog: { ...req, resolve } });
-  });
+  const show = () => new Promise<string | boolean | null>((resolve) => setState({ dialog: { ...req, resolve } }));
+  const p = askQueue.then(show, show);
+  askQueue = p.catch(() => {});
+  return p;
 }
 
 export async function confirmDialog(title: string, message: string, okLabel = tl("Lanjut"), danger = false): Promise<boolean> {

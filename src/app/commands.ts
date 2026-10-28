@@ -92,7 +92,7 @@ export const COMMANDS: Command[] = [
   { id: "checkUpdate", label: tl("Periksa pembaruan"), group: tl("Bantuan"), run: () => void A.checkForUpdates(true) },
   { id: "reportIssue", label: tl("Laporkan masalah"), group: tl("Bantuan"), run: () => void A.reportIssue() },
   { id: "keyboardShortcuts", label: tl("Shortcut keyboard"), group: tl("Bantuan"), run: () => A.openSettings(undefined, "keys") },
-  { id: "newFile", label: tl("Berkas baru"), group: tl("Berkas"), keys: "Mod+N", run: () => A.newFile(activeTab()?.kind === "text" ? activeTab()!.id : null) },
+  { id: "newFile", label: tl("Berkas baru"), group: tl("Berkas"), keys: "Mod+N", run: () => A.newFile() },
   { id: "newFolder", label: tl("Folder baru"), group: tl("Berkas"), run: () => A.newFolder() },
   { id: "save", label: tl("Simpan"), group: tl("Berkas"), keys: "Mod+S", run: A.saveActive, when: hasText },
   { id: "saveAll", label: tl("Simpan semua"), group: tl("Berkas"), keys: "Mod+Alt+S", run: A.saveAll },
@@ -229,8 +229,12 @@ export function recordCombo(e: KeyboardEvent): string | null {
   return isMac ? c : c.replace(/^Ctrl\+/, "Mod+");
 }
 
-/** Perintah yang tetap boleh dipakai saat fokus di terminal; sisanya diteruskan ke shell. */
-const TERMINAL_SAFE = new Set(["palette", "run", "runNoDebug", "stopRun", "runTarget", "debugRestart", "debugStart", "debugStop", "debugStepOver", "debugStepInto", "debugStepOut", "debugPause", "askClaude", "askClaude2", "quickOpen", "palette2", "sidebar", "panel", "terminal", "newTerminal", "settings", "cycleDesign", "explorer", "search", "git", "extensions"]);
+/**
+ * Perintah yang tetap boleh dipakai saat fokus di terminal; sisanya diteruskan ke shell.
+ * Di Windows/Linux Mod = Ctrl, jadi Ctrl+R (cari riwayat), Ctrl+L (bersihkan), Ctrl+B dan Ctrl+J milik readline/shell
+ * dan tidak boleh dicuri; di macOS Mod = ⌘ sehingga aman.
+ */
+const TERMINAL_SAFE = new Set(["palette", ...(isMac ? ["run", "runNoDebug", "askClaude2", "sidebar", "panel"] : []), "stopRun", "runTarget", "debugRestart", "debugStart", "debugStop", "debugStepOver", "debugStepInto", "debugStepOut", "debugPause", "askClaude", "quickOpen", "palette2", "terminal", "newTerminal", "settings", "cycleDesign", "explorer", "search", "git", "extensions"]);
 
 /** Global key handler (fase capture, supaya didahulukan dari CodeMirror). */
 export function handleGlobalKey(e: KeyboardEvent) {

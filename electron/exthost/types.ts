@@ -250,7 +250,7 @@ export class TextEdit {
 export class WorkspaceEdit {
   private edits = new Map<string, { uri: Uri; edits: TextEdit[] }>();
   get size() {
-    return this.edits.size;
+    return this.edits.size + this.fileOps.length;
   }
   replace(uri: Uri, range: Range, newText: string) {
     this.entry(uri).edits.push(new TextEdit(range, newText));
@@ -261,9 +261,17 @@ export class WorkspaceEdit {
   delete(uri: Uri, range: Range) {
     this.entry(uri).edits.push(TextEdit.delete(range));
   }
-  createFile(_uri: Uri, _options?: unknown) {}
-  deleteFile(_uri: Uri, _options?: unknown) {}
-  renameFile(_old: Uri, _new: Uri, _options?: unknown) {}
+  /** Operasi berkas yang dicatat (dijalankan applyEdit sebelum edit teks). */
+  readonly fileOps: { op: "create" | "delete" | "rename"; uri: Uri; to?: Uri; overwrite?: boolean; ignoreIfExists?: boolean; recursive?: boolean }[] = [];
+  createFile(uri: Uri, options?: { overwrite?: boolean; ignoreIfExists?: boolean }) {
+    this.fileOps.push({ op: "create", uri, ...options });
+  }
+  deleteFile(uri: Uri, options?: { recursive?: boolean; ignoreIfNotExists?: boolean }) {
+    this.fileOps.push({ op: "delete", uri, recursive: options?.recursive });
+  }
+  renameFile(oldUri: Uri, newUri: Uri, options?: { overwrite?: boolean; ignoreIfExists?: boolean }) {
+    this.fileOps.push({ op: "rename", uri: oldUri, to: newUri, ...options });
+  }
   has(uri: Uri) {
     return this.edits.has(uri.toString());
   }

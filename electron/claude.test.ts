@@ -2,7 +2,18 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
-import { claudeSessionLoad, claudeSessionsList, parseCliHelp, projectSessionDirs, promptTitle, sanitizeCfg, sessionArgs } from "./claude";
+import {
+  claudeSessionLoad,
+  claudeSessionsList,
+  findClaude,
+  findExtensionBundledClaude,
+  parseCliHelp,
+  projectSessionDirs,
+  promptTitle,
+  sanitizeCfg,
+  sessionArgs,
+  setPreferredClaude,
+} from "./claude";
 
 describe("sesi Claude Code", () => {
   it("argumen CLI mengikuti model, effort, mode, dan resume", () => {
@@ -67,6 +78,48 @@ describe("sesi Claude Code", () => {
     expect(claudeSessionLoad(cwd, "1111-aaaa", base)).toHaveLength(2);
     expect(() => claudeSessionLoad(cwd, "../x", base)).toThrow();
     fs.rmSync(base, { recursive: true, force: true });
+  });
+});
+
+describe("resolusi biner Claude CLI", () => {
+  it("preferredClaude diutamakan jika berkas ada", () => {
+    const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "alexel-cld-"));
+    const dummy = path.join(tmp, "claude-custom");
+    fs.writeFileSync(dummy, "#!/bin/sh\n", { mode: 0o755 });
+    setPreferredClaude(dummy);
+    expect(findClaude()).toBe(dummy);
+    setPreferredClaude(null);
+    fs.rmSync(tmp, { recursive: true, force: true });
+  });
+
+  it("mendeteksi biner dari ekstensi di NOZEL_USER_DATA", () => {
+    const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "alexel-ud-"));
+    const extBinDir = path.join(tmp, "extensions", "anthropic.claude-code", "ext", "resources", "native-binary");
+    fs.mkdirSync(extBinDir, { recursive: true });
+    const dummy = path.join(extBinDir, process.platform === "win32" ? "claude.exe" : "claude");
+    fs.writeFileSync(dummy, "#!/bin/sh\n", { mode: 0o755 });
+
+    const prev = process.env.NOZEL_USER_DATA;
+    process.env.NOZEL_USER_DATA = tmp;
+    try {
+      const found = findExtensionBundledClaude();
+      expect(found).toBe(dummy);
+    } finally {
+      if (prev) process.env.NOZEL_USER_DATA = prev;
+      else delete process.env.NOZEL_USER_DATA;
+      fs.rmSync(tmp, { recursive: true, force: true });
+    }
+  });
+
+  it("setPreferredClaude(null) mengembalikan resolusi ke biner sistem/ekstensi tanpa tertahan", () => {
+    const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "alexel-cld-reset-"));
+    const dummy = path.join(tmp, "claude-custom");
+    fs.writeFileSync(dummy, "#!/bin/sh\n", { mode: 0o755 });
+    setPreferredClaude(dummy);
+    expect(findClaude()).toBe(dummy);
+    setPreferredClaude(null);
+    expect(findClaude()).not.toBe(dummy);
+    fs.rmSync(tmp, { recursive: true, force: true });
   });
 });
 

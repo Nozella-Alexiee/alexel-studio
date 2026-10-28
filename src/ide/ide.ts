@@ -41,14 +41,19 @@ function selectionPayload(path: string) {
 
 const SEVERITY = { error: "Error", warning: "Warning", info: "Information" } as const;
 
-async function openDiffTab(a: { old_file_path: string; new_file_path: string; new_file_contents: string; tab_name: string }): Promise<Text[]> {
+async function openDiffTab(a: { old_file_path: string; new_file_path: string; new_file_contents: string; tab_name: string }, reqId?: number): Promise<Text[]> {
   let oldText = "";
   try {
     oldText = (await api.readText(a.old_file_path)).content;
   } catch {
     /* berkas baru */
   }
-  const accepted = await new Promise<boolean | "closed">((resolve) => setState({ ideDiff: { tab: a.tab_name, path: a.new_file_path, oldText, newText: a.new_file_contents, resolve } }));
+  const root = getState().root;
+  const norm = (p: string) => p.replace(/\\/g, "/");
+  const outside = !root || !(norm(a.new_file_path) === norm(root) || norm(a.new_file_path).startsWith(norm(root).replace(/\/$/, "") + "/"));
+  // Permintaan diff sebelumnya yang masih terbuka ditutup (dijawab "TAB_CLOSED"), bukan dibiarkan menggantung.
+  closeDiff();
+  const accepted = await new Promise<boolean | "closed">((resolve) => setState({ ideDiff: { tab: a.tab_name, reqId, path: a.new_file_path, oldPath: norm(a.old_file_path) !== norm(a.new_file_path) ? a.old_file_path : undefined, outside, oldText, newText: a.new_file_contents, resolve } }));
   if (accepted === "closed") return text("TAB_CLOSED");
   if (!accepted) return text("DIFF_REJECTED");
   await api.writeText(a.new_file_path, a.new_file_contents);
@@ -64,7 +69,7 @@ function closeDiff(tab?: string): number {
   return 1;
 }
 
-export async function handleIdeTool(tool: string, args: Any): Promise<Text[]> {
+export async function handleIdeTool(tool: string, args: Any, reqId?: number): Promise<Text[]> {
   const s = getState();
   switch (tool) {
     case "getWorkspaceFolders":
@@ -116,7 +121,7 @@ export async function handleIdeTool(tool: string, args: Any): Promise<Text[]> {
       return text({ success: ok, filePath: p, saved: ok, message: ok ? "Document saved" : "Document not open" });
     }
     case "openDiff":
-      return openDiffTab(args);
+      return openDiffTab(args, reqId);
     case "close_tab":
       return text(closeDiff(String(args.tab_name)) ? "TAB_CLOSED" : "NOT_FOUND");
     case "closeAllDiffTabs":
@@ -176,10 +181,14 @@ export function bootIde() {
   wired = true;
   void on<{ id: number; tool: string; args: unknown }>("ide-request", async ({ id, tool, args }) => {
     try {
-      await call("ide_reply", { id, result: await handleIdeTool(tool, args) });
+      await call("ide_reply", { id, result: await handleIdeTool(tool, args, id) });
     } catch (e) {
       await call("ide_reply", { id, error: e instanceof Error ? e.message : String(e) }).catch(() => {});
     }
+  });
+  void on<{ id: number }>("ide-cancel", ({ id }) => {
+    // CLI putus/membatalkan: diff yang menunggu jawabannya ditutup supaya "Terima" tidak menulis hasil basi.
+    if (getState().ideDiff?.reqId === id) closeDiff();
   });
   docs.onDocEvent((e) => e.type === "selection" && scheduleSelection());
   let last = "";

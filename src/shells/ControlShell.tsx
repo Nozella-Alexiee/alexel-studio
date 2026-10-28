@@ -158,6 +158,11 @@ export default function ControlShell() {
                 <button role="tab" aria-selected={l.rightView === "claude"} className={l.rightView === "claude" ? "is-on" : ""} onClick={() => setLayout({ rightView: "claude" })}>
                   CLAUDE
                 </button>
+                {(hasViews || l.rightView === "extviews") && (
+                  <button role="tab" aria-selected={l.rightView === "extviews"} className={l.rightView === "extviews" ? "is-on" : ""} onClick={() => setLayout({ rightView: "extviews" })}>
+                    {tl("Ekstensi").toUpperCase()}
+                  </button>
+                )}
               </div>
               <RightContent />
             </aside>

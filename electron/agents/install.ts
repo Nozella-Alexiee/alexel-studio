@@ -58,10 +58,51 @@ export interface InstalledAgent {
 export function installedAgent(ctx: Ctx, agent: string): InstalledAgent | null {
   try {
     const m = JSON.parse(fs.readFileSync(path.join(agentRoot(ctx, agent), "current.json"), "utf8")) as InstalledAgent;
-    return fs.existsSync(m.binary) ? m : null;
+    if (fs.existsSync(m.binary)) return m;
   } catch {
-    return null;
+    /* lanjut cek ekstensi */
   }
+
+  // Cek apakah biner tersedia dari ekstensi yang terpasang di userData/extensions
+  try {
+    const extDir = path.join(ctx.userData, "extensions");
+    if (fs.existsSync(extDir)) {
+      const target = openVsxTarget();
+      const exeName = exe(target);
+      const names = fs.readdirSync(extDir);
+      if (agent === "claude") {
+        for (const n of names) {
+          if (/anthropic\.claude-code/i.test(n)) {
+            const cands = [
+              path.join(extDir, n, "ext", "resources", "native-binary", `claude${exeName}`),
+              path.join(extDir, n, "resources", "native-binary", `claude${exeName}`),
+            ];
+            for (const b of cands) {
+              if (fs.existsSync(b)) {
+                return { version: "extension", target, binary: b, installedAt: fs.statSync(b).mtimeMs };
+              }
+            }
+          }
+        }
+      } else if (agent === "codex") {
+        for (const n of names) {
+          if (/openai\.chatgpt/i.test(n)) {
+            const cands = [
+              path.join(extDir, n, "ext", "bin", codexDir(target), `codex${exeName}`),
+              path.join(extDir, n, "bin", codexDir(target), `codex${exeName}`),
+            ];
+            for (const b of cands) {
+              if (fs.existsSync(b)) {
+                return { version: "extension", target, binary: b, installedAt: fs.statSync(b).mtimeMs };
+              }
+            }
+          }
+        }
+      }
+    }
+  } catch {}
+
+  return null;
 }
 
 // ---------------- Pembaca zip (akses acak, tanpa memuat seluruh berkas) ----------------

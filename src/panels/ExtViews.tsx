@@ -28,9 +28,8 @@ function Children({ viewId, parent, depth, version }: { viewId: string; parent?:
   const [err, setErr] = useState<string | null>(null);
   useEffect(() => {
     let alive = true;
-    setNodes(null);
     hostCall<Node[]>("tree/children", { viewId, element: parent })
-      .then((n) => alive && setNodes(n))
+      .then((n) => alive && (setErr(null), setNodes(n)))
       .catch((e) => alive && setErr(e instanceof Error ? e.message : String(e)));
     return () => {
       alive = false;

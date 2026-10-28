@@ -19,6 +19,7 @@ import {
   setState,
   stickyToast,
   toast,
+  activeTabId,
   type Group,
   type Layout,
   type Settings,
@@ -87,7 +88,7 @@ export async function closeProject() {
   if (!(await closeAllTabs())) return;
   void api.unwatch().catch(() => {});
   void api.previewRoot(null).catch(() => {});
-  setState({ root: null, dirs: {}, expanded: {}, git: null, gitMarks: {}, gitDirs: {}, runTargets: [], todos: null, chat: [], chatSession: null });
+  setState({ root: null, dirs: {}, expanded: {}, selectedTreePath: null, git: null, gitMarks: {}, gitDirs: {}, runTargets: [], todos: null, chat: [], chatSession: null });
   persistSession();
 }
 
@@ -388,7 +389,15 @@ export async function closeAllTabs(): Promise<boolean> {
       for (const t of dirty) if (!(await docs.saveDocument(t.id))) return false;
     } else if (choice !== "discard") return false;
   }
-  for (const id of Object.keys(getState().tabs)) docs.closeDocument(id);
+  // Webview ekstensi ikut ditutup supaya host tidak menganggapnya masih tampil.
+  const wv = await import("../exthost/webview");
+  for (const id of Object.keys(getState().tabs)) {
+    const wid = wv.webviewIdOf(id);
+    if (wid !== null) {
+      hostNotify("webview/dispose", { id: wid });
+      wv.closeWebviewTab(wid);
+    } else docs.closeDocument(id);
+  }
   setState({ tabs: {}, groups: [{ tabs: [], active: null }], focusedGroup: 0 });
   persistSession();
   return true;
@@ -454,13 +463,38 @@ export function afterSave(path: string, quiet?: boolean) {
 
 // ---------------- Operasi berkas ----------------
 
-function targetDir(path?: string | null): string | null {
+export function targetDir(path?: string | null): string | null {
   const s = getState();
-  if (path) {
-    const entries = Object.values(s.dirs).flat();
-    const e = entries.find((x) => x.path === path);
-    return e?.is_dir ? path : dirname(path);
+  let p = path;
+  if (!p) {
+    p = s.selectedTreePath ?? activeTabId(s) ?? s.root;
   }
+  if (!p) return s.root;
+
+  // Jika path adalah root project itu sendiri, langsung kembalikan root (jangan dirname!)
+  if (s.root && (p === s.root || p === s.root + "/" || p === s.root + "\\")) {
+    return s.root;
+  }
+
+  // Jika p terdaftar sebagai direktori di s.dirs, langsung gunakan p
+  if (p in s.dirs) {
+    return p;
+  }
+
+  // Cari di cache entries apakah p adalah folder
+  const entries = Object.values(s.dirs).flat();
+  const e = entries.find((x) => x.path === p);
+  if (e) {
+    return e.is_dir ? p : dirname(p);
+  }
+
+  // Jika p berada di dalam root project dan bukan folder terdaftar (misal file aktif):
+  // Ambil direktori induknya (dirname), pastikan tidak keluar dari root.
+  if (s.root && isInside(s.root, p)) {
+    const parent = dirname(p);
+    return isInside(s.root, parent) || parent === s.root ? parent : s.root;
+  }
+
   return s.root;
 }
 
@@ -482,7 +516,7 @@ export async function newFile(inPath?: string | null) {
 export async function newFolder(inPath?: string | null) {
   const dir = targetDir(inPath);
   if (!dir) return toast(tl("Buka folder project dulu."));
-  const name = await promptDialog(tl("Folder baru"), { placeholder: "nama-folder", validate: validateName, okLabel: tl("Buat") });
+  const name = await promptDialog(tl("Folder baru"), { message: tl("Di {dir}", { dir: relative(getState().root ?? "", dir) || tl("akar project") }), placeholder: "nama-folder", validate: validateName, okLabel: tl("Buat") });
   if (!name) return;
   try {
     await api.createDir(join(dir, name.trim()));
@@ -660,6 +694,8 @@ export async function onFsChanged(paths: string[], git: boolean) {
     if (s.expanded[p]) dirsToReload.add(p);
   }
   await Promise.all([...dirsToReload].map(loadDir));
+  // Ekstensi (createFileSystemWatcher) ikut diberi tahu; aman bila host tidak berjalan.
+  if (paths.length) hostNotify("fs/changed", { paths: paths.slice(0, 200) });
   for (const p of paths) {
     if (!getState().tabs[p] || getState().tabs[p].kind !== "text") continue;
     const r = await docs.externalChange(p);

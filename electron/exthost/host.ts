@@ -95,6 +95,9 @@ if (typeof registerHooks === "function") {
 process.on("uncaughtException", (e) => hc.log(null, `uncaughtException: ${e instanceof Error ? e.stack ?? e.message : String(e)}`));
 process.on("unhandledRejection", (e) => hc.log(null, `unhandledRejection: ${e instanceof Error ? e.stack ?? e.message : String(e)}`));
 
+/** Kunci dokumen yang sama dengan `Uri.toString()` (renderer mengirim bentuk berbeda: drive Windows, `()!'*`). */
+const canon = (u: string) => Uri.parse(u).toString();
+
 // ---- aktivasi ----------------------------------------------------------------------------
 
 const hasEvent = (e: LoadedExt, event: string): boolean => {
@@ -105,15 +108,31 @@ const hasEvent = (e: LoadedExt, event: string): boolean => {
     const id = event.slice("onCommand:".length);
     return (e.manifest.contributes?.commands ?? []).some((c: { command?: string }) => c.command === id);
   }
+  // Aktivasi implisit lain (VS Code ≥ 1.74): tampilan, bahasa, dan custom editor yang dideklarasikan di contributes.
+  const c = e.manifest.contributes ?? {};
+  if (event.startsWith("onView:")) {
+    const id = event.slice("onView:".length);
+    return Object.values((c.views ?? {}) as Record<string, { id?: string }[]>).some((list) => Array.isArray(list) && list.some((v) => v?.id === id));
+  }
+  if (event.startsWith("onLanguage:")) {
+    const id = event.slice("onLanguage:".length);
+    return (Array.isArray(c.languages) ? c.languages : []).some((l: { id?: string }) => l?.id === id);
+  }
+  if (event.startsWith("onCustomEditor:")) {
+    const id = event.slice("onCustomEditor:".length);
+    return (Array.isArray(c.customEditors) ? c.customEditors : []).some((x: { viewType?: string }) => x?.viewType === id);
+  }
   return false;
 };
 
-async function activate(id: string, reason = "manual"): Promise<void> {
+async function activate(id: string, reason = "manual", chain: string[] = []): Promise<void> {
   const ext = [...hc.extensions.values()].find((e) => e.id.toLowerCase() === id.toLowerCase());
-  if (!ext || ext.active) return;
+  if (!ext || ext.active || ext.failed) return;
+  // Dependensi melingkar (A↔B) tidak boleh saling menunggu selamanya.
+  if (chain.includes(ext.id)) return;
   if (ext.activating) return ext.activating;
   ext.activating = (async () => {
-    for (const dep of ext.manifest.extensionDependencies ?? []) await activate(dep, `dependency of ${ext.id}`);
+    for (const dep of ext.manifest.extensionDependencies ?? []) await activate(dep, `dependency of ${ext.id}`, [...chain, ext.id]);
     const started = Date.now();
     try {
       if (!ext.manifest.main) {
@@ -131,6 +150,11 @@ async function activate(id: string, reason = "manual"): Promise<void> {
     } catch (e) {
       const msg = e instanceof Error ? e.stack ?? e.message : inspect(e, { depth: 3 });
       hc.log(ext, `activation failed: ${msg}`);
+      // Bersihkan registrasi setengah jadi dan jangan coba lagi tiap peristiwa (percobaan kedua akan bentrok "command already exists").
+      ext.failed = true;
+      for (const s of ext.subscriptions.splice(0).reverse()) try { s?.dispose?.(); } catch { /* abaikan */ }
+      for (const [k, c] of [...hc.commands]) if (c.ext === ext) hc.commands.delete(k);
+      for (const [k, pr] of [...hc.providers]) if (pr.ext === ext) hc.providers.delete(k);
       rpc.notify("ui/extensionFailed", { id: ext.id, error: e instanceof Error ? e.message : inspect(e, { depth: 1 }).slice(0, 300) });
     } finally {
       ext.activating = null;
@@ -182,6 +206,7 @@ function workspaceContains(root: string, glob: string, depth = 0, rel = ""): boo
 // ---- dokumen -----------------------------------------------------------------------------
 
 const docOf = (uri: string): HostDocument => {
+  uri = canon(uri);
   let d = hc.docs.get(uri);
   if (!d) {
     const u = Uri.parse(uri);
@@ -230,12 +255,12 @@ rpc.requests.set("activate", async (p: { id: string }) => {
 rpc.events.set("doc/open", async (p: { uri: string; languageId: string; version: number; text: string; eol: 1 | 2 }) => {
   const doc = new HostDocument(Uri.parse(p.uri), p.languageId, p.version, p.text, p.eol);
   doc.isOpenInEditor = true;
-  hc.docs.set(p.uri, doc);
+  hc.docs.set(canon(p.uri), doc);
   hc.events.openDoc.fire(doc);
   await activateByEvent(`onLanguage:${p.languageId}`);
 });
 rpc.events.set("doc/change", (p: { uri: string; version: number; changes: WireChange[]; text?: string }) => {
-  const doc = hc.docs.get(p.uri);
+  const doc = hc.docs.get(canon(p.uri));
   if (!doc) return;
   const contentChanges = p.changes.map((c) => {
     const start = doc.positionAt(c.start);
@@ -248,26 +273,26 @@ rpc.events.set("doc/change", (p: { uri: string; version: number; changes: WireCh
   hc.events.changeDoc.fire({ document: doc, contentChanges, reason: undefined });
 });
 rpc.events.set("doc/save", (p: { uri: string }) => {
-  const doc = hc.docs.get(p.uri);
+  const doc = hc.docs.get(canon(p.uri));
   if (!doc) return;
   doc.isDirty = false;
   hc.events.saveDoc.fire(doc);
 });
 rpc.events.set("doc/close", (p: { uri: string }) => {
-  const doc = hc.docs.get(p.uri);
+  const doc = hc.docs.get(canon(p.uri));
   if (!doc) return;
   doc.isClosed = true;
   doc.isOpenInEditor = false;
-  hc.docs.delete(p.uri);
+  hc.docs.delete(canon(p.uri));
   hc.events.closeDoc.fire(doc);
 });
 rpc.events.set("editor/active", (p: EditorInfo | null) => {
-  hc.activeEditor = p;
+  hc.activeEditor = p ? { ...p, uri: canon(p.uri) } : null;
   const win = buildApi(hc, null).window as { activeTextEditor?: unknown };
   hc.events.activeEditor.fire(p ? win.activeTextEditor : undefined);
 });
 rpc.events.set("editor/selection", (p: EditorInfo) => {
-  hc.activeEditor = p;
+  hc.activeEditor = { ...p, uri: canon(p.uri) };
   const win = buildApi(hc, null).window as { activeTextEditor?: { selections: T.Selection[] } };
   const ed = win.activeTextEditor;
   if (!ed) return;
@@ -287,11 +312,29 @@ rpc.events.set("diag/external", (p: { source: string; uri: string; items: { rang
   const owner = `alexel:${p.source}`;
   let m = hc.diagnostics.get(owner);
   if (!m) hc.diagnostics.set(owner, (m = new Map()));
-  if (p.items.length) m.set(p.uri, p.items.map((d) => Object.assign(new T.Diagnostic(C.toRange(d.range), d.message, d.severity), { source: d.source ?? p.source })));
-  else m.delete(p.uri);
+  if (p.items.length) m.set(canon(p.uri), p.items.map((d) => Object.assign(new T.Diagnostic(C.toRange(d.range), d.message, d.severity), { source: d.source ?? p.source })));
+  else m.delete(canon(p.uri));
   hc.events.diagnostics.fire({ uris: [Uri.parse(p.uri)] });
 });
-rpc.events.set("fs/changed", (p: { kind: "create" | "change" | "delete"; path: string }) => hc.events.fsChanged.fire({ kind: p.kind, uri: Uri.file(p.path) }));
+/** Perubahan berkas dari watcher editor (hanya daftar path): jenisnya diperkirakan dari keadaan disk. */
+rpc.events.set("fs/changed", (p: { kind?: "create" | "change" | "delete"; path?: string; paths?: string[] }) => {
+  for (const file of p.paths ?? (p.path ? [p.path] : [])) {
+    let kind = p.kind;
+    if (!kind) {
+      try {
+        const st = fs.statSync(file);
+        kind = Date.now() - st.birthtimeMs < 3000 && Math.abs(st.mtimeMs - st.birthtimeMs) < 3000 ? "create" : "change";
+      } catch {
+        kind = "delete";
+      }
+    }
+    const uri = Uri.file(file);
+    // Dokumen yang hanya dibaca dari disk (bukan tab terbuka) jangan basi.
+    const cached = hc.docs.get(uri.toString());
+    if (cached && !cached.isOpenInEditor) hc.docs.delete(uri.toString());
+    hc.events.fsChanged.fire({ kind, uri });
+  }
+});
 
 rpc.events.set("webview/message", (p: { id: number; message: unknown }) => hc.webviews.get(p.id)?.message(p.message));
 rpc.events.set("webview/dispose", (p: { id: number }) => hc.webviews.get(p.id)?.disposed());
@@ -468,9 +511,10 @@ rpc.requests.set("provide", async (p: { kind: string; uri: string; pos?: C.JPos;
 // ---- TreeView (panel Ekstensi di sidebar) -------------------------------------------------
 
 rpc.requests.set("tree/children", async (p: { viewId: string; element?: string }) => {
+  // Aktivasi dulu: ekstensi baru mendaftarkan provider-nya saat aktif (activationEvents bisa kosong).
+  if (!hc.treeProviders.has(p.viewId)) await activateByEvent(`onView:${p.viewId}`);
   const entry = hc.treeProviders.get(p.viewId);
   if (!entry) return [];
-  await activateByEvent(`onView:${p.viewId}`);
   const elements = elementsByKey.get(p.viewId) ?? new Map<string, unknown>();
   elementsByKey.set(p.viewId, elements);
   const parent = p.element ? elements.get(p.element) : undefined;

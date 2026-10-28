@@ -3,7 +3,7 @@
 
 import { call, isNative, on } from "../lib/ipc";
 import { getState, useStore } from "../state/store";
-import { handleEvent, handleRequest } from "./handlers";
+import { clearHostUi, handleEvent, handleRequest } from "./handlers";
 import { resetExtHost, useExtHost } from "./state";
 import { startSync, stopSync } from "./sync";
 
@@ -48,6 +48,7 @@ function wire() {
   void on<{ e: string; p: unknown }>("exthost-event", ({ e, p }) => handleEvent(e, p));
   void on<{ code: number | null }>("exthost-exit", () => {
     stopSync();
+    clearHostUi();
     resetExtHost();
     // Host mati sendiri: coba lagi beberapa kali, lalu menyerah (pemakai bisa mulai ulang dari panel Ekstensi).
     if (restarts++ < 3) scheduleRestart(1500);
@@ -59,6 +60,7 @@ export async function startHost(): Promise<void> {
   wire();
   const s = getState();
   useExtHost.setState({ starting: true });
+  clearHostUi();
   try {
     const r = await call<{ count: number }>("exthost_start", { root: s.root, settings: s.settings.extSettings, core: coreSettings(), trusted: s.settings.trustedExts, disabled: s.settings.disabledExts });
     resetExtHost();
@@ -77,6 +79,7 @@ export async function startHost(): Promise<void> {
 export async function stopHost() {
   stopSync();
   await call("exthost_stop").catch(() => {});
+  clearHostUi();
   resetExtHost();
 }
 

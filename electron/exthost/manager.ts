@@ -8,7 +8,7 @@ import { clipboard, dialog, shell, BrowserWindow } from "electron";
 import { childEnv, killTree, type Ctx } from "../util";
 import { extCodeDir, extList, type InstalledExt } from "../extensions";
 import { Rpc, type Msg } from "./rpc";
-import { webviewCreate, webviewDispose, webviewHtml } from "./webviews";
+import { webviewClear, webviewCreate, webviewDispose, webviewHtml } from "./webviews";
 
 export interface HostStart {
   root: string | null;
@@ -63,7 +63,9 @@ export class ExtHostManager {
     if (!fs.existsSync(this.script)) throw new Error("Extension host tidak ditemukan di build ini.");
     this.stopping = false;
     const child = fork(this.script, [], { env: childEnv({ ELECTRON_RUN_AS_NODE: "1" }), // "advanced" = structured clone: pesan webview boleh berisi ArrayBuffer/typed array (mis. Cap'n Proto di Codex).
-      serialization: "advanced", stdio: ["ignore", "ignore", "pipe", "ipc"], cwd: o.root && fs.existsSync(o.root) ? o.root : undefined, windowsHide: true });
+      serialization: "advanced", stdio: ["ignore", "ignore", "pipe", "ipc"], cwd: o.root && fs.existsSync(o.root) ? o.root : undefined, windowsHide: true,
+      // POSIX: grup proses sendiri supaya server bahasa/CLI yang dijalankan ekstensi ikut berhenti bersama host.
+      detached: process.platform !== "win32" });
     this.child = child;
     const rpc = new Rpc((m) => child.send(m));
     this.rpc = rpc;
@@ -91,6 +93,7 @@ export class ExtHostManager {
     });
     child.on("exit", (code) => {
       rpc.failAll("Extension host berhenti");
+      webviewClear();
       for (const w of this.pending.values()) w.reject(new Error("Extension host berhenti"));
       this.pending.clear();
       if (this.child === child) {
@@ -99,7 +102,12 @@ export class ExtHostManager {
       }
       if (!this.stopping) this.ctx.emit("exthost-exit", { code, stderr: errBuf });
     });
-    await Promise.race([readyP, new Promise((_r, rej) => setTimeout(() => rej(new Error("Extension host tidak siap")), 15_000))]);
+    try {
+      await Promise.race([readyP, new Promise((_r, rej) => setTimeout(() => rej(new Error("Extension host tidak siap")), 15_000))]);
+    } catch (e) {
+      await this.stop();
+      throw e;
+    }
     await rpc.request("init", { extensions: exts.map((e) => ({ id: e.id, dir: e.dir, manifest: e.manifest })), root: o.root, userData: this.ctx.userData, settings: o.settings, core: o.core });
     void rpc.request("startup").catch(() => {});
     return { count: exts.length };
@@ -116,6 +124,15 @@ export class ExtHostManager {
       await rpc?.request("shutdown", undefined, 3000);
     } catch {
       /* langsung dimatikan */
+    }
+    // Seluruh grup proses (POSIX), supaya anak-anak ekstensi tidak yatim; Windows memakai taskkill /T.
+    if (process.platform !== "win32" && child.pid) {
+      try {
+        process.kill(-child.pid, "SIGTERM");
+        return;
+      } catch {
+        /* grup sudah tidak ada */
+      }
     }
     killTree(child);
   }

@@ -1,11 +1,24 @@
 import { describe, expect, it } from "vitest";
-import { changeDiff, codexPolicy, itemInput, parseError } from "./codex";
+import { changeDiff, codexPolicy, itemInput, parseError, sandboxPolicy } from "./codex";
 
 describe("Codex app-server", () => {
   it("mode panel → kebijakan Codex", () => {
     expect(codexPolicy("untrusted")).toEqual({ approvalPolicy: "untrusted", sandbox: "workspace-write" });
     expect(codexPolicy("read-only")).toEqual({ approvalPolicy: "on-request", sandbox: "read-only" });
     expect(codexPolicy("apa-saja")).toEqual({ approvalPolicy: "untrusted", sandbox: "workspace-write" });
+  });
+  it("kebijakan sandbox: workspaceWrite mengizinkan akses jaringan, readOnly tidak", () => {
+    expect(sandboxPolicy("workspace-write", "/test")).toEqual({
+      type: "workspaceWrite",
+      writableRoots: ["/test"],
+      networkAccess: true,
+      excludeTmpdirEnvVar: false,
+      excludeSlashTmp: false,
+    });
+    expect(sandboxPolicy("read-only", "/test")).toEqual({
+      type: "readOnly",
+      networkAccess: false,
+    });
   });
   it("isi berkas baru jadi baris tambah; unified diff dibiarkan", () => {
     expect(changeDiff({ kind: { type: "add" }, diff: "halo\ndunia\n" })).toBe("+halo\n+dunia");

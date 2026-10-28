@@ -5,10 +5,13 @@ import fs from "node:fs";
 import { extractCode } from "./extensions";
 
 const [, , vsix, dest] = process.argv;
+// Keluar hanya setelah pesan terkirim: exit langsung bisa mendahului pesan dan induk melaporkan "berhenti tiba-tiba".
+const done = (m: { ok: boolean; files?: number; error?: string }) => {
+  if (process.send) process.send(m, () => process.exit(0));
+  else process.exit(0);
+};
 try {
-  const n = extractCode(new Uint8Array(fs.readFileSync(vsix)), dest);
-  process.send?.({ ok: true, files: n });
+  done({ ok: true, files: extractCode(new Uint8Array(fs.readFileSync(vsix)), dest) });
 } catch (e) {
-  process.send?.({ ok: false, error: e instanceof Error ? e.message : String(e) });
+  done({ ok: false, error: e instanceof Error ? e.message : String(e) });
 }
-process.exit(0);

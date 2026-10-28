@@ -9,6 +9,8 @@ import { Uri } from "./uri";
 
 let seq = 0;
 const nextId = () => ++seq;
+/** Satu peta editor per host: semua ekstensi melihat objek TextEditor yang sama (seleksi ikut kursor). */
+const sharedEditors = new WeakMap<object, Map<string, unknown>>();
 
 type Thenable<T> = PromiseLike<T>;
 type MessageItem = string | { title: string; isCloseAffordance?: boolean; [k: string]: unknown };
@@ -21,11 +23,16 @@ export function windowApi(hc: HostCtx, ext: LoadedExt | null) {
     const items = rest.filter((x) => typeof x === "string" || (x && typeof x === "object" && "title" in (x as object))) as MessageItem[];
     const options = rest.find((x) => x && typeof x === "object" && !("title" in (x as object)) && !Array.isArray(x)) as { modal?: boolean } | undefined;
     const labels = items.map((i) => (typeof i === "string" ? i : i.title));
-    const picked = await rpc.request<number | null>("ui/message", { level, text: String(text), items: labels, modal: !!options?.modal, source: ext?.manifest.displayName ?? ext?.id });
+    // Tanpa batas waktu: pemakai boleh menjawab kapan saja (default RPC 120 dtk akan menolak janji ekstensi).
+    const picked = await rpc.request<number | null>("ui/message", { level, text: String(text), items: labels, modal: !!options?.modal, source: ext?.manifest.displayName ?? ext?.id }, 0);
     return picked == null || picked < 0 ? undefined : items[picked];
   };
 
-  const editors = new Map<string, TextEditorImpl>();
+  const editors = ((): Map<string, TextEditorImpl> => {
+    let m = sharedEditors.get(hc);
+    if (!m) sharedEditors.set(hc, (m = new Map()));
+    return m as Map<string, TextEditorImpl>;
+  })();
   class TextEditorImpl {
     selections: Selection[];
     visibleRanges: Range[] = [];
@@ -104,7 +111,10 @@ export function windowApi(hc: HostCtx, ext: LoadedExt | null) {
   const createStatusBarItem = (a?: string | StatusBarAlignment | { id?: string; alignment?: number; priority?: number }, b?: number | StatusBarAlignment, c?: number) => {
     const id = nextId();
     const isOpts = a && typeof a === "object";
-    const state: Record<string, unknown> = { id, owner: ext?.id, alignment: (isOpts ? (a as { alignment?: number }).alignment : typeof a === "number" ? a : b) ?? StatusBarAlignment.Left, priority: (isOpts ? (a as { priority?: number }).priority : typeof b === "number" && typeof a !== "number" ? b : c) ?? 0, visible: false };
+    // Tiga bentuk: (alignment, priority) · (id, alignment, priority) · ({ id, alignment, priority }).
+    const alignment = isOpts ? (a as { alignment?: number }).alignment : typeof a === "number" ? a : (b as number | undefined);
+    const priority = isOpts ? (a as { priority?: number }).priority : typeof a === "number" ? (b as number | undefined) : c;
+    const state: Record<string, unknown> = { id, owner: ext?.id, alignment: alignment ?? StatusBarAlignment.Left, priority: priority ?? 0, visible: false };
     statusItems.set(id, state);
     let pending = false;
     const push = () => {
@@ -160,7 +170,9 @@ export function windowApi(hc: HostCtx, ext: LoadedExt | null) {
     for (;;) {
       const r: string | null | undefined = await rpc.request<string | null>("ui/inputBox", { value: options?.value, prompt: options?.prompt, placeHolder: options?.placeHolder, password: !!options?.password, title: options?.title, error: validate }, 0);
       if (r === null || r === undefined) return undefined;
-      const err: string | null | undefined = options?.validateInput ? await options.validateInput(r) : undefined;
+      const raw: unknown = options?.validateInput ? await options.validateInput(r) : undefined;
+      // InputBoxValidationMessage { message, severity }: hanya severity Error (3) yang menolak masukan.
+      const err = raw && typeof raw === "object" ? ((raw as { severity?: number }).severity === 3 ? (raw as { message?: string }).message : undefined) : (raw as string | null | undefined);
       if (!err) return r;
       validate = String(err);
       options = { ...options, value: r };

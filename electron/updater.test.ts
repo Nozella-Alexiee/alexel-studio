@@ -98,3 +98,44 @@ describe("unduh & verifikasi pembaruan", () => {
     expect(fs.existsSync(path.join(os.tmpdir(), "alexel-update-9.9.9"))).toBe(false);
   });
 });
+
+describe("pembaruan: respons feed/berkas yang buruk ditolak", () => {
+  const plat = process.platform;
+  const supported = plat === "win32" || plat === "darwin" || (plat === "linux" && process.arch === "x64");
+  const asset = plat === "win32" ? `Alexel-Studio-win-${process.arch}.exe` : plat === "darwin" ? `Alexel-Studio-mac-${process.arch}.zip` : "Alexel-Studio-linux-x86_64.AppImage";
+  const feedName = plat === "win32" ? "latest.yml" : plat === "darwin" ? "latest-mac.yml" : "latest-linux.yml";
+  const base = "https://github.com/Nozella-Alexiee/alexel-studio/releases/download/v9.9.9";
+  const stub = (feed: Response | string, body?: Uint8Array) =>
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (url: string) => {
+        if (url.includes("api.github.com")) return new Response(JSON.stringify({ tag_name: "v9.9.9", html_url: "x", assets: [{ name: feedName, browser_download_url: `${base}/${feedName}` }, { name: asset, browser_download_url: `${base}/${asset}` }] }));
+        if (url.endsWith(feedName)) return typeof feed === "string" ? new Response(feed) : feed;
+        return new Response(new Blob([(body ?? new Uint8Array(1)) as Uint8Array<ArrayBuffer>]));
+      })
+    );
+  const ctx = { userData: "", emit: () => {}, trash: async () => {}, reveal: () => {} } as never;
+  const feedFor = (version: string, size: number) => `version: ${version}\nfiles:\n  - url: ${asset}\n    sha512: AAAA\n    size: ${size}\npath: ${asset}\n`;
+
+  it.skipIf(!supported)("feed 404 = galat jelas, bukan 'sudah versi terbaru'", async () => {
+    if (plat === "linux") process.env.APPIMAGE = "/tmp/x.AppImage";
+    stub(new Response("not found", { status: 404 }));
+    const { updatePrepare } = await import("./updater");
+    await expect(updatePrepare(ctx)).rejects.toThrow(/Feed pembaruan/);
+  });
+
+  it.skipIf(!supported)("versi feed berbahaya (path traversal) ditolak sebelum menyentuh disk", async () => {
+    if (plat === "linux") process.env.APPIMAGE = "/tmp/x.AppImage";
+    stub(feedFor("9.9.9/../../x", 1));
+    const { updatePrepare } = await import("./updater");
+    await expect(updatePrepare(ctx)).rejects.toThrow(/tidak valid/);
+  });
+
+  it.skipIf(!supported)("berkas lebih besar dari ukuran di feed dihentikan di tengah jalan", async () => {
+    if (plat === "linux") process.env.APPIMAGE = "/tmp/x.AppImage";
+    stub(feedFor("9.9.9", 4), new Uint8Array(64));
+    const { updatePrepare } = await import("./updater");
+    await expect(updatePrepare(ctx)).rejects.toThrow(/lebih besar/);
+    expect(fs.existsSync(path.join(os.tmpdir(), "alexel-update-9.9.9"))).toBe(false);
+  });
+});

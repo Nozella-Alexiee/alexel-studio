@@ -39,8 +39,8 @@ export function codexPolicy(mode: unknown): { approvalPolicy: "untrusted" | "on-
   return { approvalPolicy: "untrusted", sandbox: "workspace-write" };
 }
 
-function sandboxPolicy(sandbox: string, cwd: string) {
-  return sandbox === "read-only" ? { type: "readOnly", networkAccess: false } : { type: "workspaceWrite", writableRoots: [cwd], networkAccess: false, excludeTmpdirEnvVar: false, excludeSlashTmp: false };
+export function sandboxPolicy(sandbox: string, cwd: string) {
+  return sandbox === "read-only" ? { type: "readOnly", networkAccess: false } : { type: "workspaceWrite", writableRoots: [cwd], networkAccess: true, excludeTmpdirEnvVar: false, excludeSlashTmp: false };
 }
 
 // ---------------- Sesi ----------------
