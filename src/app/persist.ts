@@ -55,7 +55,7 @@ function parse<T>(s: string | null): T | null {
   }
 }
 
-function sanitizeSettings(raw: Partial<Settings> | null, migrate = false): Settings {
+export function sanitizeSettings(raw: Partial<Settings> | null, migrate = false): Settings {
   const s = { ...DEFAULT_SETTINGS, ...(raw ?? {}) };
   if (!DESIGNS.some((d) => d.id === s.design)) s.design = DEFAULT_SETTINGS.design;
   s.fontSize = Math.min(28, Math.max(9, Number(s.fontSize) || 13));
@@ -86,6 +86,7 @@ function sanitizeSettings(raw: Partial<Settings> | null, migrate = false): Setti
   // Berkas yang diedit tangan bisa membawa tipe salah; konsumen memakai .includes/.map tanpa pemeriksaan.
   const strs = (v: unknown): string[] => (Array.isArray(v) ? v.filter((x): x is string => typeof x === "string").slice(0, 500) : []);
   s.trustedExts = strs(s.trustedExts);
+  s.trustedFolders = strs(s.trustedFolders);
   s.disabledExts = strs(s.disabledExts);
   if (!s.extSettings || typeof s.extSettings !== "object" || Array.isArray(s.extSettings)) s.extSettings = {};
   s.ideIntegration = s.ideIntegration !== false;

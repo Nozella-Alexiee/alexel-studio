@@ -17,3 +17,15 @@ describe("workspace multi-root", () => {
     expect(normalizePath("C:/a/../b")).toBe("C:/b");
   });
 });
+
+import { isFolderTrusted } from "../app/workspaceTrust";
+
+describe("workspace trust", () => {
+  it("folder dipercaya juga mempercayai sub-folder, bukan folder bersebelahan", () => {
+    const t = ["/home/u/kerja"];
+    expect(isFolderTrusted("/home/u/kerja", t)).toBe(true);
+    expect(isFolderTrusted("/home/u/kerja/app", t)).toBe(true);
+    expect(isFolderTrusted("/home/u/kerjaan", t)).toBe(false);
+    expect(isFolderTrusted("/home/u", t)).toBe(false);
+  });
+});

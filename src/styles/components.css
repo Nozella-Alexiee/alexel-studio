@@ -4808,3 +4808,13 @@ button.ext-link:not(:disabled):hover {
   font-size: 11px;
   letter-spacing: 0.04em;
 }
+
+.set-inline {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+.set-inline .select {
+  min-width: 140px;
+}

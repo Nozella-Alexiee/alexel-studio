@@ -85,6 +85,8 @@ export interface Settings {
   extSettings: Record<string, unknown>;
   /** Tampilkan penulis & commit terakhir di akhir baris kursor (git blame). */
   gitBlame: boolean;
+  /** Folder yang dipercaya (Workspace Trust); sub-folder ikut dipercaya. */
+  trustedFolders: string[];
   /** Garis bantu indentasi di editor. */
   indentGuides: boolean;
   /** Warnai pasangan kurung per kedalaman. */
@@ -136,6 +138,7 @@ export const DEFAULT_SETTINGS: Settings = {
   ideIntegration: true,
   extSettings: {},
   gitBlame: false,
+  trustedFolders: [],
   indentGuides: true,
   bracketColors: true,
   colorSwatches: true,
@@ -332,6 +335,8 @@ interface State {
   recents: string[];
   /** Folder workspace tambahan (multi-root) setelah `root`. */
   extraRoots: string[];
+  /** Mode terbatas: folder belum dipercaya (ekstensi berkode & task folder tidak dijalankan). */
+  restricted: boolean;
   /** Berkas .code-workspace yang sedang dibuka (null = satu folder biasa). */
   workspaceFile: string | null;
   dirs: Record<string, FileEntry[]>;
@@ -406,6 +411,7 @@ export const useStore = create<State>(() => ({
   root: null,
   recents: [],
   extraRoots: [],
+  restricted: false,
   workspaceFile: null,
   dirs: {},
   expanded: {},

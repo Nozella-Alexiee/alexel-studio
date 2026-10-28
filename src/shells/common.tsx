@@ -1,4 +1,4 @@
-import { AlertCircle, AlertTriangle, Cpu, GitBranch, Leaf, Palette, ArrowUp, ArrowDown, Play } from "lucide-react";
+import { AlertCircle, AlertTriangle, Cpu, GitBranch, Leaf, Palette, ArrowUp, ArrowDown, Play, ShieldAlert } from "lucide-react";
 import { Kepi } from "../components/CrabMascot";
 import { DebugToolbar } from "../components/DebugToolbar";
 import { agentInfo } from "../agents/registry";
@@ -214,6 +214,7 @@ const LANG_CHOICES: [string, string | null][] = [
 ];
 
 export function StatusBar({ variant }: { variant: "aurora" | "zen" | "control" | "studio" }) {
+  const restricted = useStore((st) => st.restricted);
   const git = useStore((s) => s.git);
   const cursor = useStore((s) => s.cursor);
   const tab = useStore((s) => activeTab(s));
@@ -269,6 +270,11 @@ export function StatusBar({ variant }: { variant: "aurora" | "zen" | "control" |
         </button>
       )}
       <ExtStatusItems side="left" />
+      {restricted && (
+        <button className="status-item tone-warning-fg" onClick={() => void import("../app/workspaceTrust").then((t) => t.trustCurrentWorkspace())} title={tl("Folder belum dipercaya: ekstensi berkode dan task folder tidak dijalankan. Klik untuk mempercayai.")}>
+          <ShieldAlert size={12} aria-hidden /> {tl("Mode terbatas")}
+        </button>
+      )}
       <span className="spacer" />
       <ExtStatusItems side="right" />
       {saver && (

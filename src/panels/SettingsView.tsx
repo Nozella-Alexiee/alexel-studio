@@ -180,6 +180,54 @@ function Keybindings() {
   );
 }
 
+/** Profil pengaturan bernama + ekspor/impor JSON (src/app/profiles.ts). */
+function Profiles() {
+  const [names, setNames] = useState<string[]>([]);
+  const [pick, setPick] = useState("");
+  const reload = () => void import("../app/profiles").then((P) => P.loadProfiles()).then((all) => {
+    const n = Object.keys(all).sort();
+    setNames(n);
+    setPick((cur) => (n.includes(cur) ? cur : n[0] ?? ""));
+  });
+  useEffect(reload, []);
+  const P = () => import("../app/profiles");
+  return (
+    <>
+      <Row label={tl("Profil tersimpan")} hint={tl("Simpan pengaturan & shortcut sekarang sebagai profil, lalu ganti kapan saja. Izin ekstensi tidak ikut.")}>
+        <div className="set-inline">
+          <select className="input select" value={pick} onChange={(e) => setPick(e.target.value)} aria-label={tl("Profil tersimpan")} disabled={!names.length}>
+            {!names.length && <option value="">{tl("(belum ada)")}</option>}
+            {names.map((n) => (
+              <option key={n} value={n}>
+                {n}
+              </option>
+            ))}
+          </select>
+          <button className="btn btn-sm" disabled={!pick} onClick={() => void P().then((m) => m.applyProfile(pick))}>
+            {tl("Pakai")}
+          </button>
+          <button className="btn btn-sm" disabled={!pick} onClick={() => void P().then((m) => m.deleteProfile(pick)).then(reload)}>
+            {tl("Hapus")}
+          </button>
+        </div>
+      </Row>
+      <Row label={tl("Kelola profil")} hint={tl("Ekspor ke berkas JSON (beserta daftar ekstensi) untuk dipakai di komputer lain.")}>
+        <div className="set-inline">
+          <button className="btn btn-sm" onClick={() => void P().then((m) => m.saveProfileAs()).then(reload)}>
+            {tl("Simpan sebagai profil…")}
+          </button>
+          <button className="btn btn-sm" onClick={() => void P().then((m) => m.exportProfile())}>
+            {tl("Ekspor…")}
+          </button>
+          <button className="btn btn-sm" onClick={() => void P().then((m) => m.importProfile())}>
+            {tl("Impor…")}
+          </button>
+        </div>
+      </Row>
+    </>
+  );
+}
+
 export default function SettingsView() {
   const s = useStore((st) => st.settings);
   const power = useStore((st) => st.power);
@@ -480,6 +528,11 @@ export default function SettingsView() {
         <Row label={tl("Tanya sebelum memindah ke Trash")}>
           <Toggle label={tl("Konfirmasi hapus")} value={s.confirmDelete} onChange={(v) => set({ confirmDelete: v })} />
         </Row>
+      </section>
+
+      <section className="set-section" id="set-profiles">
+        <h2>{tl("Profil")}</h2>
+        <Profiles />
       </section>
 
       <section className="set-section" id="set-keys">

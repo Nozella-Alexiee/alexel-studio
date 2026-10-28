@@ -291,6 +291,7 @@ export function buildCommands(ctx: Ctx, hooks: { confirmClose: (win: BrowserWind
           return null;
         }
       }),
+    path_exists: (a) => typeof a.path === "string" && fs.existsSync(a.path),
     path_is_dir: (a) => {
       try {
         return fs.statSync(a.path).isDirectory();

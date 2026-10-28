@@ -58,6 +58,11 @@ function wire() {
 
 export async function startHost(): Promise<void> {
   if (!isNative) return;
+  // Mode terbatas (folder belum dipercaya): kode ekstensi tidak dijalankan.
+  if (getState().restricted) {
+    if (hostRunning()) await stopHost();
+    return;
+  }
   wire();
   const s = getState();
   useExtHost.setState({ starting: true });
@@ -108,7 +113,7 @@ export function watchHostInputs() {
   let key = "";
   const sig = () => {
     const s = getState();
-    return JSON.stringify([s.root, s.extraRoots, s.settings.trustedExts, s.settings.disabledExts]);
+    return JSON.stringify([s.root, s.extraRoots, s.restricted, s.settings.trustedExts, s.settings.disabledExts]);
   };
   key = sig();
   useStore.subscribe(() => {

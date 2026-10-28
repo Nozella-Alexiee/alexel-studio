@@ -29,6 +29,7 @@ import {
 } from "../state/store";
 import type { RunTarget } from "../lib/types";
 import { persistSession, persistSettings } from "./persist";
+import { isFolderTrusted } from "./workspaceTrust";
 import { isMac, setTitlebarOverlay } from "../lib/ipc";
 import { tl } from "../i18n";
 
@@ -52,6 +53,8 @@ export async function openProject(root: string, opts: { restoreTabs?: { groups: 
   setState({
     root,
     extraRoots,
+    // Belum dipercaya → mulai terbatas sampai checkFolderTrust memutuskan (host tidak sempat jalan).
+    restricted: ![root, ...extraRoots].every((d) => isFolderTrusted(d)),
     workspaceFile: opts.workspaceFile ?? null,
     dirs: {},
     expanded: Object.fromEntries([root, ...extraRoots].map((r) => [r, true])),
@@ -71,6 +74,8 @@ export async function openProject(root: string, opts: { restoreTabs?: { groups: 
   await Promise.all(extraRoots.map((r) => loadDir(r).catch(() => {})));
   void api.previewRoot(root).catch(() => {});
   void api.watch(root, isSaver() ? 1500 : 300, extraRoots).catch((e) => console.warn(e));
+  // Workspace Trust: putuskan dulu sebelum target Run dari konfigurasi folder ditampilkan.
+  await import("./workspaceTrust").then((t) => t.checkFolderTrust([root, ...extraRoots])).catch(() => {});
   void refreshGit();
   void refreshRunTargets();
   void import("../panels/todoData").then((m) => m.refreshTodos());
@@ -111,6 +116,7 @@ export async function addWorkspaceFolder(dir?: string | null) {
   setState((st) => ({ extraRoots: [...st.extraRoots, d], expanded: { ...st.expanded, [d]: true } }));
   await loadDir(d).catch(() => {});
   rewatch();
+  void import("./workspaceTrust").then((t) => t.checkFolderTrust([d]));
 }
 
 export function removeWorkspaceFolder(dir: string) {
@@ -801,10 +807,11 @@ export async function refreshRunTargets() {
   const root = getState().root;
   if (!root) return;
   try {
-    const t = await api.runTargets(root);
+    // Mode terbatas: target dari berkas konfigurasi folder (run.json, tasks.json, launch.json) disembunyikan.
+    const t = (await api.runTargets(root)).filter((x) => !getState().restricted || !["config", "task", "launch"].includes(x.kind));
     // Task dari ekstensi (vscode.tasks.registerTaskProvider), bila extension host berjalan.
     const { hostCall, hostRunning } = await import("../exthost/client");
-    const ext = hostRunning() ? await hostCall<{ id: string; label: string; source: string; command: string; cwd: string }[]>("tasks/list").catch(() => []) : [];
+    const ext = hostRunning() && !getState().restricted ? await hostCall<{ id: string; label: string; source: string; command: string; cwd: string }[]>("tasks/list").catch(() => []) : [];
     const extTargets: RunTarget[] = ext.map((x) => ({ id: `ext:${x.id}`, label: x.source ? `${x.label} (${x.source})` : x.label, command: x.command, cwd: x.cwd, kind: "task", detail: tl("Task ekstensi") }));
     if (getState().root === root) setState({ runTargets: [...t, ...extTargets] });
   } catch {
