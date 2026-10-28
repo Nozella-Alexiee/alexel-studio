@@ -73,7 +73,7 @@ export async function handleIdeTool(tool: string, args: Any, reqId?: number): Pr
   const s = getState();
   switch (tool) {
     case "getWorkspaceFolders":
-      return text({ success: true, folders: s.root ? [{ name: basename(s.root), uri: fileUri(s.root), path: s.root }] : [], rootPath: s.root ?? null });
+      return text({ success: true, folders: s.root ? [s.root, ...s.extraRoots].map((p) => ({ name: basename(p), uri: fileUri(p), path: p })) : [], rootPath: s.root ?? null });
     case "getOpenEditors": {
       const active = activeTextPath();
       const tabs = s.groups.flatMap((g, gi) => g.tabs.filter((id) => s.tabs[id]?.kind === "text").map((id) => ({ uri: fileUri(id), isActive: id === active, isPinned: false, isPreview: false, isDirty: !!s.tabs[id]?.dirty, label: basename(id), groupIndex: gi, viewColumn: gi + 1, isGroupActive: gi === s.focusedGroup, fileName: id, languageId: vscodeLanguageId(id, docs.getDoc(id)?.langId ?? ""), lineCount: (docs.currentText(id) ?? "").split("\n").length, isUntitled: false })));
@@ -169,7 +169,7 @@ export async function startIde() {
   const s = getState();
   if (!s.root || !s.settings.ideIntegration) return;
   try {
-    info = await call<IdeInfo>("ide_start", { root: s.root });
+    info = await call<IdeInfo>("ide_start", { root: s.root, folders: s.extraRoots });
   } catch (e) {
     console.warn("Server IDE gagal dimulai", e);
     info = null;
@@ -193,6 +193,7 @@ export function bootIde() {
   docs.onDocEvent((e) => e.type === "selection" && scheduleSelection());
   let last = "";
   let root = getState().root;
+  let extra = getState().extraRoots;
   let enabled = getState().settings.ideIntegration;
   useStore.subscribe((st) => {
     const id = st.groups[st.focusedGroup]?.active ?? "";
@@ -200,8 +201,9 @@ export function bootIde() {
       last = id;
       requestAnimationFrame(() => requestAnimationFrame(scheduleSelection));
     }
-    if (st.root !== root) {
+    if (st.root !== root || st.extraRoots !== extra) {
       root = st.root;
+      extra = st.extraRoots;
       void startIde();
     }
     if (st.settings.ideIntegration !== enabled) {

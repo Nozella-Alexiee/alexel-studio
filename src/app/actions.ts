@@ -5,8 +5,9 @@ import { hostNotify } from "../exthost/client";
 import { applyDesign, DESIGNS, type DesignId } from "../design/designs";
 import * as docs from "../editor/documents";
 import { languageFor } from "../editor/languages";
-import { api, errMsg, isDemo, openExternal, pickFolder, setTrafficLights, setWindowTitle } from "../lib/ipc";
-import { basename, dirname, isImagePath, isInside, join, relative, validateName } from "../lib/paths";
+import { api, call, errMsg, isDemo, openExternal, pickFile, pickFolder, pickSavePath, setTrafficLights, setWindowTitle } from "../lib/ipc";
+import { parseJsonc } from "../extensions/theme";
+import { basename, dirname, isImagePath, isInside, join, normalizePath, relative, validateName } from "../lib/paths";
 import {
   DEFAULT_LAYOUTS,
   DEFAULT_SETTINGS,
@@ -40,17 +41,20 @@ export async function openProjectDialog() {
   if (p) await openProject(p);
 }
 
-export async function openProject(root: string, opts: { restoreTabs?: { groups: Group[]; focused: number; pinned?: string[] } } = {}) {
+export async function openProject(root: string, opts: { restoreTabs?: { groups: Group[]; focused: number; pinned?: string[] }; extraRoots?: string[]; workspaceFile?: string | null } = {}) {
   const prev = getState().root;
   if (prev && prev !== root) {
     const ok = await closeAllTabs();
     if (!ok) return;
     void import("../editor/lsp").then((m) => m.stopAllLsp());
   }
+  const extraRoots = (opts.extraRoots ?? []).filter((r, i, a) => r && r !== root && a.indexOf(r) === i);
   setState({
     root,
+    extraRoots,
+    workspaceFile: opts.workspaceFile ?? null,
     dirs: {},
-    expanded: { [root]: true },
+    expanded: Object.fromEntries([root, ...extraRoots].map((r) => [r, true])),
     git: null,
     gitMarks: {},
     gitDirs: {},
@@ -64,8 +68,9 @@ export async function openProject(root: string, opts: { restoreTabs?: { groups: 
   setState({ recents });
   void api.storeSave("recents", JSON.stringify(recents)).catch(() => {});
   await loadDir(root);
+  await Promise.all(extraRoots.map((r) => loadDir(r).catch(() => {})));
   void api.previewRoot(root).catch(() => {});
-  void api.watch(root, isSaver() ? 1500 : 300).catch((e) => console.warn(e));
+  void api.watch(root, isSaver() ? 1500 : 300, extraRoots).catch((e) => console.warn(e));
   void refreshGit();
   void refreshRunTargets();
   void import("../panels/todoData").then((m) => m.refreshTodos());
@@ -87,11 +92,97 @@ export async function openProject(root: string, opts: { restoreTabs?: { groups: 
   persistSession();
 }
 
+// ---------- Workspace multi-root (.code-workspace) ----------
+
+/** Semua folder workspace: folder utama lalu folder tambahan. */
+export const workspaceRoots = (s = getState()) => (s.root ? [s.root, ...s.extraRoots] : []);
+
+function rewatch() {
+  const s = getState();
+  if (s.root) void api.watch(s.root, isSaver() ? 1500 : 300, s.extraRoots).catch(() => {});
+  persistSession();
+}
+
+export async function addWorkspaceFolder(dir?: string | null) {
+  const s = getState();
+  if (!s.root) return openProjectDialog();
+  const d = dir ?? (await pickFolder());
+  if (!d || workspaceRoots().includes(d)) return;
+  setState((st) => ({ extraRoots: [...st.extraRoots, d], expanded: { ...st.expanded, [d]: true } }));
+  await loadDir(d).catch(() => {});
+  rewatch();
+}
+
+export function removeWorkspaceFolder(dir: string) {
+  setState((st) => {
+    const expanded = { ...st.expanded };
+    const dirs = { ...st.dirs };
+    for (const k of Object.keys(dirs)) if (k === dir || k.startsWith(dir + "/")) delete dirs[k];
+    delete expanded[dir];
+    return { extraRoots: st.extraRoots.filter((r) => r !== dir), dirs, expanded };
+  });
+  rewatch();
+}
+
+/** Isi .code-workspace → daftar folder absolut (relatif terhadap folder berkasnya). */
+export function workspaceFolders(file: string, text: string): string[] {
+  let data: { folders?: { path?: unknown }[] } | null = null;
+  try {
+    data = parseJsonc(text) as typeof data;
+  } catch {
+    return [];
+  }
+  const base = dirname(file);
+  const out: string[] = [];
+  for (const f of Array.isArray(data?.folders) ? data!.folders : []) {
+    if (typeof f?.path !== "string" || !f.path) continue;
+    const p = f.path.replace(/\\/g, "/");
+    const abs = /^([A-Za-z]:)?\//.test(p) ? p : join(base, p);
+    const norm = normalizePath(abs);
+    if (!out.includes(norm)) out.push(norm);
+  }
+  return out;
+}
+
+export async function openWorkspaceFile(file?: string | null) {
+  const f = file ?? (await pickFile([{ name: "Workspace", extensions: ["code-workspace"] }]));
+  if (!f) return;
+  try {
+    const text = (await api.readText(f)).content;
+    const folders = workspaceFolders(f, text);
+    const existing: string[] = [];
+    for (const d of folders) if (await call<boolean>("path_is_dir", { path: d }).catch(() => false)) existing.push(d);
+    if (!existing.length) return toast(tl("Workspace ini tidak berisi folder yang ada."), "error");
+    await openProject(existing[0], { extraRoots: existing.slice(1), workspaceFile: f });
+  } catch (e) {
+    toast(errMsg(e), "error");
+  }
+}
+
+/** Simpan folder workspace saat ini ke berkas .code-workspace (path relatif bila bisa). */
+export async function saveWorkspaceAs() {
+  const s = getState();
+  if (!s.root) return;
+  const target = s.workspaceFile ?? (await pickSavePath(join(dirname(s.root), `${basename(s.root)}.code-workspace`), [{ name: "Workspace", extensions: ["code-workspace"] }]));
+  if (!target) return;
+  const base = dirname(target);
+  const rel = (p: string) => (p === base ? "." : p.startsWith(base + "/") ? p.slice(base.length + 1) : p);
+  const body = JSON.stringify({ folders: workspaceRoots().map((p) => ({ path: rel(p) })), settings: {} }, null, 2) + "\n";
+  try {
+    await api.writeText(target, body);
+    setState({ workspaceFile: target });
+    persistSession();
+    toast(tl("Workspace disimpan: {name}", { name: basename(target) }), "success");
+  } catch (e) {
+    toast(errMsg(e), "error");
+  }
+}
+
 export async function closeProject() {
   if (!(await closeAllTabs())) return;
   void api.unwatch().catch(() => {});
   void api.previewRoot(null).catch(() => {});
-  setState({ root: null, dirs: {}, expanded: {}, selectedTreePath: null, git: null, gitMarks: {}, gitDirs: {}, runTargets: [], todos: null, chat: [], chatSession: null });
+  setState({ root: null, extraRoots: [], workspaceFile: null, dirs: {}, expanded: {}, selectedTreePath: null, git: null, gitMarks: {}, gitDirs: {}, runTargets: [], todos: null, chat: [], chatSession: null });
   persistSession();
 }
 

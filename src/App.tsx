@@ -91,7 +91,7 @@ function useBackgroundTasks() {
       if (saver !== prevSaver) {
         void import("./editor/documents").then((d) => d.applyEditorSettings());
         const root = getState().root;
-        if (root) void api.watch(root, saver ? 1500 : 300).catch(() => {});
+        if (root) void api.watch(root, saver ? 1500 : 300, getState().extraRoots).catch(() => {});
       }
       powerTimer = window.setTimeout(pollPower, saver ? 120_000 : 60_000);
     };
@@ -137,6 +137,7 @@ function useBackgroundTasks() {
     offs.push(
       on<{ path: string }>("open-path", async ({ path }) => {
         if (await call<boolean>("path_is_dir", { path }).catch(() => false)) await A.openProject(path);
+        else if (/\.code-workspace$/i.test(path)) await A.openWorkspaceFile(path);
         else await A.openFile(path);
       })
     );

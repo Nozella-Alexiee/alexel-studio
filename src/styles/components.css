@@ -4800,3 +4800,11 @@ button.ext-link:not(:disabled):hover {
   flex: 1;
   min-height: 0;
 }
+
+/* Akar folder workspace (multi-root) di Explorer. */
+.tree-row.is-root .tree-name {
+  font-weight: 600;
+  text-transform: uppercase;
+  font-size: 11px;
+  letter-spacing: 0.04em;
+}

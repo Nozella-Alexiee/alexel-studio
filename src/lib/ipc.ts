@@ -228,7 +228,7 @@ export const api = {
   storeSave: (key: string, json: string) => call<void>("store_save", { key, json }),
 
   // Watcher & pratinjau
-  watch: (root: string, debounceMs: number) => call<void>("watch_project", { root, debounceMs }),
+  watch: (root: string, debounceMs: number, extra: string[] = []) => call<void>("watch_project", { root, debounceMs, extra }),
   unwatch: () => call<void>("unwatch_project"),
   previewRoot: (root: string | null) => call<void>("preview_set_root", { root }),
   previewOverride: (path: string, content: string | null) => call<void>("preview_set_override", { path, content }),
@@ -239,6 +239,11 @@ export const api = {
 export async function pickFolder(): Promise<string | null> {
   if (bridge) return call<string | null>("dialog_open_folder");
   return isDemo ? "/Users/demo/nozel-project" : null;
+}
+
+export async function pickFile(filters?: { name: string; extensions: string[] }[]): Promise<string | null> {
+  if (bridge) return call<string | null>("dialog_open_file", { filters: filters ?? [] });
+  return null;
 }
 
 export async function pickSavePath(defaultPath: string, filters?: { name: string; extensions: string[] }[]): Promise<string | null> {

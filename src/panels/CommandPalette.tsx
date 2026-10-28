@@ -16,7 +16,7 @@ import { fuzzyFilter } from "../lib/fuzzy";
 import { join } from "../lib/paths";
 import { activeTab, getState, setState, useStore } from "../state/store";
 import { modKey } from "../lib/keys";
-import { projectFiles } from "../lib/projectFiles";
+import { projectFiles, workspaceExtraFiles } from "../lib/projectFiles";
 import { tl } from "../i18n";
 
 interface Item {
@@ -44,6 +44,8 @@ export function CommandPalette() {
   const root = useStore((s) => s.root);
   const [value, setValue] = useState("");
   const [files, setFiles] = useState<string[]>([]);
+  const extraRoots = useStore((s) => s.extraRoots);
+  const [extraFiles, setExtraFiles] = useState<{ label: string; abs: string }[]>([]);
   const [sel, setSel] = useState(0);
   const input = useRef<HTMLInputElement>(null);
   const list = useRef<HTMLDivElement>(null);
@@ -54,7 +56,9 @@ export function CommandPalette() {
     setSel(0);
     requestAnimationFrame(() => input.current?.focus());
     if (root) void projectFiles(root).then(setFiles);
-  }, [palette.open, palette.initial, root]);
+    if (extraRoots.length) void workspaceExtraFiles(extraRoots).then(setExtraFiles);
+    else setExtraFiles([]);
+  }, [palette.open, palette.initial, root, extraRoots]);
 
   const prefix = MODES[value[0]] && value[0] !== "" ? value[0] : "";
   const query = prefix ? value.slice(1).trimStart() : value;
@@ -151,7 +155,10 @@ export function CommandPalette() {
     }
     const lineMatch = query.match(/^(.*?):(\d+)$/);
     const q = lineMatch ? lineMatch[1] : query;
-    return fuzzyFilter(q, rels, (r) => r, 60).map(({ item: rel, positions }) => {
+    // Multi-root: berkas folder tambahan berawalan nama foldernya ("api/src/a.ts").
+    const absOf = new Map(extraFiles.map((x) => [x.label, x.abs]));
+    const all = extraFiles.length ? [...rels, ...extraFiles.map((x) => x.label)] : rels;
+    return fuzzyFilter(q, all, (r) => r, 60).map(({ item: rel, positions }) => {
       const nameStart = rel.lastIndexOf("/") + 1;
       return {
         key: rel,
@@ -159,10 +166,10 @@ export function CommandPalette() {
         label: rel.slice(nameStart),
         positions: positions.filter((p) => p >= nameStart).map((p) => p - nameStart),
         detail: rel.slice(0, Math.max(0, nameStart - 1)),
-        run: (side?: boolean) => void A.openFile(join(rootDir, rel), { group: side ? 1 : undefined, line: lineMatch ? Number(lineMatch[2]) : undefined }),
+        run: (side?: boolean) => void A.openFile(absOf.get(rel) ?? join(rootDir, rel), { group: side ? 1 : undefined, line: lineMatch ? Number(lineMatch[2]) : undefined }),
       };
     });
-  }, [palette.open, prefix, query, files, root, wsSyms]);
+  }, [palette.open, prefix, query, files, extraFiles, root, wsSyms]);
 
   useEffect(() => setSel(0), [prefix, query]);
   useEffect(() => {

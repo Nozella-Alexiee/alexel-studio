@@ -1263,4 +1263,11 @@ export const EN: Record<string, string> = {
   "Tests": "Tests",
   "{p} lulus · {f} gagal": "{p} passed · {f} failed",
   "{p} lulus, {f} gagal, {s} dilewati": "{p} passed, {f} failed, {s} skipped",
+  "Buka sebagai workspace": "Open as workspace",
+  "Buka workspace (.code-workspace)…": "Open workspace (.code-workspace)…",
+  "Hapus folder dari workspace": "Remove folder from workspace",
+  "Simpan workspace sebagai…": "Save workspace as…",
+  "Tambah folder ke workspace…": "Add folder to workspace…",
+  "Workspace disimpan: {name}": "Workspace saved: {name}",
+  "Workspace ini tidak berisi folder yang ada.": "This workspace has no existing folders.",
 };

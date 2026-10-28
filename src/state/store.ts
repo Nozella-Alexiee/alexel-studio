@@ -330,6 +330,10 @@ interface State {
 
   root: string | null;
   recents: string[];
+  /** Folder workspace tambahan (multi-root) setelah `root`. */
+  extraRoots: string[];
+  /** Berkas .code-workspace yang sedang dibuka (null = satu folder biasa). */
+  workspaceFile: string | null;
   dirs: Record<string, FileEntry[]>;
   expanded: Record<string, true>;
   selectedTreePath: string | null;
@@ -401,6 +405,8 @@ export const useStore = create<State>(() => ({
 
   root: null,
   recents: [],
+  extraRoots: [],
+  workspaceFile: null,
   dirs: {},
   expanded: {},
   selectedTreePath: null,

@@ -33,6 +33,18 @@ export function uiPath(p: string): string {
   return p.replace(/\\/g, "/").replace(/^[a-z]:/, (d) => d.toUpperCase());
 }
 
+/** Rapikan segmen "." dan ".." (path gaya UI dengan "/"). */
+export function normalizePath(p: string): string {
+  const lead = p.match(/^([A-Za-z]:\/|\/\/|\/)/)?.[0] ?? "";
+  const out: string[] = [];
+  for (const seg of p.slice(lead.length).split("/")) {
+    if (!seg || seg === ".") continue;
+    if (seg === "..") out.pop();
+    else out.push(seg);
+  }
+  return lead + out.join("/");
+}
+
 export function extname(p: string): string {
   const b = basename(p);
   const i = b.lastIndexOf(".");

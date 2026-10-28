@@ -23,8 +23,23 @@ function useKept<T>(key: string, initial: T): [T, (v: T | ((p: T) => T)) => void
 }
 const seqRef = { current: 0 };
 
+/** Cari di semua folder workspace (multi-root) lalu gabungkan hasilnya. */
+async function searchAll(q: string, o: Parameters<typeof api.search>[2]): Promise<SearchResult> {
+  const roots = A.workspaceRoots();
+  const results = await Promise.all(roots.map((r) => api.search(r, q, o)));
+  if (results.length === 1) return results[0];
+  const name = (r: string) => r.split("/").pop() ?? r;
+  return {
+    // Path relatif diberi awalan nama folder supaya jelas asalnya.
+    matches: results.flatMap((x, i) => (i === 0 ? x.matches : x.matches.map((m) => ({ ...m, rel: `${name(roots[i])}/${m.rel}` })))),
+    files_searched: results.reduce((n, x) => n + x.files_searched, 0),
+    truncated: results.some((x) => x.truncated),
+  };
+}
+
 export default function SearchPanel() {
   const root = useStore((s) => s.root);
+  const extraRoots = useStore((s) => s.extraRoots);
   const [q, setQ] = useKept("q", "");
   const [rep, setRep] = useKept("rep", "");
   const [showRep, setShowRep] = useKept("showRep", false);
@@ -39,7 +54,7 @@ export default function SearchPanel() {
 
   useEffect(() => {
     // Kembali ke panel dengan pencarian yang sama: pakai hasil yang tersimpan, jangan cari ulang.
-    const key = JSON.stringify([root, q, opts, include]);
+    const key = JSON.stringify([root, extraRoots, q, opts, include]);
     if (key === lastKey.current && res) return;
     lastKey.current = key;
     kept.set("key", key);
@@ -54,7 +69,7 @@ export default function SearchPanel() {
     const t = setTimeout(async () => {
       setBusy(true);
       try {
-        const r = await api.search(root, q, { ...opts, include });
+        const r = await searchAll(q, { ...opts, include });
         if (id === seq.current) {
           setRes(r);
           setErr(null);
@@ -69,7 +84,7 @@ export default function SearchPanel() {
       }
     }, 280);
     return () => clearTimeout(t);
-  }, [root, q, opts, include]);
+  }, [root, extraRoots, q, opts, include]);
 
   const byFile = useMemo(() => {
     const m = new Map<string, SearchMatch[]>();
@@ -87,7 +102,7 @@ export default function SearchPanel() {
       const n = await api.replace(files, q, rep, opts);
       toast(`${n} kecocokan diganti`, "success");
       setQ((x) => x + "");
-      setRes(await api.search(root, q, { ...opts, include }));
+      setRes(await searchAll(q, { ...opts, include }));
     } catch (e) {
       toast(errMsg(e), "error");
     }

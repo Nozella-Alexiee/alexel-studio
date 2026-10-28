@@ -187,6 +187,11 @@ export function buildCommands(ctx: Ctx, hooks: { confirmClose: (win: BrowserWind
       const r = win ? await dialog.showOpenDialog(win, { properties: ["openDirectory", "createDirectory"], title: "Pilih folder project" }) : await dialog.showOpenDialog({ properties: ["openDirectory"] });
       return r.canceled ? null : r.filePaths[0] ?? null;
     },
+    dialog_open_file: async (a, win) => {
+      const opts = { properties: ["openFile" as const], filters: Array.isArray(a.filters) ? a.filters : [] };
+      const r = win ? await dialog.showOpenDialog(win, opts) : await dialog.showOpenDialog(opts);
+      return r.canceled ? null : r.filePaths[0] ?? null;
+    },
     dialog_save: async (a, win) => {
       const opts = { defaultPath: a.defaultPath, filters: a.filters };
       const r = win ? await dialog.showSaveDialog(win, opts) : await dialog.showSaveDialog(opts);
@@ -237,7 +242,7 @@ export function buildCommands(ctx: Ctx, hooks: { confirmClose: (win: BrowserWind
       const s = ideServer(ctx, app.getVersion());
       return { running: s.running, port: s.port, clients: s.clientCount() };
     },
-    exthost_start: (a) => hostManager(ctx).start({ root: a.root ?? null, settings: a.settings ?? {}, core: a.core, trusted: a.trusted ?? [], disabled: a.disabled ?? [] }),
+    exthost_start: (a) => hostManager(ctx).start({ root: a.root ?? null, folders: Array.isArray(a.folders) ? a.folders.filter((x: unknown): x is string => typeof x === "string") : [], settings: a.settings ?? {}, core: a.core, trusted: a.trusted ?? [], disabled: a.disabled ?? [] }),
     exthost_stop: () => hostManager(ctx).stop(),
     exthost_call: (a) => hostManager(ctx).call(String(a.m), a.p),
     exthost_notify: (a) => {

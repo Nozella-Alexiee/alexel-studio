@@ -12,6 +12,8 @@ interface SessionFile {
   focused: number;
   layouts: Record<string, Layout>;
   pinned?: string[];
+  extraRoots?: string[];
+  workspaceFile?: string | null;
 }
 
 let sessionTimer = 0;
@@ -30,6 +32,8 @@ export function persistSession() {
       focused: s.focusedGroup,
       layouts: s.layouts,
       pinned: Object.values(s.tabs).filter((t) => t.pinned).map((t) => t.id),
+      extraRoots: s.extraRoots,
+      workspaceFile: s.workspaceFile,
     };
     void api.storeSave("session", JSON.stringify(file)).catch(() => {});
   }, 500);
@@ -135,7 +139,7 @@ export async function restoreAll() {
   if (session?.root) {
     const { openProject } = await import("./actions");
     try {
-      await openProject(session.root, { restoreTabs: { groups: session.groups ?? [], focused: session.focused ?? 0, pinned: Array.isArray(session.pinned) ? session.pinned.filter((x): x is string => typeof x === "string") : [] } });
+      await openProject(session.root, { restoreTabs: { groups: session.groups ?? [], focused: session.focused ?? 0, pinned: Array.isArray(session.pinned) ? session.pinned.filter((x): x is string => typeof x === "string") : [] }, extraRoots: Array.isArray(session.extraRoots) ? session.extraRoots.filter((x): x is string => typeof x === "string") : [], workspaceFile: typeof session.workspaceFile === "string" ? session.workspaceFile : null });
     } catch {
       /* folder sudah tidak ada */
     }

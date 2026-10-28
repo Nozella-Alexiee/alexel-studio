@@ -14,11 +14,14 @@ import { tl } from "../i18n";
 interface Row {
   entry: FileEntry;
   depth: number;
+  /** Baris akar folder workspace (multi-root). */
+  root?: boolean;
 }
 
 function useRows(root: string | null): Row[] {
   const dirs = useStore((s) => s.dirs);
   const expanded = useStore((s) => s.expanded);
+  const extra = useStore((s) => s.extraRoots);
   return useMemo(() => {
     if (!root) return [];
     const out: Row[] = [];
@@ -28,15 +31,24 @@ function useRows(root: string | null): Row[] {
         if (e.is_dir && expanded[e.path]) walk(e.path, depth + 1);
       }
     };
-    walk(root, 0);
+    if (!extra.length) {
+      walk(root, 0);
+      return out;
+    }
+    // Multi-root: tiap folder workspace jadi baris akar yang bisa dilipat (seperti VS Code).
+    for (const r of [root, ...extra]) {
+      out.push({ entry: { name: basename(r), path: r, is_dir: true, is_symlink: false }, depth: 0, root: true });
+      if (expanded[r]) walk(r, 1);
+    }
     return out;
-  }, [root, dirs, expanded]);
+  }, [root, dirs, expanded, extra]);
 }
 
 const MARK_LABEL: Record<string, string> = { M: tl("Diubah"), U: tl("Baru (untracked)"), A: tl("Ditambahkan"), D: tl("Dihapus"), "!": tl("Konflik") };
 
 function TreeRow({ row, active, focused, onFocusRow }: { row: Row; active: boolean; focused: boolean; onFocusRow: () => void }) {
   const { entry, depth } = row;
+  const isMainRoot = useStore((s) => row.root && s.root === entry.path);
   const open = useStore((s) => !!s.expanded[entry.path]);
   const mark = useStore((s) => (entry.is_dir ? null : s.gitMarks[entry.path]));
   const dirMark = useStore((s) => (entry.is_dir ? !!s.gitDirs[entry.path] : false));
@@ -53,6 +65,20 @@ function TreeRow({ row, active, focused, onFocusRow }: { row: Row; active: boole
   const menu = (e: React.MouseEvent) => {
     onFocusRow();
     setState({ selectedTreePath: entry.path });
+    if (row.root) {
+      return openMenu(e, [
+        { label: tl("Berkas baru…"), run: () => void A.newFile(entry.path) },
+        { label: tl("Folder baru…"), run: () => void A.newFolder(entry.path) },
+        { separator: true, label: "" },
+        { label: tl("Tambah folder ke workspace…"), run: () => void A.addWorkspaceFolder() },
+        { label: tl("Hapus folder dari workspace"), disabled: !!isMainRoot, run: () => A.removeWorkspaceFolder(entry.path) },
+        { label: tl("Simpan workspace sebagai…"), run: () => void A.saveWorkspaceAs() },
+        { separator: true, label: "" },
+        { label: tl("Salin path"), run: () => void A.copyPath(entry.path) },
+        { label: tl("Tampilkan di {app}", { app: fileManagerName() }), run: () => void import("../lib/ipc").then((m) => m.api.reveal(entry.path)) },
+        { label: tl("Buka terminal di sini"), run: () => void import("../terminal/terminals").then((m) => m.newTerminal({ cwd: entry.path, title: basename(entry.path) })) },
+      ]);
+    }
     openMenu(e, [
       ...(entry.is_dir
         ? [
@@ -63,6 +89,7 @@ function TreeRow({ row, active, focused, onFocusRow }: { row: Row; active: boole
         : [
             { label: tl("Buka"), run: () => void A.openFile(entry.path) },
             { label: tl("Buka di sisi kanan"), run: () => void A.openFile(entry.path, { group: 1 }) },
+            ...(/\.code-workspace$/i.test(entry.name) ? [{ label: tl("Buka sebagai workspace"), run: () => void A.openWorkspaceFile(entry.path) }] : []),
             { separator: true, label: "" },
           ]),
       { label: tl("Ganti nama…"), keys: "↵", run: () => void A.renamePath(entry.path) },
@@ -84,7 +111,7 @@ function TreeRow({ row, active, focused, onFocusRow }: { row: Row; active: boole
       aria-selected={active}
       tabIndex={focused ? 0 : -1}
       data-path={entry.path}
-      className={`tree-row ${active ? "is-active" : ""} ${dropOver ? "is-drop" : ""} ${mark ? `git-${mark}` : ""} ${errors ? "has-errors" : ""}`}
+      className={`tree-row ${row.root ? "is-root" : ""} ${active ? "is-active" : ""} ${dropOver ? "is-drop" : ""} ${mark ? `git-${mark}` : ""} ${errors ? "has-errors" : ""}`}
       style={{ paddingLeft: 8 + depth * 14 }}
       onClick={activate}
       onContextMenu={menu}
@@ -196,6 +223,8 @@ export function FileTree() {
         openMenu(e, [
           { label: tl("Berkas baru…"), run: () => void A.newFile(root) },
           { label: tl("Folder baru…"), run: () => void A.newFolder(root) },
+          { separator: true, label: "" },
+          { label: tl("Tambah folder ke workspace…"), run: () => void A.addWorkspaceFolder() },
         ])
       }
       onDragOver={(e) => e.dataTransfer.types.includes("text/x-nozel-path") && e.preventDefault()}
@@ -229,7 +258,7 @@ export function ExplorerHeader({ title = "Explorer" }: { title?: string }) {
           <IconButton label={tl("Muat ulang")} onClick={() => void A.refreshTree()}>
             <RefreshCw size={14} />
           </IconButton>
-          <IconButton label={tl("Tutup semua folder")} onClick={() => setState({ expanded: root ? { [root]: true } : {}, selectedTreePath: null })}>
+          <IconButton label={tl("Tutup semua folder")} onClick={() => setState({ expanded: Object.fromEntries(A.workspaceRoots().map((r) => [r, true])), selectedTreePath: null })}>
             <ListCollapse size={14} />
           </IconButton>
         </div>

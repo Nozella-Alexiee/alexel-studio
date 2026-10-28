@@ -63,7 +63,7 @@ export async function startHost(): Promise<void> {
   useExtHost.setState({ starting: true });
   clearHostUi();
   try {
-    const r = await call<{ count: number }>("exthost_start", { root: s.root, settings: s.settings.extSettings, core: coreSettings(), trusted: s.settings.trustedExts, disabled: s.settings.disabledExts });
+    const r = await call<{ count: number }>("exthost_start", { root: s.root, folders: s.extraRoots, settings: s.settings.extSettings, core: coreSettings(), trusted: s.settings.trustedExts, disabled: s.settings.disabledExts });
     resetExtHost();
     if (r.count > 0) {
       useExtHost.setState({ running: true, count: r.count });
@@ -108,7 +108,7 @@ export function watchHostInputs() {
   let key = "";
   const sig = () => {
     const s = getState();
-    return JSON.stringify([s.root, s.settings.trustedExts, s.settings.disabledExts]);
+    return JSON.stringify([s.root, s.extraRoots, s.settings.trustedExts, s.settings.disabledExts]);
   };
   key = sig();
   useStore.subscribe(() => {
