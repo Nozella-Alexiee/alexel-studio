@@ -1,5 +1,6 @@
 // vscode.window: pesan, quick pick, input, output channel, status bar, progress, editor, dekorasi, terminal.
 
+import path from "node:path";
 import type { HostCtx, LoadedExt } from "./context";
 import { edits as jEdits, range as jRange, toRange } from "./convert";
 import type { HostDocument } from "./document";
@@ -211,6 +212,7 @@ export function windowApi(hc: HostCtx, ext: LoadedExt | null) {
       const roots = [ext?.dir, hc.root, ...(options.localResourceRoots ?? []).map((u) => u.fsPath)].filter((x): x is string => !!x);
       let html = "";
       let curTitle = title;
+      let icon: unknown;
       let isDisposed = false;
       const column = typeof showOptions === "number" ? showOptions : (showOptions as { viewColumn?: number } | undefined)?.viewColumn ?? ViewColumn.Beside;
       rpc.notify("ui/webview", { op: "create", id, viewType, viewId, title, roots, owner: ext?.id, column, preserveFocus: !!(showOptions as { preserveFocus?: boolean } | undefined)?.preserveFocus });
@@ -230,7 +232,22 @@ export function windowApi(hc: HostCtx, ext: LoadedExt | null) {
           curTitle = t;
           rpc.notify("ui/webview", { op: "title", id, title: t });
         },
-        iconPath: undefined,
+        get iconPath() {
+          return icon;
+        },
+        // Ikon tab: berkas di dalam paket ekstensi disajikan nozelext://icons/<id>/ext/<path>.
+        set iconPath(v: unknown) {
+          icon = v;
+          const pick = (x: unknown): string | undefined => (x && typeof x === "object" && "fsPath" in x ? (x as { fsPath: string }).fsPath : undefined);
+          const toUrl = (fsPath: string | undefined) => {
+            const rel = fsPath && ext ? path.relative(ext.dir, fsPath) : "";
+            return rel && !rel.startsWith("..") && !path.isAbsolute(rel) && /\.(svg|png)$/i.test(rel) ? `nozelext://icons/${encodeURIComponent(ext!.id)}/ext/${rel.split(path.sep).map(encodeURIComponent).join("/")}` : null;
+          };
+          const o = v as { dark?: unknown; light?: unknown } | undefined;
+          const dark = toUrl(pick(v) ?? pick(o?.dark) ?? pick(o?.light));
+          const light = toUrl(pick(v) ?? pick(o?.light) ?? pick(o?.dark));
+          rpc.notify("ui/webview", { op: "icon", id, icon: dark, iconLight: light });
+        },
         webview: {
           options,
           cspSource: "nozelweb:",

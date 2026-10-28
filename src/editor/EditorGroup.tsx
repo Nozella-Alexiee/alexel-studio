@@ -8,6 +8,7 @@ import { IconButton, Segmented } from "../components/ui";
 import { relative } from "../lib/paths";
 import { isFileTab, setState, useStore, type Tab } from "../state/store";
 import { CodeEditor } from "./CodeEditor";
+import { useWebviews } from "../exthost/webview";
 import { HtmlPreview, ImageViewer, MarkdownPreview } from "./Previews";
 import { tl } from "../i18n";
 
@@ -21,6 +22,14 @@ const WelcomePage = lazy(() => import("../panels/Dashboard").then((m) => ({ defa
 
 /** Tab yang sedang diseret (dataTransfer tidak bisa dibaca saat dragover, jadi disimpan di sini). */
 let dragTab: { id: string; group: number } | null = null;
+
+/** Ikon tab webview: iconPath panel dari ekstensi bila ada (mis. logo Claude Code), selain itu ikon puzzle. */
+function WebviewTabIcon({ tabId }: { tabId: string }) {
+  const id = Number(tabId.slice(tabId.lastIndexOf(":") + 1));
+  const light = useStore((s) => s.layouts && document.documentElement.dataset.scheme === "light");
+  const icon = useWebviews((s) => (light ? s.panels[id]?.iconLight : s.panels[id]?.icon) ?? s.panels[id]?.icon);
+  return icon ? <img src={icon} width={14} height={14} alt="" aria-hidden /> : <Puzzle size={14} aria-hidden />;
+}
 
 function TabItem({ tab, group, active, drop }: { tab: Tab; group: number; active: boolean; drop?: "before" | "after" | null }) {
   const mark = useStore((s) => s.gitMarks[tab.id]);
@@ -67,7 +76,7 @@ function TabItem({ tab, group, active, drop }: { tab: Tab; group: number; active
       onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && A.activateTab(tab.id, group)}
       onContextMenu={onMenu}
     >
-      {tab.kind === "settings" ? <Cog size={14} aria-hidden /> : tab.kind === "extension" || tab.kind === "webview" ? <Puzzle size={14} aria-hidden /> : tab.kind === "welcome" ? <Sparkle size={14} aria-hidden /> : <FileIcon filename={tab.name} size={14} />}
+      {tab.kind === "settings" ? <Cog size={14} aria-hidden /> : tab.kind === "webview" ? <WebviewTabIcon tabId={tab.id} /> : tab.kind === "extension" ? <Puzzle size={14} aria-hidden /> : tab.kind === "welcome" ? <Sparkle size={14} aria-hidden /> : <FileIcon filename={tab.name} size={14} />}
       <span className="tab-name">{tab.name}</span>
       {tab.pinned ? (
         <button

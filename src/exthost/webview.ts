@@ -16,7 +16,7 @@ export const webviewSrc = (id: number, owner: string | undefined) => `nozelweb:/
 export const webviewTabId = (id: number) => `${WEBVIEW_PREFIX}${id}`;
 export const webviewIdOf = (tabId: string): number | null => (tabId.startsWith(WEBVIEW_PREFIX) ? Number(tabId.slice(WEBVIEW_PREFIX.length)) : null);
 
-export const useWebviews = create<{ panels: Record<number, { title: string; rev: number; viewType: string; owner?: string }>; views: Record<string, number> }>(() => ({ panels: {}, views: {} }));
+export const useWebviews = create<{ panels: Record<number, { title: string; rev: number; viewType: string; owner?: string; icon?: string; iconLight?: string }>; views: Record<string, number> }>(() => ({ panels: {}, views: {} }));
 
 const frames = new Map<number, HTMLIFrameElement>();
 const loaded = new Set<number>();

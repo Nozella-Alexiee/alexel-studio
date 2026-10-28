@@ -311,6 +311,7 @@ export function handleEvent(e: string, p: Any) {
           const tid = w.webviewTabId(p.id);
           setState((s) => (s.tabs[tid] ? { tabs: { ...s.tabs, [tid]: { ...s.tabs[tid], name: p.title } } } : {}));
         } else if (p.op === "post") w.postToWebview(p.id, p.message);
+        else if (p.op === "icon") w.useWebviews.setState((s) => (s.panels[p.id] ? { panels: { ...s.panels, [p.id]: { ...s.panels[p.id], icon: p.icon ?? undefined, iconLight: p.iconLight ?? undefined } } } : {}));
         else if (p.op === "reveal") A.showTab(w.webviewTabId(p.id));
         else if (p.op === "dispose") w.closeWebviewTab(p.id);
       });
