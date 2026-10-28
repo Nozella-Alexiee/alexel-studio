@@ -12,13 +12,14 @@
     "dev": "vite",
     "app": "node scripts/electron/dev.mjs",
     "build": "tsc && tsc -p tsconfig.electron.json && vite build && node scripts/electron/build.mjs",
-    "dist": "npm run build && electron-builder --mac --publish never",
-    "dist:win": "npm run build && electron-builder --win --publish never",
+    "dist": "npm run build && node scripts/ripgrep/fetch.mjs all && electron-builder --mac --publish never",
+    "dist:win": "npm run build && node scripts/ripgrep/fetch.mjs all && electron-builder --win --publish never",
     "test": "vitest run",
     "postinstall": "node -e \"try{for(const d of ['darwin-arm64','darwin-x64']){require('fs').chmodSync('node_modules/node-pty/prebuilds/'+d+'/spawn-helper',0o755)}}catch{}\"",
-    "dist:linux": "npm run build && electron-builder --linux --publish never",
+    "dist:linux": "npm run build && node scripts/ripgrep/fetch.mjs all && electron-builder --linux --publish never",
     "typecheck": "tsc --noEmit -p . && tsc --noEmit -p tsconfig.electron.json",
-    "notices": "node scripts/notices.mjs"
+    "notices": "node scripts/notices.mjs",
+    "ripgrep": "node scripts/ripgrep/fetch.mjs"
   },
   "dependencies": {
     "@parcel/watcher": "^2.6.0",
@@ -225,7 +226,16 @@
     },
     "rpm": {
       "artifactName": "Alexel-Studio-linux-${arch}.${ext}"
-    }
+    },
+    "extraResources": [
+      {
+        "from": "vendor/ripgrep/${os}-${arch}",
+        "to": "ripgrep",
+        "filter": [
+          "**/*"
+        ]
+      }
+    ]
   },
   "license": "MIT",
   "homepage": "https://nozella-alexiee.github.io/alexel-studio/",

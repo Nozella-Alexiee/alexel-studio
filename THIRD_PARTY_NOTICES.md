@@ -56,9 +56,12 @@ of this package.
 | lucide-react | 1.55.0 | ISC | https://github.com/lucide-icons/lucide |
 | marked | 18.1.1 | MIT | https://github.com/markedjs/marked |
 | node-pty | 1.1.0 | MIT | https://github.com/microsoft/node-pty |
+| prettier | 3.9.10 | MIT | prettier/prettier |
 | react | 19.3.0 | MIT | https://github.com/react/react |
 | react-dom | 19.3.0 | MIT | https://github.com/react/react |
 | typescript-language-server | 6.0.2 | Apache-2.0 | https://github.com/typescript-language-server/typescript-language-server |
 | vscode-oniguruma | 2.0.1 | MIT | https://github.com/microsoft/vscode-oniguruma |
 | vscode-textmate | 9.3.2 | MIT | https://github.com/microsoft/vscode-textmate |
+| ws | 8.22.0 | MIT | https://github.com/websockets/ws |
 | zustand | 5.0.15 | MIT | https://github.com/pmndrs/zustand |
+| ripgrep (binary) | 15.2.0 | MIT OR Unlicense | https://github.com/BurntSushi/ripgrep |

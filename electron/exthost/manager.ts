@@ -4,7 +4,7 @@
 import { fork, type ChildProcess } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
-import { clipboard, dialog, shell, BrowserWindow } from "electron";
+import { app, clipboard, dialog, shell, BrowserWindow } from "electron";
 import { childEnv, killTree, type Ctx } from "../util";
 import { extCodeDir, extList, type InstalledExt } from "../extensions";
 import { Rpc, type Msg } from "./rpc";
@@ -21,6 +21,14 @@ export interface HostStart {
 /** Lokasi skrip host; di aplikasi terpaket harus di luar asar supaya bisa dijalankan Node. */
 export function hostScriptPath(dir = __dirname): string {
   return path.join(dir, "exthost.cjs").replace(`app.asar${path.sep}`, `app.asar.unpacked${path.sep}`);
+}
+
+/** Ripgrep bawaan: di aplikasi terpaket di `resources/ripgrep`, saat pengembangan di `vendor/ripgrep/<os>-<arch>`. */
+export function bundledRipgrep(): string | null {
+  const os = process.platform === "darwin" ? "mac" : process.platform === "win32" ? "win" : "linux";
+  const exe = process.platform === "win32" ? "rg.exe" : "rg";
+  const candidates = [path.join(process.resourcesPath ?? "", "ripgrep", exe), path.join(app.getAppPath(), "vendor", "ripgrep", `${os}-${process.arch}`, exe)];
+  return candidates.find((c) => fs.existsSync(c)) ?? null;
 }
 
 /** Ekstensi yang boleh dijalankan: punya kode, dipercaya, dan tidak dimatikan. */
@@ -62,7 +70,7 @@ export class ExtHostManager {
     if (!exts.length) return { count: 0 };
     if (!fs.existsSync(this.script)) throw new Error("Extension host tidak ditemukan di build ini.");
     this.stopping = false;
-    const child = fork(this.script, [], { env: childEnv({ ELECTRON_RUN_AS_NODE: "1" }), // "advanced" = structured clone: pesan webview boleh berisi ArrayBuffer/typed array (mis. Cap'n Proto di Codex).
+    const child = fork(this.script, [], { env: childEnv({ ELECTRON_RUN_AS_NODE: "1", ...(bundledRipgrep() ? { NOZEL_RIPGREP: bundledRipgrep()! } : {}) }), // "advanced" = structured clone: pesan webview boleh berisi ArrayBuffer/typed array (mis. Cap'n Proto di Codex).
       serialization: "advanced", stdio: ["ignore", "ignore", "pipe", "ipc"], cwd: o.root && fs.existsSync(o.root) ? o.root : undefined, windowsHide: true,
       // POSIX: grup proses sendiri supaya server bahasa/CLI yang dijalankan ekstensi ikut berhenti bersama host.
       detached: process.platform !== "win32" });

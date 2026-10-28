@@ -81,12 +81,12 @@ export async function runCommand(hc: HostCtx, id: string, args: unknown[]): Prom
 
 /**
  * Beberapa ekstensi (Todo Tree, pencarian) mencari ripgrep di `appRoot/node_modules/@vscode/ripgrep/bin/rg`.
- * Alexel Studio tidak membundel ripgrep; bila `rg` ada di PATH, dibuatkan tautan di folder palsu ini.
+ * Alexel Studio membundel ripgrep (NOZEL_RIPGREP); bila tidak ada, dipakai `rg` di PATH. Tautan dibuat di folder palsu ini.
  */
-function appRoot(hc: HostCtx): string {
+export function appRoot(hc: Pick<HostCtx, "userData">): string {
   const root = path.join(hc.userData, "exthost", "app");
   try {
-    const found = findInPath(process.platform === "win32" ? "rg.exe" : "rg");
+    const found = process.env.NOZEL_RIPGREP || findInPath(process.platform === "win32" ? "rg.exe" : "rg");
     if (found) {
       for (const base of ["node_modules", "node_modules.asar.unpacked"]) {
         const dir = path.join(root, base, "@vscode", "ripgrep", "bin");

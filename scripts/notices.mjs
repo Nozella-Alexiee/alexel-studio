@@ -24,6 +24,10 @@ for (const name of names) {
   rows.push(`| ${meta.name === name ? name : `${name} (${meta.name})`} | ${meta.version} | ${license} | ${url} |`);
 }
 
+// Biner yang dibundel dari luar npm (lihat scripts/ripgrep/targets.mjs).
+const { VERSION: RG } = await import("./ripgrep/targets.mjs");
+rows.push(`| ripgrep (binary) | ${RG} | MIT OR Unlicense | https://github.com/BurntSushi/ripgrep |`);
+
 const out = `# Third-party notices
 
 Alexel Studio includes the following open source packages. Their license texts are available in

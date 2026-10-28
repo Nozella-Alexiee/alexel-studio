@@ -72,6 +72,9 @@ jobs:
         run: npm pkg set repository.type=git "repository.url=https://github.com/${GITHUB_REPOSITORY}"
       - run: npm test
       - run: npm run build
+      - name: Ripgrep bawaan (pin SHA-256)
+        shell: bash
+        run: node scripts/ripgrep/fetch.mjs
       - name: Build & unggah ke draft rilis
         # bash juga di Windows: PowerShell memecah argumen -c.publish.* jadi nama berkas.
         shell: bash
