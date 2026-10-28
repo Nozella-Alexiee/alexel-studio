@@ -16,7 +16,8 @@ import { getState, setLayout, useStore } from "../state/store";
 import { EditorGroups, RightContent, SideContent, SideResizer, StatusBar, openProjectMenu, useFitLayout } from "./common";
 import { prettyKeys } from "../lib/keys";
 import { tl } from "../i18n";
-import { useHasExtViews } from "../exthost/views";
+import { ContainerIcon, ExtContainerTabs, useSidebarContainers } from "../panels/ExtContainerTabs";
+import { useExtContainers } from "../exthost/views";
 import { useTests } from "../exthost/tests";
 
 function RunConfig() {
@@ -64,7 +65,8 @@ export default function ControlShell() {
   const split = useStore((s) => s.groups.length > 1);
   const problems = useStore((s) => Object.values(s.problems).reduce((a, x) => a + x.filter((p) => p.severity === "error").length, 0));
 
-  const hasViews = useHasExtViews();
+  const sideContainers = useSidebarContainers();
+  const hasRightViews = useExtContainers().some((c) => c.location !== "activitybar");
   const hasTests = useTests((s) => s.controllers.length > 0);
   const rail: [string, ReactNode, string, () => void, boolean, number?][] = [
     ["files", <Files size={19} />, `Explorer (${prettyKeys("Mod+Shift+E")})`, () => A.toggleSidebar("files"), l.sidebar && l.sideView === "files"],
@@ -74,7 +76,8 @@ export default function ControlShell() {
     ["todo", <ListTodo size={19} />, "TODO", () => A.toggleSidebar("todo"), l.sidebar && l.sideView === "todo"],
     ["ext", <Puzzle size={19} />, "Ekstensi", () => A.toggleSidebar("ext"), l.sidebar && l.sideView === "ext"],
     ...(hasTests ? ([["tests", <FlaskConical size={19} />, "Tests", () => A.toggleSidebar("tests"), l.sidebar && l.sideView === "tests"]] as typeof rail) : []),
-    ...(hasViews ? ([["exviews", <Layers size={19} />, tl("Tampilan ekstensi"), () => A.toggleRight("extviews"), l.right && l.rightView === "extviews"]] as typeof rail) : []),
+    ...sideContainers.map((c) => [`ext:${c.id}`, <ContainerIcon c={c} size={19} />, c.title, () => A.toggleSidebar(`ext:${c.id}`), l.sidebar && l.sideView === `ext:${c.id}`] as (typeof rail)[number]),
+    ...(hasRightViews ? ([["exviews", <Layers size={19} />, tl("Tampilan ekstensi"), () => A.toggleRight("extviews"), l.right && l.rightView === "extviews"]] as typeof rail) : []),
     ["ports", <Network size={19} />, "Port & proses", () => A.togglePanel("ports"), l.panel && l.panelTab === "ports"],
     ["claude", <Kepi size={21} />, `${tl("Agen AI")} (${prettyKeys("Mod+Alt+B")})`, () => A.toggleRight("claude"), l.right && l.rightView === "claude"],
   ];
@@ -161,11 +164,7 @@ export default function ControlShell() {
                 <button role="tab" aria-selected={l.rightView === "claude"} className={l.rightView === "claude" ? "is-on" : ""} onClick={() => setLayout({ rightView: "claude" })}>
                   CLAUDE
                 </button>
-                {(hasViews || l.rightView === "extviews") && (
-                  <button role="tab" aria-selected={l.rightView === "extviews"} className={l.rightView === "extviews" ? "is-on" : ""} onClick={() => setLayout({ rightView: "extviews" })}>
-                    {tl("Ekstensi").toUpperCase()}
-                  </button>
-                )}
+                <ExtContainerTabs />
               </div>
               <RightContent />
             </aside>

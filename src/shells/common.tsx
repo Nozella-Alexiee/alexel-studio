@@ -76,16 +76,18 @@ export function SideContent() {
       {layout.sideView === "outline" && <OutlinePanel />}
       {layout.sideView === "run" && <RunView />}
       {layout.sideView === "tests" && <TestsPanel />}
+      {layout.sideView.startsWith("ext:") && <ExtViewsPanel containerId={layout.sideView.slice(4)} />}
     </Suspense>
     </ErrorBoundary>
   );
 }
 
-export function RightContent() {
+/** `allExt`: semua wadah tampilan ekstensi di kanan (desain tanpa rail ikon per ekstensi). */
+export function RightContent({ allExt = false }: { allExt?: boolean }) {
   const layout = useLayout();
   return (
     <ErrorBoundary>
-      <Suspense fallback={<Loading />}>{layout.rightView === "claude" ? <ClaudePanel /> : layout.rightView === "extviews" ? <ExtViewsPanel /> : <GitPanel />}</Suspense>
+      <Suspense fallback={<Loading />}>{layout.rightView === "claude" ? <ClaudePanel /> : layout.rightView === "extviews" ? <ExtViewsPanel all={allExt} /> : <GitPanel />}</Suspense>
     </ErrorBoundary>
   );
 }

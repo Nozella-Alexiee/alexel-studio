@@ -4767,3 +4767,36 @@ button.ext-link:not(:disabled):hover {
 .tests-panel .side-head {
   gap: 8px;
 }
+
+/* Tab wadah tampilan ekstensi (Claude Code, Codex, …) di panel kanan. */
+.ext-container-tab {
+  justify-content: center;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  max-width: 180px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ext-container-icon {
+  display: inline-block;
+  flex: none;
+  background: currentColor;
+  -webkit-mask-size: contain;
+  mask-size: contain;
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  -webkit-mask-position: center;
+  mask-position: center;
+}
+.ext-views-single {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+}
+.ext-views-single > .webview-frame {
+  flex: 1;
+  min-height: 0;
+}

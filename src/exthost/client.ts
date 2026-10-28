@@ -23,6 +23,7 @@ function coreSettings(): Record<string, unknown> {
     "editor.formatOnSave": s.formatOnSave,
     "editor.minimap.enabled": s.minimap,
     "files.autoSave": s.autoSave === "delay" ? "afterDelay" : "off",
+    "workbench.colorThemeKind": document.documentElement.dataset.scheme === "light" ? 1 : 2,
   };
 }
 
@@ -92,6 +93,11 @@ export function scheduleRestart(ms = 400) {
     restartTimer = null;
     void startHost();
   }, ms);
+}
+
+/** Kirim ulang pengaturan ke host (mis. setelah tema terang/gelap berganti; skemanya baru terbaca dari DOM). */
+export function notifyConfig() {
+  if (hostRunning()) hostNotify("config/set", { settings: getState().settings.extSettings, core: coreSettings() });
 }
 
 let watching = false;

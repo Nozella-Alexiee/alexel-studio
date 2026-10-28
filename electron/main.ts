@@ -49,7 +49,7 @@ if (TEST && process.env.NOZEL_USER_DATA) app.setPath("userData", process.env.NOZ
 protocol.registerSchemesAsPrivileged([
   { scheme: "app", privileges: { standard: true, secure: true, supportFetchAPI: true, codeCache: true } },
   { scheme: "nozelpreview", privileges: { standard: true, secure: true, supportFetchAPI: true, stream: true, corsEnabled: true } },
-  { scheme: "nozelext", privileges: { standard: true, secure: true } },
+  { scheme: "nozelext", privileges: { standard: true, secure: true, corsEnabled: true } },
   { scheme: "nozelweb", privileges: { standard: true, secure: true, supportFetchAPI: true, stream: true, corsEnabled: true } },
 ]);
 
@@ -178,7 +178,8 @@ function serveApp() {
     const r = extAsset(ctx, u.pathname);
     return new Response(typeof r.body === "string" ? r.body : new Uint8Array(r.body), {
       status: r.status,
-      headers: { "Content-Type": r.mime, "Cache-Control": "max-age=31536000, immutable", "X-Content-Type-Options": "nosniff" },
+      // CORS: ikon wadah ekstensi dipakai sebagai CSS mask-image (diambil dengan mode CORS).
+      headers: { "Content-Type": r.mime, "Cache-Control": "max-age=31536000, immutable", "X-Content-Type-Options": "nosniff", "Access-Control-Allow-Origin": "*" },
     });
   });
   // Webview ekstensi (iframe ber-sandbox); lihat exthost/webviews.ts.

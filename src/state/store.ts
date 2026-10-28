@@ -15,7 +15,7 @@ let chatSeq = 0;
 export const newChatKey = () => `c-${Date.now().toString(36)}-${++chatSeq}`;
 
 export type PanelId = "terminal" | "problems" | "output" | "ports" | "todo" | "history" | "debug";
-export type SideView = "files" | "search" | "git" | "todo" | "ext" | "outline" | "run" | "exviews" | "tests";
+export type SideView = "files" | "search" | "git" | "todo" | "ext" | "outline" | "run" | "exviews" | "tests" | `ext:${string}`;
 export type RightView = "claude" | "git" | "extviews";
 export type PreviewMode = "code" | "split" | "preview";
 
@@ -153,6 +153,8 @@ export interface Layout {
   right: boolean;
   rightW: number;
   rightView: RightView;
+  /** Wadah tampilan ekstensi yang dipilih di panel kanan (mis. Claude Code atau Codex). */
+  extContainer?: string | null;
 }
 
 export const DEFAULT_LAYOUTS: Record<DesignId, Layout> = {

@@ -13,11 +13,14 @@ import { BottomPanel } from "../panels/BottomPanel";
 import { setLayout, useStore, type SideView } from "../state/store";
 import { EditorGroups, RightContent, SideContent, SideResizer, StatusBar, openProjectMenu, useFitLayout } from "./common";
 import { tl } from "../i18n";
-import { useHasExtViews } from "../exthost/views";
+import { useExtContainers, useHasExtViews } from "../exthost/views";
+import { useActiveContainer } from "../panels/ExtContainerTabs";
 
 export default function AuroraShell() {
   const l = useFitLayout(0);
   const hasViews = useHasExtViews();
+  const containers = useExtContainers();
+  const activeContainer = useActiveContainer(true);
   const root = useStore((s) => s.root);
   const git = useStore((s) => s.git);
   const split = useStore((s) => s.groups.length > 1);
@@ -114,16 +117,16 @@ export default function AuroraShell() {
               <div className="agent-tabs">
                 <Segmented
                   label={tl("Panel kanan")}
-                  value={l.rightView}
-                  onChange={(v) => setLayout({ rightView: v })}
+                  value={l.rightView === "extviews" ? `ext:${activeContainer?.id ?? ""}` : l.rightView}
+                  onChange={(v) => (v.startsWith("ext:") ? setLayout({ rightView: "extviews", extContainer: v.slice(4) }) : setLayout({ rightView: v as typeof l.rightView }))}
                   options={[
                     { id: "claude", label: <><Kepi size={14} /> {tl("Agen AI")}</> },
                     { id: "git", label: <><GitBranch size={12} /> Git</> },
-                    ...(hasViews ? [{ id: "extviews" as const, label: <><Layers size={12} /> {tl("Ekstensi")}</> }] : []),
+                    ...(hasViews ? containers.map((c) => ({ id: `ext:${c.id}`, label: <><Layers size={12} /> {c.title}</> })) : []),
                   ]}
                 />
               </div>
-              <RightContent />
+              <RightContent allExt />
             </aside>
           </>
         )}

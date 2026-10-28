@@ -6,7 +6,8 @@ import { useCallback, useEffect, useState } from "react";
 import { Empty, Spinner } from "../components/ui";
 import { hostCall } from "../exthost/client";
 import { useExtHost } from "../exthost/state";
-import { useExtViews } from "../exthost/views";
+import { useActiveContainer } from "./ExtContainerTabs";
+import { useExtContainers } from "../exthost/views";
 import { useWebviews } from "../exthost/webview";
 import WebviewFrame from "./WebviewFrame";
 import { toast } from "../state/store";
@@ -79,15 +80,27 @@ function WebviewSection({ viewId, title }: { viewId: string; title: string }) {
   return <WebviewFrame id={id} className="webview-frame webview-side" />;
 }
 
-export default function ExtViewsPanel() {
-  const entries = useExtViews();
+export default function ExtViewsPanel({ containerId, all = false }: { containerId?: string; all?: boolean }) {
+  const active = useActiveContainer(all);
+  const containers = useExtContainers();
+  const container = containerId ? containers.find((c) => c.id === containerId) ?? null : active;
   const [closed, setClosed] = useState<Set<string>>(new Set());
   const views = useExtHost((s) => s.treeViews);
-  if (!entries.length) return <Empty icon={<Layers size={24} />} title={tl("Tampilan ekstensi")}>{tl("Belum ada tampilan dari ekstensi. Pasang dan percayai ekstensi seperti Claude Code, Codex, atau Todo Tree.")}</Empty>;
+  if (!container) return <Empty icon={<Layers size={24} />} title={tl("Tampilan ekstensi")}>{tl("Belum ada tampilan dari ekstensi. Pasang dan percayai ekstensi seperti Claude Code, Codex, atau Todo Tree.")}</Empty>;
+  const entries = container.views;
+  // Satu tampilan saja (Claude Code, Codex): isi penuh tanpa judul bagian, seperti di VS Code.
+  if (entries.length === 1) {
+    const v = entries[0];
+    return (
+      <div className="ext-views ext-views-single">
+        {v.kind === "webview" ? <WebviewSection viewId={v.id} title={v.name} /> : <div className="side-scroll"><Children viewId={v.id} depth={0} version={views[v.id]?.version ?? 0} /></div>}
+      </div>
+    );
+  }
   return (
     <div className="ext-views">
       <div className="side-head">
-        <span className="side-title">{tl("Tampilan ekstensi")}</span>
+        <span className="side-title">{container.title}</span>
       </div>
       <div className="ext-views-body">
         {entries.map(({ id, name, kind }) => {

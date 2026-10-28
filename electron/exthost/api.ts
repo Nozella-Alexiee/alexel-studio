@@ -15,7 +15,7 @@ import { tasksApi } from "./tasks";
 import * as T from "./types";
 import { Uri } from "./uri";
 
-export const VSCODE_VERSION = "1.101.0";
+export const VSCODE_VERSION = "1.106.0";
 
 function commandsApi(hc: HostCtx, ext: LoadedExt | null) {
   const set = (id: string, fn: (...a: unknown[]) => unknown, thisArg?: unknown, editor = false) => {

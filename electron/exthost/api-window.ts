@@ -391,11 +391,30 @@ export function windowApi(hc: HostCtx, ext: LoadedExt | null) {
     createQuickPick: unsupported("createQuickPick"),
     state: { focused: true, active: true },
     onDidChangeWindowState: new EventEmitter<unknown>().event,
-    activeColorTheme: { kind: 2 },
-    onDidChangeActiveColorTheme: new EventEmitter<unknown>().event,
+    // 1 = terang, 2 = gelap (ColorThemeKind); dikirim renderer sebagai pengaturan inti.
+    get activeColorTheme() {
+      return { kind: hc.core["workbench.colorThemeKind"] === 1 ? 1 : 2 };
+    },
+    onDidChangeActiveColorTheme: themeChanged(hc),
     activeNotebookEditor: undefined,
     visibleNotebookEditors: [],
     tabGroups: { all: [], activeTabGroup: { tabs: [] }, onDidChangeTabs: new EventEmitter<unknown>().event, onDidChangeTabGroups: new EventEmitter<unknown>().event },
     __editorFor: editorFor,
   };
 }
+
+const themeEmitters = new WeakMap<HostCtx, EventEmitter<unknown>>();
+/** Satu emitter per host: dipicu bila jenis tema (terang/gelap) dari renderer berubah. */
+function themeChanged(hc: HostCtx) {
+  let em = themeEmitters.get(hc);
+  if (!em) {
+    const e = new EventEmitter<unknown>();
+    em = e;
+    themeEmitters.set(hc, e);
+    hc.events.config.event((c: { affectsConfiguration(s: string): boolean }) => {
+      if (c.affectsConfiguration("workbench.colorThemeKind")) e.fire({ kind: hc.core["workbench.colorThemeKind"] === 1 ? 1 : 2 });
+    });
+  }
+  return em.event;
+}
+

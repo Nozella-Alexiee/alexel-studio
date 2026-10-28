@@ -17,6 +17,8 @@ import { BottomPanel } from "../panels/BottomPanel";
 import { setLayout, useStore } from "../state/store";
 import { EditorGroups, RightContent, SideContent, SideResizer, StatusBar, useFitLayout } from "./common";
 import { tl } from "../i18n";
+import { ContainerIcon, ExtContainerTabs, useSidebarContainers } from "../panels/ExtContainerTabs";
+import { useExtContainers } from "../exthost/views";
 import { useHasExtViews } from "../exthost/views";
 import { useTests } from "../exthost/tests";
 
@@ -27,6 +29,8 @@ export default function StudioShell() {
   const debugging = useDebug((s) => s.status === "running" || s.status === "paused" || s.status === "starting");
 
   const hasViews = useHasExtViews();
+  const sideContainers = useSidebarContainers();
+  const hasRightViews = useExtContainers().some((c) => c.location !== "activitybar");
   const hasTests = useTests((s) => s.controllers.length > 0);
   const items: [string, ReactNode, string, () => void, boolean, number?][] = [
     ["files", <Files size={22} strokeWidth={1.6} />, `Explorer (${prettyKeys("Mod+Shift+E")})`, () => A.toggleSidebar("files"), l.sidebar && l.sideView === "files"],
@@ -37,7 +41,8 @@ export default function StudioShell() {
     ["outline", <ListTree size={22} strokeWidth={1.6} />, tl("Outline (struktur berkas)"), () => A.toggleSidebar("outline"), l.sidebar && l.sideView === "outline"],
     ["ext", <Puzzle size={22} strokeWidth={1.6} />, `Ekstensi (${prettyKeys("Mod+Shift+X")})`, () => A.toggleSidebar("ext"), l.sidebar && l.sideView === "ext"],
     ...(hasTests ? ([["tests", <FlaskConical size={22} strokeWidth={1.6} />, "Tests", () => A.toggleSidebar("tests"), l.sidebar && l.sideView === "tests"]] as typeof items) : []),
-    ...(hasViews ? ([["exviews", <Layers size={22} strokeWidth={1.6} />, tl("Tampilan ekstensi"), () => A.toggleRight("extviews"), l.right && l.rightView === "extviews"]] as typeof items) : []),
+    ...sideContainers.map((c) => [`ext:${c.id}`, <ContainerIcon c={c} size={22} />, c.title, () => A.toggleSidebar(`ext:${c.id}`), l.sidebar && l.sideView === `ext:${c.id}`] as (typeof items)[number]),
+    ...(hasRightViews ? ([["exviews", <Layers size={22} strokeWidth={1.6} />, tl("Tampilan ekstensi"), () => A.toggleRight("extviews"), l.right && l.rightView === "extviews"]] as typeof items) : []),
   ];
 
   return (
@@ -128,11 +133,7 @@ export default function StudioShell() {
                   <button role="tab" aria-selected={l.rightView === "claude"} className={l.rightView === "claude" ? "is-on" : ""} onClick={() => setLayout({ rightView: "claude" })}>
                     CLAUDE
                   </button>
-                  {(hasViews || l.rightView === "extviews") && (
-                    <button role="tab" aria-selected={l.rightView === "extviews"} className={l.rightView === "extviews" ? "is-on" : ""} onClick={() => setLayout({ rightView: "extviews" })}>
-                      {tl("Ekstensi").toUpperCase()}
-                    </button>
-                  )}
+                  <ExtContainerTabs />
                   {l.rightView === "git" && (
                     <button role="tab" aria-selected={true} className="is-on" onClick={() => setLayout({ rightView: "git" })}>
                       GIT

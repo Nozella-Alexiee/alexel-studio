@@ -1,8 +1,9 @@
 // Webview dari ekstensi: tab editor berisi iframe ber-sandbox (nozelweb://), pesan dua arah dengan host.
 
 import { create } from "zustand";
-import { getState, setState } from "../state/store";
+import { getState, setState, useStore } from "../state/store";
 import { hostNotify } from "./client";
+import { paletteFromDocument, vscodeThemeVars } from "./vscodeTheme";
 
 export const WEBVIEW_PREFIX = "nozel:webview:";
 /** Sama dengan ownerHost() di electron/exthost/webviews.ts: origin berbeda tiap ekstensi. */
@@ -21,37 +22,10 @@ const frames = new Map<number, HTMLIFrameElement>();
 const loaded = new Set<number>();
 const queue = new Map<number, unknown[]>();
 
-/** Variabel tema gaya VS Code (--vscode-*) dari warna desain yang aktif. */
+/** Variabel tema gaya VS Code (--vscode-*) dari warna desain yang aktif (lihat vscodeTheme.ts). */
 export function themeVars(): { vars: Record<string, string>; dark: boolean } {
-  const cs = getComputedStyle(document.documentElement);
-  const v = (n: string, d = "") => cs.getPropertyValue(n).trim() || d;
-  const bg = v("--ed-bg", v("--bg", "#1e1e1e"));
-  const fg = v("--ed-fg", v("--fg", "#d4d4d4"));
-  const accent = v("--accent", "#0e639c");
-  return {
-    dark: document.documentElement.dataset.scheme !== "light",
-    vars: {
-      "--vscode-editor-background": bg,
-      "--vscode-editor-foreground": fg,
-      "--vscode-foreground": v("--fg", fg),
-      "--vscode-descriptionForeground": v("--fg-muted", fg),
-      "--vscode-sideBar-background": v("--sidebar-bg", bg),
-      "--vscode-panel-border": v("--border", "#444"),
-      "--vscode-focusBorder": accent,
-      "--vscode-textLink-foreground": v("--accent-text", accent),
-      "--vscode-button-background": accent,
-      "--vscode-button-foreground": v("--accent-fg", "#fff"),
-      "--vscode-button-hoverBackground": accent,
-      "--vscode-input-background": v("--input-bg", bg),
-      "--vscode-input-foreground": fg,
-      "--vscode-input-border": v("--border", "#444"),
-      "--vscode-errorForeground": v("--danger", "#f14c4c"),
-      "--vscode-editor-font-family": v("--font-mono", "monospace"),
-      "--vscode-font-family": v("--font-ui", "system-ui, sans-serif"),
-      "--vscode-font-size": "13px",
-      "--vscode-editor-font-size": "13px",
-    },
-  };
+  const p = paletteFromDocument(getState().settings.fontSize);
+  return { dark: p.dark, vars: vscodeThemeVars(p) };
 }
 
 function sendTheme(id: number) {
@@ -143,3 +117,16 @@ export function closeWebviewTab(id: number) {
 
 /** Iframe panel ini sudah selesai dimuat (dipakai uji). */
 export const webviewLoaded = (id: number) => loaded.has(id);
+
+// Desain/aksen/tema ekstensi/ukuran huruf berganti: kirim ulang tema ke semua webview yang terbuka
+// (setelah CSS desain baru diterapkan).
+let themeKey = "";
+useStore.subscribe((st) => {
+  const k = JSON.stringify([st.settings.design, st.settings.accent, st.settings.extTheme, st.settings.fontSize]);
+  if (k === themeKey) return;
+  themeKey = k;
+  requestAnimationFrame(() => requestAnimationFrame(() => {
+    for (const id of frames.keys()) sendTheme(id);
+    void import("./client").then((c) => c.notifyConfig());
+  }));
+});

@@ -20,6 +20,7 @@ import { activeTab, isFileTab, setLayout, useStore } from "../state/store";
 import { EditorGroups, RightContent, SideContent, SideResizer, StatusBar, openProjectMenu, useFitLayout } from "./common";
 import { prettyKeys } from "../lib/keys";
 import { tl } from "../i18n";
+import { ExtContainerTabs } from "../panels/ExtContainerTabs";
 import { useHasExtViews } from "../exthost/views";
 
 function Section({ title, children, defaultOpen = true, action }: { title: string; children: ReactNode; defaultOpen?: boolean; action?: ReactNode }) {
@@ -206,12 +207,10 @@ export default function ZenShell() {
                   <button role="tab" aria-selected={l.rightView === "claude"} className={l.rightView === "claude" ? "is-on" : ""} onClick={() => setLayout({ rightView: "claude" })}>
                     CLAUDE
                   </button>
-                  <button role="tab" aria-selected={l.rightView === "extviews"} className={l.rightView === "extviews" ? "is-on" : ""} onClick={() => setLayout({ rightView: "extviews" })}>
-                    {tl("Ekstensi").toUpperCase()}
-                  </button>
+                  <ExtContainerTabs all />
                 </div>
               )}
-              <RightContent />
+              <RightContent allExt />
             </aside>
           </>
         )}
