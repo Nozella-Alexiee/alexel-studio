@@ -96,6 +96,7 @@ export function DialogHost() {
           <div className="field">
             <input
               ref={input}
+              aria-labelledby="dlg-title"
               className={`input ${error ? "has-error" : ""}`}
               value={value}
               placeholder={d.placeholder}

@@ -480,3 +480,38 @@ body.resizing-y * {
   opacity: 0.85;
 }
 
+
+/* Mode kontras tinggi sistem (Windows High Contrast / forced colors): latar & bayangan dibuang
+   browser, jadi status aktif/terpilih ditandai dengan garis warna sistem. */
+@media (forced-colors: active) {
+  .tab.is-active,
+  .tree-row.is-active,
+  .pal-item.is-sel,
+  .ctl-right-tabs button.is-on,
+  .ext-container-tab.is-on,
+  .icon-btn.is-active,
+  .status-item:focus-visible,
+  .git-commit-row:focus-visible {
+    outline: 2px solid Highlight;
+    outline-offset: -2px;
+  }
+  .switch {
+    border: 1px solid ButtonText;
+  }
+  .switch.is-on {
+    background: Highlight;
+    forced-color-adjust: none;
+  }
+  .ext-container-icon {
+    background: ButtonText;
+    forced-color-adjust: none;
+  }
+  .cm-git-mark,
+  .tree-git-dot,
+  .tab-dot {
+    forced-color-adjust: none;
+  }
+  :focus-visible {
+    outline: 2px solid Highlight !important;
+  }
+}

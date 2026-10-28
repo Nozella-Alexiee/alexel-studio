@@ -212,6 +212,7 @@ export function CommandPalette() {
           {prefix && <span className="pal-mode">{mode.label}</span>}
           <input
             ref={input}
+            aria-label={mode.label}
             className="pal-input"
             value={value}
             placeholder={mode.placeholder}

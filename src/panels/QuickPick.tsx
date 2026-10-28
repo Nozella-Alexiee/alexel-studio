@@ -77,7 +77,7 @@ export function QuickPickHost() {
       <div className="palette" role="dialog" aria-modal="true" aria-label={qp.title ?? qp.placeHolder ?? tl("Pilih")}>
         <div className="pal-input-row">
           {qp.title && <span className="pal-mode">{qp.title}</span>}
-          <input ref={input} className="pal-input" value={value} placeholder={qp.placeHolder ?? tl("Ketik untuk menyaring…")} onChange={(e) => setValue(e.target.value)} onKeyDown={onKey} spellCheck={false} autoComplete="off" role="combobox" aria-expanded="true" />
+          <input ref={input} className="pal-input" value={value} placeholder={qp.placeHolder ?? tl("Ketik untuk menyaring…")} onChange={(e) => setValue(e.target.value)} onKeyDown={onKey} spellCheck={false} autoComplete="off" role="combobox" aria-expanded="true" aria-label={qp.title ?? qp.placeHolder ?? tl("Pilih")} />
         </div>
         <div className="pal-list" role="listbox" ref={list}>
           {rows.map((r, i) =>
