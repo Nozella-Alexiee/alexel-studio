@@ -32,6 +32,7 @@ const rpc = new Rpc(send);
 const hc: HostCtx = {
   rpc,
   root: null,
+  extraFolders: [],
   userData: "",
   extensions: new Map(),
   docs: new Map(),
@@ -225,8 +226,9 @@ interface WireChange {
   text: string;
 }
 
-rpc.requests.set("init", (p: { extensions: { id: string; dir: string; manifest: ExtManifest }[]; root: string | null; userData: string; settings: Record<string, unknown>; core?: Record<string, unknown> }) => {
+rpc.requests.set("init", (p: { extensions: { id: string; dir: string; manifest: ExtManifest }[]; root: string | null; folders?: string[]; userData: string; settings: Record<string, unknown>; core?: Record<string, unknown> }) => {
   hc.root = p.root;
+  hc.extraFolders = (p.folders ?? []).filter((f) => f && f !== p.root);
   hc.userData = p.userData;
   hc.settings = p.settings ?? {};
   hc.core = p.core ?? {};

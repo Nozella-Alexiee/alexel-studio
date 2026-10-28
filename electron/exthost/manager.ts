@@ -12,6 +12,8 @@ import { webviewClear, webviewCreate, webviewDispose, webviewHtml } from "./webv
 
 export interface HostStart {
   root: string | null;
+  /** Folder workspace tambahan (multi-root). */
+  folders?: string[];
   settings: Record<string, unknown>;
   core?: Record<string, unknown>;
   trusted: string[];
@@ -116,7 +118,7 @@ export class ExtHostManager {
       await this.stop();
       throw e;
     }
-    await rpc.request("init", { extensions: exts.map((e) => ({ id: e.id, dir: e.dir, manifest: e.manifest })), root: o.root, userData: this.ctx.userData, settings: o.settings, core: o.core });
+    await rpc.request("init", { extensions: exts.map((e) => ({ id: e.id, dir: e.dir, manifest: e.manifest })), root: o.root, folders: o.folders ?? [], userData: this.ctx.userData, settings: o.settings, core: o.core });
     void rpc.request("startup").catch(() => {});
     return { count: exts.length };
   }

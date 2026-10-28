@@ -80,7 +80,7 @@ export class IdeServer {
   }
 
   /** Mulai (sekali) lalu pasang/ubah lockfile untuk folder project saat ini. */
-  async start(root: string | null): Promise<{ port: number; token: string }> {
+  async start(root: string | null, extra: string[] = []): Promise<{ port: number; token: string }> {
     if (!this.server) {
       cleanStaleLocks();
       await this.listen();
@@ -93,7 +93,14 @@ export class IdeServer {
         return null;
       }
     })();
-    this.folders = [...new Set([root, real].filter((x): x is string => !!x))];
+    const realOf = (p: string) => {
+      try {
+        return fs.realpathSync(p);
+      } catch {
+        return p;
+      }
+    };
+    this.folders = [...new Set([root, real, ...extra, ...extra.map(realOf)].filter((x): x is string => !!x))];
     this.writeLock();
     return { port: this.port, token: this.token };
   }

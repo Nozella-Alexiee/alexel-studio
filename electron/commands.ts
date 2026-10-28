@@ -177,7 +177,7 @@ export function buildCommands(ctx: Ctx, hooks: { confirmClose: (win: BrowserWind
     store_load: (a) => store.storeLoad(ctx, a.key),
     store_save: (a) => store.storeSave(ctx, a.key, a.json),
     settings_path: () => path.join(ctx.userData, "settings.json"),
-    watch_project: (a) => watcher.watchProject(ctx, a.root, a.debounceMs ?? 300),
+    watch_project: (a) => watcher.watchProject(ctx, a.root, a.debounceMs ?? 300, Array.isArray(a.extra) ? a.extra.filter((x: unknown): x is string => typeof x === "string") : []),
     unwatch_project: () => watcher.unwatch(),
     preview_set_root: (a) => preview.setRoot(a.root ?? null),
     preview_set_override: (a) => preview.setOverride(a.path, a.content ?? null),
@@ -220,7 +220,7 @@ export function buildCommands(ctx: Ctx, hooks: { confirmClose: (win: BrowserWind
     },
     menu_set: (a) => hooks.setMenu(a.spec),
     app_check_update: () => checkUpdate(),
-    ide_start: (a) => ideServer(ctx, app.getVersion()).start(a.root ?? null),
+    ide_start: (a) => ideServer(ctx, app.getVersion()).start(a.root ?? null, Array.isArray(a.folders) ? a.folders.filter((x: unknown): x is string => typeof x === "string") : []),
     ide_stop: () => {
       stopIde();
       return null;

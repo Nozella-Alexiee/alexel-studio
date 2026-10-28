@@ -17,10 +17,11 @@ export function classify(p: string): [boolean, boolean] {
   return [NOISY.some((n) => s.includes(n)), false];
 }
 
-let sub: AsyncSubscription | null = null;
+let subs: AsyncSubscription[] = [];
 let token = 0;
 
-export async function watchProject(ctx: Ctx, root: string, debounceMs: number) {
+/** Pantau folder project (plus folder workspace tambahan); semua perubahan dilaporkan atas nama `root`. */
+export async function watchProject(ctx: Ctx, root: string, debounceMs: number, extra: string[] = []) {
   const my = ++token;
   await unwatch();
   if (!root) return;
@@ -37,25 +38,34 @@ export async function watchProject(ctx: Ctx, root: string, debounceMs: number) {
     paths.clear();
     git = false;
   };
-  const s = await watcher.subscribe(
-    root,
-    (err, events) => {
-      if (err || my !== token) return;
-      for (const e of events) {
-        const [ign, isGit] = classify(e.path);
-        git ||= isGit;
-        if (!ign) paths.add(e.path);
-      }
-      if ((paths.size || git) && !timer) timer = setTimeout(flush, wait);
-    },
-    { ignore: ["**/node_modules/**", "**/target/**", "**/.git/objects/**", "**/dist/**", "**/.next/**"] }
-  );
-  if (my !== token) await s.unsubscribe();
-  else sub = s;
+  const mine: AsyncSubscription[] = [];
+  for (const dir of [root, ...extra.filter((d) => d && d !== root)]) {
+    try {
+      const s = await watcher.subscribe(
+        dir,
+        (err, events) => {
+          if (err || my !== token) return;
+          for (const e of events) {
+            const [ign, isGit] = classify(e.path);
+            git ||= isGit;
+            if (!ign) paths.add(e.path);
+          }
+          if ((paths.size || git) && !timer) timer = setTimeout(flush, wait);
+        },
+        { ignore: ["**/node_modules/**", "**/target/**", "**/.git/objects/**", "**/dist/**", "**/.next/**"] }
+      );
+      mine.push(s);
+    } catch (e) {
+      // Folder tambahan yang hilang/tidak bisa dipantau tidak boleh menggagalkan folder utama.
+      if (dir === root) throw e;
+    }
+  }
+  if (my !== token) await Promise.all(mine.map((s) => s.unsubscribe().catch(() => {})));
+  else subs = mine;
 }
 
 export async function unwatch() {
-  const s = sub;
-  sub = null;
-  await s?.unsubscribe().catch(() => {});
+  const s = subs;
+  subs = [];
+  await Promise.all(s.map((x) => x.unsubscribe().catch(() => {})));
 }

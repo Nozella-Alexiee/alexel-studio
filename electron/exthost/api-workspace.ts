@@ -102,7 +102,7 @@ function walk(root: string, include: string, exclude: string[], max: number, can
 }
 
 export function workspaceApi(hc: HostCtx, ext: LoadedExt | null) {
-  const folders = () => (hc.root ? [{ uri: Uri.file(hc.root), name: path.basename(hc.root), index: 0 }] : undefined);
+  const folders = () => (hc.root ? [hc.root, ...hc.extraFolders].map((f, index) => ({ uri: Uri.file(f), name: path.basename(f), index })) : undefined);
   const toStat = (st: fs.Stats) => ({ type: st.isDirectory() ? FileType.Directory : st.isSymbolicLink() ? FileType.SymbolicLink : FileType.File, ctime: st.ctimeMs, mtime: st.mtimeMs, size: st.size });
   const wrapFs = async <T>(uri: Uri, fn: () => T): Promise<T> => {
     try {
@@ -177,9 +177,12 @@ export function workspaceApi(hc: HostCtx, ext: LoadedExt | null) {
     getWorkspaceFolder: (uri: Uri) => folders()?.find((f) => within(f.uri.fsPath, uri.fsPath)),
     asRelativePath(p: string | Uri, includeFolder?: boolean) {
       const fsPath = typeof p === "string" ? p : p.fsPath;
-      if (!hc.root || !within(hc.root, fsPath)) return fsPath;
-      const rel = path.relative(hc.root, fsPath).replace(/\\/g, "/");
-      return includeFolder ? `${path.basename(hc.root)}/${rel}` : rel;
+      const all = hc.root ? [hc.root, ...hc.extraFolders] : [];
+      const base = all.find((f) => within(f, fsPath));
+      if (!base) return fsPath;
+      const rel = path.relative(base, fsPath).replace(/\\/g, "/");
+      // Seperti VS Code: nama folder disertakan bawaan bila workspace punya lebih dari satu folder.
+      return includeFolder ?? all.length > 1 ? `${path.basename(base)}/${rel}` : rel;
     },
     async openTextDocument(arg?: Uri | string | { language?: string; content?: string }) {
       if (arg && typeof arg === "object" && !(arg instanceof Uri) && ("content" in arg || "language" in arg)) {
@@ -226,11 +229,13 @@ export function workspaceApi(hc: HostCtx, ext: LoadedExt | null) {
       return true;
     },
     async findFiles(include: string | RelativePattern, exclude?: string | RelativePattern | null, maxResults = 20_000, token?: { isCancellationRequested: boolean }) {
-      const base = include instanceof RelativePattern ? include.baseUri.fsPath : hc.root;
-      if (!base) return [];
+      const bases = include instanceof RelativePattern ? [include.baseUri.fsPath] : hc.root ? [hc.root, ...hc.extraFolders] : [];
+      if (!bases.length) return [];
       const inc = include instanceof RelativePattern ? include.pattern : include;
       const exc = exclude === null ? [] : exclude === undefined ? DEFAULT_EXCLUDE : [exclude instanceof RelativePattern ? exclude.pattern : exclude];
-      return walk(base, inc, exc, maxResults, () => !!token?.isCancellationRequested);
+      const out: Uri[] = [];
+      for (const base of bases) out.push(...(await walk(base, inc, exc, maxResults - out.length, () => !!token?.isCancellationRequested)));
+      return out;
     },
     createFileSystemWatcher(glob: string | RelativePattern, ignoreCreate?: boolean, ignoreChange?: boolean, ignoreDelete?: boolean) {
       const create = new EventEmitter<Uri>();

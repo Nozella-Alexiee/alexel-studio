@@ -51,6 +51,8 @@ export interface ProviderEntry {
 export interface HostCtx {
   rpc: Rpc;
   root: string | null;
+  /** Folder workspace tambahan (multi-root) setelah `root`. */
+  extraFolders: string[];
   userData: string;
   extensions: Map<string, LoadedExt>;
   docs: Map<string, HostDocument>;
