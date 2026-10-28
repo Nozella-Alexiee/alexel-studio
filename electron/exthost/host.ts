@@ -148,7 +148,7 @@ async function activate(id: string, reason = "manual", chain: string[] = []): Pr
       hc.log(ext, `activated (${reason}) in ${Date.now() - started} ms`);
       rpc.notify("ui/extensionActivated", { id: ext.id, ms: Date.now() - started });
     } catch (e) {
-      const msg = e instanceof Error ? e.stack ?? e.message : inspect(e, { depth: 3 });
+      const msg = e instanceof Error ? e.stack ?? e.message : e == null ? "ekstensi membatalkan aktivasi tanpa pesan (biasanya kebutuhan eksternal, mis. program yang belum terpasang; lihat pesan kesalahan di atas)" : inspect(e, { depth: 3 });
       hc.log(ext, `activation failed: ${msg}`);
       // Bersihkan registrasi setengah jadi dan jangan coba lagi tiap peristiwa (percobaan kedua akan bentrok "command already exists").
       ext.failed = true;
