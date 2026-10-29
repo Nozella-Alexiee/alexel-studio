@@ -12,7 +12,7 @@ export interface MiniEditorApi {
   view: EditorView;
 }
 
-export function MiniEditor({ initial, language, onRun, onChange, placeholder, apiRef }: { initial: string; language: Extension; onRun: (view: EditorView) => void; onChange?: (text: string) => void; placeholder?: string; apiRef?: React.MutableRefObject<MiniEditorApi | null> }) {
+export function MiniEditor({ initial, language, onRun, onRunNext, onChange, onFocus, placeholder, apiRef, autoFocus = true, numbers = true, className = "db-mini-editor" }: { initial: string; language: Extension; onRun: (view: EditorView) => void; onRunNext?: (view: EditorView) => void; onChange?: (text: string) => void; onFocus?: () => void; placeholder?: string; apiRef?: React.MutableRefObject<MiniEditorApi | null>; autoFocus?: boolean; numbers?: boolean; className?: string }) {
   const host = useRef<HTMLDivElement>(null);
   const view = useRef<EditorView | null>(null);
   const lang = useRef(new Compartment());
@@ -20,6 +20,10 @@ export function MiniEditor({ initial, language, onRun, onChange, placeholder, ap
   run.current = onRun;
   const change = useRef(onChange);
   change.current = onChange;
+  const next = useRef(onRunNext);
+  next.current = onRunNext;
+  const focus = useRef(onFocus);
+  focus.current = onFocus;
 
   useEffect(() => {
     if (!host.current) return;
@@ -28,24 +32,27 @@ export function MiniEditor({ initial, language, onRun, onChange, placeholder, ap
       state: EditorState.create({
         doc: initial,
         extensions: [
-          lineNumbers(),
+          numbers ? lineNumbers() : [],
           history(),
           bracketMatching(),
           closeBrackets(),
           autocompletion({ icons: true }),
-          Prec.highest(keymap.of([{ key: "Mod-Enter", run: (x) => (run.current(x), true) }, { key: "Shift-Enter", run: (x) => (run.current(x), true) }])),
+          Prec.highest(keymap.of([{ key: "Mod-Enter", run: (x) => (run.current(x), true) }, { key: "Shift-Enter", run: (x) => ((next.current ?? run.current)(x), true) }])),
           keymap.of([...closeBracketsKeymap, ...defaultKeymap, ...historyKeymap, ...completionKeymap, indentWithTab]),
           nozelEditorTheme,
           EditorView.lineWrapping,
           ph(placeholder ?? ""),
           lang.current.of(language),
-          EditorView.updateListener.of((u) => u.docChanged && change.current?.(u.state.doc.toString())),
+          EditorView.updateListener.of((u) => {
+            if (u.docChanged) change.current?.(u.state.doc.toString());
+            if (u.focusChanged && u.view.hasFocus) focus.current?.();
+          }),
         ],
       }),
     });
     view.current = v;
     if (apiRef) apiRef.current = { view: v };
-    v.focus();
+    if (autoFocus) v.focus();
     return () => {
       v.destroy();
       view.current = null;
@@ -56,5 +63,5 @@ export function MiniEditor({ initial, language, onRun, onChange, placeholder, ap
   useEffect(() => {
     view.current?.dispatch({ effects: lang.current.reconfigure(language) });
   }, [language]);
-  return <div className="db-mini-editor" ref={host} />;
+  return <div className={className} ref={host} />;
 }

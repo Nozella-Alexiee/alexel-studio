@@ -628,6 +628,19 @@ export function replaceAll(doc: Doc, text: string) {
   emitDoc({ type: "replace", path: doc.path, text });
 }
 
+/**
+ * Ganti isi dokumen dari tampilan non-teks (mis. notebook): seperti mengetik, dokumen jadi "belum
+ * disimpan" dan disimpan lewat Mod+S. Dokumen yang belum pernah tampil di editor diberi state dulu
+ * supaya perubahan tidak dianggap sudah tersimpan.
+ */
+export function editDocumentText(path: string, text: string) {
+  const d = docs.get(path);
+  if (!d) return;
+  if (!anyState(d)) stateFor(d, 0);
+  replaceAll(d, text);
+  markDirty(d, Text.of(text.split("\n")));
+}
+
 export function setDocumentText(path: string, text: string) {
   const d = docs.get(path);
   if (d) replaceAll(d, text);

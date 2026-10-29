@@ -210,6 +210,13 @@ export const api = {
   agentSessionLoad: (agent: string, cwd: string, id: string) => call<string[]>("agent_session_load", { agent, cwd, id }),
   agentOnce: (agent: string, runId: string, cwd: string, prompt: string) => call<string>("agent_once", { agent, runId, cwd, prompt }),
   agentOnceCancel: (runId: string) => call<void>("agent_once_cancel", { runId }),
+  // Notebook (Jupyter)
+  jupyterSpecs: (root: string, jupyter?: string | null) => call<{ default: string; specs: { name: string; display: string; language: string }[] }>("jupyter_specs", { root, jupyter }),
+  jupyterStart: (root: string, name: string | null, jupyter?: string | null) => call<{ id: string; name: string }>("jupyter_start", { root, name, jupyter }),
+  jupyterExecute: (id: string, cell: string, code: string) => call<void>("jupyter_execute", { id, cell, code }),
+  jupyterInterrupt: (id: string) => call<void>("jupyter_interrupt", { id }),
+  jupyterRestart: (id: string) => call<void>("jupyter_restart", { id }),
+  jupyterShutdown: (id: string) => call<void>("jupyter_shutdown", { id }),
   // Tab browser
   browserCreate: (url: string, tag: string) => call<number>("browser_create", { url, tag }),
   browserBounds: (id: number, b: { x: number; y: number; width: number; height: number; visible: boolean }) => call<void>("browser_bounds", { id, ...b }),

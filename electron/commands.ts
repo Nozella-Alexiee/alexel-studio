@@ -14,6 +14,7 @@ import * as DB from "./db";
 import * as HTTP from "./http";
 import * as DK from "./docker";
 import * as BR from "./browser";
+import * as JP from "./jupyter";
 import { detect as dbDetect, detectFull as dbDetectFull } from "./db/detect";
 import * as dap from "./dap";
 import { checkUpdate, repoSlug } from "./update";
@@ -213,6 +214,14 @@ export function buildCommands(ctx: Ctx, hooks: { confirmClose: (win: BrowserWind
       if (existing) return existing;
       return DB.saveConnection(ctx, { kind: d.kind, name: d.name, url: d.url, file: d.file, password: d.password, env: "dev" });
     },
+
+    // Notebook (Jupyter Server lokal)
+    jupyter_specs: (a) => JP.kernelSpecs(String(a.root), a.jupyter ?? null),
+    jupyter_start: (a) => JP.startKernel(ctx, String(a.root), a.name ?? null, a.jupyter ?? null),
+    jupyter_execute: (a) => JP.execute(String(a.id), String(a.cell), String(a.code ?? "")),
+    jupyter_interrupt: (a) => JP.interrupt(String(a.id)),
+    jupyter_restart: (a) => JP.restart(String(a.id)),
+    jupyter_shutdown: (a) => JP.shutdownKernel(String(a.id)),
 
     // Tab browser (WebContentsView)
     browser_create: (a, win) => {

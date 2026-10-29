@@ -296,7 +296,7 @@ async function createTab(path: string, opts: { quiet?: boolean; preview?: Tab["p
     const lang = doc.langName;
     const isMd = doc.langId === "md";
     const isHtml = doc.langId === "html" && /\.html?$/i.test(path);
-    const preview: Tab["preview"] = opts.preview ?? (isMd || isHtml ? "split" : "code");
+    const preview: Tab["preview"] = opts.preview ?? (isMd || isHtml ? "split" : /\.ipynb$/i.test(path) ? "preview" : "code");
     setState((s) => ({ tabs: { ...s.tabs, [path]: { id: path, name, kind: "text", dirty: false, lang, preview } } }));
     return true;
   } catch (e) {

@@ -5993,3 +5993,218 @@ button.ext-link:not(:disabled):hover {
   font-size: var(--ui-small);
   background: var(--surface-1);
 }
+
+/* ---------- Notebook ---------- */
+.nb {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+  background: var(--ed-bg);
+}
+.nb-kstatus {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: var(--ui-small);
+  color: var(--fg-muted);
+}
+.nb-kdot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--fg-subtle);
+}
+.nb-kstatus.is-idle .nb-kdot { background: var(--success); }
+.nb-kstatus.is-busy .nb-kdot,
+.nb-kstatus.is-starting .nb-kdot { background: var(--warning); animation: pulse 1s ease-in-out infinite; }
+.nb-kstatus.is-dead .nb-kdot,
+.nb-kstatus.is-error .nb-kdot { background: var(--danger); }
+@keyframes pulse {
+  50% { opacity: 0.35; }
+}
+.nb-cells {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  padding: 12px 24px 80px 8px;
+}
+.nb-cell {
+  display: grid;
+  grid-template-columns: 64px minmax(0, 1fr);
+  gap: 4px;
+  padding: 4px 0;
+  border-radius: var(--radius);
+  position: relative;
+}
+.nb-cell.is-sel::before {
+  content: "";
+  position: absolute;
+  left: 2px;
+  top: 6px;
+  bottom: 22px;
+  width: 3px;
+  border-radius: 2px;
+  background: var(--accent);
+}
+.nb-gutter {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+  padding-top: 8px;
+  padding-right: 4px;
+}
+.nb-run {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  border: 1px solid var(--border);
+  background: var(--surface-1);
+  color: var(--fg-muted);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+.nb-run:hover {
+  color: var(--success);
+  border-color: var(--success);
+}
+.nb-count {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  color: var(--fg-subtle);
+}
+.nb-body {
+  min-width: 0;
+  position: relative;
+}
+.nb-editor {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface-1);
+  overflow: hidden;
+}
+.nb-cell.is-sel .nb-editor {
+  border-color: color-mix(in srgb, var(--accent) 55%, var(--border));
+}
+.nb-editor .cm-editor {
+  background: transparent;
+}
+.nb-editor .cm-content {
+  padding: 8px 4px;
+}
+.nb-cell-tools {
+  position: absolute;
+  right: 6px;
+  top: -10px;
+  z-index: 2;
+  display: none;
+  gap: 1px;
+  padding: 1px;
+  border-radius: var(--radius-sm);
+  background: var(--surface-popover);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-pop);
+}
+.nb-cell:hover .nb-cell-tools,
+.nb-cell.is-sel .nb-cell-tools {
+  display: flex;
+}
+.nb-md {
+  padding: 4px 12px;
+  line-height: 1.6;
+  color: var(--fg);
+  min-height: 24px;
+}
+.nb-md h1,
+.nb-md h2,
+.nb-md h3 {
+  margin: 0.4em 0 0.3em;
+  color: var(--fg-strong);
+}
+.nb-md code {
+  font-family: var(--font-mono);
+  font-size: 0.9em;
+  background: var(--surface-2);
+  padding: 1px 4px;
+  border-radius: 4px;
+}
+.nb-outputs {
+  padding: 6px 2px 2px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.nb-stream {
+  margin: 0;
+  padding: 2px 10px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  word-break: break-word;
+  color: var(--fg);
+  max-height: 480px;
+  overflow: auto;
+}
+.nb-stream.is-err {
+  color: var(--danger);
+  background: color-mix(in srgb, var(--danger) 7%, transparent);
+  border-radius: var(--radius-sm);
+}
+.nb-img {
+  max-width: 100%;
+  background: #fff;
+  border-radius: var(--radius-sm);
+  align-self: flex-start;
+}
+.nb-html {
+  overflow: auto;
+  padding: 2px 10px;
+  font-size: 12px;
+}
+.nb-html table {
+  border-collapse: collapse;
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+}
+.nb-html th,
+.nb-html td {
+  border: 1px solid var(--border);
+  padding: 3px 8px;
+  text-align: right;
+}
+.nb-html th {
+  background: var(--surface-2);
+}
+.nb-insert {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  height: 18px;
+  opacity: 0;
+  transition: opacity var(--dur) var(--ease);
+}
+.nb-cell:hover .nb-insert,
+.nb-insert.is-shown {
+  opacity: 1;
+}
+.nb-insert button {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--surface-1);
+  color: var(--fg-muted);
+  font: inherit;
+  font-size: 11px;
+  padding: 0 8px;
+  cursor: pointer;
+}
+.nb-insert button:hover {
+  color: var(--accent);
+  border-color: var(--accent);
+}

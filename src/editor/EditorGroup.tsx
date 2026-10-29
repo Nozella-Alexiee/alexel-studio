@@ -1,4 +1,4 @@
-import { AlertTriangle, ChevronRight, Database, Globe, KeyRound, Send, Columns2, Code2, Eye, Pin, Play, Puzzle, Settings as Cog, Sparkle, X } from "lucide-react";
+import { AlertTriangle, ChevronRight, Database, Globe, KeyRound, NotebookPen, Send, Columns2, Code2, Eye, Pin, Play, Puzzle, Settings as Cog, Sparkle, X } from "lucide-react";
 import React, { Suspense, lazy, useEffect, useRef, useState } from "react";
 import * as A from "../app/actions";
 import { runActiveFile } from "../app/run";
@@ -23,6 +23,7 @@ const DbTab = lazy(() => import("../db/DbTab"));
 const HttpTab = lazy(() => import("../http/HttpTab"));
 const EnvTab = lazy(() => import("../env/EnvTab"));
 const BrowserTab = lazy(() => import("../browser/BrowserTab"));
+const NotebookView = lazy(() => import("../notebook/NotebookView"));
 const EnvBar = lazy(() => import("../env/EnvBar").then((m) => ({ default: m.EnvBar })));
 const HttpBar = lazy(() => import("../http/HttpBar").then((m) => ({ default: m.HttpBar })));
 const SqlBar = lazy(() => import("../db/SqlBar").then((m) => ({ default: m.SqlBar })));
@@ -226,6 +227,18 @@ export function Breadcrumb({ path }: { path: string }) {
 }
 
 export function PreviewToggle({ tab }: { tab: Tab }) {
+  if (tab.kind === "text" && /\.ipynb$/i.test(tab.id))
+    return (
+      <Segmented
+        label={tl("Tampilan notebook")}
+        value={tab.preview === "code" ? "code" : "preview"}
+        onChange={(v) => A.setTabPreview(tab.id, v)}
+        options={[
+          { id: "preview", label: <NotebookPen size={13} />, title: "Notebook" },
+          { id: "code", label: <Code2 size={13} />, title: "JSON" },
+        ]}
+      />
+    );
   if (tab.kind !== "text" || !/\.(md|markdown|mdx|html?)$/i.test(tab.id)) return null;
   return (
     <Segmented
@@ -439,6 +452,17 @@ export function EditorBody({ group, breadcrumb = true }: { group: number; breadc
       </div>
     );
   }
+  if (/\.ipynb$/i.test(tab.id) && tab.preview !== "code")
+    return (
+      <div className="editor-body" {...drop.props}>
+        {breadcrumb && <Breadcrumb path={tab.id} />}
+        <ConflictBar tab={tab} />
+        <Suspense fallback={null}>
+          <NotebookView path={tab.id} />
+        </Suspense>
+        {drop.overlay}
+      </div>
+    );
   const isMd = /\.(md|markdown|mdx)$/i.test(tab.id);
   const isHtml = /\.html?$/i.test(tab.id);
   const mode = isMd || isHtml ? tab.preview : "code";
