@@ -1,8 +1,10 @@
 name: Halaman unduh
 
-# Menerbitkan folder site/ ke GitHub Pages (opsional; halaman utama di Netlify, lihat netlify.toml).
-# Jalankan manual dari tab Actions bila ingin memakai GitHub Pages juga.
+# Menerbitkan folder site/ ke GitHub Pages setiap kali isinya berubah di main (bisa juga manual).
 on:
+  push:
+    branches: [main]
+    paths: ["site/**", ".github/workflows/pages.yml"]
   workflow_dispatch:
 
 permissions:
