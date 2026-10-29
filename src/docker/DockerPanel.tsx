@@ -40,7 +40,7 @@ function ContainerRow({ c, stats, busy, act }: { c: DockerContainer; stats?: { c
         {c.published.length > 0 && (
           <span className="dk-ports">
             {c.published.slice(0, 4).map((p) => (
-              <button key={`${p.host}-${p.container}`} className="dk-port" onClick={() => void openExternal(`http://localhost:${p.host}`)} title={tl("Buka http://localhost:{port}", { port: p.host })} disabled={!running || !!c.db}>
+              <button key={`${p.host}-${p.container}`} className="dk-port" onClick={(e) => (e.altKey ? void openExternal(`http://localhost:${p.host}`) : void import("../browser/state").then((m) => m.openBrowser(`http://localhost:${p.host}`)))} title={tl("Buka http://localhost:{port}", { port: p.host })} disabled={!running || !!c.db}>
                 {p.host}→{p.container}
                 {!c.db && running && <ExternalLink size={9} />}
               </button>

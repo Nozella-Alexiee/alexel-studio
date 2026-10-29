@@ -177,7 +177,7 @@ export const DEFAULT_LAYOUTS: Record<DesignId, Layout> = {
   kawanan: { sidebar: true, sidebarW: 240, sideView: "files", panel: false, panelH: 190, panelTab: "terminal", right: true, rightW: 340, rightView: "claude" },
 };
 
-export type TabKind = "text" | "image" | "pdf" | "binary" | "settings" | "dashboard" | "welcome" | "extension" | "webview" | "db" | "http" | "env";
+export type TabKind = "text" | "image" | "pdf" | "binary" | "settings" | "dashboard" | "welcome" | "extension" | "webview" | "db" | "http" | "env" | "browser";
 /** Tab yang mewakili berkas di disk (bukan halaman khusus). */
 export const isFileTab = (k: TabKind) => k === "text" || k === "image" || k === "pdf" || k === "binary";
 

@@ -5906,3 +5906,90 @@ button.ext-link:not(:disabled):hover {
 .tone-warning-fg {
   color: var(--warning);
 }
+
+/* ---------- Tab browser ---------- */
+.br-tab {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+  background: var(--ed-bg);
+}
+.br-bar {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 5px 8px;
+  border-bottom: 1px solid var(--border);
+  flex: none;
+}
+.br-addr {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 28px;
+  padding: 0 10px;
+  margin: 0 4px;
+  border-radius: 999px;
+  background: var(--surface-1);
+  border: 1px solid var(--border);
+  color: var(--fg-subtle);
+}
+.br-addr:focus-within {
+  border-color: var(--accent);
+}
+.br-url {
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  background: none;
+  outline: none;
+  color: var(--fg);
+  font: inherit;
+  font-size: 12.5px;
+}
+.br-spin {
+  animation: spin 0.9s linear infinite;
+}
+.br-device {
+  width: auto;
+  max-width: 180px;
+  height: 26px;
+  font-size: var(--ui-small);
+}
+.br-stage {
+  flex: 1;
+  min-height: 0;
+  position: relative;
+  display: flex;
+}
+.br-stage.is-device {
+  align-items: flex-start;
+  justify-content: center;
+  padding: 16px;
+  overflow: auto;
+  background-image: radial-gradient(var(--border) 1px, transparent 1px);
+  background-size: 18px 18px;
+}
+.br-area {
+  flex: 1;
+  min-width: 0;
+  background: #fff;
+}
+.br-stage.is-device .br-area {
+  flex: none;
+  border-radius: 10px;
+  box-shadow: 0 0 0 1px var(--border-strong), var(--shadow-pop);
+}
+.br-paused {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--fg-subtle);
+  font-size: var(--ui-small);
+  background: var(--surface-1);
+}

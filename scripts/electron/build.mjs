@@ -16,6 +16,7 @@ const shared = {
 export const entries = [
   { entryPoints: ["electron/main.ts"], outfile: "dist-electron/main.cjs" },
   { entryPoints: ["electron/preload.ts"], outfile: "dist-electron/preload.cjs" },
+  { entryPoints: ["electron/browserPreload.ts"], outfile: "dist-electron/browserPreload.cjs" },
   // Proses extension host (dijalankan sebagai child process oleh main).
   { entryPoints: ["electron/exthost/host.ts"], outfile: "dist-electron/exthost.cjs" },
   // Pengekstrak vsix besar (proses anak).

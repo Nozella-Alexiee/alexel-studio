@@ -13,6 +13,7 @@ import * as CP from "./checkpoints";
 import * as DB from "./db";
 import * as HTTP from "./http";
 import * as DK from "./docker";
+import * as BR from "./browser";
 import { detect as dbDetect, detectFull as dbDetectFull } from "./db/detect";
 import * as dap from "./dap";
 import { checkUpdate, repoSlug } from "./update";
@@ -212,6 +213,19 @@ export function buildCommands(ctx: Ctx, hooks: { confirmClose: (win: BrowserWind
       if (existing) return existing;
       return DB.saveConnection(ctx, { kind: d.kind, name: d.name, url: d.url, file: d.file, password: d.password, env: "dev" });
     },
+
+    // Tab browser (WebContentsView)
+    browser_create: (a, win) => {
+      if (!win) throw new Error("Jendela tidak ditemukan.");
+      return BR.createBrowser(ctx, win, String(a.url ?? ""), String(a.tag ?? ""));
+    },
+    browser_bounds: (a) => BR.setBounds(Number(a.id), { x: Number(a.x) || 0, y: Number(a.y) || 0, width: Number(a.width) || 0, height: Number(a.height) || 0, visible: !!a.visible }),
+    browser_navigate: (a) => BR.navigate(Number(a.id), String(a.url ?? "")),
+    browser_control: (a) => BR.control(Number(a.id), a.action),
+    browser_emulate: (a) => BR.emulate(Number(a.id), a.device ?? null),
+    browser_screenshot: (a) => BR.screenshot(Number(a.id)),
+    browser_destroy: (a) => BR.destroyBrowser(Number(a.id)),
+    browser_clear_data: () => BR.clearBrowserData(),
 
     // Docker & .env
     docker_info: () => DK.dockerInfo(),

@@ -210,6 +210,15 @@ export const api = {
   agentSessionLoad: (agent: string, cwd: string, id: string) => call<string[]>("agent_session_load", { agent, cwd, id }),
   agentOnce: (agent: string, runId: string, cwd: string, prompt: string) => call<string>("agent_once", { agent, runId, cwd, prompt }),
   agentOnceCancel: (runId: string) => call<void>("agent_once_cancel", { runId }),
+  // Tab browser
+  browserCreate: (url: string, tag: string) => call<number>("browser_create", { url, tag }),
+  browserBounds: (id: number, b: { x: number; y: number; width: number; height: number; visible: boolean }) => call<void>("browser_bounds", { id, ...b }),
+  browserNavigate: (id: number, url: string) => call<string>("browser_navigate", { id, url }),
+  browserControl: (id: number, action: "back" | "forward" | "reload" | "hardReload" | "stop" | "devtools" | "zoomIn" | "zoomOut" | "zoomReset") => call<void>("browser_control", { id, action }),
+  browserEmulate: (id: number, device: { width: number; height: number; mobile: boolean; scale?: number } | null) => call<void>("browser_emulate", { id, device }),
+  browserScreenshot: (id: number) => call<string>("browser_screenshot", { id }),
+  browserDestroy: (id: number) => call<void>("browser_destroy", { id }),
+  browserClearData: () => call<void>("browser_clear_data"),
   // Docker (CLI) & .env
   dockerInfo: () => call<{ installed: boolean; running: boolean; version: string | null }>("docker_info"),
   dockerContainers: () => call<DockerContainer[]>("docker_containers"),

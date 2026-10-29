@@ -128,7 +128,7 @@ export function PortsPanel() {
                   {p.command}
                 </td>
                 <td className="row-actions">
-                  <IconButton label={tl("Buka {url}", { url: `http://localhost:${p.port}` })} onClick={() => void openExternal(`http://localhost:${p.port}`)}>
+                  <IconButton label={tl("Buka {url}", { url: `http://localhost:${p.port}` })} onClick={(e) => (e.altKey ? void openExternal(`http://localhost:${p.port}`) : void import("../browser/state").then((m) => m.openBrowser(`http://localhost:${p.port}`)))}>
                     <ExternalLink size={13} />
                   </IconButton>
                   <IconButton label={tl("Hentikan")} tone="danger" onClick={() => void stop(p)}>

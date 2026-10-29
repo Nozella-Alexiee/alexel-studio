@@ -10,6 +10,7 @@ import { cleanTempBins } from "./runner";
 import { app, BrowserWindow, ipcMain, Menu, net, protocol, safeStorage, session, shell, type MenuItemConstructorOptions } from "electron";
 import { closeAll as closeAllDb } from "./db";
 import { setSafeStorage } from "./secrets";
+import { destroyAll as destroyAllBrowsers } from "./browser";
 import fs from "node:fs";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
@@ -303,6 +304,8 @@ function createWindow() {
   });
 
   const wc = win.webContents;
+  // Renderer dimuat ulang → tab browser lama tidak punya pemilik lagi.
+  wc.on("did-start-navigation", (d) => d.isMainFrame && !d.isSameDocument && destroyAllBrowsers());
   wc.setWindowOpenHandler(({ url }) => {
     if (/^https?:/i.test(url)) void shell.openExternal(url);
     return { action: "deny" };

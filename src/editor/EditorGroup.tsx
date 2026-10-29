@@ -1,4 +1,4 @@
-import { AlertTriangle, ChevronRight, Database, KeyRound, Send, Columns2, Code2, Eye, Pin, Play, Puzzle, Settings as Cog, Sparkle, X } from "lucide-react";
+import { AlertTriangle, ChevronRight, Database, Globe, KeyRound, Send, Columns2, Code2, Eye, Pin, Play, Puzzle, Settings as Cog, Sparkle, X } from "lucide-react";
 import React, { Suspense, lazy, useEffect, useRef, useState } from "react";
 import * as A from "../app/actions";
 import { runActiveFile } from "../app/run";
@@ -22,6 +22,7 @@ const HexViewer = lazy(() => import("./BinaryViews").then((m) => ({ default: m.H
 const DbTab = lazy(() => import("../db/DbTab"));
 const HttpTab = lazy(() => import("../http/HttpTab"));
 const EnvTab = lazy(() => import("../env/EnvTab"));
+const BrowserTab = lazy(() => import("../browser/BrowserTab"));
 const EnvBar = lazy(() => import("../env/EnvBar").then((m) => ({ default: m.EnvBar })));
 const HttpBar = lazy(() => import("../http/HttpBar").then((m) => ({ default: m.HttpBar })));
 const SqlBar = lazy(() => import("../db/SqlBar").then((m) => ({ default: m.SqlBar })));
@@ -83,7 +84,7 @@ function TabItem({ tab, group, active, drop }: { tab: Tab; group: number; active
       onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && A.activateTab(tab.id, group)}
       onContextMenu={onMenu}
     >
-      {tab.kind === "settings" ? <Cog size={14} aria-hidden /> : tab.kind === "webview" ? <WebviewTabIcon tabId={tab.id} /> : tab.kind === "extension" ? <Puzzle size={14} aria-hidden /> : tab.kind === "welcome" ? <Sparkle size={14} aria-hidden /> : tab.kind === "db" ? <Database size={14} aria-hidden /> : tab.kind === "http" ? <Send size={14} aria-hidden /> : tab.kind === "env" ? <KeyRound size={14} aria-hidden /> : <FileIcon filename={tab.name} size={14} />}
+      {tab.kind === "settings" ? <Cog size={14} aria-hidden /> : tab.kind === "webview" ? <WebviewTabIcon tabId={tab.id} /> : tab.kind === "extension" ? <Puzzle size={14} aria-hidden /> : tab.kind === "welcome" ? <Sparkle size={14} aria-hidden /> : tab.kind === "db" ? <Database size={14} aria-hidden /> : tab.kind === "http" ? <Send size={14} aria-hidden /> : tab.kind === "env" ? <KeyRound size={14} aria-hidden /> : tab.kind === "browser" ? <Globe size={14} aria-hidden /> : <FileIcon filename={tab.name} size={14} />}
       <span className="tab-name">{tab.name}</span>
       {tab.pinned ? (
         <button
@@ -355,6 +356,16 @@ export function EditorBody({ group, breadcrumb = true }: { group: number; breadc
       <div className="editor-body" {...drop.props}>
         <Suspense fallback={null}>
           <WebviewTab tabId={tab.id} />
+        </Suspense>
+        {drop.overlay}
+      </div>
+    );
+  }
+  if (tab.kind === "browser") {
+    return (
+      <div className="editor-body" {...drop.props}>
+        <Suspense fallback={null}>
+          <BrowserTab tabId={tab.id} />
         </Suspense>
         {drop.overlay}
       </div>
