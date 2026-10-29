@@ -15,7 +15,7 @@ let chatSeq = 0;
 export const newChatKey = () => `c-${Date.now().toString(36)}-${++chatSeq}`;
 
 export type PanelId = "terminal" | "problems" | "output" | "ports" | "todo" | "history" | "debug" | "db";
-export type SideView = "files" | "search" | "git" | "todo" | "ext" | "outline" | "run" | "exviews" | "tests" | "db" | `ext:${string}`;
+export type SideView = "files" | "search" | "git" | "todo" | "ext" | "outline" | "run" | "exviews" | "tests" | "db" | "api" | `ext:${string}`;
 export type RightView = "claude" | "git" | "extviews";
 export type PreviewMode = "code" | "split" | "preview";
 
@@ -34,6 +34,8 @@ export interface Settings {
   claudeConfirm: boolean;
   /** Batas baris hasil query database yang ditampilkan. */
   dbRowLimit: number;
+  /** Batas waktu request HTTP (detik). */
+  httpTimeout: number;
   /** Pengguna sudah menyetujui (sekali) bahwa pesan & konteks dikirim lewat Claude Code. */
   claudeConsent: boolean;
   claudeIncludeFile: boolean;
@@ -113,6 +115,7 @@ export const DEFAULT_SETTINGS: Settings = {
   gitBot: "off",
   claudeConfirm: false,
   dbRowLimit: 1000,
+  httpTimeout: 60,
   claudeConsent: false,
   claudeIncludeFile: true,
   agentReview: true,
@@ -174,7 +177,7 @@ export const DEFAULT_LAYOUTS: Record<DesignId, Layout> = {
   kawanan: { sidebar: true, sidebarW: 240, sideView: "files", panel: false, panelH: 190, panelTab: "terminal", right: true, rightW: 340, rightView: "claude" },
 };
 
-export type TabKind = "text" | "image" | "pdf" | "binary" | "settings" | "dashboard" | "welcome" | "extension" | "webview" | "db";
+export type TabKind = "text" | "image" | "pdf" | "binary" | "settings" | "dashboard" | "welcome" | "extension" | "webview" | "db" | "http";
 /** Tab yang mewakili berkas di disk (bukan halaman khusus). */
 export const isFileTab = (k: TabKind) => k === "text" || k === "image" || k === "pdf" || k === "binary";
 

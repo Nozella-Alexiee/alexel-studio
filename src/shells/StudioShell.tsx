@@ -1,7 +1,7 @@
 // Desain Studio: tata letak seperti VS Code. Title bar dengan menu (Windows/Linux) dan command
 // center, activity bar, sidebar, editor + panel bawah, sidebar sekunder untuk Claude, status bar.
 
-import { Database, FlaskConical, Layers, ListTodo, ListTree, Bug, Files, GitBranch, PanelBottom, PanelLeft, PanelRight, Puzzle, Search, Settings } from "lucide-react";
+import { Database, FlaskConical, Send, Layers, ListTodo, ListTree, Bug, Files, GitBranch, PanelBottom, PanelLeft, PanelRight, Puzzle, Search, Settings } from "lucide-react";
 import type { ReactNode } from "react";
 import * as A from "../app/actions";
 import { openPalette } from "../app/commands";
@@ -40,6 +40,7 @@ export default function StudioShell() {
     ["todo", <ListTodo size={22} strokeWidth={1.6} />, "TODO", () => A.toggleSidebar("todo"), l.sidebar && l.sideView === "todo"],
     ["outline", <ListTree size={22} strokeWidth={1.6} />, tl("Outline (struktur berkas)"), () => A.toggleSidebar("outline"), l.sidebar && l.sideView === "outline"],
     ["db", <Database size={22} strokeWidth={1.6} />, tl("Database"), () => A.toggleSidebar("db"), l.sidebar && l.sideView === "db"],
+    ["api", <Send size={21} strokeWidth={1.6} />, tl("API (klien HTTP)"), () => A.toggleSidebar("api"), l.sidebar && l.sideView === "api"],
     ["ext", <Puzzle size={22} strokeWidth={1.6} />, `Ekstensi (${prettyKeys("Mod+Shift+X")})`, () => A.toggleSidebar("ext"), l.sidebar && l.sideView === "ext"],
     ...(hasTests ? ([["tests", <FlaskConical size={22} strokeWidth={1.6} />, "Tests", () => A.toggleSidebar("tests"), l.sidebar && l.sideView === "tests"]] as typeof items) : []),
     ...sideContainers.map((c) => [`ext:${c.id}`, <ContainerIcon c={c} size={22} />, c.title, () => A.toggleSidebar(`ext:${c.id}`), l.sidebar && l.sideView === `ext:${c.id}`] as (typeof items)[number]),

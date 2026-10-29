@@ -11,6 +11,7 @@ import path from "node:path";
 import * as agents from "./agents";
 import * as CP from "./checkpoints";
 import * as DB from "./db";
+import * as HTTP from "./http";
 import { detect as dbDetect, detectFull as dbDetectFull } from "./db/detect";
 import * as dap from "./dap";
 import { checkUpdate, repoSlug } from "./update";
@@ -210,6 +211,12 @@ export function buildCommands(ctx: Ctx, hooks: { confirmClose: (win: BrowserWind
       if (existing) return existing;
       return DB.saveConnection(ctx, { kind: d.kind, name: d.name, url: d.url, file: d.file, password: d.password, env: "dev" });
     },
+
+    // HTTP / API client
+    http_send: (a) => HTTP.sendHttp(ctx, String(a.id), a.req),
+    http_cancel: (a) => HTTP.cancelHttp(String(a.id)),
+    http_secrets: () => HTTP.listHttpSecrets(ctx),
+    http_secret_set: (a) => HTTP.setHttpSecret(ctx, String(a.name ?? ""), typeof a.value === "string" ? a.value : null),
 
     // Khusus Electron: dialog, browser, jendela, clipboard
     dialog_open_folder: async (_a, win) => {

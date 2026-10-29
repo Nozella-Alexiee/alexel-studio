@@ -3,6 +3,7 @@
 // supaya UI tetap bisa dicoba. Mode tiruan TIDAK pernah aktif di build produksi.
 
 import type { DbConnection, DbSchema, QueryResult } from "../../electron/db/types";
+import type { HttpRequest, HttpResponse } from "../../electron/httpTypes";
 import type {
   FoundProject,
   Branches,
@@ -209,6 +210,11 @@ export const api = {
   agentSessionLoad: (agent: string, cwd: string, id: string) => call<string[]>("agent_session_load", { agent, cwd, id }),
   agentOnce: (agent: string, runId: string, cwd: string, prompt: string) => call<string>("agent_once", { agent, runId, cwd, prompt }),
   agentOnceCancel: (runId: string) => call<void>("agent_once_cancel", { runId }),
+  // HTTP client (lihat electron/http.ts)
+  httpSend: (id: string, req: HttpRequest) => call<HttpResponse>("http_send", { id, req }),
+  httpCancel: (id: string) => call<void>("http_cancel", { id }),
+  httpSecrets: () => call<string[]>("http_secrets"),
+  httpSecretSet: (name: string, value: string | null) => call<void>("http_secret_set", { name, value }),
   // Database (lihat electron/db): password tidak pernah dikirim balik ke renderer.
   dbList: () => call<(DbConnection & { connected: boolean })[]>("db_list"),
   dbSave: (conn: Partial<DbConnection> & { password?: string }) => call<DbConnection>("db_save", { conn }),

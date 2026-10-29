@@ -93,6 +93,7 @@ export function sanitizeSettings(raw: Partial<Settings> | null, migrate = false)
   s.claudeFast = s.claudeFast === true;
   s.claudeThinking = s.claudeThinking !== false;
   s.formatOnSave = s.formatOnSave === true;
+  s.httpTimeout = Math.min(600, Math.max(5, Number(s.httpTimeout) || 60));
   s.dbRowLimit = [100, 500, 1000, 5000, 10000].includes(Number(s.dbRowLimit)) ? Number(s.dbRowLimit) : 1000;
   s.gitBlame = s.gitBlame === true;
   s.indentGuides = s.indentGuides !== false;

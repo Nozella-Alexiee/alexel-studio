@@ -25,6 +25,7 @@ const ExtensionsPanel = lazy(() => import("../panels/ExtensionsPanel"));
 const ExtViewsPanel = lazy(() => import("../panels/ExtViews"));
 const TestsPanel = lazy(() => import("../panels/TestsPanel"));
 const DatabasePanel = lazy(() => import("../db/DatabasePanel"));
+const ApiPanel = lazy(() => import("../http/ApiPanel"));
 const OutlinePanel = lazy(() => import("../panels/OutlinePanel"));
 const RunView = lazy(() => import("../panels/RunView"));
 const TodoSide = lazy(() => import("../panels/BottomPanels").then((m) => ({ default: m.TodoPanel })));
@@ -78,6 +79,7 @@ export function SideContent() {
       {layout.sideView === "run" && <RunView />}
       {layout.sideView === "tests" && <TestsPanel />}
       {layout.sideView === "db" && <DatabasePanel />}
+      {layout.sideView === "api" && <ApiPanel />}
       {layout.sideView.startsWith("ext:") && <ExtViewsPanel containerId={layout.sideView.slice(4)} />}
     </Suspense>
     </ErrorBoundary>
