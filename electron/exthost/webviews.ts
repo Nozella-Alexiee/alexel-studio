@@ -58,11 +58,23 @@ export function extractNonce(html: string): string | undefined {
 }
 
 /**
+ * Font ikon (codicon) di CSS ekstensi sering disematkan sebagai `data:` sementara meta CSP-nya hanya
+ * mengizinkan `font-src ${cspSource}`; di VS Code ikon tetap tampil. Tambahkan `data:` ke font-src
+ * (hanya font, bukan skrip) supaya ikon tidak hilang.
+ */
+export function allowDataFonts(html: string): string {
+  return html.replace(/<meta\s+[^>]*http-equiv=["']?Content-Security-Policy["']?[^>]*>/gi, (tag) =>
+    tag.replace(/(\bfont-src\s+)([^;"']*)/i, (m, pre: string, list: string) => (/(^|\s)data:(\s|$)/.test(list) ? m : `${pre}${list.trim()} data: `))
+  );
+}
+
+/**
  * Siapkan HTML webview: pastikan script bootstrap acquireVsCodeApi disisipkan dan tidak diblokir CSP.
  * Jika meta CSP ketat tidak memiliki nonce atau 'unsafe-inline' (mis. Codex), nonce baru dibuat
  * dan disisipkan ke kebijakan script-src meta CSP.
  */
 export function prepareWebviewHtml(id: number, html: string): string {
+  html = allowDataFonts(html);
   let nonce = extractNonce(html);
   const metaRegex = /<meta\s+[^>]*http-equiv=["']?Content-Security-Policy["']?[^>]*>/i;
 
@@ -92,7 +104,7 @@ export function prepareWebviewHtml(id: number, html: string): string {
     }
   }
 
-  const boot = bootstrap(id, nonce);
+  const boot = DEFAULT_STYLES(nonce) + bootstrap(id, nonce);
   const headRe = /<head(?:\s[^>]*)?>/i; // bukan <header>
   if (headRe.test(html)) return html.replace(headRe, (m) => m + boot);
   // Tanpa <head>: sisipkan setelah doctype/<html> supaya halaman tidak jatuh ke quirks mode.
@@ -101,9 +113,16 @@ export function prepareWebviewHtml(id: number, html: string): string {
   return html.slice(0, at) + boot + html.slice(at);
 }
 
+/**
+ * Gaya dasar webview seperti yang disuntikkan VS Code (#_defaultStyles): warna teks, huruf, tautan,
+ * kode, kutipan, dan scrollbar mengikuti tema. Disisipkan sebelum CSS halaman sehingga bisa ditimpa.
+ */
+export const DEFAULT_STYLES = (nonce?: string) =>
+  `<style id="_defaultStyles"${nonce ? ` nonce="${nonce}"` : ""}>html{scrollbar-color:var(--vscode-scrollbarSlider-background) var(--vscode-editor-background)}body{background-color:transparent;color:var(--vscode-editor-foreground);font-family:var(--vscode-font-family);font-weight:var(--vscode-font-weight);font-size:var(--vscode-font-size);margin:0;padding:0 20px}img,video{max-width:100%;max-height:100%}a,a code{color:var(--vscode-textLink-foreground)}p>a{text-decoration:var(--text-link-decoration)}a:hover{color:var(--vscode-textLink-activeForeground)}a:focus,input:focus,select:focus,textarea:focus{outline:1px solid -webkit-focus-ring-color;outline-offset:-1px}code{font-family:var(--monaco-monospace-font);color:var(--vscode-textPreformat-foreground);background-color:var(--vscode-textPreformat-background);padding:1px 3px;border-radius:4px}pre code{padding:0}blockquote{background:var(--vscode-textBlockQuote-background);border-color:var(--vscode-textBlockQuote-border)}kbd{background-color:var(--vscode-keybindingLabel-background);color:var(--vscode-keybindingLabel-foreground);border-style:solid;border-width:1px;border-radius:3px;border-color:var(--vscode-keybindingLabel-border);border-bottom-color:var(--vscode-keybindingLabel-bottomBorder);box-shadow:inset 0 -1px 0 var(--vscode-widget-shadow);vertical-align:middle;padding:1px 3px}::-webkit-scrollbar{width:10px;height:10px}::-webkit-scrollbar-corner{background-color:var(--vscode-editor-background)}::-webkit-scrollbar-thumb{background-color:var(--vscode-scrollbarSlider-background)}::-webkit-scrollbar-thumb:hover{background-color:var(--vscode-scrollbarSlider-hoverBackground)}::-webkit-scrollbar-thumb:active{background-color:var(--vscode-scrollbarSlider-activeBackground)}::highlight(find-highlight){background-color:var(--vscode-editor-findMatchHighlightBackground)}::highlight(current-find-highlight){background-color:var(--vscode-editor-findMatchBackground)}</style>`;
+
 /** Skrip awal: API acquireVsCodeApi + penerapan tema dari aplikasi (variabel --vscode-*). */
 export const bootstrap = (id: number, nonce?: string) =>
-  `<script${nonce ? ` nonce="${nonce}"` : ""}>(function(){var id=${id};var state;var api={postMessage:function(m){parent.postMessage({__alexelWebview:id,type:"msg",message:m},"*")},getState:function(){return state},setState:function(s){state=s;parent.postMessage({__alexelWebview:id,type:"state",state:s},"*");return s}};window.acquireVsCodeApi=function(){return api};var send=function(l,a){try{parent.postMessage({__alexelWebview:id,type:"log",level:l,text:Array.prototype.map.call(a,function(x){try{return x instanceof Error?(x.stack||x.message):typeof x==="string"?x:JSON.stringify(x)}catch(e){return String(x)}}).join(" ")},"*")}catch(e){}};["error","warn"].forEach(function(l){var o=console[l];console[l]=function(){send(l,arguments);return o.apply(console,arguments)}});window.addEventListener("error",function(e){send("error",[e.message+" ("+(e.filename||"")+":"+e.lineno+")"])});window.addEventListener("unhandledrejection",function(e){send("error",["unhandledrejection: ",e.reason])});window.addEventListener("message",function(e){var d=e.data;if(d&&d.__alexelPost){e.stopImmediatePropagation();window.dispatchEvent(new MessageEvent("message",{data:d.message,origin:location.origin,source:window}));return}if(d&&d.__alexelTheme){var r=document.documentElement;for(var k in d.vars)r.style.setProperty(k,d.vars[k]);var kind=d.dark?"vscode-dark":"vscode-light";var apply=function(el){if(!el)return;el.classList.remove("vscode-dark","vscode-light");el.classList.add(kind);if(el===document.body){el.setAttribute("data-vscode-theme-kind",kind);el.setAttribute("data-vscode-theme-name",d.dark?"Dark Modern":"Light Modern");el.setAttribute("data-vscode-theme-id",d.dark?"Default Dark Modern":"Default Light Modern")}};apply(r);if(document.body)apply(document.body);else document.addEventListener("DOMContentLoaded",function(){apply(document.body)});e.stopImmediatePropagation()}},true)})();</script>`;
+  `<script${nonce ? ` nonce="${nonce}"` : ""}>(function(){var id=${id};var state;var api={postMessage:function(m){parent.postMessage({__alexelWebview:id,type:"msg",message:m},"*")},getState:function(){return state},setState:function(s){state=s;parent.postMessage({__alexelWebview:id,type:"state",state:s},"*");return s}};window.acquireVsCodeApi=function(){return api};var send=function(l,a){try{parent.postMessage({__alexelWebview:id,type:"log",level:l,text:Array.prototype.map.call(a,function(x){try{return x instanceof Error?(x.stack||x.message):typeof x==="string"?x:JSON.stringify(x)}catch(e){return String(x)}}).join(" ")},"*")}catch(e){}};["error","warn"].forEach(function(l){var o=console[l];console[l]=function(){send(l,arguments);return o.apply(console,arguments)}});window.addEventListener("error",function(e){send("error",[e.message+" ("+(e.filename||"")+":"+e.lineno+")"])});window.addEventListener("unhandledrejection",function(e){send("error",["unhandledrejection: ",e.reason])});var seen={};var scan=function(){var found=[];var add=function(t){var re=/--vscode-[A-Za-z0-9.-]+/g,m;while((m=re.exec(t))){if(!seen[m[0]]){seen[m[0]]=1;found.push(m[0])}}};try{for(var i=0;i<document.styleSheets.length;i++){var sh=document.styleSheets[i];try{for(var j=0;j<sh.cssRules.length;j++)add(sh.cssRules[j].cssText)}catch(x){}}}catch(x){}document.querySelectorAll("[style]").forEach(function(el){add(el.getAttribute("style")||"")});if(found.length)parent.postMessage({__alexelWebview:id,type:"vars",names:found},"*")};var scanSoon=function(){clearTimeout(scan.t);scan.t=setTimeout(scan,300)};window.addEventListener("load",function(){scan();try{new MutationObserver(function(ms){for(var k=0;k<ms.length;k++){var n=ms[k].addedNodes;for(var q=0;q<n.length;q++){var nn=n[q];if(nn.nodeName==="STYLE"||nn.nodeName==="LINK"){scanSoon();return}}}}).observe(document.head||document.documentElement,{childList:true,subtree:true})}catch(x){}});window.addEventListener("message",function(e){var d=e.data;if(d&&d.__alexelPost){e.stopImmediatePropagation();window.dispatchEvent(new MessageEvent("message",{data:d.message,origin:location.origin,source:window}));return}if(d&&d.__alexelTheme){var r=document.documentElement;for(var k in d.vars)r.style.setProperty(k,d.vars[k]);var kind=d.dark?"vscode-dark":"vscode-light";r.style.colorScheme=d.dark?"dark":"light";var apply=function(el){if(!el)return;el.classList.remove("vscode-dark","vscode-light");el.classList.add(kind);if(el===document.body){el.setAttribute("data-vscode-theme-kind",kind);el.setAttribute("data-vscode-theme-name",d.dark?"Dark Modern":"Light Modern");el.setAttribute("data-vscode-theme-id",d.dark?"Default Dark Modern":"Default Light Modern")}};apply(r);if(document.body)apply(document.body);else document.addEventListener("DOMContentLoaded",function(){apply(document.body)});e.stopImmediatePropagation()}},true)})();</script>`;
 
 export interface WebResponse {
   status: number;

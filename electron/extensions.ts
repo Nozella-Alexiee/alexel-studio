@@ -495,7 +495,48 @@ async function installInto(dir: string, namespace: string, name: string, version
 /** Folder kode ekstensi (isi vsix `extension/`), dipakai extension host. */
 export const extCodeDir = (ctx: Ctx, id: string) => path.join(extRoot(ctx), id, "ext");
 
-export function extList(ctx: Ctx): InstalledExt[] {
+/**
+ * Terjemahan `%kunci%` dari package.nls.json (seperti VS Code): judul tampilan, perintah, pengaturan,
+ * nama ekstensi. Bahasa UI dipakai bila ada package.nls.<lang>.json, selain itu bawaan (Inggris).
+ */
+const nlsCache = new Map<string, { at: number; lang: string; nls: Record<string, string> }>();
+export function loadNls(extDir: string, lang = "en"): Record<string, string> {
+  const read = (f: string): Record<string, string> => {
+    try {
+      const j = JSON.parse(fs.readFileSync(path.join(extDir, f), "utf8")) as Record<string, unknown>;
+      // Nilai bisa berupa string atau { message, comment }.
+      return Object.fromEntries(Object.entries(j).map(([k, v]) => [k, typeof v === "string" ? v : typeof (v as { message?: unknown })?.message === "string" ? (v as { message: string }).message : ""]).filter(([, v]) => v));
+    } catch {
+      return {};
+    }
+  };
+  return { ...read("package.nls.json"), ...(lang !== "en" ? read(`package.nls.${lang}.json`) : {}) };
+}
+
+export function localize<T>(value: T, nls: Record<string, string>): T {
+  if (typeof value === "string") {
+    const m = /^%([^%]+)%$/.exec(value);
+    return (m && nls[m[1]] !== undefined ? nls[m[1]] : value) as T;
+  }
+  if (Array.isArray(value)) return value.map((v) => localize(v, nls)) as T;
+  if (value && typeof value === "object") return Object.fromEntries(Object.entries(value).map(([k, v]) => [k, localize(v, nls)])) as T;
+  return value;
+}
+
+function localizedManifest(ctx: Ctx, n: string, m: InstalledExt, lang: string): InstalledExt {
+  const dir = path.join(extRoot(ctx), n, "ext");
+  const hit = nlsCache.get(n);
+  let nls: Record<string, string>;
+  if (hit && hit.at === m.installedAt && hit.lang === lang) nls = hit.nls;
+  else {
+    nls = loadNls(dir, lang);
+    nlsCache.set(n, { at: m.installedAt, lang, nls });
+  }
+  if (!Object.keys(nls).length) return m;
+  return { ...m, displayName: localize(m.displayName, nls), description: localize(m.description, nls), contributes: localize(m.contributes, nls), commands: localize(m.commands, nls) };
+}
+
+export function extList(ctx: Ctx, lang = "en"): InstalledExt[] {
   const root = extRoot(ctx);
   let names: string[] = [];
   try {
@@ -517,7 +558,7 @@ export function extList(ctx: Ctx): InstalledExt[] {
     try {
       const m = JSON.parse(fs.readFileSync(path.join(root, n, "nozel-manifest.json"), "utf8")) as InstalledExt;
       m.iconThemes ??= []; // manifest lama (sebelum dukungan tema ikon)
-      out.push(m);
+      out.push(m.hasCode || /%[^%]+%/.test(JSON.stringify([m.displayName, m.description, m.contributes])) ? localizedManifest(ctx, n, m, lang) : m);
     } catch {
       /* folder rusak */
     }

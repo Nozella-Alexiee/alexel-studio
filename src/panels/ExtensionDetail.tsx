@@ -45,7 +45,7 @@ export default function ExtensionDetail({ id }: { id: string }) {
     };
   }, [ns, name]);
 
-  const html = useMemo(() => (d && tab !== "features" ? renderRemoteMarkdown(tab === "readme" ? d.readme : d.changelog) : ""), [d, tab]);
+  const html = useMemo(() => (d && tab !== "features" ? renderRemoteMarkdown(tab === "readme" ? d.readme : d.changelog, `https://open-vsx.org/api/${encodeURIComponent(ns)}/${encodeURIComponent(name)}/${encodeURIComponent(d.version)}/file/`) : ""), [d, tab, ns, name]);
   const sections = useMemo(() => featureSections(d?.contributes ?? null), [d]);
 
   if (err) return <div className="ext-detail pad"><p className="hint">{tl("Gagal menghubungi Open VSX: {error}", { error: err })}</p></div>;

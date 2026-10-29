@@ -31,7 +31,9 @@ const CSP = [
   "default-src 'self'",
   "script-src 'self' 'wasm-unsafe-eval'",
   "style-src 'self' 'unsafe-inline'",
-  "img-src 'self' data: blob: nozelpreview: nozelext: https://open-vsx.org",
+  // Gambar https: untuk ikon katalog Open VSX (dialihkan ke openvsx.eclipsecontent.org) dan gambar README
+  // ekstensi (GitHub, shields.io, …). Hanya gambar; skrip & koneksi tetap 'self'.
+  "img-src 'self' data: blob: nozelpreview: nozelext: https:",
   "font-src 'self' data:",
   "connect-src 'self'",
   "frame-src nozelpreview: nozelweb:",

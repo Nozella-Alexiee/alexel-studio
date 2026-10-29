@@ -28,7 +28,7 @@ describe("webview: penyajian dokumen & sumber daya", () => {
     webviewCreate(8, [dir]);
     expect(String(resolveWebview(`nozelweb://${H}/v/8/index.html`).body)).toContain("<body>");
     webviewHtml(8, "<p>halo</p>");
-    expect(String(resolveWebview(`nozelweb://${H}/v/8/index.html`).body)).toMatch(/^<script>.*<\/script><p>halo<\/p>$/s);
+    expect(String(resolveWebview(`nozelweb://${H}/v/8/index.html`).body)).toMatch(/^<style id="_defaultStyles">.*<\/style><script>.*<\/script><p>halo<\/p>$/s);
     webviewDispose(8);
   });
 
@@ -131,5 +131,16 @@ describe("prepareWebviewHtml tanpa <head>", () => {
     expect(a.startsWith("<!DOCTYPE html><html>")).toBe(true);
     expect(a.indexOf("acquireVsCodeApi")).toBeGreaterThan(a.indexOf("<html>"));
     expect(a.indexOf("acquireVsCodeApi")).toBeLessThan(a.indexOf("<header>"));
+  });
+});
+
+describe("CSP font webview", () => {
+  it("menambah data: ke font-src saja, tidak menyentuh script-src", async () => {
+    const { allowDataFonts } = await import("./webviews");
+    const html = `<meta http-equiv="Content-Security-Policy" content="default-src 'none'; font-src nozelweb:; script-src 'nonce-x'">`;
+    const out = allowDataFonts(html);
+    expect(out).toContain("font-src nozelweb: data: ;");
+    expect(out).toContain("script-src 'nonce-x'");
+    expect(allowDataFonts(out)).toBe(out);
   });
 });

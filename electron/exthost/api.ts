@@ -12,6 +12,7 @@ import type { HostCtx, LoadedExt } from "./context";
 import { Memento } from "./memento";
 import { createTestController } from "./tests";
 import { tasksApi } from "./tasks";
+import { THEME_DEFAULTS_ID, themeDefaults } from "./themeDefaults";
 import * as T from "./types";
 import { Uri } from "./uri";
 
@@ -105,6 +106,26 @@ export function appRoot(hc: Pick<HostCtx, "userData">): string {
   } catch {
     /* tanpa ripgrep */
   }
+  // node-pty bawaan aplikasi (modul native untuk Electron ini), seperti VS Code yang menyediakannya di
+  // appRoot/node_modules; dipakai ekstensi yang membuat terminal sendiri (mis. Gemini Code Assist).
+  const pty = process.env.NOZEL_NODE_PTY;
+  if (pty) {
+    for (const base of ["node_modules", "node_modules.asar.unpacked"]) {
+      const link = path.join(root, base, "node-pty");
+      try {
+        fs.mkdirSync(path.dirname(link), { recursive: true });
+        if (fs.realpathSync.native(link) === fs.realpathSync.native(pty)) continue;
+      } catch {
+        /* belum ada */
+      }
+      try {
+        fs.rmSync(link, { recursive: true, force: true });
+        fs.symlinkSync(pty, link, "junction");
+      } catch {
+        /* tanpa node-pty */
+      }
+    }
+  }
   return root;
 }
 
@@ -147,8 +168,9 @@ function envApi(hc: HostCtx) {
   };
 }
 
-function extensionsApi(hc: HostCtx) {
-  const wrap = (e: LoadedExt) => ({
+/** Objek vscode.Extension lengkap (dipakai extensions.getExtension/all dan context.extension). */
+export function extensionObject(hc: HostCtx, e: LoadedExt) {
+  return {
     id: e.id,
     extensionUri: Uri.file(e.dir),
     extensionPath: e.dir,
@@ -164,14 +186,22 @@ function extensionsApi(hc: HostCtx) {
       await hc.activate(e.id, "api");
       return e.exports;
     },
-  });
+  };
+}
+
+function extensionsApi(hc: HostCtx) {
+  const wrap = (e: LoadedExt) => extensionObject(hc, e);
   return {
     getExtension: (id: string) => {
       const e = [...hc.extensions.values()].find((x) => x.id.toLowerCase() === id.toLowerCase());
+      if (!e && id.toLowerCase() === THEME_DEFAULTS_ID) return extensionsApi(hc).all.find((x) => x.id === THEME_DEFAULTS_ID);
       return e ? wrap(e) : undefined;
     },
     get all() {
-      return [...hc.extensions.values()].map(wrap);
+      // Plus tema bawaan VS Code (dicari ekstensi yang mewarnai kode di panelnya sendiri).
+      const td = themeDefaults(appRoot(hc));
+      const builtin = { id: THEME_DEFAULTS_ID, extensionUri: Uri.file(td.dir), extensionPath: td.dir, isActive: true, packageJSON: td.manifest, extensionKind: 1, exports: undefined, activate: async () => undefined };
+      return [...[...hc.extensions.values()].map(wrap), builtin];
     },
     onDidChange: new T.EventEmitter<void>().event,
   };
@@ -277,7 +307,7 @@ export function buildContext(hc: HostCtx, ext: LoadedExt): Record<string, unknow
       delete: async (k: string) => void (secrets.delete(k), secretEmitter.fire({ key: k })),
       onDidChange: secretEmitter.event,
     },
-    extension: { id: ext.id, extensionPath: ext.dir, packageJSON: ext.manifest },
+    extension: extensionObject(hc, ext),
     languageModelAccessInformation: { onDidChange: new T.EventEmitter<void>().event, canSendRequest: () => undefined },
   };
 }

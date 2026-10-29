@@ -144,7 +144,7 @@ export function AgentExtensions() {
     <section className="agent-ext">
       <div className="git-section-head">
         <span>
-          <CrabMascot size={14} /> Agen AI
+          <CrabMascot size={14} /> {tl("Agen AI")}
         </span>
       </div>
       {AGENTS.map((a) => (

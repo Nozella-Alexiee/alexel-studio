@@ -74,11 +74,17 @@ const blamePlugin = ViewPlugin.fromClass(
   { decorations: (p) => p.decorations }
 );
 
-async function loadBlame(view: EditorView) {
+async function loadBlame(view: EditorView, attempt = 0) {
   const path = view.state.facet(blamePath);
-  if (!path || !getState().git?.is_repo) return;
+  if (!path) return;
+  // Status git belum dimuat (folder baru dibuka): coba lagi sebentar lagi.
+  if (!getState().git) {
+    if (attempt < 20) setTimeout(() => view.dom.isConnected && void loadBlame(view, attempt + 1), 500);
+    return;
+  }
+  if (!getState().git?.is_repo) return;
   const info = await api.gitBlame(path).catch(() => null);
-  if (view.state.facet(blamePath) === path) view.dispatch({ effects: setBlame.of(info) });
+  if (view.dom.isConnected && view.state.facet(blamePath) === path) view.dispatch({ effects: setBlame.of(info) });
 }
 
 /** Muat ulang blame di view (setelah simpan/commit atau saat fitur dinyalakan). */

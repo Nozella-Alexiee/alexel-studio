@@ -24,6 +24,8 @@ function coreSettings(): Record<string, unknown> {
     "editor.minimap.enabled": s.minimap,
     "files.autoSave": s.autoSave === "delay" ? "afterDelay" : "off",
     "workbench.colorThemeKind": document.documentElement.dataset.scheme === "light" ? 1 : 2,
+    // Nama tema bawaan VS Code yang setara (berkasnya disediakan host: themeDefaults.ts).
+    "workbench.colorTheme": document.documentElement.dataset.scheme === "light" ? "Default Light Modern" : "Default Dark Modern",
   };
 }
 

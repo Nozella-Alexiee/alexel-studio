@@ -33,6 +33,12 @@ export function bundledRipgrep(): string | null {
   return candidates.find((c) => fs.existsSync(c)) ?? null;
 }
 
+/** Folder modul node-pty aplikasi (di luar asar saat terpaket). */
+export function bundledNodePty(): string | null {
+  const candidates = [path.join(app.getAppPath(), "node_modules", "node-pty").replace(`app.asar${path.sep}`, `app.asar.unpacked${path.sep}`), path.join(app.getAppPath(), "node_modules", "node-pty")];
+  return candidates.find((c) => fs.existsSync(path.join(c, "package.json"))) ?? null;
+}
+
 /** Ekstensi yang boleh dijalankan: punya kode, dipercaya, dan tidak dimatikan. */
 export function runnableExtensions(ctx: Ctx, trusted: string[], disabled: string[]): { id: string; dir: string; manifest: unknown; meta: InstalledExt }[] {
   const out: { id: string; dir: string; manifest: unknown; meta: InstalledExt }[] = [];
@@ -72,8 +78,8 @@ export class ExtHostManager {
     if (!exts.length) return { count: 0 };
     if (!fs.existsSync(this.script)) throw new Error("Extension host tidak ditemukan di build ini.");
     this.stopping = false;
-    const child = fork(this.script, [], { env: childEnv({ ELECTRON_RUN_AS_NODE: "1", ...(bundledRipgrep() ? { NOZEL_RIPGREP: bundledRipgrep()! } : {}) }), // "advanced" = structured clone: pesan webview boleh berisi ArrayBuffer/typed array (mis. Cap'n Proto di Codex).
-      serialization: "advanced", stdio: ["ignore", "ignore", "pipe", "ipc"], cwd: o.root && fs.existsSync(o.root) ? o.root : undefined, windowsHide: true,
+    const child = fork(this.script, [], { env: childEnv({ ELECTRON_RUN_AS_NODE: "1", ...(bundledRipgrep() ? { NOZEL_RIPGREP: bundledRipgrep()! } : {}), ...(bundledNodePty() ? { NOZEL_NODE_PTY: bundledNodePty()! } : {}) }), // "advanced" = structured clone: pesan webview boleh berisi ArrayBuffer/typed array (mis. Cap'n Proto di Codex).
+      serialization: "advanced", stdio: ["ignore", "pipe", "pipe", "ipc"], cwd: o.root && fs.existsSync(o.root) ? o.root : undefined, windowsHide: true,
       // POSIX: grup proses sendiri supaya server bahasa/CLI yang dijalankan ekstensi ikut berhenti bersama host.
       detached: process.platform !== "win32" });
     this.child = child;
@@ -97,6 +103,13 @@ export class ExtHostManager {
       rpc.receive(m);
     });
     let errBuf = "";
+    // console.log ekstensi (mis. alasan gagal aktif) ke kanal Extension Host, seperti log host VS Code.
+    let outBudget = 2_000_000;
+    child.stdout?.on("data", (d: Buffer) => {
+      if (outBudget <= 0) return;
+      outBudget -= d.length;
+      this.ctx.emit("exthost-event", { e: "ui/output", p: { channel: "Extension Host", text: d.toString("utf8").slice(0, 8000) } });
+    });
     child.stderr?.on("data", (d: Buffer) => {
       errBuf = (errBuf + d.toString("utf8")).slice(-4000);
       this.ctx.emit("exthost-event", { e: "ui/output", p: { channel: "Extension Host", text: d.toString("utf8") } });

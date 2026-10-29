@@ -3,7 +3,7 @@
 import { create } from "zustand";
 import { getState, setState, useStore } from "../state/store";
 import { hostNotify } from "./client";
-import { paletteFromDocument, vscodeThemeVars } from "./vscodeTheme";
+import { colorFor, paletteFromDocument, vscodeThemeVars } from "./vscodeTheme";
 
 export const WEBVIEW_PREFIX = "nozel:webview:";
 /** Sama dengan ownerHost() di electron/exthost/webviews.ts: origin berbeda tiap ekstensi. */
@@ -28,9 +28,19 @@ export function themeVars(): { vars: Record<string, string>; dark: boolean } {
   return { dark: p.dark, vars: vscodeThemeVars(p) };
 }
 
+/** Variabel tambahan yang dilaporkan tiap webview (selain daftar bawaan). */
+const extraVars = new Map<number, Set<string>>();
+
 function sendTheme(id: number) {
   const f = frames.get(id);
-  if (f?.contentWindow) f.contentWindow.postMessage({ __alexelTheme: true, ...themeVars() }, "*");
+  if (!f?.contentWindow) return;
+  const t = themeVars();
+  const extra = extraVars.get(id);
+  if (extra?.size) {
+    const p = paletteFromDocument(getState().settings.fontSize);
+    for (const n of extra) if (!(n in t.vars)) t.vars[n] = colorFor(n.slice("--vscode-".length), p);
+  }
+  f.contentWindow.postMessage({ __alexelTheme: true, ...t }, "*");
 }
 
 export function registerFrame(id: number, frame: HTMLIFrameElement | null) {
@@ -82,7 +92,14 @@ export function listenWebviewMessages() {
     if (d.type === "msg") trace("<-page", d.__alexelWebview, d.message);
     if (d.type === "msg") hostNotify("webview/message", { id: d.__alexelWebview, message: d.message });
     // Galat/peringatan dari dalam webview dicatat di Output → Webview (membantu melacak ekstensi yang tak tampil).
-    else if (d.type === "log") {
+    // Halaman memakai variabel --vscode-* yang belum ada di daftar bawaan: hitung dari namanya lalu kirim.
+    else if (d.type === "vars") {
+      const names = ((d as unknown as { names?: unknown[] }).names ?? []).filter((x): x is string => typeof x === "string" && /^--vscode-[\w.-]+$/.test(x)).slice(0, 2000);
+      const set = extraVars.get(d.__alexelWebview) ?? new Set<string>();
+      names.forEach((n) => set.add(n));
+      extraVars.set(d.__alexelWebview, set);
+      sendTheme(d.__alexelWebview);
+    } else if (d.type === "log") {
       const m = d as unknown as { level: string; text: string };
       void import("../app/output").then((o) => o.logOutput("Webview", `[${panels(d.__alexelWebview as number)}] ${m.level}: ${String(m.text).slice(0, 2000)}`));
     }

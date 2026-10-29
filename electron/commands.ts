@@ -145,7 +145,7 @@ export function buildCommands(ctx: Ctx, hooks: { confirmClose: (win: BrowserWind
     ext_details: (a) => X.extDetails(String(a.namespace), String(a.name)),
     ext_updates: () => X.extUpdates(ctx),
     ext_install: (a) => X.extInstall(ctx, a.namespace, a.name, a.version ?? null),
-    ext_list: () => X.extList(ctx),
+    ext_list: (a) => X.extList(ctx, typeof a.lang === "string" && /^[a-z]{2}(-[A-Za-z]{2})?$/.test(a.lang) ? a.lang : "en"),
     ext_remove: (a) => X.extRemove(ctx, a.id),
     ext_read_file: (a) => X.extReadFile(ctx, a.id, a.path),
 

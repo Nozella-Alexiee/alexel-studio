@@ -85,9 +85,10 @@ export const bracketColors: Extension = [
     { decorations: (p) => p.decorations }
   ),
   EditorView.theme({
-    ".cm-bracket-0": { color: "var(--bracket-0, #e5c07b)" },
-    ".cm-bracket-1": { color: "var(--bracket-1, #c678dd)" },
-    ".cm-bracket-2": { color: "var(--bracket-2, #56b6c2)" },
-    ".cm-bracket-bad": { color: "var(--danger)" },
+    // Span sorotan sintaks (mis. tanda baca) ada di dalam mark ini: warnanya ikut ditimpa.
+    ".cm-bracket-0, .cm-bracket-0 *": { color: "var(--bracket-0, #e5c07b) !important" },
+    ".cm-bracket-1, .cm-bracket-1 *": { color: "var(--bracket-1, #c678dd) !important" },
+    ".cm-bracket-2, .cm-bracket-2 *": { color: "var(--bracket-2, #56b6c2) !important" },
+    ".cm-bracket-bad, .cm-bracket-bad *": { color: "var(--danger) !important" },
   }),
 ];

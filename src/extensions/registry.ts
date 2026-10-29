@@ -6,6 +6,7 @@ import { create } from "zustand";
 import { call, isNative } from "../lib/ipc";
 import { getState, toast } from "../state/store";
 import { parseJsonc, resolveTheme, themeToVars, applyThemeVars } from "./theme";
+import { lang } from "../i18n";
 
 export interface InstalledExt {
   id: string;
@@ -171,7 +172,7 @@ function installBuiltin(name: string): Promise<boolean> {
       try {
         toast(`Memasang grammar pendukung: ${name}`, "info");
         await call("ext_install", { namespace: "vscode", name });
-        useExtensions.setState({ list: await call<InstalledExt[]>("ext_list") });
+        useExtensions.setState({ list: await call<InstalledExt[]>("ext_list", { lang }) });
         return true;
       } catch (e) {
         console.warn("Grammar pendukung gagal dipasang", name, e);
@@ -203,7 +204,7 @@ export async function loadExtensions() {
     useExtensions.setState({ list: [], loaded: true });
     return;
   }
-  const list = await call<InstalledExt[]>("ext_list").catch(() => []);
+  const list = await call<InstalledExt[]>("ext_list", { lang }).catch(() => []);
   useExtensions.setState({ list, loaded: true });
   const tm = await import("./textmate");
   tm.setGrammarReader(grammarReader, injectionsFor);
