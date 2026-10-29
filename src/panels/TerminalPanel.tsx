@@ -30,7 +30,7 @@ export default function TerminalPanel({ showTabs = true }: { showTabs?: boolean 
   if (!terminals.length) {
     return (
       <Empty icon={<TerminalSquare size={22} />} title={tl("Belum ada terminal")} action={<button className="btn btn-primary" onClick={() => void openShell()}>{tl("Buka terminal")}</button>}>
-        Terminal sungguhan ({shellName()}) di folder project. <kbd className="kbd">{prettyKeys("Ctrl+`")}</kbd>
+        {tl("Terminal sungguhan ({shell}) di folder project.", { shell: shellName() })} <kbd className="kbd">{prettyKeys("Ctrl+`")}</kbd>
       </Empty>
     );
   }

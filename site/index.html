@@ -2,641 +2,790 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Alexel Studio</title>
-<meta name="description" content="Alexel Studio: a free, open source code editor for macOS, Windows and Linux. Claude Code, Codex, Gemini, Cline and more, with every change reviewed by you.">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Alexel Studio — the code editor that works with you</title>
+<meta name="description" content="Free, open source code editor with AI agents you approve, plus a built-in database client, HTTP client, Docker panel, notebooks, browser tab, and Remote SSH.">
 <meta property="og:title" content="Alexel Studio">
-<meta property="og:description" content="The open source editor where AI agents work with you, not around you.">
-<meta property="og:image" content="img/app-agent.jpg">
-<meta name="theme-color" content="#070a12">
-<link rel="icon" type="image/png" href="img/icon.png">
+<meta property="og:description" content="AI agents you approve, plus database, API, Docker, notebooks, and a browser — in one light editor.">
+<meta property="og:image" content="img/designs/antartika.jpg">
+<link rel="icon" href="img/icon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500&family=Instrument+Serif:ital@0;1&display=swap">
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,500;12..96,700;12..96,800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
 <style>
-/* Halaman produk gelap bernuansa es kutub (warna ikon pinguin): screenshot aplikasi asli di tengah,
-   fitur dalam grid, unduhan per OS. Dua bahasa lewat atribut data-en / data-id. */
-:root {
-  --bg: #070a12;
-  --bg-2: #0b1020;
-  --surface: #0f1526;
-  --surface-2: #141b30;
-  --line: rgba(148, 170, 210, 0.13);
-  --line-2: rgba(148, 170, 210, 0.22);
-  --text: #e8eef9;
-  --muted: #9aa8c3;
-  --dim: #6c7a96;
-  --ice: #8fd3ff;
-  --ice-2: #4f9dff;
-  --warm: #ff9f6e;
-  --ok: #4ade80;
-  --bad: #f87171;
-  --radius: 18px;
-  --f-sans: "Geist", -apple-system, "Segoe UI", system-ui, sans-serif;
-  --f-serif: "Instrument Serif", Georgia, serif;
-  --f-mono: "Geist Mono", ui-monospace, "SF Mono", Menlo, monospace;
-  color-scheme: dark;
+:root{
+  --snow:#eef5fb; --paper:#fff; --ink:#13213d; --ink2:#405272; --mute:#6c7d99; --line:#c9d9ea;
+  --ice:#6cc4ff; --ice2:#2f86c9; --beak:#ff9a3c; --beak2:#e0721a; --night:#0b1220; --night2:#132342;
+  --ok:#1f9d6b; --accent:var(--beak);
+  --r:18px; --shadow:4px 4px 0 var(--ink); --shadow-sm:2px 2px 0 var(--ink);
+  --display:"Bricolage Grotesque",ui-sans-serif,system-ui,sans-serif; --mono:"JetBrains Mono",ui-monospace,Menlo,monospace;
 }
-* { box-sizing: border-box; }
-html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; }
-body {
-  margin: 0;
-  background: var(--bg);
-  color: var(--text);
-  font: 400 16px/1.6 var(--f-sans);
-  -webkit-font-smoothing: antialiased;
-  overflow-x: hidden;
-}
-a { color: inherit; text-decoration: none; }
-img { max-width: 100%; display: block; }
-.wrap { width: min(1180px, 100% - 32px); margin-inline: auto; }
-.skip { position: absolute; left: -999px; top: 8px; background: var(--ice); color: #000; padding: 8px 12px; border-radius: 8px; z-index: 100; }
-.skip:focus { left: 8px; }
-:focus-visible { outline: 2px solid var(--ice); outline-offset: 3px; border-radius: 6px; }
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--snow);color:var(--ink);font:400 17px/1.6 var(--display);-webkit-font-smoothing:antialiased;overflow-x:hidden}
+img{max-width:100%;display:block}
+a{color:inherit}
+button{font:inherit;color:inherit}
+::selection{background:var(--ice);color:var(--ink)}
+.wrap{max-width:1180px;margin:0 auto;padding:0 20px}
+#snow{position:fixed;inset:0;width:100%;height:100%;pointer-events:none;z-index:0}
+main,header,footer{position:relative;z-index:1}
+header{position:sticky;top:0;z-index:20}
 
-/* ---------- latar ---------- */
-.sky {
-  position: absolute; inset: 0 0 auto 0; height: 1100px; z-index: -1; pointer-events: none;
-  background:
-    radial-gradient(60% 50% at 50% 0%, rgba(79, 157, 255, 0.28), transparent 70%),
-    radial-gradient(40% 35% at 85% 20%, rgba(143, 211, 255, 0.14), transparent 70%),
-    radial-gradient(35% 30% at 10% 30%, rgba(255, 159, 110, 0.08), transparent 70%);
-}
-.sky::after {
-  content: ""; position: absolute; inset: 0;
-  background-image: linear-gradient(var(--line) 1px, transparent 1px), linear-gradient(90deg, var(--line) 1px, transparent 1px);
-  background-size: 64px 64px;
-  mask-image: radial-gradient(70% 60% at 50% 10%, #000 30%, transparent 75%);
-  opacity: 0.55;
-}
+/* tombol & stiker */
+.btn{display:inline-flex;align-items:center;gap:10px;padding:13px 22px;border:2px solid var(--ink);border-radius:14px;background:var(--paper);font-weight:700;font-size:16px;text-decoration:none;cursor:pointer;box-shadow:var(--shadow);transition:transform .12s,box-shadow .12s,background .3s}
+.btn:hover{transform:translate(-1px,-1px);box-shadow:5px 5px 0 var(--ink)}
+.btn:active{transform:translate(3px,3px);box-shadow:1px 1px 0 var(--ink)}
+.btn-main{background:var(--accent);color:var(--ink)}
+.btn-sm{padding:8px 14px;font-size:14px;border-radius:11px;box-shadow:var(--shadow-sm)}
+.btn-sm:hover{box-shadow:3px 3px 0 var(--ink)}
+.btn[hidden]{display:none}
+.sticker{display:inline-flex;align-items:center;gap:8px;padding:5px 12px;border:2px solid var(--ink);border-radius:999px;background:var(--paper);font-weight:700;font-size:13px;box-shadow:var(--shadow-sm);transform:rotate(-2deg)}
+.sticker i{width:8px;height:8px;border-radius:50%;background:var(--ok);display:inline-block}
+.card{background:var(--paper);border:2px solid var(--ink);border-radius:var(--r);box-shadow:var(--shadow)}
+.squig{position:relative;white-space:nowrap}
+.squig svg{position:absolute;left:-2%;bottom:-.2em;width:104%;height:.38em;overflow:visible}
+.squig path{stroke:var(--accent);stroke-width:6;fill:none;stroke-linecap:round;stroke-dasharray:420;stroke-dashoffset:420;animation:draw 1.1s .5s ease-out forwards;transition:stroke .3s}
+@keyframes draw{to{stroke-dashoffset:0}}
 
-/* ---------- navigasi ---------- */
-.nav {
-  position: sticky; top: 0; z-index: 50;
-  backdrop-filter: saturate(160%) blur(14px);
-  background: color-mix(in srgb, var(--bg) 72%, transparent);
-  border-bottom: 1px solid transparent;
-  transition: border-color .2s;
-}
-.nav.scrolled { border-bottom-color: var(--line); }
-.nav-in { display: flex; align-items: center; gap: 22px; height: 64px; }
-.brand { display: flex; align-items: center; gap: 10px; font-weight: 600; letter-spacing: -0.01em; }
-.brand img { width: 30px; height: 30px; border-radius: 8px; }
-.nav-links { display: flex; gap: 4px; margin-left: 12px; }
-.nav-links a { padding: 6px 12px; border-radius: 8px; color: var(--muted); font-size: 14.5px; }
-.nav-links a:hover { color: var(--text); background: var(--surface); }
-.nav-right { margin-left: auto; display: flex; align-items: center; gap: 10px; }
-.lang { display: flex; border: 1px solid var(--line-2); border-radius: 999px; padding: 2px; }
-.lang button { all: unset; cursor: pointer; font: 500 12px var(--f-mono); padding: 4px 10px; border-radius: 999px; color: var(--dim); }
-.lang button[aria-pressed="true"] { background: var(--surface-2); color: var(--text); }
-.icon-link { display: grid; place-items: center; width: 36px; height: 36px; border-radius: 10px; color: var(--muted); }
-.icon-link:hover { color: var(--text); background: var(--surface); }
-.btn {
-  display: inline-flex; align-items: center; justify-content: center; gap: 9px;
-  font: 600 15px var(--f-sans); padding: 12px 20px; border-radius: 12px; border: 1px solid transparent;
-  cursor: pointer; transition: transform .15s, background .15s, border-color .15s, box-shadow .15s; white-space: nowrap;
-}
-.btn:hover { transform: translateY(-1px); }
-.btn-primary { background: linear-gradient(180deg, #e9f6ff, #b9e3ff); color: #06122a; box-shadow: 0 10px 30px -10px rgba(143, 211, 255, .6), inset 0 1px 0 rgba(255,255,255,.7); }
-.btn-ghost { background: color-mix(in srgb, var(--surface) 80%, transparent); border-color: var(--line-2); color: var(--text); }
-.btn-ghost:hover { border-color: var(--muted); }
-.btn-sm { padding: 8px 14px; font-size: 14px; border-radius: 10px; }
-@media (max-width: 860px) { .nav-links { display: none; } }
-@media (max-width: 520px) { .nav .btn-sm span.long { display: none; } .brand span { display: none; } }
+/* nav */
+nav.top{background:color-mix(in srgb,var(--snow) 88%,transparent);backdrop-filter:saturate(1.3) blur(8px);border-bottom:2px solid transparent;transition:border-color .2s}
+nav.top.scrolled{border-bottom-color:var(--ink)}
+nav .bar{display:flex;align-items:center;gap:22px;height:68px}
+.logo{display:flex;align-items:center;gap:10px;font-weight:800;font-size:20px;text-decoration:none;letter-spacing:-.02em;white-space:nowrap}
+.logo svg{width:34px;height:34px}
+nav .links{display:flex;gap:20px;margin-left:12px}
+nav .links a{text-decoration:none;font-weight:500;color:var(--ink2)}
+nav .links a:hover{color:var(--ink)}
+nav .right{margin-left:auto;display:flex;align-items:center;gap:10px}
+.lang{display:flex;border:2px solid var(--ink);border-radius:10px;overflow:hidden;font-size:13px;font-weight:700}
+.lang button{border:0;background:var(--paper);padding:6px 10px;cursor:pointer}
+.lang button[aria-pressed=true]{background:var(--ink);color:var(--snow)}
+.icon-link{display:inline-flex;padding:6px}
+@media (max-width:860px){nav .links{display:none}}
+@media (max-width:420px){.icon-link{display:none}nav .bar{gap:10px}.logo{font-size:17px}.logo svg{width:28px;height:28px}.lang button{padding:5px 8px}}
 
-/* ---------- hero ---------- */
-.hero { position: relative; padding: 72px 0 40px; text-align: center; }
-.pill {
-  display: inline-flex; align-items: center; gap: 10px; padding: 6px 14px 6px 6px; border-radius: 999px;
-  border: 1px solid var(--line-2); background: color-mix(in srgb, var(--surface) 70%, transparent);
-  color: var(--muted); font-size: 13.5px;
-}
-.pill b { font: 600 11.5px var(--f-mono); color: #06122a; background: var(--ice); padding: 3px 9px; border-radius: 999px; letter-spacing: .02em; }
-h1 {
-  margin: 26px auto 18px; max-width: 15ch;
-  font: 600 clamp(40px, 7.2vw, 84px)/1.02 var(--f-sans); letter-spacing: -0.045em;
-  background: linear-gradient(180deg, #fff 30%, #b7c6e3); -webkit-background-clip: text; background-clip: text; color: transparent;
-}
-h1 em, h2 em { font-family: var(--f-serif); font-style: italic; font-weight: 400; letter-spacing: -0.01em; background: linear-gradient(90deg, var(--ice), #c6b8ff 60%, var(--warm)); -webkit-background-clip: text; background-clip: text; color: transparent; padding-right: .06em; }
-.lede { max-width: 640px; margin: 0 auto; color: var(--muted); font-size: clamp(16px, 2vw, 19px); }
-.cta { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; margin-top: 32px; }
-.cta-note { margin-top: 14px; color: var(--dim); font: 400 13px var(--f-mono); }
-.shot-hero { position: relative; margin: 56px auto 0; max-width: 1120px; }
-.shot-hero::before {
-  content: ""; position: absolute; inset: -40px -60px auto; height: 70%; z-index: -1;
-  background: radial-gradient(50% 60% at 50% 40%, rgba(79,157,255,.35), transparent 70%); filter: blur(10px);
-}
-.frame {
-  border-radius: 16px; overflow: hidden; border: 1px solid var(--line-2);
-  background: var(--surface); box-shadow: 0 50px 120px -40px rgba(0,0,0,.9), 0 0 0 1px rgba(255,255,255,.03) inset;
-}
-.frame-bar { display: flex; gap: 7px; padding: 11px 14px; border-bottom: 1px solid var(--line); background: #0b0f1c; }
-.frame-bar i { width: 11px; height: 11px; border-radius: 50%; background: #2a3349; }
-.frame-bar i:nth-child(1) { background: #ff5f57; } .frame-bar i:nth-child(2) { background: #febc2e; } .frame-bar i:nth-child(3) { background: #28c840; }
-.float {
-  position: absolute; display: flex; align-items: center; gap: 10px; padding: 10px 14px; border-radius: 12px;
-  background: color-mix(in srgb, var(--surface-2) 88%, transparent); backdrop-filter: blur(10px);
-  border: 1px solid var(--line-2); font-size: 13.5px; box-shadow: 0 20px 40px -18px rgba(0,0,0,.8);
-}
-.float .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--ok); box-shadow: 0 0 12px var(--ok); }
-.float.f1 { left: -28px; top: 34%; }
-.float.f2 { right: -24px; top: 62%; }
-.float code { font-family: var(--f-mono); color: var(--ice); font-size: 12.5px; }
-@media (max-width: 1100px) { .float { display: none; } }
+/* hero */
+.hero{padding:48px 0 40px}
+.hero .grid{display:grid;grid-template-columns:1.05fr .95fr;gap:36px;align-items:center}
+.hero .grid>*{min-width:0}
+.stage{width:100%}
+h1{font-size:clamp(42px,6.4vw,78px);line-height:.98;letter-spacing:-.035em;font-weight:800;margin:18px 0 20px}
+.lead{font-size:clamp(17px,1.6vw,20px);color:var(--ink2);max-width:34em;margin:0 0 28px}
+.cta-row{display:flex;flex-wrap:wrap;gap:14px;align-items:center}
+.cta-note{font-size:14px;color:var(--mute);margin-top:16px}
+.stage{display:flex;flex-direction:column;align-items:center;gap:16px}
+.stage-top{position:relative;width:100%;height:330px}
+.nozi-wrap{position:absolute;left:50%;top:0;width:270px;transform:translateX(-50%);cursor:pointer;user-select:none;-webkit-tap-highlight-color:transparent;z-index:2}
+.nozi-wrap svg{width:100%;height:auto;overflow:visible}
+#nozi .body-g{transform-origin:60px 132px;transform-box:view-box}
+#nozi.jump .body-g{animation:jump .7s cubic-bezier(.3,1.6,.5,1)}
+@keyframes jump{25%{transform:translateY(4px) scale(1.06,.92)}55%{transform:translateY(-24px) scale(.96,1.05)}80%{transform:translateY(2px) scale(1.04,.96)}}
+#nozi .wing-l{transform-origin:30px 66px;transform-box:view-box;transition:transform .3s}
+#nozi .wing-r{transform-origin:90px 66px;transform-box:view-box;transition:transform .3s}
+#nozi.wave .wing-r{animation:wave .8s ease-in-out 2}
+@keyframes wave{50%{transform:rotate(-60deg)}}
+#nozi.happy .wing-l{transform:rotate(24deg)}#nozi.happy .wing-r{transform:rotate(-24deg)}
+#nozi .eyes-open{transform-origin:60px 56px;transform-box:view-box}
+#nozi.blink .eyes-open{transform:scaleY(.1)}
+#nozi .eyes-happy,#nozi .eyes-sad{display:none}
+#nozi.happy .eyes-open,#nozi.sad .eyes-open{display:none}
+#nozi.happy .eyes-happy,#nozi.sad .eyes-sad{display:inline}
+#nozi .hat{transition:fill .4s}
+#eyeL,#eyeR{transition:transform .08s linear}
+.floe{position:absolute;left:50%;top:268px;width:420px;max-width:100%;transform:translateX(-50%);animation:bob 5s ease-in-out infinite}
+@keyframes bob{50%{transform:translate(-50%,5px) rotate(.6deg)}}
+.bubble{position:absolute;left:calc(50% + 100px);top:24px;max-width:230px;background:var(--paper);border:2px solid var(--ink);border-radius:16px 16px 16px 4px;padding:10px 14px;font-weight:600;font-size:15px;line-height:1.35;box-shadow:var(--shadow-sm);transform-origin:0 100%;transition:transform .25s cubic-bezier(.3,1.5,.5,1),opacity .2s;z-index:3}
+.bubble.hide{transform:scale(.6);opacity:0}
+.agents{display:flex;justify-content:center;flex-wrap:wrap;gap:6px;z-index:3;max-width:540px}
+.agents button{border:2px solid var(--ink);background:var(--paper);border-radius:999px;padding:4px 11px;font-size:13px;font-weight:700;cursor:pointer;box-shadow:var(--shadow-sm);display:flex;align-items:center;gap:6px}
+.agents button i{width:9px;height:9px;border-radius:50%}
+.agents button[aria-pressed=true]{background:var(--ink);color:var(--snow)}
+.diff{width:100%;max-width:520px;overflow:hidden;transform:rotate(-.6deg)}
+.diff-head{display:flex;align-items:center;gap:10px;padding:10px 14px;border-bottom:2px solid var(--ink);background:var(--night);color:#d6e2f5;font-size:14px}
+.diff-head b{color:#fff}
+.agent-dot{width:10px;height:10px;border-radius:50%;background:var(--hat,#d97757);flex:none;box-shadow:0 0 0 3px color-mix(in srgb,var(--hat,#d97757) 30%,transparent)}
+.diff-file{margin-left:auto;font-family:var(--mono);font-size:12px;color:#8aa0c4}
+.diff pre{margin:0;padding:12px 0;font:13px/1.65 var(--mono);background:#0f1a2e;color:#c9d6ee;overflow-x:auto}
+.diff .ln{display:block;padding:0 14px;white-space:pre}
+.diff .add{background:rgba(31,157,107,.2);color:#b7f0d6}
+.diff .add::before{content:"+ ";color:#4fd59b}
+.diff .del{background:rgba(217,76,76,.18);color:#f5b9b9}
+.diff .del::before{content:"- ";color:#f07a7a}
+.diff .ctx::before{content:"  "}
+.diff.applied .del,.diff.rejected .add{display:none}
+.diff.applied .add,.diff.rejected .del{background:transparent;color:#c9d6ee}
+.diff.applied .add::before,.diff.rejected .del::before{content:"  "}
+.diff-foot{display:flex;align-items:center;gap:10px;padding:10px 14px;border-top:2px solid var(--ink);flex-wrap:wrap}
+.diff-foot .msg{font-size:14px;font-weight:600;margin-right:auto;display:flex;align-items:center;gap:8px}
+.allow{background:var(--ok);color:#fff}
+@media (max-width:960px){.hero .grid{grid-template-columns:1fr}}
+@media (max-width:560px){.bubble{left:auto;right:0;top:-6px;max-width:160px;font-size:14px}.nozi-wrap{width:200px}.floe{width:320px;top:200px}.stage-top{height:250px}}
 
-/* ---------- strip agen ---------- */
-.agents { padding: 56px 0 24px; text-align: center; }
-.eyebrow { font: 500 12.5px var(--f-mono); letter-spacing: .14em; text-transform: uppercase; color: var(--dim); }
-.chips { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; margin-top: 18px; }
-.chip { display: inline-flex; align-items: center; gap: 9px; padding: 9px 15px; border-radius: 999px; border: 1px solid var(--line); background: var(--bg-2); color: var(--muted); font-size: 14.5px; }
-.chip i { width: 9px; height: 9px; border-radius: 3px; }
+/* section */
+section{padding:84px 0}
+.kicker{font-family:var(--mono);font-size:13px;font-weight:600;color:var(--ice2);letter-spacing:.04em;text-transform:uppercase}
+h2{font-size:clamp(32px,4.4vw,54px);line-height:1.02;letter-spacing:-.03em;font-weight:800;margin:10px 0 14px}
+.sub{font-size:18px;color:var(--ink2);max-width:40em;margin:0 0 36px}
+.night{background:var(--night);color:#e4ecf8;position:relative;padding:110px 0}
+.night .sub{color:#9fb2d1}.night .kicker{color:var(--ice)}
+.night .card{background:var(--night2);border-color:#2b4170;box-shadow:4px 4px 0 #000}
+.wave{position:absolute;left:0;right:0;height:34px;width:100%;color:var(--snow)}
+.wave.top{top:-1px}.wave.bot{bottom:-1px;transform:scaleY(-1)}
 
-/* ---------- bagian umum ---------- */
-section.block { padding: 96px 0; position: relative; }
-.head { max-width: 720px; margin-bottom: 44px; }
-.head.center { text-align: center; margin-inline: auto; }
-h2 { font: 600 clamp(30px, 4.4vw, 50px)/1.08 var(--f-sans); letter-spacing: -0.035em; margin: 12px 0 14px; }
-.head p { color: var(--muted); font-size: 17px; margin: 0; }
+/* demo alat */
+.tools{display:grid;grid-template-columns:300px minmax(0,1fr);gap:26px;align-items:start}
+.tool-list{display:flex;flex-direction:column;gap:8px}
+.tool-btn{display:flex;align-items:center;gap:12px;text-align:left;padding:12px 14px;border:2px solid transparent;border-radius:14px;background:transparent;cursor:pointer;color:#b9c8e2;transition:background .15s,border-color .15s}
+.tool-btn:hover{background:rgba(255,255,255,.05)}
+.tool-btn[aria-selected=true]{background:var(--night2);border-color:#2b4170;color:#fff;box-shadow:4px 4px 0 #000}
+.tool-btn .ic{width:38px;height:38px;border-radius:11px;display:grid;place-items:center;background:rgba(108,196,255,.12);color:var(--ice);flex:none;transition:background .3s}
+.tool-btn[aria-selected=true] .ic{background:var(--accent);color:var(--ink)}
+.tool-btn b{display:block;font-size:16px}
+.tool-btn small{display:block;font-size:13px;color:#8da2c6;line-height:1.35}
+.demo{min-height:450px;overflow:hidden}
+.demo-head{display:flex;align-items:center;gap:8px;padding:10px 14px;border-bottom:2px solid #2b4170;font-size:13px;color:#8da2c6;font-family:var(--mono)}
+.demo-head .dots{display:flex;gap:6px;margin-right:6px}.demo-head .dots i{width:10px;height:10px;border-radius:50%;background:#2b4170}
+.demo-body{padding:18px;font-size:14px}
+.demo-panel{display:none}.demo-panel.on{display:block;animation:fade .35s}
+@keyframes fade{from{opacity:0;transform:translateY(6px)}}
+.code{font:13px/1.7 var(--mono);background:#0b1426;border:1px solid #22365e;border-radius:12px;padding:12px 14px;color:#cfdcf3;white-space:pre-wrap;word-break:break-word;min-height:48px;margin:0}
+.code .k{color:#ff9eb5}.code .s{color:#a5e88d}.code .n{color:#ffc27a}.code .c{color:#6f84a8}.code .f{color:#7cc7ff}
+.demo-actions{display:flex;gap:10px;align-items:center;margin:14px 0;flex-wrap:wrap}
+.demo .btn-sm{border-color:#000;box-shadow:2px 2px 0 #000}
+.ask{display:flex;gap:8px;align-items:center;padding:8px 10px;border:1px dashed #3a5486;border-radius:12px;color:#c6d4ee;margin-bottom:12px;font-size:13.5px;min-height:40px}
+.ask svg{color:var(--beak);flex:none}
+table.res{border-collapse:collapse;width:100%;font:13px var(--mono)}
+table.res th,table.res td{border:1px solid #22365e;padding:6px 10px;text-align:left}
+table.res th{background:#152648;color:#9fb6dd;font-weight:600}
+table.res td.num{text-align:right;color:#ffc27a}
+table.res tr{animation:row .35s both}
+@keyframes row{from{opacity:0;transform:translateX(-8px)}}
+.pill{display:inline-flex;align-items:center;gap:6px;font:600 12px var(--mono);padding:3px 10px;border-radius:999px}
+.pill.ok{background:rgba(31,157,107,.2);color:#6be3ae}
+.pill.dim{background:rgba(108,196,255,.12);color:#9fc9ee}
+.ct{display:grid;grid-template-columns:auto 1fr auto auto;gap:10px 14px;align-items:center;padding:10px 12px;border:1px solid #22365e;border-radius:12px;margin-bottom:8px;background:#0e1a31}
+.ct .d{width:10px;height:10px;border-radius:50%;background:#56688b}
+.ct.up .d{background:#4fd59b;box-shadow:0 0 0 4px rgba(79,213,155,.18)}
+.ct b{font-size:14px}.ct small{display:block;color:#8da2c6;font-family:var(--mono);font-size:12px}
+.ct .port{font:12px var(--mono);color:#9fc9ee}
+.toggle{border:1px solid #3a5486;background:transparent;color:#d6e2f5;border-radius:9px;padding:4px 10px;cursor:pointer;font-size:12.5px;font-weight:600}
+.toggle:hover,.toggle[aria-pressed=true]{border-color:var(--ice)}
+.logline{font:12px/1.6 var(--mono);color:#8da2c6;margin-top:8px;min-height:20px}
+.chart{display:flex;align-items:flex-end;gap:14px;height:150px;padding:10px 4px 0;border-bottom:1px solid #22365e;margin-bottom:28px}
+.chart div{flex:1;background:var(--ice);border-radius:6px 6px 0 0;height:0;transition:height .7s cubic-bezier(.3,1.3,.5,1);position:relative}
+.chart div span{position:absolute;bottom:-22px;left:0;right:0;text-align:center;font:11px var(--mono);color:#8da2c6}
+.devices{display:flex;gap:8px;margin-bottom:12px}
+.frame-stage{display:flex;justify-content:center;align-items:flex-start;height:320px;background:radial-gradient(#22365e 1px,transparent 1px) 0 0/16px 16px;border-radius:12px;padding:14px;overflow:hidden}
+.frame{background:#fff;color:#13213d;border-radius:10px;border:2px solid #000;width:100%;height:100%;transition:width .45s cubic-bezier(.3,1.2,.5,1);overflow:hidden;display:flex;flex-direction:column}
+.frame .url{background:#e9f0f8;font:11px var(--mono);padding:5px 10px;color:#405272;border-bottom:1px solid #c9d9ea}
+.frame .page{padding:14px;display:grid;gap:10px;grid-template-columns:repeat(auto-fill,minmax(110px,1fr))}
+.frame .page h4{grid-column:1/-1;margin:0;font-size:18px}
+.frame .page div{height:64px;border-radius:10px;background:#dcebf8;border:2px solid #13213d}
+.term{background:#050a14;border:1px solid #22365e;border-radius:12px;padding:12px 14px;font:13px/1.7 var(--mono);color:#cfdcf3;min-height:230px;white-space:pre-wrap}
+.term .p{color:#4fd59b}.term .h{color:#7cc7ff}.term .c{color:#6f84a8}
 
-/* ---------- grid fitur ---------- */
-.bento { display: grid; grid-template-columns: repeat(6, 1fr); gap: 16px; }
-.card {
-  position: relative; grid-column: span 2; padding: 26px; border-radius: var(--radius);
-  background: linear-gradient(180deg, var(--surface), var(--bg-2)); border: 1px solid var(--line);
-  overflow: hidden; transition: border-color .2s, transform .2s;
-}
-.card:hover { border-color: var(--line-2); transform: translateY(-2px); }
-.card.wide { grid-column: span 3; }
-.card .ico { width: 40px; height: 40px; border-radius: 11px; display: grid; place-items: center; background: rgba(143,211,255,.1); color: var(--ice); border: 1px solid rgba(143,211,255,.2); margin-bottom: 18px; }
-.card h3 { margin: 0 0 8px; font-size: 18.5px; letter-spacing: -0.015em; }
-.card p { margin: 0; color: var(--muted); font-size: 15px; }
-.card ul { margin: 14px 0 0; padding: 0; list-style: none; display: grid; gap: 7px; }
-.card li { display: flex; gap: 9px; color: var(--muted); font-size: 14.5px; }
-.card li::before { content: ""; flex: none; width: 6px; height: 6px; margin-top: 9px; border-radius: 2px; background: var(--ice-2); }
-.diffbox { margin-top: 18px; border-radius: 12px; border: 1px solid var(--line); background: #0a0f1c; font: 400 12.5px/1.75 var(--f-mono); overflow: hidden; }
-.diffbox div { padding: 0 12px; white-space: pre; overflow: hidden; text-overflow: ellipsis; }
-.diffbox .del { background: rgba(248,113,113,.1); color: #fca5a5; }
-.diffbox .add { background: rgba(74,222,128,.1); color: #86efac; }
-.diffbox .bar { display: flex; gap: 8px; padding: 10px 12px; border-top: 1px solid var(--line); background: var(--surface); }
-.diffbox .bar span { font-family: var(--f-sans); font-size: 12.5px; padding: 4px 10px; border-radius: 7px; border: 1px solid var(--line-2); color: var(--muted); }
-.diffbox .bar span.ok { background: #d97757; border-color: #d97757; color: #fff; }
-.timeline { margin-top: 18px; display: grid; gap: 8px; }
-.timeline div { display: flex; align-items: center; gap: 10px; font-size: 13.5px; color: var(--muted); padding: 8px 12px; border-radius: 10px; border: 1px solid var(--line); background: #0a0f1c; }
-.timeline div b { font: 500 11.5px var(--f-mono); color: var(--ice); }
-.timeline div.cur { border-color: rgba(143,211,255,.45); color: var(--text); }
-@media (max-width: 980px) { .card, .card.wide { grid-column: span 3; } }
-@media (max-width: 680px) { .bento { grid-template-columns: 1fr; } .card, .card.wide { grid-column: auto; } }
+/* screenshot & desain */
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:18px}
+.chip{border:2px solid var(--ink);background:var(--paper);border-radius:999px;padding:7px 14px;font-weight:700;font-size:14px;cursor:pointer;box-shadow:var(--shadow-sm);display:inline-flex;align-items:center;gap:8px}
+.chip:active{transform:translate(2px,2px);box-shadow:none}
+.chip[aria-pressed=true]{background:var(--ink);color:var(--snow)}
+.chip i{width:14px;height:14px;border-radius:5px;border:1.5px solid var(--ink);display:inline-block}
+.shot-frame{padding:10px}
+.shot-frame img{border-radius:10px;border:2px solid var(--ink);width:100%;height:auto;aspect-ratio:16/10;object-fit:cover;background:#dde8f3;transition:opacity .25s}
+.shot-frame img.swap{opacity:.25}
+.shot-cap{display:flex;gap:12px;align-items:baseline;padding:12px 6px 2px;flex-wrap:wrap}
+.shot-cap b{font-size:18px}.shot-cap span{color:var(--ink2)}
 
-/* ---------- galeri ---------- */
-.tabs { display: flex; gap: 6px; justify-content: center; flex-wrap: wrap; margin-bottom: 26px; }
-.tabs button { all: unset; cursor: pointer; padding: 9px 16px; border-radius: 999px; font-size: 14.5px; color: var(--muted); border: 1px solid var(--line); }
-.tabs button[aria-selected="true"] { color: #06122a; background: var(--ice); border-color: var(--ice); }
-.gallery .frame img { aspect-ratio: 1680 / 1050; width: 100%; object-fit: cover; }
-.caption { text-align: center; color: var(--muted); margin-top: 18px; font-size: 15px; }
+/* jujur */
+.honest{display:grid;grid-template-columns:1fr 1fr;gap:22px}
+.honest .card{padding:22px 24px}
+.honest h3{margin:0 0 14px;font-size:22px;letter-spacing:-.01em;display:flex;align-items:center;gap:10px}
+.honest ul{margin:0;padding:0;list-style:none;display:grid;gap:10px}
+.honest li{display:grid;grid-template-columns:22px 1fr;gap:8px;line-height:1.45}
+.honest li svg{margin-top:3px}
+.honest .meh{background:#fff8ef}
+@media (max-width:860px){.honest{grid-template-columns:1fr}.tools{grid-template-columns:1fr}.tool-list{flex-direction:row;overflow-x:auto;padding:2px 2px 8px}.tool-btn{min-width:210px}}
 
-/* ---------- baru ---------- */
-.news { display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px; }
-.news div { padding: 18px 20px; border-radius: 14px; border: 1px solid var(--line); background: var(--bg-2); }
-.news b { display: block; margin-bottom: 4px; font-size: 15.5px; }
-.news span { color: var(--muted); font-size: 14.5px; }
-@media (max-width: 720px) { .news { grid-template-columns: 1fr; } }
+/* unduh */
+.dl{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:20px;margin-top:56px}
+.os{padding:22px;position:relative;transition:transform .2s}
+.os.mine{transform:translateY(-8px) rotate(-.8deg);background:#fff6ea}
+.os h3{margin:0 0 4px;font-size:24px}
+.os p{margin:0 0 16px;color:var(--ink2);font-size:14.5px}
+.files{display:grid;gap:8px}
+.file{display:flex;align-items:center;gap:10px;padding:10px 12px;border:2px solid var(--ink);border-radius:12px;text-decoration:none;font-weight:600;background:var(--paper)}
+.file:hover{background:var(--snow)}
+.file .x{margin-left:auto;font:12px var(--mono);color:var(--mute)}
+.mine-tag{position:absolute;top:-14px;right:16px;background:var(--accent);border:2px solid var(--ink);border-radius:999px;padding:2px 10px;font-size:12px;font-weight:800;box-shadow:var(--shadow-sm);display:none}
+.os.mine .mine-tag{display:block}
+.peek{position:absolute;width:56px;height:66px;top:-52px;right:96px;display:none}
+.os.mine .peek{display:block;animation:peek .6s cubic-bezier(.3,1.5,.5,1)}
+@keyframes peek{from{transform:translateY(30px);opacity:0}}
+.copy{display:flex;align-items:center;gap:8px;margin-top:10px;background:var(--snow);border:1.5px dashed var(--line);border-radius:10px;padding:6px 6px 6px 10px}
+.copy code{font:12px var(--mono);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1}
+.copy button{border:1.5px solid var(--ink);background:var(--paper);border-radius:8px;padding:3px 9px;font-size:12px;font-weight:700;cursor:pointer}
+.dl-note{margin-top:26px;color:var(--ink2);font-size:15px}
+@media (max-width:900px){.dl{grid-template-columns:minmax(0,1fr);gap:34px}.os.mine{transform:none}}
 
-/* ---------- perbandingan ---------- */
-.table-wrap { overflow-x: auto; border-radius: var(--radius); border: 1px solid var(--line); }
-table { width: 100%; border-collapse: collapse; min-width: 640px; font-size: 15px; }
-th, td { padding: 15px 18px; text-align: left; border-bottom: 1px solid var(--line); }
-thead th { font: 500 12.5px var(--f-mono); letter-spacing: .08em; text-transform: uppercase; color: var(--dim); background: var(--bg-2); }
-tbody tr:last-child td { border-bottom: 0; }
-td:first-child { color: var(--muted); }
-td.us { background: rgba(143,211,255,.05); font-weight: 500; }
-.y { color: var(--ok); } .n { color: var(--dim); } .p { color: #fbbf24; }
+/* FAQ */
+.faq{display:grid;gap:12px;max-width:860px}
+.faq details{background:var(--paper);border:2px solid var(--ink);border-radius:14px;box-shadow:var(--shadow-sm)}
+.faq summary{cursor:pointer;list-style:none;padding:16px 20px;font-weight:700;font-size:18px;display:flex;align-items:center;gap:12px}
+.faq summary::-webkit-details-marker{display:none}
+.faq summary::after{content:"+";margin-left:auto;font-size:24px;line-height:1;transition:transform .2s}
+.faq details[open] summary::after{transform:rotate(45deg)}
+.faq details p{margin:0;padding:0 20px 18px;color:var(--ink2)}
 
-/* ---------- unduh ---------- */
-.dl-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
-.os {
-  position: relative; padding: 26px; border-radius: var(--radius); border: 1px solid var(--line);
-  background: linear-gradient(180deg, var(--surface), var(--bg-2));
-}
-.os.mine { border-color: rgba(143,211,255,.55); box-shadow: 0 0 0 1px rgba(143,211,255,.25), 0 30px 60px -30px rgba(79,157,255,.5); }
-.os .tag { position: absolute; top: 18px; right: 18px; font: 500 11px var(--f-mono); color: #06122a; background: var(--ice); padding: 3px 9px; border-radius: 999px; }
-.os svg.logo { width: 30px; height: 30px; color: var(--text); }
-.os h3 { margin: 14px 0 2px; font-size: 21px; }
-.os .req { color: var(--dim); font-size: 13.5px; margin: 0 0 18px; }
-.files { display: grid; gap: 8px; }
-.file {
-  display: flex; align-items: center; gap: 10px; padding: 12px 14px; border-radius: 11px;
-  border: 1px solid var(--line); background: #0a0f1c; font-size: 14.5px; transition: border-color .15s, background .15s;
-}
-.file:hover { border-color: var(--ice); background: #0d1428; }
-.file svg { width: 16px; height: 16px; color: var(--ice); flex: none; }
-.file .x { margin-left: auto; font: 400 12px var(--f-mono); color: var(--dim); }
-.notes { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-top: 18px; }
-.notes div { font-size: 14px; color: var(--muted); padding: 16px 18px; border-radius: 14px; border: 1px dashed var(--line-2); }
-.notes strong { display: block; color: var(--text); margin-bottom: 4px; font-size: 14.5px; }
-.notes code, .copy code { font-family: var(--f-mono); font-size: 12.5px; color: var(--ice); }
-.copy { display: flex; align-items: center; gap: 8px; margin-top: 4px; padding: 8px 10px; border-radius: 10px; background: #0a0f1c; border: 1px solid var(--line); overflow: hidden; }
-.copy code { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.copy button { all: unset; cursor: pointer; font-size: 12.5px; color: var(--muted); padding: 2px 8px; border-radius: 6px; border: 1px solid var(--line-2); }
-@media (max-width: 900px) { .dl-grid, .notes { grid-template-columns: 1fr; } }
+/* footer */
+.big-cta{padding:44px;display:grid;grid-template-columns:1fr auto;gap:24px;align-items:center;background:var(--accent);transition:background .3s}
+.big-cta h2{margin:0}
+@media (max-width:760px){.big-cta{grid-template-columns:1fr;padding:28px}}
+footer{padding:56px 0 40px;border-top:2px solid var(--ink);background:var(--paper)}
+footer .row{display:flex;align-items:center;gap:24px;flex-wrap:wrap}
+footer .links{display:flex;gap:18px;flex-wrap:wrap;margin-left:auto}
+footer .links a{text-decoration:none;font-weight:600;color:var(--ink2)}
+footer small{display:block;color:var(--mute);margin-top:18px;max-width:60em}
 
-/* ---------- FAQ ---------- */
-.faq { max-width: 820px; margin: 0 auto; }
-details { border-bottom: 1px solid var(--line); }
-summary { list-style: none; cursor: pointer; padding: 22px 36px 22px 0; font-size: 17.5px; font-weight: 500; position: relative; }
-summary::-webkit-details-marker { display: none; }
-summary::after { content: "+"; position: absolute; right: 4px; top: 18px; font: 300 26px var(--f-sans); color: var(--dim); transition: transform .2s; }
-details[open] summary::after { transform: rotate(45deg); color: var(--ice); }
-details p { margin: -6px 0 22px; color: var(--muted); }
-
-/* ---------- penutup ---------- */
-.final { text-align: center; padding: 110px 0; }
-.final .penguin { width: 84px; height: 84px; margin: 0 auto 26px; border-radius: 22px; box-shadow: 0 20px 60px -15px rgba(79,157,255,.7); }
-footer { border-top: 1px solid var(--line); padding: 34px 0 48px; color: var(--dim); font-size: 14px; }
-.foot { display: flex; flex-wrap: wrap; gap: 18px; align-items: center; justify-content: space-between; }
-.foot nav { display: flex; gap: 18px; flex-wrap: wrap; }
-.foot a:hover { color: var(--text); }
-
-/* ---------- animasi muncul ---------- */
-.js .reveal { opacity: 0; transform: translateY(18px); transition: opacity .7s ease, transform .7s ease; }
-.js .reveal.in { opacity: 1; transform: none; }
-@media (prefers-reduced-motion: reduce) {
-  html { scroll-behavior: auto; }
-  .js .reveal { opacity: 1; transform: none; transition: none; }
-  .btn:hover, .card:hover { transform: none; }
-}
+:focus-visible{outline:3px solid var(--ice2);outline-offset:3px;border-radius:6px}
+@media (prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}.squig path{stroke-dashoffset:0}}
 </style>
 </head>
 <body>
-<a class="skip" href="#main" data-en="Skip to content" data-id="Lewati ke konten">Skip to content</a>
-<div class="sky" aria-hidden="true"></div>
+<canvas id="snow" aria-hidden="true"></canvas>
 
-<header class="nav" id="nav">
-  <div class="wrap nav-in">
-    <a class="brand" href="#top" aria-label="Alexel Studio"><img src="img/icon.png" alt="" width="30" height="30"><span>Alexel Studio</span></a>
-    <nav class="nav-links" aria-label="Main">
-      <a href="#features" data-en="Features" data-id="Fitur">Features</a>
-      <a href="#extensions" data-en="Extensions" data-id="Ekstensi">Extensions</a>
-      <a href="#compare" data-en="Compare" data-id="Bandingkan">Compare</a>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <symbol id="nozi-mini" viewBox="0 0 120 140">
+      <ellipse cx="45" cy="128" rx="10" ry="5" fill="#ff9a3c"/><ellipse cx="75" cy="128" rx="10" ry="5" fill="#ff9a3c"/>
+      <ellipse cx="60" cy="78" rx="40" ry="52" fill="#2a4170"/><ellipse cx="60" cy="90" rx="27" ry="37" fill="#f4f8ff"/>
+      <path d="M60 40C40 40 33 54 36 66c4 10 16 8 24 4 8 4 20 6 24-4 3-12-4-26-24-26Z" fill="#f4f8ff"/>
+      <path d="M26 44c2-26 66-26 68 0-14-8-54-8-68 0Z" fill="#6cc4ff"/><rect x="24" y="40" width="72" height="9" rx="4.5" fill="#e9f6ff"/><circle cx="60" cy="17" r="7" fill="#e9f6ff"/>
+      <circle cx="42" cy="66" r="4.5" fill="#ff8fa3" opacity=".6"/><circle cx="78" cy="66" r="4.5" fill="#ff8fa3" opacity=".6"/>
+      <circle cx="49" cy="56" r="5" fill="#0d1526"/><circle cx="71" cy="56" r="5" fill="#0d1526"/><circle cx="50.8" cy="54.2" r="1.7" fill="#fff"/><circle cx="72.8" cy="54.2" r="1.7" fill="#fff"/>
+      <path d="M51 64q9 12 18 0-9-5-18 0Z" fill="#ff9a3c"/>
+    </symbol>
+    <symbol id="i-check" viewBox="0 0 24 24"><path d="M5 12.5 10 17 19 7" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="i-dot" viewBox="0 0 24 24"><circle cx="12" cy="12" r="5" fill="currentColor"/></symbol>
+    <symbol id="i-down" viewBox="0 0 24 24"><path d="M12 4v12m0 0-5-5m5 5 5-5M5 20h14" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  </defs>
+</svg>
+
+<header>
+<nav class="top" id="nav">
+  <div class="wrap bar">
+    <a class="logo" href="#top"><svg aria-hidden="true"><use href="#nozi-mini"/></svg>alexel studio</a>
+    <div class="links">
+      <a href="#tools" data-en="Tools" data-id="Fitur">Tools</a>
+      <a href="#designs" data-en="Designs" data-id="Desain">Designs</a>
+      <a href="#honest">vs VS Code</a>
       <a href="#download" data-en="Download" data-id="Unduh">Download</a>
       <a href="#faq">FAQ</a>
-    </nav>
-    <div class="nav-right">
-      <div class="lang" role="group" aria-label="Language">
-        <button type="button" data-lang="en" aria-pressed="true">EN</button>
-        <button type="button" data-lang="id" aria-pressed="false">ID</button>
-      </div>
-      <a class="icon-link" id="gh-link" href="https://github.com/Nozella-Alexiee/alexel-studio" aria-label="GitHub"><svg width="19" height="19" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 .5a11.5 11.5 0 0 0-3.64 22.41c.58.1.79-.25.79-.56v-2c-3.2.7-3.88-1.37-3.88-1.37-.53-1.33-1.28-1.69-1.28-1.69-1.05-.71.08-.7.08-.7 1.16.08 1.77 1.19 1.77 1.19 1.03 1.77 2.71 1.26 3.37.96.1-.75.4-1.26.73-1.55-2.55-.29-5.24-1.28-5.24-5.69 0-1.26.45-2.29 1.19-3.09-.12-.29-.52-1.46.11-3.05 0 0 .97-.31 3.17 1.18a10.9 10.9 0 0 1 5.77 0c2.2-1.49 3.17-1.18 3.17-1.18.63 1.59.23 2.76.11 3.05.74.8 1.19 1.83 1.19 3.09 0 4.42-2.7 5.39-5.26 5.68.41.36.78 1.06.78 2.14v3.17c0 .31.21.67.8.56A11.5 11.5 0 0 0 12 .5Z"/></svg></a>
-      <a class="btn btn-primary btn-sm" href="#download"><span data-en="Download" data-id="Unduh">Download</span></a>
+    </div>
+    <div class="right">
+      <div class="lang" role="group" aria-label="Language"><button type="button" data-lang="en" aria-pressed="true">EN</button><button type="button" data-lang="id" aria-pressed="false">ID</button></div>
+      <a class="icon-link" href="https://github.com/Nozella-Alexiee/alexel-studio" aria-label="GitHub"><svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 .5a11.5 11.5 0 0 0-3.64 22.41c.58.1.79-.25.79-.56v-2c-3.2.7-3.88-1.37-3.88-1.37-.53-1.33-1.28-1.69-1.28-1.69-1.05-.71.08-.7.08-.7 1.16.08 1.77 1.19 1.77 1.19 1.03 1.77 2.71 1.26 3.37.96.1-.75.4-1.26.73-1.55-2.55-.29-5.24-1.28-5.24-5.69 0-1.26.45-2.29 1.19-3.09-.12-.29-.52-1.46.11-3.05 0 0 .97-.31 3.17 1.18a10.9 10.9 0 0 1 5.77 0c2.2-1.49 3.17-1.18 3.17-1.18.63 1.59.23 2.76.11 3.05.74.8 1.19 1.83 1.19 3.09 0 4.42-2.7 5.39-5.26 5.68.41.36.78 1.06.78 2.14v3.17c0 .31.21.67.8.56A11.5 11.5 0 0 0 12 .5Z"/></svg></a>
+      <a class="btn btn-main btn-sm" href="#download" data-en="Download" data-id="Unduh">Download</a>
     </div>
   </div>
+</nav>
 </header>
 
-<main id="main">
-  <section class="hero" id="top">
-    <div class="wrap">
-      <span class="pill reveal"><b>v<span class="ver">0.8.0</span></b><span data-en="Free & open source · MIT · no telemetry" data-id="Gratis & open source · MIT · tanpa telemetri">Free & open source · MIT · no telemetry</span></span>
-      <h1 class="reveal" data-en-html="The editor where AI agents work <em>with you</em>." data-id-html="Editor tempat agen AI bekerja <em>bersamamu</em>.">The editor where AI agents work <em>with you</em>.</h1>
-      <p class="lede reveal" data-en="Claude Code, Codex, Gemini, Cline and more inside a real IDE, with Git, a debugger and VS Code extensions. Every change an agent proposes waits for your approval." data-id="Claude Code, Codex, Gemini, Cline, dan lainnya di dalam IDE sungguhan, lengkap dengan Git, debugger, dan ekstensi VS Code. Setiap perubahan dari agen menunggu persetujuanmu.">Claude Code, Codex, Gemini, Cline and more inside a real IDE, with Git, a debugger and VS Code extensions. Every change an agent proposes waits for your approval.</p>
-      <div class="cta reveal">
-        <a class="btn btn-primary" id="cta-main" href="#download"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v12m0 0-5-5m5 5 5-5M5 20h14"/></svg><span id="cta-label">Download</span></a>
-        <a class="btn btn-ghost" href="#download" data-en="All platforms" data-id="Semua platform">All platforms</a>
+<main id="top">
+<section class="hero">
+  <div class="wrap grid">
+    <div>
+      <span class="sticker"><i></i><span data-en="v0.9 · free &amp; open source" data-id="v0.9 · gratis &amp; open source">v0.9 · free &amp; open source</span></span>
+      <h1 id="h1"></h1>
+      <p class="lead" data-en="Your favourite AI agent, a database client, an API client, Docker, notebooks, and a real browser — in one light editor. You stay in charge: every change an agent wants to make waits for your OK." data-id="Agen AI favoritmu, klien database, klien API, Docker, notebook, dan browser sungguhan — dalam satu editor yang ringan. Kamu tetap pegang kendali: setiap perubahan dari agen menunggu persetujuanmu."></p>
+      <div class="cta-row">
+        <a class="btn btn-main" id="ctaMain" href="#download"><svg width="18" height="18" aria-hidden="true"><use href="#i-down"/></svg><span id="ctaLabel">Download</span></a>
+        <a class="btn" href="#tools" data-en="See what's inside" data-id="Lihat isinya">See what's inside</a>
       </div>
-      <p class="cta-note" id="cta-note">macOS · Windows · Linux</p>
+      <p class="cta-note" data-en="macOS · Windows · Linux. No account. Nothing is sent anywhere unless you ask an agent." data-id="macOS · Windows · Linux. Tanpa akun. Tidak ada yang dikirim ke mana pun kecuali kamu meminta agen."></p>
+    </div>
 
-      <div class="shot-hero reveal">
-        <div class="frame">
-          <div class="frame-bar" aria-hidden="true"><i></i><i></i><i></i></div>
-          <img src="img/app-agent.jpg" width="1680" height="1050" alt="Alexel Studio with the Git graph, a JavaScript file and the official Claude Code extension in the right panel" data-en-alt="Alexel Studio with the Git graph, a JavaScript file and the official Claude Code extension in the right panel" data-id-alt="Alexel Studio dengan graph Git, berkas JavaScript, dan ekstensi resmi Claude Code di panel kanan">
+    <div class="stage">
+      <div class="stage-top">
+      <svg class="floe" viewBox="0 0 440 70" aria-hidden="true"><path d="M30 34c20-18 90-22 150-20s140-4 200 8c30 6 40 18 18 26-40 14-140 18-220 16S20 60 14 50c-4-6 4-10 16-16Z" fill="#fff" stroke="#13213d" stroke-width="2.5"/><path d="M60 46c40 6 120 8 180 5" stroke="#c9d9ea" stroke-width="3" fill="none" stroke-linecap="round"/></svg>
+      <div class="nozi-wrap" id="noziWrap" role="button" tabindex="0" aria-label="Nozi">
+        <svg id="nozi" viewBox="0 0 120 140" aria-hidden="true">
+          <g class="body-g">
+            <ellipse cx="45" cy="128" rx="10" ry="5" fill="#ff9a3c"/><ellipse cx="75" cy="128" rx="10" ry="5" fill="#ff9a3c"/>
+            <g class="wing-l"><ellipse cx="22" cy="86" rx="9" ry="24" fill="#22345c" transform="rotate(22 22 86)"/></g>
+            <g class="wing-r"><ellipse cx="98" cy="86" rx="9" ry="24" fill="#22345c" transform="rotate(-22 98 86)"/></g>
+            <ellipse cx="60" cy="78" rx="40" ry="52" fill="#2a4170"/>
+            <ellipse cx="60" cy="90" rx="27" ry="37" fill="#f4f8ff"/>
+            <path d="M60 40C40 40 33 54 36 66c4 10 16 8 24 4 8 4 20 6 24-4 3-12-4-26-24-26Z" fill="#f4f8ff"/>
+            <path class="hat" id="hat" d="M26 44c2-26 66-26 68 0-14-8-54-8-68 0Z" fill="#d97757"/>
+            <rect x="24" y="40" width="72" height="9" rx="4.5" fill="#e9f6ff"/><circle cx="60" cy="17" r="7" fill="#e9f6ff"/>
+            <circle cx="42" cy="66" r="4.5" fill="#ff8fa3" opacity=".6"/><circle cx="78" cy="66" r="4.5" fill="#ff8fa3" opacity=".6"/>
+            <g class="eyes-open"><g id="eyeL"><circle cx="49" cy="56" r="5" fill="#0d1526"/><circle cx="50.8" cy="54.2" r="1.7" fill="#fff"/></g><g id="eyeR"><circle cx="71" cy="56" r="5" fill="#0d1526"/><circle cx="72.8" cy="54.2" r="1.7" fill="#fff"/></g></g>
+            <g class="eyes-happy"><path d="M44 57q5-6 10 0M66 57q5-6 10 0" stroke="#0d1526" stroke-width="2.6" fill="none" stroke-linecap="round"/></g>
+            <g class="eyes-sad"><path d="M44 55q5 4 10 0M66 55q5 4 10 0" stroke="#0d1526" stroke-width="2.6" fill="none" stroke-linecap="round"/></g>
+            <path d="M51 64q9 12 18 0-9-5-18 0Z" fill="#ff9a3c"/>
+            <path d="M53 66q7 4 14 0" stroke="#c96a1c" stroke-width="1.4" stroke-linecap="round" fill="none"/>
+          </g>
+        </svg>
+      </div>
+      <div class="bubble hide" id="bubble" aria-live="polite"></div>
+      </div>
+      <div class="agents" id="agents" role="group" aria-label="Agent"></div>
+      <div class="card diff" id="diff">
+        <div class="diff-head"><span class="agent-dot"></span><span id="diffWho"></span><span class="diff-file" id="diffFile"></span></div>
+        <pre id="diffCode"></pre>
+        <div class="diff-foot">
+          <span class="msg" id="diffMsg"></span>
+          <button class="btn btn-sm" id="btnReject" type="button" data-en="Reject" data-id="Tolak">Reject</button>
+          <button class="btn btn-sm allow" id="btnAllow" type="button" data-en="Allow" data-id="Izinkan">Allow</button>
+          <button class="btn btn-sm" id="btnNext" type="button" hidden data-en="Another one" data-id="Coba lagi">Another one</button>
         </div>
-        <div class="float f1" aria-hidden="true"><span class="dot"></span><span data-en="Change approved" data-id="Perubahan disetujui">Change approved</span> <code>cart.js</code></div>
-        <div class="float f2" aria-hidden="true">↺ <span data-en="Restored to checkpoint" data-id="Dikembalikan ke checkpoint">Restored to checkpoint</span></div>
       </div>
     </div>
-  </section>
+  </div>
+</section>
 
-  <section class="agents">
-    <div class="wrap">
-      <div class="eyebrow" data-en="Bring the agents you already use" data-id="Bawa agen yang sudah kamu pakai">Bring the agents you already use</div>
-      <div class="chips">
-        <span class="chip"><i style="background:#d97757"></i>Claude Code</span>
-        <span class="chip"><i style="background:#10a37f"></i>Codex</span>
-        <span class="chip"><i style="background:#4285f4"></i>Gemini</span>
-        <span class="chip"><i style="background:#8a5cf6"></i>Antigravity</span>
-        <span class="chip"><i style="background:#f5f5f5"></i>Cline</span>
-        <span class="chip"><i style="background:#e0a33a"></i>Roo Code</span>
-        <span class="chip"><i style="background:#f8f676"></i>Kilo Code</span>
-        <span class="chip"><i style="background:#9ca3af"></i>Continue</span>
-        <span class="chip"><i style="background:var(--ice)"></i><span data-en="Any ACP agent" data-id="Agen ACP apa saja">Any ACP agent</span></span>
-      </div>
-    </div>
-  </section>
-
-  <section class="block" id="features">
-    <div class="wrap">
-      <div class="head reveal">
-        <div class="eyebrow" data-en="Why Alexel Studio" data-id="Kenapa Alexel Studio">Why Alexel Studio</div>
-        <h2 data-en-html="AI that asks. <em>An IDE</em> that delivers." data-id-html="AI yang bertanya. <em>IDE</em> yang lengkap.">AI that asks. <em>An IDE</em> that delivers.</h2>
-        <p data-en="Agents are powerful, but you stay in charge. Alexel Studio shows every edit and command first, keeps checkpoints, and gives you the full toolbox of a real editor." data-id="Agen itu kuat, tapi kamu yang pegang kendali. Alexel Studio menampilkan setiap edit dan perintah lebih dulu, menyimpan checkpoint, dan memberimu perkakas editor sungguhan.">Agents are powerful, but you stay in charge. Alexel Studio shows every edit and command first, keeps checkpoints, and gives you the full toolbox of a real editor.</p>
-      </div>
-      <div class="bento">
-        <article class="card wide reveal">
-          <div class="ico"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3 4 6v6c0 4.5 3.4 8.3 8 9 4.6-.7 8-4.5 8-9V6l-8-3Z"/><path d="m9 12 2 2 4-4"/></svg></div>
-          <h3 data-en="Review every change" data-id="Tinjau setiap perubahan">Review every change</h3>
-          <p data-en="Edits arrive as diff cards. Accept or reject per part, approve for the session, or send feedback. Shell commands ask first too." data-id="Edit datang sebagai kartu diff. Terima atau tolak per bagian, izinkan untuk satu sesi, atau kirim masukan. Perintah shell juga bertanya dulu.">Edits arrive as diff cards. Accept or reject per part, approve for the session, or send feedback. Shell commands ask first too.</p>
-          <div class="diffbox" aria-hidden="true">
-            <div>  const sub = subtotal(items);</div>
-            <div class="del">- const tax = Math.round(sub * 0.11);</div>
-            <div class="add">+ const discount = member &amp;&amp; sub &gt; 100_000 ? sub * 0.1 : 0;</div>
-            <div class="add">+ const tax = Math.round((sub - discount) * TAX_RATE);</div>
-            <div class="bar"><span class="ok" data-en="Allow" data-id="Izinkan">Allow</span><span data-en="Allow for session" data-id="Izinkan selama sesi">Allow for session</span><span data-en="Reject" data-id="Tolak">Reject</span></div>
+<section class="night" id="tools">
+  <svg class="wave top" viewBox="0 0 1200 34" preserveAspectRatio="none" aria-hidden="true"><path d="M0 0h1200v12c-60 14-120 14-180 4s-120-10-180 0-120 12-180 2-120-12-180-2-120 12-180 4S60 8 0 18Z" fill="currentColor"/></svg>
+  <div class="wrap">
+    <span class="kicker" data-en="One window" data-id="Satu jendela"></span>
+    <h2 data-en="Stop alt-tabbing between six apps." data-id="Berhenti bolak-balik enam aplikasi."></h2>
+    <p class="sub" data-en="The tools you usually open next to your editor are built in. Click around — these little demos behave like the real thing." data-id="Alat yang biasanya kamu buka di samping editor sudah bawaan. Coba klik — demo kecil ini berperilaku seperti aslinya."></p>
+    <div class="tools">
+      <div class="tool-list" role="tablist" aria-label="Tools" id="toolList"></div>
+      <div class="card demo">
+        <div class="demo-head"><span class="dots"><i></i><i></i><i></i></span><span id="demoTitle"></span></div>
+        <div class="demo-body">
+          <div class="demo-panel on" data-panel="db">
+            <div class="ask"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2l2.4 6.4L21 11l-6.6 2.6L12 20l-2.4-6.4L3 11l6.6-2.6Z"/></svg><span id="askText"></span></div>
+            <pre class="code" id="sqlCode"></pre>
+            <div class="demo-actions"><button class="btn btn-sm btn-main" id="sqlRun" type="button" data-en="▶ Ask &amp; run" data-id="▶ Tanya &amp; jalankan"></button><span class="pill dim" id="sqlMeta">PostgreSQL · shop</span></div>
+            <div id="sqlRes"></div>
           </div>
-        </article>
-        <article class="card wide reveal">
-          <div class="ico"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v5h5"/><path d="M12 7v5l3 2"/></svg></div>
-          <h3 data-en="Time-travel checkpoints" data-id="Checkpoint time-travel">Time-travel checkpoints</h3>
-          <p data-en="Every message is a snapshot of your project. One click restores the files from before it; new files go to the Trash, not into oblivion." data-id="Setiap pesan adalah snapshot project-mu. Sekali klik mengembalikan berkas ke sebelum pesan itu; berkas baru masuk Trash, tidak hilang.">Every message is a snapshot of your project. One click restores the files from before it; new files go to the Trash, not into oblivion.</p>
-          <div class="timeline" aria-hidden="true">
-            <div><b>10:41</b><span data-en="Add member discount to total()" data-id="Tambah diskon member di total()">Add member discount to total()</span></div>
-            <div class="cur"><b>10:44</b><span data-en="Write tests for the cart" data-id="Tulis tes untuk keranjang">Write tests for the cart</span></div>
-            <div><b>10:47</b><span data-en="Restore files to before this message" data-id="Kembalikan berkas ke sebelum pesan ini">Restore files to before this message</span></div>
+          <div class="demo-panel" data-panel="api">
+            <pre class="code"><span class="c">### login</span>
+<span class="k">POST</span> {{host}}/login
+Content-Type: application/json
+
+{ <span class="s">"user"</span>: <span class="s">"nozi"</span> }
+
+<span class="c">###</span>
+<span class="k">GET</span> {{host}}/users
+Authorization: Bearer {{login.response.body.$.token}}</pre>
+            <div class="demo-actions"><button class="btn btn-sm btn-main" id="apiSend" type="button" data-en="▶ Send both" data-id="▶ Kirim keduanya"></button><span class="pill dim">env: dev</span></div>
+            <pre class="code" id="apiRes"></pre>
           </div>
-        </article>
-        <article class="card reveal" id="extensions">
-          <div class="ico"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 4h6v6M10 20H4v-6M20 4l-7 7M4 20l7-7"/></svg></div>
-          <h3 data-en="VS Code extensions, for real" data-id="Ekstensi VS Code, sungguhan">VS Code extensions, for real</h3>
-          <p data-en="Install from Open VSX. The official Claude Code and Codex extensions, Cline, Roo Code, Continue and Kilo get their own panels like in VS Code." data-id="Pasang dari Open VSX. Ekstensi resmi Claude Code dan Codex, Cline, Roo Code, Continue, dan Kilo mendapat panel sendiri seperti di VS Code.">Install from Open VSX. The official Claude Code and Codex extensions, Cline, Roo Code, Continue and Kilo get their own panels like in VS Code.</p>
-          <ul>
-            <li data-en="Themes, icons, snippets, language servers" data-id="Tema, ikon, snippet, server bahasa">Themes, icons, snippets, language servers</li>
-            <li data-en="Code runs only after you trust it" data-id="Kode jalan hanya setelah kamu percayai">Code runs only after you trust it</li>
-          </ul>
-        </article>
-        <article class="card reveal">
-          <div class="ico"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="6" cy="6" r="2.5"/><circle cx="6" cy="18" r="2.5"/><circle cx="18" cy="8" r="2.5"/><path d="M6 8.5v7M18 10.5c0 4-6 3-11 5.5"/></svg></div>
-          <h3 data-en="Git, the whole thing" data-id="Git, lengkap">Git, the whole thing</h3>
-          <p data-en="Stage a single change from the gutter, stash, merge, rebase, cherry-pick, tags, blame and a commit graph." data-id="Stage satu bagian perubahan dari gutter, stash, merge, rebase, cherry-pick, tag, blame, dan graph commit.">Stage a single change from the gutter, stash, merge, rebase, cherry-pick, tags, blame and a commit graph.</p>
-          <ul>
-            <li data-en="AI-written commit messages" data-id="Pesan commit ditulis AI">AI-written commit messages</li>
-            <li data-en="Conflict banner with continue / abort" data-id="Banner konflik dengan lanjut / batal">Conflict banner with continue / abort</li>
-          </ul>
-        </article>
-        <article class="card reveal">
-          <div class="ico"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m8 9-4 3 4 3M16 9l4 3-4 3M13.5 5l-3 14"/></svg></div>
-          <h3 data-en="Everything an editor needs" data-id="Semua yang dibutuhkan editor">Everything an editor needs</h3>
-          <p data-en="Language servers, a DAP debugger, real terminals, Smart Run, Emmet, multi-root workspaces, sticky scroll and pinned tabs." data-id="Server bahasa, debugger DAP, terminal sungguhan, Smart Run, Emmet, workspace multi-root, sticky scroll, dan tab tersemat.">Language servers, a DAP debugger, real terminals, Smart Run, Emmet, multi-root workspaces, sticky scroll and pinned tabs.</p>
-          <ul>
-            <li data-en="Python, JS/TS, Go, Rust, C/C++ and more" data-id="Python, JS/TS, Go, Rust, C/C++, dan lainnya">Python, JS/TS, Go, Rust, C/C++ and more</li>
-            <li data-en="8 designs, light & dark" data-id="8 desain, terang & gelap">8 designs, light & dark</li>
-          </ul>
-        </article>
-        <article class="card wide reveal">
-          <div class="ico"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="10" width="16" height="11" rx="2.5"/><path d="M8 10V7a4 4 0 1 1 8 0v3"/></svg></div>
-          <h3 data-en="Private by design" data-id="Privat sejak awal">Private by design</h3>
-          <p data-en="No account, no telemetry, no proxy. Agents talk straight to their providers with your own subscription, and untrusted folders open in restricted mode." data-id="Tanpa akun, tanpa telemetri, tanpa proxy. Agen terhubung langsung ke penyedianya dengan langgananmu sendiri, dan folder yang belum dipercaya dibuka dalam mode terbatas.">No account, no telemetry, no proxy. Agents talk straight to their providers with your own subscription, and untrusted folders open in restricted mode.</p>
-        </article>
-        <article class="card wide reveal">
-          <div class="ico"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M5.6 18.4l2.1-2.1M16.3 7.7l2.1-2.1"/></svg></div>
-          <h3 data-en="Built for every desk" data-id="Untuk setiap meja kerja">Built for every desk</h3>
-          <p data-en="Native terminals on macOS, Windows (ConPTY) and Linux, shortcuts that follow your OS, updates from inside the app, and English or Indonesian UI." data-id="Terminal native di macOS, Windows (ConPTY), dan Linux, shortcut mengikuti OS-mu, pembaruan dari dalam aplikasi, dan UI Inggris atau Indonesia.">Native terminals on macOS, Windows (ConPTY) and Linux, shortcuts that follow your OS, updates from inside the app, and English or Indonesian UI.</p>
-        </article>
-      </div>
-    </div>
-  </section>
-
-  <section class="block gallery" aria-labelledby="gallery-title">
-    <div class="wrap">
-      <div class="head center reveal">
-        <div class="eyebrow" data-en="The real app" data-id="Aplikasi aslinya">The real app</div>
-        <h2 id="gallery-title" data-en-html="Not a mockup. <em>Screenshots.</em>" data-id-html="Bukan mockup. <em>Screenshot asli.</em>">Not a mockup. <em>Screenshots.</em></h2>
-      </div>
-      <div class="tabs" role="tablist" aria-label="Screenshots">
-        <button type="button" role="tab" aria-selected="true" data-shot="0" data-en="Agents & Git" data-id="Agen & Git">Agents & Git</button>
-        <button type="button" role="tab" aria-selected="false" data-shot="1" data-en="Extensions" data-id="Ekstensi">Extensions</button>
-        <button type="button" role="tab" aria-selected="false" data-shot="2" data-en="Light & terminal" data-id="Terang & terminal">Light & terminal</button>
-      </div>
-      <div class="frame reveal"><div class="frame-bar" aria-hidden="true"><i></i><i></i><i></i></div><img id="shot" src="img/app-agent.jpg" width="1680" height="1050" alt="Agents and Git" loading="lazy"></div>
-      <p class="caption" id="shot-caption"></p>
-    </div>
-  </section>
-
-  <section class="block" aria-labelledby="news-title">
-    <div class="wrap">
-      <div class="head reveal">
-        <div class="eyebrow" data-en-html="New in <span class='ver'>0.8.0</span>" data-id-html="Baru di <span class='ver'>0.8.0</span>">New in 0.8.0</div>
-        <h2 id="news-title" data-en-html="The everyday gaps, <em>closed</em>." data-id-html="Celah harian, <em>ditutup</em>.">The everyday gaps, <em>closed</em>.</h2>
-      </div>
-      <div class="news reveal">
-        <div><b data-en="Official extensions like in VS Code" data-id="Ekstensi resmi seperti di VS Code">Official extensions like in VS Code</b><span data-en="Claude Code, Codex, Cline, Roo Code, Continue and Kilo with their own panels, icons and full theme colors." data-id="Claude Code, Codex, Cline, Roo Code, Continue, dan Kilo dengan panel, ikon, dan warna tema lengkap.">Claude Code, Codex, Cline, Roo Code, Continue and Kilo with their own panels, icons and full theme colors.</span></div>
-        <div><b data-en="Git power tools" data-id="Alat Git lengkap">Git power tools</b><span data-en="Stash, merge, rebase, cherry-pick, tags, blame, per-change staging and a commit graph." data-id="Stash, merge, rebase, cherry-pick, tag, blame, stage per bagian, dan graph commit.">Stash, merge, rebase, cherry-pick, tags, blame, per-change staging and a commit graph.</span></div>
-        <div><b data-en="Editor essentials" data-id="Fitur editor penting">Editor essentials</b><span data-en="Indent guides, bracket colors, Emmet, color picker, sticky scroll, pinned tabs, split terminal, PDF & hex viewers." data-id="Garis indentasi, warna kurung, Emmet, pemilih warna, sticky scroll, tab tersemat, terminal terbelah, penampil PDF & hex.">Indent guides, bracket colors, Emmet, color picker, sticky scroll, pinned tabs, split terminal, PDF & hex viewers.</span></div>
-        <div><b data-en="Smarter extensions" data-id="Ekstensi lebih pintar">Smarter extensions</b><span data-en="CodeLens, inlay hints, ghost-text suggestions, a Tests view, extension tasks and bundled ripgrep." data-id="CodeLens, inlay hints, saran sebaris, panel Tests, task ekstensi, dan ripgrep bawaan.">CodeLens, inlay hints, ghost-text suggestions, a Tests view, extension tasks and bundled ripgrep.</span></div>
-        <div><b data-en="Workspaces & profiles" data-id="Workspace & profil">Workspaces & profiles</b><span data-en="Multi-root .code-workspace files and settings profiles you can export and import." data-id="Berkas .code-workspace multi-root dan profil pengaturan yang bisa diekspor/diimpor.">Multi-root .code-workspace files and settings profiles you can export and import.</span></div>
-        <div><b data-en="Trust & accessibility" data-id="Trust & aksesibilitas">Trust & accessibility</b><span data-en="Restricted mode for untrusted folders, labelled controls and high-contrast support." data-id="Mode terbatas untuk folder yang belum dipercaya, kontrol berlabel, dan dukungan kontras tinggi.">Restricted mode for untrusted folders, labelled controls and high-contrast support.</span></div>
-      </div>
-    </div>
-  </section>
-
-  <section class="block" id="compare" aria-labelledby="compare-title">
-    <div class="wrap">
-      <div class="head reveal">
-        <div class="eyebrow" data-en="Honest comparison" data-id="Perbandingan jujur">Honest comparison</div>
-        <h2 id="compare-title" data-en-html="How it <em>stacks up</em>." data-id-html="Seperti apa <em>posisinya</em>.">How it <em>stacks up</em>.</h2>
-        <p data-en="Alexel Studio is younger than VS Code. Here is where it leads and where it does not yet." data-id="Alexel Studio lebih muda dari VS Code. Ini bagian yang unggul dan yang belum.">Alexel Studio is younger than VS Code. Here is where it leads and where it does not yet.</p>
-      </div>
-      <div class="table-wrap reveal">
-        <table>
-          <thead><tr><th></th><th>Alexel Studio</th><th>VS Code + Copilot</th><th>Cursor</th></tr></thead>
-          <tbody>
-            <tr><td data-en="Price" data-id="Harga">Price</td><td class="us" data-en="Free, MIT" data-id="Gratis, MIT">Free, MIT</td><td data-en="$10–39 / month" data-id="$10–39 / bulan">$10–39 / month</td><td data-en="$20+ / month" data-id="$20+ / bulan">$20+ / month</td></tr>
-            <tr><td data-en="Use your own AI subscription" data-id="Pakai langganan AI sendiri">Use your own AI subscription</td><td class="us y">✓ Claude, ChatGPT, Gemini</td><td class="p" data-en="Partly" data-id="Sebagian">Partly</td><td class="p" data-en="API keys" data-id="API key">API keys</td></tr>
-            <tr><td data-en="Per-change approval & checkpoints" data-id="Persetujuan per bagian & checkpoint">Per-change approval & checkpoints</td><td class="us y">✓</td><td class="p" data-en="Partly" data-id="Sebagian">Partly</td><td class="p" data-en="Partly" data-id="Sebagian">Partly</td></tr>
-            <tr><td data-en="Telemetry" data-id="Telemetri">Telemetry</td><td class="us y" data-en="None" data-id="Tidak ada">None</td><td class="n" data-en="Yes (opt-out)" data-id="Ada (bisa dimatikan)">Yes (opt-out)</td><td class="n" data-en="Yes" data-id="Ada">Yes</td></tr>
-            <tr><td data-en="VS Code extensions" data-id="Ekstensi VS Code">VS Code extensions</td><td class="us p" data-en="Open VSX, growing API" data-id="Open VSX, API terus bertambah">Open VSX, growing API</td><td class="y" data-en="Full" data-id="Lengkap">Full</td><td class="y" data-en="Most" data-id="Hampir semua">Most</td></tr>
-            <tr><td data-en="Remote SSH / containers" data-id="Remote SSH / container">Remote SSH / containers</td><td class="us n" data-en="Not yet" data-id="Belum">Not yet</td><td class="y">✓</td><td class="y">✓</td></tr>
-            <tr><td data-en="Signed installers" data-id="Installer bertanda tangan">Signed installers</td><td class="us n" data-en="Not yet" data-id="Belum">Not yet</td><td class="y">✓</td><td class="y">✓</td></tr>
-          </tbody>
-        </table>
-      </div>
-    </div>
-  </section>
-
-  <section class="block" id="download" aria-labelledby="dl-title">
-    <div class="wrap">
-      <div class="head center reveal">
-        <div class="eyebrow" data-en-html="Version <span class='ver'>0.8.0</span>" data-id-html="Versi <span class='ver'>0.8.0</span>">Version 0.8.0</div>
-        <h2 id="dl-title" data-en-html="Download <em>Alexel Studio</em>" data-id-html="Unduh <em>Alexel Studio</em>">Download <em>Alexel Studio</em></h2>
-        <p data-en="Free for every platform. Downloads come straight from GitHub Releases." data-id="Gratis untuk semua platform. Unduhan langsung dari GitHub Releases.">Free for every platform. Downloads come straight from GitHub Releases.</p>
-      </div>
-      <div class="dl-grid">
-        <div class="os reveal" data-os="mac">
-          <span class="tag" hidden data-en="Your system" data-id="Sistemmu">Your system</span>
-          <svg class="logo" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M16.4 12.6c0-2.4 2-3.5 2-3.6-1.1-1.6-2.8-1.8-3.4-1.8-1.4-.2-2.8.8-3.5.8-.7 0-1.8-.8-3-.8-1.5 0-3 .9-3.8 2.3-1.6 2.8-.4 7 1.2 9.3.8 1.1 1.7 2.4 2.9 2.3 1.2 0 1.6-.7 3-.7s1.8.7 3 .7c1.3 0 2.1-1.1 2.8-2.3.9-1.3 1.3-2.6 1.3-2.7 0 0-2.5-1-2.5-3.5ZM14.1 5.6c.6-.8 1.1-1.8 1-2.9-.9 0-2.1.6-2.7 1.4-.6.7-1.1 1.8-1 2.8 1 .1 2.1-.5 2.7-1.3Z"/></svg>
-          <h3>macOS</h3>
-          <p class="req" data-en="macOS 12 or later" data-id="macOS 12 atau lebih baru">macOS 12 or later</p>
-          <div class="files">
-            <a class="file" data-file="Alexel-Studio-mac-arm64.dmg"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M12 4v12m0 0-5-5m5 5 5-5M5 20h14"/></svg><span>Apple Silicon</span><span class="x">.dmg</span></a>
-            <a class="file" data-file="Alexel-Studio-mac-x64.dmg"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M12 4v12m0 0-5-5m5 5 5-5M5 20h14"/></svg><span>Intel</span><span class="x">.dmg</span></a>
+          <div class="demo-panel" data-panel="docker" id="dockerPanel"></div>
+          <div class="demo-panel" data-panel="nb">
+            <pre class="code"><span class="k">import</span> matplotlib.pyplot <span class="k">as</span> plt
+sales = {<span class="s">"Mon"</span>: <span class="n">12</span>, <span class="s">"Tue"</span>: <span class="n">19</span>, <span class="s">"Wed"</span>: <span class="n">9</span>, <span class="s">"Thu"</span>: <span class="n">24</span>, <span class="s">"Fri"</span>: <span class="n">31</span>}
+plt.<span class="f">bar</span>(sales.keys(), sales.values())</pre>
+            <div class="demo-actions"><button class="btn btn-sm btn-main" id="nbRun" type="button" data-en="▶ Run cell" data-id="▶ Jalankan sel"></button><span class="pill dim" id="nbCount">[ ]</span></div>
+            <div class="chart" id="chart" role="img" aria-label="Bar chart"></div>
           </div>
-        </div>
-        <div class="os reveal" data-os="win">
-          <span class="tag" hidden data-en="Your system" data-id="Sistemmu">Your system</span>
-          <svg class="logo" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M3 5.5 10.4 4.5v7H3v-6Zm8.4-1.1L21 3v8.5h-9.6V4.4ZM3 12.5h7.4v7l-7.4-1v-6Zm8.4 0H21V21l-9.6-1.3v-7.2Z"/></svg>
-          <h3>Windows</h3>
-          <p class="req" data-en="Windows 10 or 11" data-id="Windows 10 atau 11">Windows 10 or 11</p>
-          <div class="files">
-            <a class="file" data-file="Alexel-Studio-win-x64.exe"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M12 4v12m0 0-5-5m5 5 5-5M5 20h14"/></svg><span>Installer · x64</span><span class="x">.exe</span></a>
-            <a class="file" data-file="Alexel-Studio-win-arm64.exe"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M12 4v12m0 0-5-5m5 5 5-5M5 20h14"/></svg><span>Installer · ARM64</span><span class="x">.exe</span></a>
+          <div class="demo-panel" data-panel="browser">
+            <div class="devices" id="devices"></div>
+            <div class="frame-stage"><div class="frame" id="frame"><div class="url">localhost:5173</div><div class="page"><h4>Kedai Kopi Nozi</h4><div></div><div></div><div></div><div></div><div></div><div></div></div></div></div>
           </div>
-        </div>
-        <div class="os reveal" data-os="linux">
-          <span class="tag" hidden data-en="Your system" data-id="Sistemmu">Your system</span>
-          <svg class="logo" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2c-2.2 0-3.6 1.9-3.6 4.7 0 1.3-.4 2.3-1.2 3.6C6 12 4.8 14 5 16.2c.1 1 .6 1.6 1.3 2-.3.6-.4 1.4.2 2 .8.8 2.4.4 3.6.9.9.4 1.4.9 2.3.9s1.5-.6 2.3-.9c1.2-.5 2.8-.1 3.6-.9.6-.6.5-1.4.2-2 .7-.4 1.2-1 1.3-2 .2-2.2-1-4.2-2.2-5.9-.8-1.3-1.2-2.3-1.2-3.6C15.6 3.9 14.2 2 12 2Z"/></svg>
-          <h3>Linux</h3>
-          <p class="req" data-en="64-bit, glibc 2.31 or later" data-id="64-bit, glibc 2.31 atau lebih baru">64-bit, glibc 2.31 or later</p>
-          <div class="files">
-            <a class="file" data-file="Alexel-Studio-linux-amd64.deb"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M12 4v12m0 0-5-5m5 5 5-5M5 20h14"/></svg><span>Debian, Ubuntu</span><span class="x">.deb</span></a>
-            <a class="file" data-file="Alexel-Studio-linux-x86_64.rpm"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M12 4v12m0 0-5-5m5 5 5-5M5 20h14"/></svg><span>Fedora, openSUSE</span><span class="x">.rpm</span></a>
-            <a class="file" data-file="Alexel-Studio-linux-x86_64.AppImage"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M12 4v12m0 0-5-5m5 5 5-5M5 20h14"/></svg><span data-en="Any distro" data-id="Distro apa saja">Any distro</span><span class="x">.AppImage</span></a>
-            <div class="copy"><code>sudo apt install ./Alexel-Studio-linux-amd64.deb</code><button type="button" id="copy-deb" data-en="Copy" data-id="Salin">Copy</button></div>
+          <div class="demo-panel" data-panel="ssh">
+            <div class="term" id="term"></div>
+            <div class="demo-actions"><button class="btn btn-sm btn-main" id="sshGo" type="button" data-en="▶ Connect" data-id="▶ Sambungkan"></button></div>
           </div>
         </div>
       </div>
-      <div class="notes">
-        <div class="reveal"><strong data-en="First launch on macOS" data-id="Pertama kali di macOS">First launch on macOS</strong><span data-en="Builds are not notarized yet. Right-click the app in Applications and choose Open." data-id="Build belum dinotarisasi. Klik kanan aplikasinya di Applications lalu pilih Open.">Builds are not notarized yet. Right-click the app in Applications and choose Open.</span></div>
-        <div class="reveal"><strong data-en="First launch on Windows" data-id="Pertama kali di Windows">First launch on Windows</strong><span data-en="SmartScreen may warn about an unknown publisher. Choose More info, then Run anyway." data-id="SmartScreen bisa memperingatkan penerbit tidak dikenal. Pilih More info, lalu Run anyway.">SmartScreen may warn about an unknown publisher. Choose More info, then Run anyway.</span></div>
-        <div class="reveal"><strong data-en="Updates & checksums" data-id="Pembaruan & checksum">Updates & checksums</strong><span data-en="Installed apps update from inside Alexel Studio. Every release lists SHA-256 checksums." data-id="Aplikasi yang terpasang diperbarui dari dalam Alexel Studio. Setiap rilis mencantumkan checksum SHA-256.">Installed apps update from inside Alexel Studio. Every release lists SHA-256 checksums.</span> <a id="releases-link" href="https://github.com/Nozella-Alexiee/alexel-studio/releases" style="color:var(--ice)" data-en="All releases →" data-id="Semua rilis →">All releases →</a></div>
+    </div>
+  </div>
+  <svg class="wave bot" viewBox="0 0 1200 34" preserveAspectRatio="none" aria-hidden="true"><path d="M0 0h1200v12c-60 14-120 14-180 4s-120-10-180 0-120 12-180 2-120-12-180-2-120 12-180 4S60 8 0 18Z" fill="currentColor"/></svg>
+</section>
+
+<section id="real">
+  <div class="wrap">
+    <span class="kicker" data-en="Not a mockup" data-id="Bukan mockup"></span>
+    <h2 data-en="This is the actual app." data-id="Ini aplikasinya beneran."></h2>
+    <p class="sub" data-en="Screenshots straight from Alexel Studio 0.9, connected to a real PostgreSQL, a real HTTP server, and a real Python kernel." data-id="Screenshot langsung dari Alexel Studio 0.9, tersambung ke PostgreSQL, server HTTP, dan kernel Python sungguhan."></p>
+    <div class="chips" id="shotTabs" role="group" aria-label="Screenshots"></div>
+    <div class="card shot-frame"><img id="shotImg" src="img/db.jpg" alt="" width="1600" height="1000" loading="lazy"><div class="shot-cap"><b id="shotTitle"></b><span id="shotDesc"></span></div></div>
+  </div>
+</section>
+
+<section id="designs" style="padding-top:20px">
+  <div class="wrap">
+    <span class="kicker" data-en="Eight designs" data-id="Delapan desain"></span>
+    <h2 data-en="Not just a theme. A different editor." data-id="Bukan cuma tema. Editor yang berbeda."></h2>
+    <p class="sub" data-en="Each design changes the layout, not only the colours. Pick one and this page borrows its accent." data-id="Setiap desain mengubah tata letak, bukan hanya warna. Pilih satu, halaman ini ikut meminjam warnanya."></p>
+    <div class="chips" id="designTabs" role="group" aria-label="Designs"></div>
+    <div class="card shot-frame"><img id="designImg" src="img/designs/antartika.jpg" alt="" width="1600" height="1000" loading="lazy"><div class="shot-cap"><b id="designName"></b><span id="designDesc"></span></div></div>
+  </div>
+</section>
+
+<section id="honest">
+  <div class="wrap">
+    <span class="kicker" data-en="Honest comparison" data-id="Perbandingan jujur"></span>
+    <h2 data-en="Where we're ahead, and where VS Code still wins." data-id="Di mana kami unggul, dan di mana VS Code masih menang."></h2>
+    <div class="honest">
+      <div class="card"><h3><svg width="22" height="22" style="color:var(--ok)" aria-hidden="true"><use href="#i-check"/></svg><span data-en="Built in here, extensions there" data-id="Bawaan di sini, ekstensi di sana"></span></h3><ul id="aheadList"></ul></div>
+      <div class="card meh"><h3><svg width="22" height="22" style="color:var(--beak2)" aria-hidden="true"><use href="#i-dot"/></svg><span data-en="VS Code is still better at" data-id="VS Code masih lebih baik di"></span></h3><ul id="behindList"></ul></div>
+    </div>
+  </div>
+</section>
+
+<section id="download">
+  <div class="wrap">
+    <span class="kicker" data-en="Download" data-id="Unduh"></span>
+    <h2 data-en="Grab it. It's free." data-id="Ambil. Gratis."></h2>
+    <p class="sub" id="dlSub"></p>
+    <div class="dl">
+      <div class="card os" data-os="mac"><svg class="peek" aria-hidden="true"><use href="#nozi-mini"/></svg><span class="mine-tag" data-en="Yours" data-id="Punyamu"></span>
+        <h3>macOS</h3><p data-en="macOS 12 or newer" data-id="macOS 12 atau lebih baru"></p>
+        <div class="files"><a class="file" data-file="Alexel-Studio-mac-arm64.dmg"><svg width="16" height="16" aria-hidden="true"><use href="#i-down"/></svg>Apple Silicon<span class="x">.dmg</span></a><a class="file" data-file="Alexel-Studio-mac-x64.dmg"><svg width="16" height="16" aria-hidden="true"><use href="#i-down"/></svg>Intel<span class="x">.dmg</span></a></div>
+      </div>
+      <div class="card os" data-os="win"><svg class="peek" aria-hidden="true"><use href="#nozi-mini"/></svg><span class="mine-tag" data-en="Yours" data-id="Punyamu"></span>
+        <h3>Windows</h3><p data-en="Windows 10 or 11" data-id="Windows 10 atau 11"></p>
+        <div class="files"><a class="file" data-file="Alexel-Studio-win-x64.exe"><svg width="16" height="16" aria-hidden="true"><use href="#i-down"/></svg>Installer · x64<span class="x">.exe</span></a><a class="file" data-file="Alexel-Studio-win-arm64.exe"><svg width="16" height="16" aria-hidden="true"><use href="#i-down"/></svg>Installer · ARM64<span class="x">.exe</span></a></div>
+      </div>
+      <div class="card os" data-os="linux"><svg class="peek" aria-hidden="true"><use href="#nozi-mini"/></svg><span class="mine-tag" data-en="Yours" data-id="Punyamu"></span>
+        <h3>Linux</h3><p data-en="x64 · deb or AppImage" data-id="x64 · deb atau AppImage"></p>
+        <div class="files"><a class="file" data-file="Alexel-Studio-linux-amd64.deb"><svg width="16" height="16" aria-hidden="true"><use href="#i-down"/></svg>Debian, Ubuntu<span class="x">.deb</span></a><a class="file" data-file="Alexel-Studio-linux-x86_64.AppImage"><svg width="16" height="16" aria-hidden="true"><use href="#i-down"/></svg><span data-en="Any distro" data-id="Distro apa saja"></span><span class="x">.AppImage</span></a></div>
+        <div class="copy"><code>sudo apt install ./Alexel-Studio-linux-amd64.deb</code><button type="button" id="copyDeb" data-en="Copy" data-id="Salin"></button></div>
       </div>
     </div>
-  </section>
+    <p class="dl-note"><span data-en="Installed apps update themselves from inside Alexel Studio. Every release lists SHA-256 checksums." data-id="Aplikasi yang terpasang memperbarui diri dari dalam Alexel Studio. Setiap rilis mencantumkan checksum SHA-256."></span> <a href="https://github.com/Nozella-Alexiee/alexel-studio/releases" data-en="All releases →" data-id="Semua rilis →"></a></p>
+  </div>
+</section>
 
-  <section class="block" id="faq" aria-labelledby="faq-title">
-    <div class="wrap">
-      <div class="head center reveal"><h2 id="faq-title" data-en-html="Questions, <em>answered</em>." data-id-html="Pertanyaan, <em>terjawab</em>.">Questions, <em>answered</em>.</h2></div>
-      <div class="faq">
-        <details><summary data-en="Is it really free?" data-id="Benar-benar gratis?">Is it really free?</summary><p data-en="Yes. Alexel Studio is open source under the MIT license. No account, no paid tier, no telemetry." data-id="Ya. Alexel Studio open source dengan lisensi MIT. Tanpa akun, tanpa versi berbayar, tanpa telemetri.">Yes. Alexel Studio is open source under the MIT license. No account, no paid tier, no telemetry.</p></details>
-        <details><summary data-en="Do I need an AI subscription?" data-id="Perlu langganan AI?">Do I need an AI subscription?</summary><p data-en="Only for the agent you want to use. Each agent signs in with its own account: Claude Pro or Max for Claude Code, ChatGPT or an OpenAI key for Codex, a Google account for Gemini. Cline, Roo Code, Continue and Kilo work with your own API keys." data-id="Hanya untuk agen yang ingin kamu pakai. Tiap agen masuk dengan akunnya sendiri: Claude Pro atau Max untuk Claude Code, ChatGPT atau OpenAI key untuk Codex, akun Google untuk Gemini. Cline, Roo Code, Continue, dan Kilo memakai API key milikmu.">Only for the agent you want to use.</p></details>
-        <details><summary data-en="Can an agent change files without asking?" data-id="Apakah agen bisa mengubah berkas tanpa bertanya?">Can an agent change files without asking?</summary><p data-en="Not in the default mode. In Ask first, every edit and shell command waits for your approval, and every message has a checkpoint you can restore." data-id="Tidak di mode bawaan. Di mode Tanya dulu, setiap edit dan perintah shell menunggu persetujuanmu, dan setiap pesan punya checkpoint yang bisa dikembalikan.">Not in the default mode.</p></details>
-        <details><summary data-en="Do VS Code extensions work?" data-id="Apakah ekstensi VS Code bisa dipakai?">Do VS Code extensions work?</summary><p data-en="Many do. Themes, icon themes, snippets and grammars from Open VSX work right away. Extensions with code, such as Prettier, YAML, Todo Tree, Claude Code, Codex, Cline, Roo Code and Continue, run in a separate extension host after you trust them. It is not a full VS Code, so some extensions only partly work." data-id="Banyak yang bisa. Tema, tema ikon, snippet, dan grammar dari Open VSX langsung dipakai. Ekstensi berkode seperti Prettier, YAML, Todo Tree, Claude Code, Codex, Cline, Roo Code, dan Continue berjalan di extension host terpisah setelah kamu percayai. Ini bukan VS Code penuh, jadi sebagian ekstensi hanya jalan sebagian.">Many do.</p></details>
-        <details><summary data-en="What do I need to run it?" data-id="Apa yang dibutuhkan untuk menjalankannya?">What do I need to run it?</summary><p data-en="macOS 12 or later (Apple Silicon or Intel), Windows 10 or 11 (x64 or ARM64), or 64-bit Linux with glibc 2.31 or later, and about 500 MB of disk space." data-id="macOS 12 atau lebih baru (Apple Silicon atau Intel), Windows 10 atau 11 (x64 atau ARM64), atau Linux 64-bit dengan glibc 2.31 atau lebih baru, dan sekitar 500 MB ruang disk.">macOS 12 or later.</p></details>
-      </div>
-    </div>
-  </section>
+<section id="faq" style="padding-top:20px">
+  <div class="wrap">
+    <span class="kicker">FAQ</span>
+    <h2 data-en="Questions Nozi gets a lot." data-id="Pertanyaan yang sering Nozi terima."></h2>
+    <div class="faq" id="faqList"></div>
+  </div>
+</section>
 
-  <section class="final">
-    <div class="wrap reveal">
-      <img class="penguin" src="img/icon.png" width="84" height="84" alt="">
-      <h2 data-en-html="Your editor. <em>Your agents.</em>" data-id-html="Editormu. <em>Agenmu.</em>">Your editor. <em>Your agents.</em></h2>
-      <div class="cta"><a class="btn btn-primary" href="#download" data-en="Download for free" data-id="Unduh gratis">Download for free</a><a class="btn btn-ghost" id="gh-cta" href="https://github.com/Nozella-Alexiee/alexel-studio" data-en="Star on GitHub" data-id="Beri bintang di GitHub">Star on GitHub</a></div>
-    </div>
-  </section>
+<section style="padding-top:0">
+  <div class="wrap"><div class="card big-cta"><h2 data-en="Ready when you are." data-id="Siap kapan pun kamu siap."></h2><a class="btn" href="#download"><svg width="18" height="18" aria-hidden="true"><use href="#i-down"/></svg><span data-en="Download Alexel Studio" data-id="Unduh Alexel Studio"></span></a></div></div>
+</section>
 </main>
 
 <footer>
-  <div class="wrap foot">
-    <span>© Alexel Studio contributors · MIT</span>
-    <nav aria-label="Footer">
-      <a id="f-gh" href="https://github.com/Nozella-Alexiee/alexel-studio">GitHub</a>
-      <a id="f-rel" href="https://github.com/Nozella-Alexiee/alexel-studio/releases" data-en="Releases" data-id="Rilis">Releases</a>
-      <a id="f-sec" href="https://github.com/Nozella-Alexiee/alexel-studio/blob/main/SECURITY.md" data-en="Security" data-id="Keamanan">Security</a>
-      <a href="#faq">FAQ</a>
-    </nav>
+  <div class="wrap">
+    <div class="row">
+      <a class="logo" href="#top"><svg aria-hidden="true"><use href="#nozi-mini"/></svg>alexel studio</a>
+      <div class="links">
+        <a href="https://github.com/Nozella-Alexiee/alexel-studio">GitHub</a>
+        <a href="https://github.com/Nozella-Alexiee/alexel-studio/releases" data-en="Releases" data-id="Rilis"></a>
+        <a href="https://github.com/Nozella-Alexiee/alexel-studio/blob/main/SECURITY.md" data-en="Security" data-id="Keamanan"></a>
+      </div>
+    </div>
+    <small data-en="Made in Indonesia. Agent names belong to their owners; Alexel Studio is an independent project that runs their official tools." data-id="Dibuat di Indonesia. Nama agen milik pemiliknya masing-masing; Alexel Studio adalah proyek independen yang menjalankan alat resminya."></small>
   </div>
 </footer>
 
 <script>
 (() => {
   const REPO = "https://github.com/Nozella-Alexiee/alexel-studio";
-  const VERSION = "0.8.0";
-  const html = document.documentElement;
-  html.classList.add("js");
-  const store = {
-    get(k) { try { return localStorage.getItem(k); } catch { return null; } },
-    set(k, v) { try { localStorage.setItem(k, v); } catch {} },
-  };
+  const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const $ = (s, r = document) => r.querySelector(s);
+  const $$ = (s, r = document) => [...r.querySelectorAll(s)];
+  let lang = "en";
+  try { lang = localStorage.getItem("alexel.lang") || ""; } catch {}
+  if (lang !== "en" && lang !== "id") lang = (navigator.language || "").toLowerCase().startsWith("id") ? "id" : "en";
+  const T = (en, id) => (lang === "id" ? id : en);
+  const esc = (s) => s.replace(/[&<>]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" })[c]);
+  const wait = (ms) => new Promise((r) => setTimeout(r, reduce ? 0 : ms));
 
-  // ---------- OS & arsitektur ----------
-  const ua = navigator.userAgent;
-  const plat = navigator.userAgentData?.platform || navigator.platform || "";
-  const os = /Mac/i.test(plat) || /Mac OS X/.test(ua) ? "mac" : /Win/i.test(plat) || /Windows/.test(ua) ? "win" : /Linux|X11/i.test(plat + ua) && !/Android/i.test(ua) ? "linux" : null;
-  let arm = /arm|aarch64/i.test(ua);
-  if (os === "mac") {
-    // Peramban tidak memberi arsitektur Mac; GPU Apple menandakan Apple Silicon.
-    try {
-      const gl = document.createElement("canvas").getContext("webgl");
-      const ext = gl && gl.getExtension("WEBGL_debug_renderer_info");
-      const r = gl ? gl.getParameter(ext ? ext.UNMASKED_RENDERER_WEBGL : gl.RENDERER) : "";
-      arm = !/Intel/i.test(String(r || ""));
-    } catch { arm = true; }
+  /* bahasa: data-en / data-id, plus bagian dinamis yang dirender ulang */
+  const rerender = [];
+  const SQUIG = '<svg viewBox="0 0 100 12" preserveAspectRatio="none" aria-hidden="true"><path d="M2 8c10-6 18 4 28-1s18-5 28 0 18 4 28-1 10-3 12-2"/></svg>';
+  function applyLang() {
+    document.documentElement.lang = lang;
+    for (const el of $$("[data-en]")) el.textContent = el.dataset[lang] ?? el.dataset.en;
+    $("#h1").innerHTML = T(`The code editor that works <span class="squig">with${SQUIG}</span> you.`, `Editor kode yang ngoding <span class="squig">bareng${SQUIG}</span> kamu.`);
+    for (const b of $$(".lang button")) b.setAttribute("aria-pressed", String(b.dataset.lang === lang));
+    $("#noziWrap").setAttribute("aria-label", T("Nozi the penguin — press to say hi", "Nozi si pinguin — tekan untuk menyapa"));
+    rerender.forEach((f) => f());
   }
-  const FILES = { mac: arm ? "Alexel-Studio-mac-arm64.dmg" : "Alexel-Studio-mac-x64.dmg", win: arm ? "Alexel-Studio-win-arm64.exe" : "Alexel-Studio-win-x64.exe", linux: "Alexel-Studio-linux-x86_64.AppImage" };
-  const NAME = { mac: "macOS", win: "Windows", linux: "Linux" };
-  const url = (f) => `${REPO}/releases/latest/download/${f}`;
+  $$(".lang button").forEach((b) => b.addEventListener("click", () => { lang = b.dataset.lang; try { localStorage.setItem("alexel.lang", lang); } catch {} applyLang(); }));
 
-  let lang = store.get("as.lang") || (/^id\b/i.test(navigator.language) ? "id" : "en");
+  const nav = $("#nav");
+  addEventListener("scroll", () => nav.classList.toggle("scrolled", scrollY > 10), { passive: true });
 
-  const SHOTS = [
-    { src: "img/app-agent.jpg", en: "Git graph, a JavaScript file and the official Claude Code extension in its own panel.", id: "Graph Git, berkas JavaScript, dan ekstensi resmi Claude Code di panelnya sendiri." },
-    { src: "img/app-extensions.jpg", en: "The extension marketplace with AI agents, and the official Codex extension on the right.", id: "Marketplace ekstensi dengan agen AI, dan ekstensi resmi Codex di kanan." },
-    { src: "img/app-light.jpg", en: "Studio Light with blame on the current line and tests running in the terminal.", id: "Studio Light dengan blame di baris aktif dan tes berjalan di terminal." },
-  ];
-  let shot = 0;
-
-  function paint() {
-    html.lang = lang;
-    document.querySelectorAll("[data-en]").forEach((el) => (el.textContent = (lang === "id" ? el.dataset.id : el.dataset.en) ?? el.dataset.en));
-    document.querySelectorAll("[data-en-html]").forEach((el) => (el.innerHTML = lang === "id" ? el.dataset.idHtml : el.dataset.enHtml));
-    document.querySelectorAll("[data-en-alt]").forEach((el) => (el.alt = lang === "id" ? el.dataset.idAlt : el.dataset.enAlt));
-    document.querySelectorAll(".ver").forEach((el) => (el.textContent = VERSION));
-    document.querySelectorAll("[data-lang]").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.lang === lang)));
-    const label = document.getElementById("cta-label");
-    const note = document.getElementById("cta-note");
-    const main = document.getElementById("cta-main");
-    if (os) {
-      label.textContent = lang === "id" ? `Unduh untuk ${NAME[os]}` : `Download for ${NAME[os]}`;
-      main.href = url(FILES[os]);
-      const arch = os === "mac" ? (arm ? "Apple Silicon" : "Intel") : os === "win" ? (arm ? "ARM64" : "x64") : "AppImage";
-      note.textContent = `${arch} · v${VERSION} · ${lang === "id" ? "juga untuk" : "also for"} ${Object.keys(NAME).filter((k) => k !== os).map((k) => NAME[k]).join(" & ")}`;
-    } else {
-      label.textContent = lang === "id" ? "Unduh" : "Download";
-      note.textContent = `v${VERSION} · macOS · Windows · Linux`;
+  /* salju */
+  const cv = $("#snow"), cx = cv.getContext("2d");
+  let flakes = [], W = 0, H = 0, running = !reduce && !document.hidden;
+  const dpr = Math.min(2, devicePixelRatio || 1);
+  // Ukuran dari clientWidth (bukan innerWidth): kanvas tidak boleh ikut melebarkan halaman di ponsel.
+  const size = () => { W = cv.width = document.documentElement.clientWidth * dpr; H = cv.height = innerHeight * dpr; };
+  size(); addEventListener("resize", size);
+  for (let i = 0; i < Math.min(70, Math.round(innerWidth / 18)); i++) flakes.push({ x: Math.random(), y: Math.random(), r: 1 + Math.random() * 2.6, s: 0.15 + Math.random() * 0.5, w: Math.random() * 6.28 });
+  function snow() {
+    if (!running) return;
+    cx.clearRect(0, 0, W, H);
+    for (const f of flakes) {
+      f.y += f.s / 600; f.w += 0.01;
+      if (f.y > 1.02) { if (f.tmp) { f.dead = 1; continue; } f.y = -0.02; f.x = Math.random(); }
+      cx.fillStyle = f.tmp ? f.c : "rgba(108,150,200,.35)";
+      cx.beginPath(); cx.arc((f.x + Math.sin(f.w) * 0.01) * W, f.y * H, f.r * dpr, 0, 6.28); cx.fill();
+      if (f.tmp) f.s += 0.06;
     }
-    document.getElementById("shot-caption").textContent = SHOTS[shot][lang];
+    flakes = flakes.filter((f) => !f.dead);
+    requestAnimationFrame(snow);
+  }
+  document.addEventListener("visibilitychange", () => { const was = running; running = !reduce && !document.hidden; if (running && !was) snow(); });
+  if (running) snow();
+
+  /* Nozi */
+  const nozi = $("#nozi"), wrap = $("#noziWrap"), bubble = $("#bubble"), eyes = [$("#eyeL"), $("#eyeR")];
+  let moodT = 0, bubbleT = 0;
+  function say(en, id, ms = 3400) { bubble.textContent = T(en, id); bubble.classList.remove("hide"); clearTimeout(bubbleT); bubbleT = setTimeout(() => bubble.classList.add("hide"), ms); }
+  function setMood(m, ms = 1800) { nozi.classList.remove("happy", "sad"); if (m) nozi.classList.add(m); clearTimeout(moodT); moodT = setTimeout(() => nozi.classList.remove("happy", "sad"), ms); }
+  function jump() { if (reduce) return; nozi.classList.remove("jump"); void nozi.getBoundingClientRect(); nozi.classList.add("jump"); }
+  addEventListener("pointermove", (e) => {
+    if (reduce) return;
+    const r = wrap.getBoundingClientRect(), ex = r.left + r.width / 2, ey = r.top + r.height * 0.4;
+    const a = Math.atan2(e.clientY - ey, e.clientX - ex), d = Math.min(1, Math.hypot(e.clientX - ex, e.clientY - ey) / 280);
+    const t = `translate(${(Math.cos(a) * 1.8 * d).toFixed(2)}px,${(Math.sin(a) * 1.6 * d).toFixed(2)}px)`;
+    eyes.forEach((g) => (g.style.transform = t));
+  }, { passive: true });
+  if (!reduce) (function blink() { setTimeout(() => { nozi.classList.add("blink"); setTimeout(() => nozi.classList.remove("blink"), 130); blink(); }, 2400 + Math.random() * 3000); })();
+  const LINES = [
+    ["I review diffs so you don't merge chaos.", "Aku bantu cek diff biar kamu nggak merge kekacauan."],
+    ["Cold outside, warm cache inside.", "Di luar dingin, di dalam cache-nya hangat."],
+    ["Psst — the demos below are clickable.", "Psst — demo di bawah bisa diklik."],
+    ["Your passwords stay encrypted. Promise.", "Password-mu tetap terenkripsi. Janji."],
+    ["I don't quack. I compile.", "Aku nggak kwek-kwek. Aku compile."],
+  ];
+  let li = 0;
+  const poke = () => { jump(); setMood("happy", 1200); say(...LINES[li++ % LINES.length]); };
+  wrap.addEventListener("click", poke);
+  wrap.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); poke(); } });
+  setTimeout(() => { nozi.classList.add("wave"); say("Hi, I'm Nozi! Pick an agent, then review its change.", "Halo, aku Nozi! Pilih agen, lalu tinjau perubahannya.", 5200); }, 700);
+
+  /* agen & diff */
+  const AGENTS = [["Claude Code", "#d97757"], ["Codex", "#10a37f"], ["Gemini CLI", "#4f8cf7"], ["Cline", "#6cc4ff"], ["Roo Code", "#b07cf5"], ["Continue", "#f0b020"]];
+  let agent = 0;
+  const hat = $("#hat"), agentsEl = $("#agents"), diff = $("#diff");
+  AGENTS.forEach(([name, color], i) => {
+    const b = document.createElement("button"); b.type = "button"; b.innerHTML = `<i style="background:${color}"></i>${name}`; b.setAttribute("aria-pressed", String(i === 0));
+    b.addEventListener("click", () => {
+      agent = i; $$("button", agentsEl).forEach((x, j) => x.setAttribute("aria-pressed", String(j === i)));
+      hat.setAttribute("fill", color); diff.style.setProperty("--hat", color); jump(); renderDiff();
+      say(`New beanie! ${name} it is.`, `Kupluk baru! Pakai ${name}.`, 2200);
+    });
+    agentsEl.append(b);
+  });
+  const SCEN = [
+    { file: "src/cart.js", en: "Fix: discount was applied after tax", id: "Perbaikan: diskon dihitung setelah pajak", ok: ["Applied. 14 tests pass.", "Diterapkan. 14 test lulus."],
+      lines: [["c", "export function total(items, { member }) {"], ["c", "  const sub = subtotal(items);"], ["d", "  const tax = Math.round(sub * TAX_RATE);"], ["d", "  return sub + tax - discount(sub, member);"], ["a", "  const taxable = sub - discount(sub, member);"], ["a", "  return taxable + Math.round(taxable * TAX_RATE);"], ["c", "}"]] },
+    { file: "tests/cart.test.js", en: "Add a test for members", id: "Tambah test untuk member", ok: ["Applied. The new test is green.", "Diterapkan. Test baru hijau."],
+      lines: [["c", 'describe("total", () => {'], ["a", '  it("gives members 10% off", () => {'], ["a", "    expect(total([kopi], { member: true }).sub).toBe(25200);"], ["a", "  });"], ["c", "});"]] },
+    { file: "src/menu.js", en: "Rename a helper for clarity", id: "Ganti nama fungsi biar jelas", ok: ["Applied in 2 places.", "Diterapkan di 2 tempat."],
+      lines: [["d", "export const fp = (n) => format(n);"], ["a", "export const formatPrice = (n) => format(n);"], ["c", ""], ["d", "menu.map((m) => fp(m.price));"], ["a", "menu.map((m) => formatPrice(m.price));"]] },
+  ];
+  let scen = 0, decided = null;
+  function renderDiff() {
+    const s = SCEN[scen];
+    diff.classList.toggle("applied", decided === "applied"); diff.classList.toggle("rejected", decided === "rejected");
+    $("#diffWho").innerHTML = T(`<b>${AGENTS[agent][0]}</b> wants to edit`, `<b>${AGENTS[agent][0]}</b> mau mengubah`);
+    $("#diffFile").textContent = s.file;
+    $("#diffCode").innerHTML = s.lines.map(([k, t]) => `<span class="ln ${k === "a" ? "add" : k === "d" ? "del" : "ctx"}">${esc(t) || " "}</span>`).join("");
+    $("#diffMsg").innerHTML = decided === "applied" ? `<svg width="16" height="16" style="color:var(--ok)" aria-hidden="true"><use href="#i-check"/></svg>${T(...s.ok)}` : decided === "rejected" ? T("Rejected. Nothing changed.", "Ditolak. Tidak ada yang berubah.") : T(s.en, s.id);
+    $("#btnAllow").hidden = $("#btnReject").hidden = !!decided; $("#btnNext").hidden = !decided;
+  }
+  $("#btnAllow").addEventListener("click", () => { decided = "applied"; renderDiff(); jump(); setMood("happy", 2400); say("Nice! There's a checkpoint, so you can undo anytime.", "Mantap! Ada checkpoint, jadi bisa dibatalkan kapan saja."); burst(); $("#btnNext").focus(); });
+  $("#btnReject").addEventListener("click", () => { decided = "rejected"; renderDiff(); setMood("sad", 2000); say("Fair. Your code, your call.", "Oke. Kodemu, keputusanmu."); $("#btnNext").focus(); });
+  $("#btnNext").addEventListener("click", () => { decided = null; scen = (scen + 1) % SCEN.length; renderDiff(); $("#btnAllow").focus(); });
+  rerender.push(renderDiff);
+  function burst() {
+    if (!running) return;
+    const r = diff.getBoundingClientRect();
+    const cols = ["#ff9a3c", "#6cc4ff", "#1f9d6b", "#ff8fa3"];
+    for (let i = 0; i < 26; i++) flakes.push({ x: (r.left + r.width * Math.random()) / innerWidth, y: r.top / innerHeight, r: 2 + Math.random() * 3, s: -2.4 - Math.random() * 3, w: Math.random() * 6, tmp: 1, c: cols[i % 4] });
   }
 
-  // Tautan unduhan & tanda "Sistemmu"
-  document.querySelectorAll(".file[data-file]").forEach((a) => (a.href = url(a.dataset.file)));
-  if (os) {
-    const card = document.querySelector(`.os[data-os="${os}"]`);
-    card?.classList.add("mine");
-    card?.querySelector(".tag")?.removeAttribute("hidden");
-  }
-  document.querySelectorAll("[data-lang]").forEach((b) => b.addEventListener("click", () => { lang = b.dataset.lang; store.set("as.lang", lang); paint(); }));
+  /* demo alat */
+  const TOOLS = [
+    { id: "db", title: "queries.sql", icon: '<ellipse cx="12" cy="6" rx="8" ry="3"/><path d="M4 6v12c0 1.7 3.6 3 8 3s8-1.3 8-3V6M4 12c0 1.7 3.6 3 8 3s8-1.3 8-3"/>', en: ["Database", "Postgres, MySQL, SQLite, Mongo, Redis — plus “ask your data”."], idn: ["Database", "Postgres, MySQL, SQLite, Mongo, Redis — plus “tanya data”."] },
+    { id: "api", title: "api.http", icon: '<path d="M4 12h14m-5-5 5 5-5 5"/>', en: ["HTTP client", ".http files, environments, secrets, cURL import."], idn: ["Klien HTTP", "Berkas .http, environment, rahasia, impor cURL."] },
+    { id: "docker", title: "Docker", icon: '<path d="M3 13h18l-1 3a7 7 0 0 1-7 5H9a6 6 0 0 1-6-6v-2ZM6 9h3v3H6zm4 0h3v3h-3zm4 0h3v3h-3zm-4-4h3v3h-3z"/>', en: ["Docker & .env", "Containers, compose, logs, and a safe .env editor."], idn: ["Docker & .env", "Container, compose, log, dan editor .env yang aman."] },
+    { id: "nb", title: "analysis.ipynb", icon: '<path d="M5 4h11l3 3v13H5zM9 16v-3m3 3V10m3 6v-5"/>', en: ["Notebooks", "Jupyter .ipynb with a real kernel."], idn: ["Notebook", "Jupyter .ipynb dengan kernel sungguhan."] },
+    { id: "browser", title: "localhost:5173", icon: '<circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c3 3.5 3 14.5 0 18M12 3c-3 3.5-3 14.5 0 18"/>', en: ["Browser tab", "Your dev server, phone sizes, DevTools."], idn: ["Tab browser", "Dev server-mu, ukuran ponsel, DevTools."] },
+    { id: "ssh", title: "ssh deploy@kedai", icon: '<rect x="3" y="4" width="18" height="16" rx="2"/><path d="m7 9 3 3-3 3m5 0h5"/>', en: ["Remote SSH", "Browse & edit server files with your own ssh keys."], idn: ["Remote SSH", "Jelajah & edit berkas server dengan kunci ssh-mu."] },
+  ];
+  const list = $("#toolList");
+  TOOLS.forEach((t, i) => {
+    const b = document.createElement("button"); b.type = "button"; b.className = "tool-btn"; b.setAttribute("role", "tab"); b.setAttribute("aria-selected", String(i === 0));
+    b.innerHTML = `<span class="ic"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${t.icon}</svg></span><span><b></b><small></small></span>`;
+    b.addEventListener("click", () => { $$(".tool-btn").forEach((x) => x.setAttribute("aria-selected", String(x === b))); $$(".demo-panel").forEach((p) => p.classList.toggle("on", p.dataset.panel === t.id)); $("#demoTitle").textContent = t.title; });
+    list.append(b);
+  });
+  $("#demoTitle").textContent = TOOLS[0].title;
+  rerender.push(() => $$(".tool-btn").forEach((b, i) => { const [n, d] = TOOLS[i][lang === "id" ? "idn" : "en"]; $("b", b).textContent = n; $("small", b).textContent = d; }));
 
-  // Galeri
-  const img = document.getElementById("shot");
-  document.querySelectorAll("[data-shot]").forEach((b) => b.addEventListener("click", () => {
-    shot = Number(b.dataset.shot);
-    document.querySelectorAll("[data-shot]").forEach((x) => x.setAttribute("aria-selected", String(x === b)));
-    img.src = SHOTS[shot].src;
-    img.alt = SHOTS[shot][lang];
-    paint();
-  }));
-
-  // Salin perintah apt
-  document.getElementById("copy-deb")?.addEventListener("click", async (e) => {
-    try { await navigator.clipboard.writeText("sudo apt install ./Alexel-Studio-linux-amd64.deb"); e.target.textContent = lang === "id" ? "Tersalin" : "Copied"; } catch {}
+  // database: AI menulis query, kamu yang menjalankan
+  const SQL = `<span class="k">SELECT</span> c.name, <span class="f">SUM</span>(oi.qty * p.price) <span class="k">AS</span> total
+<span class="k">FROM</span> customers c
+<span class="k">JOIN</span> orders o <span class="k">ON</span> o.customer_id = c.id
+<span class="k">JOIN</span> order_items oi <span class="k">ON</span> oi.order_id = o.id
+<span class="k">JOIN</span> products p <span class="k">ON</span> p.id = oi.product_id
+<span class="k">GROUP BY</span> c.name <span class="k">ORDER BY</span> total <span class="k">DESC LIMIT</span> <span class="n">3</span>;`;
+  let busy = false;
+  async function typeInto(el, text, speed) { el.textContent = ""; if (reduce) { el.textContent = text; return; } for (let i = 1; i <= text.length; i++) { el.textContent = text.slice(0, i); await new Promise((r) => setTimeout(r, speed)); } }
+  const askQ = () => T("Top 3 customers by total spend", "3 pelanggan dengan belanja terbanyak");
+  const sqlIdle = () => { $("#askText").textContent = askQ(); if (!$("#sqlRes").innerHTML) $("#sqlCode").innerHTML = `<span class="c">-- ${T("press the button: the AI writes the query, then it runs", "tekan tombolnya: AI menulis query, lalu dijalankan")}</span>`; };
+  rerender.push(sqlIdle);
+  $("#sqlRun").addEventListener("click", async () => {
+    if (busy) return; busy = true;
+    $("#sqlRes").innerHTML = ""; $("#sqlMeta").textContent = T("AI writing the query…", "AI menulis query…");
+    await typeInto($("#askText"), askQ(), 26);
+    await typeInto($("#sqlCode"), SQL.replace(/<[^>]+>/g, ""), 7);
+    $("#sqlCode").innerHTML = SQL;
+    $("#sqlMeta").textContent = `3 ${T("rows", "baris")} · 18 ms`;
+    const rows = [["Nozi Pinguin", "103,000"], ["Pingu", "64,000"], ["Kawan Es", "50,000"]];
+    $("#sqlRes").innerHTML = `<table class="res"><tr><th>name</th><th>total</th></tr>${rows.map((r, i) => `<tr style="animation-delay:${i * 90}ms"><td>${r[0]}</td><td class="num">${r[1]}</td></tr>`).join("")}</table>`;
+    busy = false;
   });
 
-  // Navigasi dengan garis saat digulir
-  const nav = document.getElementById("nav");
-  const onScroll = () => nav.classList.toggle("scrolled", scrollY > 8);
-  addEventListener("scroll", onScroll, { passive: true });
-  onScroll();
+  // API
+  const apiIdle = () => { if (!$("#apiRes").dataset.done) $("#apiRes").innerHTML = `<span class="c">// ${T("the response shows up here", "responsnya muncul di sini")}</span>`; };
+  rerender.push(apiIdle);
+  $("#apiSend").addEventListener("click", async () => {
+    const out = $("#apiRes"); out.dataset.done = "1";
+    out.innerHTML = '<span class="c">POST /login …</span>';
+    await wait(450);
+    out.innerHTML = `<span class="pill ok">200 OK</span>  <span class="c">12 ms · ${T("token saved as {{login…}}", "token disimpan sebagai {{login…}}")}</span>\n<span class="c">GET /users …</span>`;
+    await wait(550);
+    out.innerHTML = '<span class="pill ok">200 OK</span>  <span class="c">9 ms · 77 B</span>\n[\n  { <span class="s">"id"</span>: <span class="n">1</span>, <span class="s">"name"</span>: <span class="s">"Nozi"</span>, <span class="s">"role"</span>: <span class="s">"admin"</span> },\n  { <span class="s">"id"</span>: <span class="n">2</span>, <span class="s">"name"</span>: <span class="s">"Pingu"</span>, <span class="s">"role"</span>: <span class="s">"user"</span> }\n]';
+  });
 
-  // Animasi muncul
-  const io = "IntersectionObserver" in window ? new IntersectionObserver((es) => es.forEach((e) => e.isIntersecting && (e.target.classList.add("in"), io.unobserve(e.target))), { rootMargin: "0px 0px -8% 0px" }) : null;
-  document.querySelectorAll(".reveal").forEach((el) => (io ? io.observe(el) : el.classList.add("in")));
+  // Docker
+  const CTS = [{ n: "db", img: "postgres:16-alpine", port: "5432→5432", up: true, db: 1 }, { n: "cache", img: "redis:7-alpine", port: "6379→6379", up: true, db: 1 }, { n: "web", img: "kedai-kopi:dev", port: "3000→3000", up: false }];
+  let dlog = "";
+  function renderDocker() {
+    $("#dockerPanel").innerHTML = `<div style="display:flex;gap:8px;align-items:center;margin-bottom:12px"><span class="pill dim">docker-compose.yml</span><span style="color:#8da2c6;font-size:13px">kedai-kopi</span></div>` +
+      CTS.map((c, i) => `<div class="ct ${c.up ? "up" : ""}"><span class="d"></span><span><b>${c.n}</b><small>${c.img}</small></span><span class="port">${c.port}</span><span style="display:flex;gap:6px">${c.db && c.up ? `<button class="toggle" type="button" data-db="${i}">${T("Open in DB", "Buka di DB")}</button>` : ""}<button class="toggle" type="button" data-i="${i}">${c.up ? T("Stop", "Hentikan") : T("Start", "Jalankan")}</button></span></div>`).join("") +
+      `<div class="logline">${dlog}</div>`;
+    $$("[data-i]", $("#dockerPanel")).forEach((b) => b.addEventListener("click", () => { const c = CTS[+b.dataset.i]; c.up = !c.up; dlog = `$ docker ${c.up ? "start" : "stop"} ${c.n}  ✓`; renderDocker(); }));
+    $$("[data-db]", $("#dockerPanel")).forEach((b) => b.addEventListener("click", () => { dlog = T(`✓ ${CTS[+b.dataset.db].n} added to Database — password read from the container, stored encrypted.`, `✓ ${CTS[+b.dataset.db].n} masuk ke Database — password dibaca dari container, disimpan terenkripsi.`); renderDocker(); }));
+  }
+  rerender.push(renderDocker);
 
-  paint();
+  // notebook
+  const chart = $("#chart"), SALES = [["Mon", 12], ["Tue", 19], ["Wed", 9], ["Thu", 24], ["Fri", 31]];
+  chart.innerHTML = SALES.map(([d]) => `<div><span>${d}</span></div>`).join("");
+  let runs = 0;
+  $("#nbRun").addEventListener("click", async () => {
+    $("#nbCount").textContent = "[*]"; $$("div", chart).forEach((b) => (b.style.height = "0"));
+    await wait(500);
+    $("#nbCount").textContent = `[${++runs}]`;
+    $$("div", chart).forEach((b, i) => setTimeout(() => (b.style.height = (SALES[i][1] / 31) * 100 + "%"), reduce ? 0 : i * 80));
+  });
+
+  // browser
+  [["Responsive", "100%"], ["iPhone 15", "190px"], ["iPad", "380px"]].forEach(([n, w], i) => {
+    const b = document.createElement("button"); b.type = "button"; b.className = "toggle"; b.textContent = n; b.setAttribute("aria-pressed", String(i === 0));
+    b.addEventListener("click", () => { $("#frame").style.width = w; $$("#devices .toggle").forEach((x) => x.setAttribute("aria-pressed", String(x === b))); });
+    $("#devices").append(b);
+  });
+
+  // ssh
+  const term = $("#term");
+  const termIdle = () => { if (!term.dataset.done) term.innerHTML = `<span class="c"># ${T("uses your ~/.ssh/config, agent and keys", "memakai ~/.ssh/config, agent, dan kunci milikmu")}</span>`; };
+  rerender.push(termIdle);
+  $("#sshGo").addEventListener("click", async () => {
+    if (term.dataset.busy) return; term.dataset.busy = "1"; term.dataset.done = "1"; term.innerHTML = "";
+    const STEPS = [["p", "$ "], ["", "ssh deploy@kedai.example\n", 1], ["h", "✓ connected · Linux · /home/deploy\n"], ["p", "$ "], ["", "ls app/\n", 1], ["", "main.py  requirements.txt  static/  templates/\n"], ["h", T("✓ main.py opened in the editor — saving uploads it back.\n", "✓ main.py terbuka di editor — simpan = unggah ke server.\n")]];
+    for (const [k, t, typed] of STEPS) {
+      const s = document.createElement("span"); if (k) s.className = k; term.append(s);
+      if (!typed || reduce) { s.textContent = t; await wait(250); continue; }
+      for (const ch of t) { s.textContent += ch; await wait(22); }
+    }
+    delete term.dataset.busy;
+  });
+
+  /* screenshot */
+  function swap(img, src) { if (img.getAttribute("src") === src) return; img.classList.add("swap"); const n = new Image(); n.onload = () => { img.src = src; img.classList.remove("swap"); }; n.src = src; }
+  const SHOTS = [
+    { img: "img/db.jpg", en: ["Database", "A .sql file run with Mod+Enter against PostgreSQL; results in the bottom panel."], id: ["Database", "Berkas .sql dijalankan dengan Mod+Enter ke PostgreSQL; hasil di panel bawah."] },
+    { img: "img/er.jpg", en: ["ER diagram", "Drawn from real foreign keys. Save it as SVG."], id: ["Diagram ER", "Digambar dari foreign key sungguhan. Simpan sebagai SVG."] },
+    { img: "img/api.jpg", en: ["HTTP client", "Send right from an .http file; the response opens on the side."], id: ["Klien HTTP", "Kirim langsung dari berkas .http; respons terbuka di samping."] },
+    { img: "img/nb.jpg", en: ["Notebook", "Python kernel, outputs, plots, and errors — saved as a normal .ipynb."], id: ["Notebook", "Kernel Python, output, grafik, dan error — disimpan sebagai .ipynb biasa."] },
+  ];
+  let shot = 0;
+  function renderShots() {
+    const tabs = $("#shotTabs"); tabs.innerHTML = "";
+    SHOTS.forEach((s, i) => { const b = document.createElement("button"); b.type = "button"; b.className = "chip"; b.textContent = s[lang][0]; b.setAttribute("aria-pressed", String(i === shot)); b.addEventListener("click", () => { shot = i; swap($("#shotImg"), s.img); renderShots(); }); tabs.append(b); });
+    const [t, d] = SHOTS[shot][lang]; $("#shotTitle").textContent = t; $("#shotDesc").textContent = d; $("#shotImg").alt = `${t}: ${d}`;
+  }
+  rerender.push(renderShots);
+
+  /* desain: halaman meminjam aksen desain yang dipilih */
+  const DESIGNS = [
+    ["antartika", "Antartika", "#6cc4ff", "#0b1220", ["Dark ice blue with Nozi in a beanie and beak-orange accents.", "Gelap biru es dengan Nozi berkupluk dan aksen oranye paruh."]],
+    ["studio", "Studio", "#3794ff", "#1f1f1f", ["The familiar VS Code layout with the agent panel on the right.", "Tata letak VS Code yang familiar, panel agen di kanan."]],
+    ["studio-light", "Studio Light", "#4d9be6", "#ffffff", ["The same layout, clean and light.", "Tata letak yang sama, bersih dan terang."]],
+    ["aurora", "Aurora Glass", "#7aa2f7", "#0e1016", ["macOS-style glass sidebar, palette in the title bar.", "Sidebar kaca ala macOS, palette di title bar."]],
+    ["zen", "Zen Paper", "#e8916f", "#faf9f5", ["Warm, one focused column, omnibar at the bottom.", "Hangat, satu kolom fokus, omnibar di bawah."]],
+    ["control", "Control Room", "#8be9fd", "#07090d", ["Dense IDE: run toolbar, split editors, Git staging.", "IDE padat: toolbar run, split editor, staging Git."]],
+    ["tuxedo", "Tuxedo", "#ffd23f", "#0a0a0a", ["High-contrast black and white, Nozi in a bow tie.", "Hitam-putih kontras tinggi, Nozi berdasi kupu-kupu."]],
+    ["kawanan", "Kawanan", "#ff9a3c", "#f3f8fc", ["Snow-bright and round, with a whole flock of Nozis.", "Terang seperti salju dan bulat, dengan sekawanan Nozi."]],
+  ];
+  let design = 0;
+  function renderDesigns() {
+    const tabs = $("#designTabs"); tabs.innerHTML = "";
+    DESIGNS.forEach(([id, name, acc, bg], i) => { const b = document.createElement("button"); b.type = "button"; b.className = "chip"; b.innerHTML = `<i style="background:linear-gradient(135deg,${bg} 50%,${acc} 50%)"></i>${name}`; b.setAttribute("aria-pressed", String(i === design)); b.addEventListener("click", () => { design = i; swap($("#designImg"), `img/designs/${id}.jpg`); document.documentElement.style.setProperty("--accent", acc); renderDesigns(); }); tabs.append(b); });
+    const d = DESIGNS[design]; $("#designName").textContent = d[1]; $("#designDesc").textContent = T(...d[4]); $("#designImg").alt = `${d[1]} — ${T(...d[4])}`;
+  }
+  rerender.push(renderDesigns);
+
+  /* perbandingan jujur */
+  const AHEAD = [
+    ["AI agents (Claude Code, Codex, Gemini, …) with per-change review, checkpoints, and undo.", "Agen AI (Claude Code, Codex, Gemini, …) dengan tinjauan per perubahan, checkpoint, dan undo."],
+    ["A database client for 5 engines, “ask your data” with AI, and ER diagrams — no extension.", "Klien database 5 engine, “tanya data” dengan AI, dan diagram ER — tanpa ekstensi."],
+    ["An HTTP client with .http files and encrypted secrets.", "Klien HTTP dengan berkas .http dan rahasia terenkripsi."],
+    ["A Docker panel, and a .env editor that warns before secrets reach git.", "Panel Docker, dan editor .env yang memperingatkan sebelum rahasia masuk git."],
+    ["An isolated browser tab with device presets and DevTools.", "Tab browser terisolasi dengan preset perangkat dan DevTools."],
+    ["Eight complete designs, and a UI in Indonesian and English.", "Delapan desain lengkap, dan UI berbahasa Indonesia dan Inggris."],
+  ];
+  const BEHIND = [
+    ["The extension catalog: we use Open VSX, so some Microsoft-only extensions aren't available.", "Katalog ekstensi: kami memakai Open VSX, jadi sebagian ekstensi khusus Microsoft tidak tersedia."],
+    ["Remote development: our Remote SSH edits files and opens terminals, but language servers still run locally.", "Remote development: Remote SSH kami mengedit berkas dan membuka terminal, tapi language server tetap berjalan lokal."],
+    ["Live Share and Dev Containers aren't here yet.", "Live Share dan Dev Containers belum ada."],
+    ["Years of polish and a far bigger community.", "Bertahun-tahun pemolesan dan komunitas yang jauh lebih besar."],
+  ];
+  const li2 = (x, icon, color) => `<li><svg width="18" height="18" style="color:${color}" aria-hidden="true"><use href="#${icon}"/></svg><span>${T(...x)}</span></li>`;
+  rerender.push(() => { $("#aheadList").innerHTML = AHEAD.map((x) => li2(x, "i-check", "var(--ok)")).join(""); $("#behindList").innerHTML = BEHIND.map((x) => li2(x, "i-dot", "var(--beak2)")).join(""); });
+
+  /* FAQ */
+  const FAQ = [
+    [["Is it really free?", "Yes. Open source, no account, no paid tier. AI agents use your own subscription or API key with their provider."], ["Beneran gratis?", "Ya. Open source, tanpa akun, tanpa versi berbayar. Agen AI memakai langganan atau API key-mu sendiri di penyedianya."]],
+    [["Where do my database passwords go?", "They're encrypted with your OS keychain (Keychain, DPAPI, libsecret) and never shown in the UI or sent to an agent. Agents only see table and column names, and only when you ask."], ["Password database-ku disimpan di mana?", "Dienkripsi dengan keychain OS-mu (Keychain, DPAPI, libsecret) dan tidak pernah ditampilkan di UI atau dikirim ke agen. Agen hanya melihat nama tabel dan kolom, itu pun hanya saat kamu minta."]],
+    [["Which AI agents work?", "Claude Code, Codex, Gemini CLI, Antigravity, any ACP agent, plus the official VS Code extensions of Cline, Roo Code, Continue, Kilo, and more."], ["Agen AI apa saja yang bisa?", "Claude Code, Codex, Gemini CLI, Antigravity, agen ACP mana pun, plus ekstensi VS Code resmi Cline, Roo Code, Continue, Kilo, dan lainnya."]],
+    [["Do VS Code extensions work?", "Many do — themes, language packs, tree views, webviews, tests, and debuggers run in the extension host. Ones that depend on Microsoft-only APIs may not."], ["Apakah ekstensi VS Code jalan?", "Banyak yang jalan — tema, paket bahasa, tree view, webview, test, dan debugger berjalan di extension host. Yang butuh API khusus Microsoft mungkin tidak."]],
+    [["Do I need Jupyter or Docker installed?", "Only for those features. Without them the rest works; notebooks still open and edit, and Alexel tells you how to install what's missing."], ["Perlu pasang Jupyter atau Docker?", "Hanya untuk fitur itu. Tanpanya fitur lain tetap jalan; notebook tetap bisa dibuka dan diedit, dan Alexel memberi tahu cara memasang yang kurang."]],
+    [["Does it work offline?", "Yes. Everything except AI agents and the extension catalog runs locally."], ["Bisa offline?", "Bisa. Semua fitur kecuali agen AI dan katalog ekstensi berjalan lokal."]],
+  ];
+  rerender.push(() => { const open = $$("#faqList details").map((d) => d.open); $("#faqList").innerHTML = FAQ.map((f, i) => { const [q, a] = T(f[0], f[1]); return `<details${open[i] ? " open" : ""}><summary>${q}</summary><p>${a}</p></details>`; }).join(""); });
+
+  /* unduh: tebak OS, tandai kartunya */
+  const ua = navigator.userAgent, plat = (navigator.userAgentData?.platform || navigator.platform || "").toLowerCase();
+  const os = /iphone|ipad|android/i.test(ua) ? null : /mac/.test(plat) || /Mac OS X/.test(ua) ? "mac" : /win/.test(plat) || /Windows/.test(ua) ? "win" : /linux|x11/.test(plat) || /Linux/.test(ua) ? "linux" : null;
+  // Safari tidak memberi arsitektur; hampir semua Mac baru Apple Silicon.
+  let arm = /arm|aarch64/i.test(ua) || (os === "mac" && !navigator.userAgentData);
+  const url = (f) => `${REPO}/releases/latest/download/${f}`;
+  $$(".file").forEach((a) => (a.href = url(a.dataset.file)));
+  const pick = () => (os === "mac" ? (arm ? "Alexel-Studio-mac-arm64.dmg" : "Alexel-Studio-mac-x64.dmg") : os === "win" ? (arm ? "Alexel-Studio-win-arm64.exe" : "Alexel-Studio-win-x64.exe") : os === "linux" ? "Alexel-Studio-linux-x86_64.AppImage" : null);
+  const setCta = () => { if (pick()) $("#ctaMain").href = url(pick()); };
+  setCta();
+  navigator.userAgentData?.getHighEntropyValues?.(["architecture"]).then((v) => { arm = v.architecture === "arm"; setCta(); }).catch(() => {});
+  if (os) $(`.os[data-os="${os}"]`).classList.add("mine");
+  const osName = { mac: "macOS", win: "Windows", linux: "Linux" }[os];
+  rerender.push(() => {
+    $("#ctaLabel").textContent = os ? T(`Download for ${osName}`, `Unduh untuk ${osName}`) : T("Download", "Unduh");
+    $("#dlSub").textContent = os ? T(`Nozi guessed ${osName} — that card is marked below.`, `Nozi menebak ${osName} — kartunya ditandai di bawah.`) : T("Pick your system below.", "Pilih sistemmu di bawah.");
+  });
+  $("#copyDeb").addEventListener("click", async (e) => { try { await navigator.clipboard.writeText("sudo apt install ./Alexel-Studio-linux-amd64.deb"); e.target.textContent = T("Copied", "Tersalin"); setTimeout(() => (e.target.textContent = T("Copy", "Salin")), 1500); } catch {} });
+
+  applyLang();
 })();
 </script>
 </body>

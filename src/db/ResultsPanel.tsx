@@ -13,7 +13,7 @@ export function ResultSummary({ e }: { e: ResultEntry }) {
   if (e.running) return <span className="hint">{tl("Menjalankan…")}</span>;
   if (e.error) return <span className="tone-danger-fg db-err">{e.error}</span>;
   if (!r) return null;
-  const parts = [r.columns.length ? tl("{n} baris", { n: r.rows.length.toLocaleString() }) + (r.truncated ? ` (${tl("dipotong")})` : "") : null, r.affected !== undefined && r.affected !== null ? tl("{n} terpengaruh", { n: r.affected }) : null, r.message && !r.columns.length ? r.message : null, `${r.ms} ms`];
+  const parts = [r.columns.length ? tl("{n} baris hasil", { n: r.rows.length.toLocaleString() }) + (r.truncated ? ` (${tl("dipotong")})` : "") : null, r.affected !== undefined && r.affected !== null ? tl("{n} terpengaruh", { n: r.affected }) : null, r.message && !r.columns.length ? r.message : null, `${r.ms} ms`];
   return <span className="hint">{parts.filter(Boolean).join(" · ")}</span>;
 }
 

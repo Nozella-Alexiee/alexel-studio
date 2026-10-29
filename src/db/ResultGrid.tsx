@@ -27,7 +27,7 @@ export const showCell = (v: unknown) => (v === null || v === undefined ? "NULL" 
 
 function widths(columns: GridProps["columns"], rows: unknown[][]) {
   return columns.map((c, i) => {
-    let n = c.name.length + 3;
+    let n = c.name.length + (c.type ? c.type.length * 0.8 + 2 : 0) + 3;
     for (const r of rows.slice(0, 80)) n = Math.max(n, Math.min(48, showCell(r[i]).length));
     return Math.max(70, Math.min(380, n * 7.4 + 18));
   });

@@ -1640,4 +1640,6 @@ export const EN: Record<string, string> = {
   "Berkas lebih dari 20 MB.": "The file is larger than 20 MB.",
   "Server SSH tidak merespons (batas waktu).": "The SSH server did not respond (timeout).",
   "Menolak menghapus folder tingkat atas.": "Refusing to delete a top-level folder.",
+  "Terminal sungguhan ({shell}) di folder project.": "A real terminal ({shell}) in the project folder.",
+  "{n} baris hasil": "{n} row|{n} rows",
 };
