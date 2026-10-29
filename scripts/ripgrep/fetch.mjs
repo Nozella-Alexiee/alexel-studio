@@ -34,8 +34,19 @@ for (const key of keys) {
   try {
     const archive = path.join(tmp, t.asset);
     fs.writeFileSync(archive, buf);
-    // tar (bsdtar di macOS/Windows, GNU tar di Linux) membuka .tar.gz; bsdtar di Windows juga membuka .zip.
-    execFileSync("tar", ["-xf", archive, "-C", tmp], { stdio: "inherit" });
+    if (t.asset.endsWith(".zip")) {
+      // .zip dibuka di Node: `tar` di Windows bisa milik Git Bash, yang membaca "C:" sebagai nama host.
+      const { unzipSync } = await import("fflate");
+      for (const [name, data] of Object.entries(unzipSync(new Uint8Array(buf)))) {
+        if (name.endsWith("/") || name.split("/").includes("..")) continue;
+        const dest = path.join(tmp, ...name.split("/"));
+        fs.mkdirSync(path.dirname(dest), { recursive: true });
+        fs.writeFileSync(dest, data);
+      }
+    } else {
+      // .tar.gz hanya untuk macOS/Linux (bsdtar / GNU tar).
+      execFileSync("tar", ["-xzf", archive, "-C", tmp], { stdio: "inherit" });
+    }
     const dir = fs.readdirSync(tmp).find((n) => n.startsWith("ripgrep-") && fs.statSync(path.join(tmp, n)).isDirectory());
     if (!dir) throw new Error("Isi arsip ripgrep tidak dikenal");
     fs.rmSync(out, { recursive: true, force: true });
