@@ -12,6 +12,7 @@ import * as agents from "./agents";
 import * as CP from "./checkpoints";
 import * as DB from "./db";
 import * as HTTP from "./http";
+import * as DK from "./docker";
 import { detect as dbDetect, detectFull as dbDetectFull } from "./db/detect";
 import * as dap from "./dap";
 import { checkUpdate, repoSlug } from "./update";
@@ -29,7 +30,7 @@ import * as S from "./search";
 import * as store from "./store";
 import { discoverProjects } from "./projects";
 import * as sys from "./system";
-import type { Ctx } from "./util";
+import { gitEnv, runCapture, type Ctx } from "./util";
 import * as watcher from "./watcher";
 
 type A = Record<string, any>; // eslint-disable-line @typescript-eslint/no-explicit-any
@@ -210,6 +211,19 @@ export function buildCommands(ctx: Ctx, hooks: { confirmClose: (win: BrowserWind
       const existing = DB.listConnections(ctx).find((c) => c.kind === d.kind && (c.url ?? c.file) === (d.url ?? d.file));
       if (existing) return existing;
       return DB.saveConnection(ctx, { kind: d.kind, name: d.name, url: d.url, file: d.file, password: d.password, env: "dev" });
+    },
+
+    // Docker & .env
+    docker_info: () => DK.dockerInfo(),
+    docker_containers: () => DK.listContainers(),
+    docker_images: () => DK.listImages(),
+    docker_stats: () => DK.containerStats(),
+    docker_action: (a) => DK.containerAction(String(a.id), a.action),
+    docker_rmi: (a) => DK.removeImage(String(a.id)),
+    docker_db_connect: (a) => DK.connectContainerDb(ctx, String(a.id)),
+    env_git_ignored: async (a) => {
+      const r = await runCapture("git", ["check-ignore", "-q", "--", String(a.file)], { cwd: String(a.root), timeoutMs: 8000, env: gitEnv() }).catch(() => null);
+      return r?.code === 0 ? true : r?.code === 1 ? false : null;
     },
 
     // HTTP / API client

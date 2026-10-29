@@ -1,4 +1,4 @@
-import { AlertTriangle, ChevronRight, Database, Send, Columns2, Code2, Eye, Pin, Play, Puzzle, Settings as Cog, Sparkle, X } from "lucide-react";
+import { AlertTriangle, ChevronRight, Database, KeyRound, Send, Columns2, Code2, Eye, Pin, Play, Puzzle, Settings as Cog, Sparkle, X } from "lucide-react";
 import React, { Suspense, lazy, useEffect, useRef, useState } from "react";
 import * as A from "../app/actions";
 import { runActiveFile } from "../app/run";
@@ -21,6 +21,8 @@ const PdfViewer = lazy(() => import("./BinaryViews").then((m) => ({ default: m.P
 const HexViewer = lazy(() => import("./BinaryViews").then((m) => ({ default: m.HexViewer })));
 const DbTab = lazy(() => import("../db/DbTab"));
 const HttpTab = lazy(() => import("../http/HttpTab"));
+const EnvTab = lazy(() => import("../env/EnvTab"));
+const EnvBar = lazy(() => import("../env/EnvBar").then((m) => ({ default: m.EnvBar })));
 const HttpBar = lazy(() => import("../http/HttpBar").then((m) => ({ default: m.HttpBar })));
 const SqlBar = lazy(() => import("../db/SqlBar").then((m) => ({ default: m.SqlBar })));
 const WelcomePage = lazy(() => import("../panels/Dashboard").then((m) => ({ default: m.Welcome })));
@@ -81,7 +83,7 @@ function TabItem({ tab, group, active, drop }: { tab: Tab; group: number; active
       onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && A.activateTab(tab.id, group)}
       onContextMenu={onMenu}
     >
-      {tab.kind === "settings" ? <Cog size={14} aria-hidden /> : tab.kind === "webview" ? <WebviewTabIcon tabId={tab.id} /> : tab.kind === "extension" ? <Puzzle size={14} aria-hidden /> : tab.kind === "welcome" ? <Sparkle size={14} aria-hidden /> : tab.kind === "db" ? <Database size={14} aria-hidden /> : tab.kind === "http" ? <Send size={14} aria-hidden /> : <FileIcon filename={tab.name} size={14} />}
+      {tab.kind === "settings" ? <Cog size={14} aria-hidden /> : tab.kind === "webview" ? <WebviewTabIcon tabId={tab.id} /> : tab.kind === "extension" ? <Puzzle size={14} aria-hidden /> : tab.kind === "welcome" ? <Sparkle size={14} aria-hidden /> : tab.kind === "db" ? <Database size={14} aria-hidden /> : tab.kind === "http" ? <Send size={14} aria-hidden /> : tab.kind === "env" ? <KeyRound size={14} aria-hidden /> : <FileIcon filename={tab.name} size={14} />}
       <span className="tab-name">{tab.name}</span>
       {tab.pinned ? (
         <button
@@ -358,6 +360,16 @@ export function EditorBody({ group, breadcrumb = true }: { group: number; breadc
       </div>
     );
   }
+  if (tab.kind === "env") {
+    return (
+      <div className="editor-body" {...drop.props}>
+        <Suspense fallback={null}>
+          <EnvTab tabId={tab.id} />
+        </Suspense>
+        {drop.overlay}
+      </div>
+    );
+  }
   if (tab.kind === "http") {
     return (
       <div className="editor-body" {...drop.props}>
@@ -426,6 +438,11 @@ export function EditorBody({ group, breadcrumb = true }: { group: number; breadc
       {isQueryFile(tab.id) && (
         <Suspense fallback={null}>
           <SqlBar path={tab.id} group={group} />
+        </Suspense>
+      )}
+      {/(^|[\\/])\.env(\.[\w.-]+)?$/.test(tab.id) && !/\.(example|sample|template|dist)$/i.test(tab.id) && (
+        <Suspense fallback={null}>
+          <EnvBar path={tab.id} />
         </Suspense>
       )}
       {/\.(http|rest)$/i.test(tab.id) && (

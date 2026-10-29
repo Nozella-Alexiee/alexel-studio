@@ -15,7 +15,7 @@ let chatSeq = 0;
 export const newChatKey = () => `c-${Date.now().toString(36)}-${++chatSeq}`;
 
 export type PanelId = "terminal" | "problems" | "output" | "ports" | "todo" | "history" | "debug" | "db";
-export type SideView = "files" | "search" | "git" | "todo" | "ext" | "outline" | "run" | "exviews" | "tests" | "db" | "api" | `ext:${string}`;
+export type SideView = "files" | "search" | "git" | "todo" | "ext" | "outline" | "run" | "exviews" | "tests" | "db" | "api" | "docker" | `ext:${string}`;
 export type RightView = "claude" | "git" | "extviews";
 export type PreviewMode = "code" | "split" | "preview";
 
@@ -177,7 +177,7 @@ export const DEFAULT_LAYOUTS: Record<DesignId, Layout> = {
   kawanan: { sidebar: true, sidebarW: 240, sideView: "files", panel: false, panelH: 190, panelTab: "terminal", right: true, rightW: 340, rightView: "claude" },
 };
 
-export type TabKind = "text" | "image" | "pdf" | "binary" | "settings" | "dashboard" | "welcome" | "extension" | "webview" | "db" | "http";
+export type TabKind = "text" | "image" | "pdf" | "binary" | "settings" | "dashboard" | "welcome" | "extension" | "webview" | "db" | "http" | "env";
 /** Tab yang mewakili berkas di disk (bukan halaman khusus). */
 export const isFileTab = (k: TabKind) => k === "text" || k === "image" || k === "pdf" || k === "binary";
 

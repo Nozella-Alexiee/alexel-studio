@@ -1,7 +1,7 @@
 // Desain C — Control Room: padat ala IDE. Toolbar run dengan pilihan target Smart Run,
 // rail ikon, sidebar, split editor, panel bawah ter-dock, panel Git/Claude di kanan.
 
-import { Bug, ChevronDown, Database, Send, Columns2, Files, FlaskConical, Layers, FolderOpen, GitBranch, ListTodo, Play, Puzzle, Search, Settings, Square, Network, TerminalSquare } from "lucide-react";
+import { Boxes, Bug, ChevronDown, Database, Send, Columns2, Files, FlaskConical, Layers, FolderOpen, GitBranch, ListTodo, Play, Puzzle, Search, Settings, Square, Network, TerminalSquare } from "lucide-react";
 import { Kepi } from "../components/CrabMascot";
 import { useState, type ReactNode } from "react";
 import * as A from "../app/actions";
@@ -76,6 +76,7 @@ export default function ControlShell() {
     ["todo", <ListTodo size={19} />, "TODO", () => A.toggleSidebar("todo"), l.sidebar && l.sideView === "todo"],
     ["db", <Database size={19} />, tl("Database"), () => A.toggleSidebar("db"), l.sidebar && l.sideView === "db"],
     ["api", <Send size={18} />, tl("API (klien HTTP)"), () => A.toggleSidebar("api"), l.sidebar && l.sideView === "api"],
+    ["docker", <Boxes size={19} />, "Docker", () => A.toggleSidebar("docker"), l.sidebar && l.sideView === "docker"],
     ["ext", <Puzzle size={19} />, "Ekstensi", () => A.toggleSidebar("ext"), l.sidebar && l.sideView === "ext"],
     ...(hasTests ? ([["tests", <FlaskConical size={19} />, "Tests", () => A.toggleSidebar("tests"), l.sidebar && l.sideView === "tests"]] as typeof rail) : []),
     ...sideContainers.map((c) => [`ext:${c.id}`, <ContainerIcon c={c} size={19} />, c.title, () => A.toggleSidebar(`ext:${c.id}`), l.sidebar && l.sideView === `ext:${c.id}`] as (typeof rail)[number]),

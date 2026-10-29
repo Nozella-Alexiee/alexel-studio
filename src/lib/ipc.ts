@@ -210,6 +210,15 @@ export const api = {
   agentSessionLoad: (agent: string, cwd: string, id: string) => call<string[]>("agent_session_load", { agent, cwd, id }),
   agentOnce: (agent: string, runId: string, cwd: string, prompt: string) => call<string>("agent_once", { agent, runId, cwd, prompt }),
   agentOnceCancel: (runId: string) => call<void>("agent_once_cancel", { runId }),
+  // Docker (CLI) & .env
+  dockerInfo: () => call<{ installed: boolean; running: boolean; version: string | null }>("docker_info"),
+  dockerContainers: () => call<DockerContainer[]>("docker_containers"),
+  dockerImages: () => call<DockerImage[]>("docker_images"),
+  dockerStats: () => call<Record<string, { cpu: string; mem: string }>>("docker_stats"),
+  dockerAction: (id: string, action: "start" | "stop" | "restart" | "remove" | "pause" | "unpause") => call<void>("docker_action", { id, action }),
+  dockerRmi: (id: string) => call<void>("docker_rmi", { id }),
+  dockerDbConnect: (id: string) => call<DbConnection>("docker_db_connect", { id }),
+  envGitIgnored: (root: string, file: string) => call<boolean | null>("env_git_ignored", { root, file }),
   // HTTP client (lihat electron/http.ts)
   httpSend: (id: string, req: HttpRequest) => call<HttpResponse>("http_send", { id, req }),
   httpCancel: (id: string) => call<void>("http_cancel", { id }),
@@ -316,4 +325,25 @@ export interface DbDetected {
   file?: string;
   source: string;
   hasPassword: boolean;
+}
+
+export interface DockerContainer {
+  id: string;
+  name: string;
+  image: string;
+  state: string;
+  status: string;
+  ports: string;
+  published: { host: number; container: number }[];
+  project: string | null;
+  service: string | null;
+  created: string;
+  db: DbConnection["kind"] | null;
+}
+export interface DockerImage {
+  id: string;
+  repo: string;
+  tag: string;
+  size: string;
+  created: string;
 }
