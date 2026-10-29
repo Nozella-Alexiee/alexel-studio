@@ -1,7 +1,7 @@
 {
   "name": "alexel-studio",
   "private": true,
-  "version": "0.9.0",
+  "version": "1.0.0",
   "type": "module",
   "description": "Alexel Studio: a free, open source code editor with a real terminal, language servers, a debugger and your choice of AI agents (Claude Code, Codex, Gemini, Antigravity).",
   "author": {

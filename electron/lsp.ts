@@ -27,7 +27,7 @@ export const SERVERS: ServerDef[] = [
   { id: "rust", name: "Rust (rust-analyzer)", langs: ["rs"], bin: "rust-analyzer", args: [], install: "rustup component add rust-analyzer" },
   { id: "go", name: "Go (gopls)", langs: ["go"], bin: "gopls", args: [], install: "go install golang.org/x/tools/gopls@latest" },
   { id: "c", name: "C/C++ (clangd)", langs: ["c", "cpp"], bin: "clangd", args: [], install: process.platform === "darwin" ? "xcode-select --install" : process.platform === "win32" ? "winget install LLVM.LLVM" : "sudo apt install clangd (atau dnf/pacman)" },
-  { id: "css", name: "CSS/HTML/JSON (vscode-langservers)", langs: ["css"], bin: "vscode-css-language-server", args: ["--stdio"], install: "npm install -g vscode-langservers-extracted" },
+  { id: "css", name: "CSS/HTML/JSON", langs: ["css"], bin: "vscode-css-language-server", args: ["--stdio"], install: "npm install -g vscode-langservers-extracted" },
 ];
 
 const whichBin = (bin: string) => findExecutable(bin);

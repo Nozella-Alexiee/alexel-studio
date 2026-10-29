@@ -1,5 +1,58 @@
 # Changelog
 
+## 1.0.0
+
+The first stable release. No new features: every part of the app was audited and the bugs found were
+fixed, with regression tests for most of them.
+
+**Security**
+
+- Exporting MongoDB/Redis results to CSV/JSON no longer runs write commands (`deleteMany`, `DEL`,
+  `runCommand`, `aggregate` with `$out`/`$merge`) without confirmation; read-only MongoDB connections
+  also block `aggregate` with `$out`/`$merge`.
+- Production database connections now check every statement: `SELECT 1; UPDATE …`, writing CTEs,
+  `findOneAndUpdate` and multi-line Redis input with a write command all ask for confirmation.
+- Imported profiles can no longer add trusted folders (Workspace Trust) or a custom ACP agent command.
+- A mistyped `gitBot` value in `settings.json` no longer turns on auto-commit; `powerMode`, `accent`
+  and `confirmDelete` are validated too.
+- Switching branches never treats a branch name as a file path (which could discard that file's changes).
+- Markdown preview images can't point outside the project through `../`; `file:`/`javascript:` links
+  are ignored. Links in notebook cells no longer navigate the app window.
+- Docker IDs starting with `-` and unknown container actions are rejected; SSH hosts named `.`/`..`
+  are rejected; IPC command names can't reach object prototype properties.
+
+**Stability**
+
+- The main process no longer crashes when Jupyter or the extension host can't be started, or when a
+  kernel WebSocket fails. Simultaneous Jupyter starts share one server; servers that never become
+  ready are stopped.
+- Extension RPC replies that can't be sent are answered with an error instead of hanging until timeout.
+- Saving the same file twice at once no longer fails, and a failed write (disk full) leaves no temp file.
+- Fixed races in the IDE server start (lockfile with port 0), update download (double click deleted
+  the running download), file watcher (watching resumed after unwatch), debug child sessions and
+  terminals closed while still starting (orphaned processes).
+- macOS: `alexel .` and opening a file with no window open now open a window; browser tabs are
+  destroyed with their window.
+- Failed browser tabs, kernel restarts, run targets, formatters and SSH actions now show an error
+  instead of failing silently; stopping a debug session while it starts no longer hangs. Remaining
+  unhandled promise rejections are logged to Output.
+
+**Editor**
+
+- Renaming or moving a file with unsaved edits keeps the edits and undo history; image, PDF and binary
+  tabs follow renames and close on delete.
+- Stale agent reviews no longer come back when a file is reopened.
+- Broken glob patterns from extensions (`*.{ts`, `[z-a]`) no longer throw.
+- Corrupt `session.json` entries no longer stop session restore; file names like `..notes` are treated
+  as inside the project; long code snapshots are capped at 400 lines.
+- `deno.jsonc` tasks with comments are detected; language server URIs with a stray `%` are handled.
+
+**Panels**
+
+- The SSH terminal command uses PowerShell quoting on Windows, as do Docker panel commands.
+- Image and hex viewers no longer show a previous file after switching quickly.
+- More UI text is translated, and extension alternatives mention the built-in Remote SSH and Docker panel.
+
 ## 0.9.0
 
 The tools you usually open next to your editor are now built in. This release also contains

@@ -45,6 +45,9 @@ export async function runTarget(t: RunTarget, title = t.label) {
     const { runCommand } = await import("../terminal/terminals");
     // Fokus tetap di editor: Ctrl+R / F5 berikutnya harus tetap bisa dipakai (terminal menelan tombol).
     await runCommand(t.command, t.cwd, title, { focus: false });
+  } catch (e) {
+    // Pemanggil (tombol Run, palet, dasbor) memakai `void runTarget(...)`: galat spawn ditampilkan di sini.
+    toast(errMsg(e), "error");
   } finally {
     starting = false;
   }

@@ -129,6 +129,7 @@ export function closeWebviewTab(id: number) {
   frames.delete(id);
   loaded.delete(id);
   queue.delete(id);
+  extraVars.delete(id);
   void import("../app/actions").then((A) => A.closeTabEverywhere(tid));
 }
 

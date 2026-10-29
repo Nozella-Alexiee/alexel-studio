@@ -9,8 +9,11 @@ import { confirmDialog, getState, promptDialog, toast, type Settings } from "../
 import { useExtensions } from "../extensions/registry";
 import { tl } from "../i18n";
 
-/** Pengaturan yang khas mesin ini / keamanan: tidak ikut profil. */
-const LOCAL_ONLY: (keyof Settings)[] = ["trustedExts", "claudeConsent", "allowDangerousModes"];
+/**
+ * Pengaturan yang khas mesin ini / keamanan: tidak ikut profil. Profil impor bisa berasal dari orang lain,
+ * jadi folder tepercaya (Workspace Trust) dan perintah agen ACP kustom (dijalankan sebagai proses) juga lokal.
+ */
+const LOCAL_ONLY: (keyof Settings)[] = ["trustedExts", "claudeConsent", "allowDangerousModes", "trustedFolders", "acpCommand"];
 
 export interface ProfileFile {
   format: "alexel-profile";

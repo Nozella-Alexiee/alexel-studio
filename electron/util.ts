@@ -322,7 +322,8 @@ export function runCapture(cmd: string, args: string[], opts: { cwd?: string; ti
 export function isWithin(parent: string, child: string, allowSame = false): boolean {
   const rel = path.relative(path.resolve(parent), path.resolve(child));
   if (!rel) return allowSame;
-  return !rel.startsWith("..") && !path.isAbsolute(rel);
+  // Bukan sekadar startsWith(".."): berkas bernama "..catatan" tetap di dalam folder.
+  return rel !== ".." && !rel.startsWith(".." + path.sep) && !path.isAbsolute(rel);
 }
 
 /** Env git: prompt kredensial mati, ssh batch mode, lock opsional mati. */

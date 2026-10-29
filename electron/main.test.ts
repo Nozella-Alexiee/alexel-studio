@@ -53,6 +53,9 @@ describe("util", () => {
     expect(isWithin(base, path.join(base, "..", "x"))).toBe(false);
     expect(isWithin(base, base)).toBe(false);
     expect(isWithin(base, base, true)).toBe(true);
+    // Nama yang diawali ".." tetap di dalam folder.
+    expect(isWithin(base, path.join(base, "..catatan"))).toBe(true);
+    expect(isWithin(base, path.join(base, "...", "x"))).toBe(true);
   });
   posix("runCapture: selesai cepat walau cucu proses menahan pipe setelah keluar", async () => {
     const t0 = Date.now();
@@ -76,6 +79,14 @@ describe("fsOps", () => {
     const t = await F.readText(f);
     expect(t.content).toBe("halo\r\ndunia");
     expect(t.eol).toBe("crlf");
+    expect(fs.readdirSync(d)).toEqual(["a.txt"]);
+  });
+  it("tulis atomik bersamaan pada berkas yang sama tidak saling menggagalkan", async () => {
+    const d = tmp("rw2");
+    const f = path.join(d, "a.txt");
+    const r = await Promise.allSettled(Array.from({ length: 8 }, (_, i) => F.writeAtomic(f, `isi ${i}`)));
+    expect(r.filter((x) => x.status === "rejected")).toEqual([]);
+    expect(fs.readFileSync(f, "utf8")).toMatch(/^isi \d$/);
     expect(fs.readdirSync(d)).toEqual(["a.txt"]);
   });
   it("menolak biner & non-UTF-8", async () => {

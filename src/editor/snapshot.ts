@@ -51,7 +51,9 @@ export function snapshotRange(state: EditorState): { from: number; to: number; f
   const sel = state.selection.main;
   if (!sel.empty) {
     const a = state.doc.lineAt(sel.from);
-    const b = state.doc.lineAt(sel.to > sel.from && state.doc.lineAt(sel.to).from === sel.to ? sel.to - 1 : sel.to);
+    let b = state.doc.lineAt(sel.to > sel.from && state.doc.lineAt(sel.to).from === sel.to ? sel.to - 1 : sel.to);
+    // Seleksi sangat panjang → kanvas melebihi batas ukuran browser (getContext null). Batasi 400 baris juga.
+    if (b.number - a.number >= 400) b = state.doc.line(a.number + 399);
     return { from: a.from, to: b.to, firstLine: a.number };
   }
   const last = state.doc.line(Math.min(state.doc.lines, 400));

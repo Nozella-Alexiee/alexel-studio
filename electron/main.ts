@@ -158,7 +158,8 @@ function isTrustedSender(url: string) {
 
 ipcMain.handle("nozel:invoke", async (e, cmd: string, args: Record<string, unknown>) => {
   if (!e.senderFrame || !isTrustedSender(e.senderFrame.url)) return { ok: false, error: "Pengirim tidak dipercaya." };
-  const h = commands[cmd];
+  // Hanya command milik objek itu sendiri: nama seperti "constructor"/"toString" tidak boleh lolos ke prototipe.
+  const h = typeof cmd === "string" && Object.hasOwn(commands, cmd) ? commands[cmd] : undefined;
   if (!h) return { ok: false, error: `Command tidak dikenal: ${cmd}` };
   try {
     const value = await h(args ?? {}, BrowserWindow.fromWebContents(e.sender));
@@ -384,16 +385,24 @@ function runSmoke(w: BrowserWindow, scriptPath: string) {
 app.on("open-file", (e, p) => {
   e.preventDefault();
   if (win && !win.webContents.isLoading()) ctx.emit("open-path", { path: p });
-  else pendingOpen.push(p);
+  else {
+    pendingOpen.push(p);
+    // macOS: aplikasi hidup tanpa jendela (semua ditutup) → buka jendela supaya berkasnya tampil.
+    if (!win && app.isReady()) createWindow();
+  }
 });
 
 app.on("second-instance", (_e, argv, workingDirectory) => {
+  // Path relatif (mis. `alexel .`) dihitung dari folder terminal pemanggil, bukan folder instance pertama.
+  const p = argv.slice(1).filter((a) => !a.startsWith("-")).map((a) => path.resolve(workingDirectory || process.cwd(), a)).find((a) => fs.existsSync(a));
   if (win) {
     if (win.isMinimized()) win.restore();
     win.focus();
-    // Path relatif (mis. `alexel .`) dihitung dari folder terminal pemanggil, bukan folder instance pertama.
-    const p = argv.slice(1).filter((a) => !a.startsWith("-")).map((a) => path.resolve(workingDirectory || process.cwd(), a)).find((a) => fs.existsSync(a));
     if (p) ctx.emit("open-path", { path: p });
+  } else if (app.isReady()) {
+    // macOS tanpa jendela: `alexel .` dari terminal harus tetap membuka jendela.
+    if (p) pendingOpen.push(p);
+    createWindow();
   }
 });
 
@@ -412,6 +421,7 @@ function stopWindowProcesses() {
   stopIde();
   void closeAllDb();
   stopAllJupyter();
+  destroyAllBrowsers(); // WebContentsView tab browser tidak ikut hancur saat jendela ditutup
   void unwatch();
 }
 
@@ -429,5 +439,5 @@ app.whenReady().then(() => {
   buildMenu();
   const cliPath = process.argv.slice(DEV_URL ? 2 : 1).find((a) => !a.startsWith("-") && fs.existsSync(a));
   if (cliPath) pendingOpen.push(path.resolve(cliPath));
-  createWindow();
+  if (!win) createWindow();
 });

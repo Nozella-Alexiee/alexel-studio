@@ -67,9 +67,23 @@ export class Rpc {
     } else if (msg.t === "req") {
       const h = this.requests.get(msg.m!);
       const run = h ? Promise.resolve().then(() => h(msg.p)) : this.fallback ? this.fallback(msg.m!, msg.p) : Promise.reject(new Error(`RPC: tidak ada penangan untuk ${msg.m}`));
+      // send bisa melempar (kanal tertutup, hasil tidak bisa di-clone): jangan jadi unhandled rejection,
+      // dan sebisa mungkin kirim galat supaya sisi lain tidak menunggu sampai timeout.
+      const reply = (m: Msg) => {
+        try {
+          this.send(m);
+        } catch (err) {
+          if (m.e !== undefined) return;
+          try {
+            this.send({ t: "res", id: msg.id, e: `RPC: hasil ${msg.m} tidak bisa dikirim (${err instanceof Error ? err.message : String(err)})` });
+          } catch {
+            /* kanal tertutup */
+          }
+        }
+      };
       run.then(
-        (r) => this.send({ t: "res", id: msg.id, r }),
-        (e) => this.send({ t: "res", id: msg.id, e: e instanceof Error ? e.message : String(e) })
+        (r) => reply({ t: "res", id: msg.id, r }),
+        (e) => reply({ t: "res", id: msg.id, e: e instanceof Error ? e.message : String(e) })
       );
     } else {
       const h = this.events.get(msg.m!);

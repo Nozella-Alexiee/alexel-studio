@@ -492,10 +492,13 @@ export function showInView(group: number, path: string) {
   const v = views[group];
   const d = docs.get(path);
   if (!v || !d) return;
-  v.setState(stateFor(d, group));
+  // Sudah tampil (berkas baru saja di-rename): view dibiarkan, state hidupnya yang benar.
+  const already = shown[group] === path;
+  if (!already) v.setState(stateFor(d, group));
   shown[group] = path;
   v.dispatch({ effects: settingsComp.reconfigure(currentSettingsExt()) });
   void import("../debug/debug").then((m) => m.onEditorShown(group, path));
+  if (already) return;
   const top = d.scroll[group];
   requestAnimationFrame(() => {
     if (views[group] === v) v.scrollDOM.scrollTop = top;
@@ -668,6 +671,10 @@ export async function reloadFromDisk(path: string) {
 
 export function closeDocument(path: string) {
   docs.delete(path);
+  // Tinjauan agen yang belum selesai tidak boleh muncul lagi (basi) saat berkas dibuka ulang.
+  reviewExts.delete(path);
+  // Penanda view dilepas: kalau dibuka lagi, showInView wajib memasang state baru (bukan "sudah tampil").
+  for (let g = 0; g < shown.length; g++) if (shown[g] === path) shown[g] = null;
   emitDoc({ type: "close", path });
   clearTimeout(previewTimers.get(path));
   clearTimeout(autoSaveTimers.get(path));
@@ -703,6 +710,27 @@ export function renameDocument(oldPath: string, newPath: string) {
   docs.delete(oldPath);
   d.path = newPath;
   docs.set(newPath, d);
+  // View yang sedang menampilkan berkas ini tetap memakai state hidupnya (editan belum disimpan, undo):
+  // tandai path baru. Tanpa ini CodeEditor memuat state lama saat tab berganti id → editan hilang.
+  for (let g = 0; g < shown.length; g++) if (shown[g] === oldPath) shown[g] = newPath;
+  for (const timers of [previewTimers, autoSaveTimers]) {
+    const t = timers.get(oldPath);
+    if (t === undefined) continue;
+    clearTimeout(t);
+    timers.delete(oldPath);
+    if (timers === autoSaveTimers) scheduleAutoSave(newPath);
+  }
+  clearProblemsOf(oldPath);
+  // Tinjauan agen terikat ke path lama (checkpoint): akhiri saja.
+  if (reviewExts.delete(oldPath)) setReviewExtension(newPath, null);
+  if (!d.langFile) {
+    const info = languageFor(basename(newPath));
+    if (info.id !== d.langId) {
+      d.langId = info.id;
+      d.langName = info.name;
+      void loadLanguage(d);
+    }
+  }
   emitDoc({ type: "rename", from: oldPath, to: newPath });
 }
 

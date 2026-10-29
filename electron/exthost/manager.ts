@@ -83,6 +83,8 @@ export class ExtHostManager {
       // POSIX: grup proses sendiri supaya server bahasa/CLI yang dijalankan ekstensi ikut berhenti bersama host.
       detached: process.platform !== "win32" });
     this.child = child;
+    // Gagal fork, atau send() setelah kanal IPC putus: tanpa listener, event "error" menjatuhkan main process.
+    child.on("error", (e) => this.ctx.emit("exthost-event", { e: "ui/output", p: { channel: "Extension Host", text: `${e.message}\n` } }));
     const rpc = new Rpc((m) => child.send(m));
     this.rpc = rpc;
     rpc.fallback = (m, p) => this.toUi(m, p);

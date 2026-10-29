@@ -6,12 +6,13 @@ import { useCallback, useEffect, useState } from "react";
 import { openFile } from "../app/actions";
 import { runInTerminal } from "../app/run";
 import { Empty, IconButton, Spinner } from "../components/ui";
-import { api, errMsg, openExternal, type DockerContainer, type DockerImage } from "../lib/ipc";
+import { api, errMsg, isWindows, openExternal, type DockerContainer, type DockerImage } from "../lib/ipc";
 import { relative } from "../lib/paths";
 import { confirmDialog, setLayout, toast, useStore } from "../state/store";
 import { tl } from "../i18n";
 
-const q = (s: string) => (/^[\w./:@-]+$/.test(s) ? s : `'${s.replace(/'/g, `'\\''`)}'`);
+// Terminal memakai PowerShell di Windows (kutip tunggal digandakan), sh di macOS/Linux.
+const q = (s: string) => (/^[\w./:@-]+$/.test(s) ? s : isWindows ? `'${s.replace(/'/g, "''")}'` : `'${s.replace(/'/g, `'\\''`)}'`);
 
 function ContainerRow({ c, stats, busy, act }: { c: DockerContainer; stats?: { cpu: string; mem: string }; busy: boolean; act: (c: DockerContainer, a: "start" | "stop" | "restart" | "remove" | "pause" | "unpause") => void }) {
   const running = c.state === "running";

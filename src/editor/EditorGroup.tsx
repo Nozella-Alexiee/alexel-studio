@@ -266,7 +266,7 @@ export function EditorActions({ group }: { group: number }) {
           <Play size={14} />
         </IconButton>
       )}
-      <IconButton label={split ? "Gabung editor" : tl("Belah editor")} keys="Mod+\" onClick={A.splitEditor} active={split}>
+      <IconButton label={split ? tl("Gabung editor") : tl("Belah editor")} keys="Mod+\" onClick={A.splitEditor} active={split}>
         <Columns2 size={14} />
       </IconButton>
     </>
@@ -284,7 +284,7 @@ function ConflictBar({ tab }: { tab: Tab }) {
         <>
           <span>{tl("Berkas berubah di disk dan kamu punya editan yang belum disimpan.")}</span>
           <button className="btn btn-sm" onClick={() => void import("../app/conflicts").then((m) => m.resolveConflict(tab.id))}>
-            Selesaikan
+            {tl("Selesaikan")}
           </button>
         </>
       )}

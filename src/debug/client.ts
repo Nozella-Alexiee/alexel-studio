@@ -26,6 +26,8 @@ export class DapClient {
   };
   onExit: (code: number | null, stderr: string) => void = () => {};
   closed = false;
+  /** Ditutup lewat stop() (bukan adapter yang keluar sendiri). */
+  stopped = false;
 
   constructor(public id: string) {
     listen();
@@ -99,7 +101,11 @@ export class DapClient {
 
   stop() {
     this.closed = true;
+    this.stopped = true;
     clients.delete(this.id);
+    // Request yang masih menunggu tidak akan pernah dijawab (pesan dari adapter tidak lagi diteruskan).
+    for (const p of this.pending.values()) p.reject(new Error(tl("Sesi debug sudah berakhir.")));
+    this.pending.clear();
     void api.dapStop(this.id).catch(() => {});
   }
 }

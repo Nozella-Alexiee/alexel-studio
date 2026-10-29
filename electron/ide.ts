@@ -72,6 +72,7 @@ export class IdeServer {
   token = "";
   private folders: string[] = [];
   private lockFile: string | null = null;
+  private listening: Promise<void> | null = null;
 
   constructor(private ctx: Ctx, private version: string) {}
 
@@ -81,10 +82,15 @@ export class IdeServer {
 
   /** Mulai (sekali) lalu pasang/ubah lockfile untuk folder project saat ini. */
   async start(root: string | null, extra: string[] = []): Promise<{ port: number; token: string }> {
-    if (!this.server) {
+    // Panggilan bersamaan menunggu listen yang sama; tanpa ini lockfile bisa tertulis dengan port 0.
+    if (!this.listening) {
       cleanStaleLocks();
-      await this.listen();
+      this.listening = this.listen().catch((e) => {
+        this.stop();
+        throw e;
+      });
     }
+    await this.listening;
     // Sertakan path asli (realpath): CLI membandingkan dengan cwd yang sudah di-resolve (mis. /tmp → /private/tmp di macOS).
     const real = (() => {
       try {
@@ -260,6 +266,7 @@ export class IdeServer {
     this.server?.close();
     this.server = null;
     this.wss = null;
+    this.listening = null;
     if (this.lockFile) {
       try {
         fs.rmSync(this.lockFile, { force: true });

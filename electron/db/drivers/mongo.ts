@@ -66,6 +66,19 @@ export function mongoRisk(text: string): string | null {
   return null;
 }
 
+/** aggregate dengan tahap $out/$merge menulis koleksi; runCommand/adminCommand bisa melakukan apa saja. */
+const writesData = (c: MongoCommand, text: string) => WRITE.test(c.method) || c.method === "runCommand" || c.method === "adminCommand" || (c.method === "aggregate" && /\$(out|merge)\b/.test(text));
+
+/** Perintah mengubah data (atau perintah mentah yang bisa melakukannya); format salah = bukan tulis. */
+export function mongoIsWrite(text: string): boolean {
+  try {
+    const c = parseMongo(text);
+    return writesData(c, text);
+  } catch {
+    return false;
+  }
+}
+
 export async function mongoDriver(url: string, database: string | undefined, readOnly: boolean): Promise<Driver> {
   const { MongoClient, BSON } = await import("mongodb");
   const client: MongoClient = new MongoClient(url, { serverSelectionTimeoutMS: 10_000, appName: "Alexel Studio" });
@@ -82,7 +95,7 @@ export async function mongoDriver(url: string, database: string | undefined, rea
   const run = async (text: string, limit: number): Promise<QueryResult> => {
     const t0 = Date.now();
     const c = parseMongo(text);
-    if (readOnly && (WRITE.test(c.method) || c.method === "runCommand" || c.method === "adminCommand")) throw new Error("Koneksi read-only: perintah tulis diblokir.");
+    if (readOnly && writesData(c, text)) throw new Error("Koneksi read-only: perintah tulis diblokir.");
     if (c.coll === null) {
       const r = c.method === "adminCommand" ? await client.db("admin").command(parse(c.args[0])) : await db.command(parse(c.args[0]));
       return toRows([r], limit, t0);

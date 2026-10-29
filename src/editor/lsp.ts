@@ -40,7 +40,13 @@ export const fileUri = (path: string) => {
 };
 /** Kebalikan fileUri; server sering mengirim "file:///c%3A/..." untuk Windows. */
 export const uriToPath = (uri: string) => {
-  const p = decodeURIComponent(uri.replace(/^file:\/\//, ""));
+  const raw = uri.replace(/^file:\/\//, "");
+  let p = raw;
+  try {
+    p = decodeURIComponent(raw);
+  } catch {
+    /* URI dari server tidak ter-encode dengan benar ("%" tunggal): pakai apa adanya, jangan sampai diagnostik gagal diproses */
+  }
   const m = /^\/([A-Za-z]):\//.exec(p);
   return m ? m[1].toUpperCase() + p.slice(2) : p;
 };

@@ -157,7 +157,7 @@ function legacyName(lower: string, ext: string): string {
     scala: "Scala",
     ini: "INI",
     env: "Env",
-    txt: "Teks",
+    txt: tl("Teks biasa"),
     log: "Log",
     diff: "Diff",
     patch: "Diff",
@@ -166,5 +166,5 @@ function legacyName(lower: string, ext: string): string {
   if (base === "makefile") return "Makefile";
   if (base.startsWith(".env")) return "Env";
   if (base === "cmakelists.txt") return "CMake";
-  return map[ext] ?? (ext ? ext.toUpperCase() : "Teks");
+  return map[ext] ?? (ext ? ext.toUpperCase() : tl("Teks biasa"));
 }

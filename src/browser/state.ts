@@ -3,7 +3,7 @@
 import { create } from "zustand";
 import { showTab } from "../app/actions";
 import { logOutput } from "../app/output";
-import { api, on } from "../lib/ipc";
+import { api, errMsg, on } from "../lib/ipc";
 import { getState as appState, setState as appSet, useStore } from "../state/store";
 import { tl } from "../i18n";
 
@@ -60,7 +60,7 @@ function wire() {
     if (s.tabs === prev.tabs) return;
     for (const [id, b] of Object.entries(useBrowser.getState().tabs)) {
       if (!s.tabs[id]) {
-        if (b.view !== null) void api.browserDestroy(b.view);
+        if (b.view !== null) void api.browserDestroy(b.view).catch(() => {});
         set((st) => {
           const tabs = { ...st.tabs };
           delete tabs[id];
@@ -92,11 +92,16 @@ export function ensureView(tabId: string): Promise<number | null> {
     p = api.browserCreate(b.url || "about:blank", tabId).then((view) => {
       creating.delete(tabId);
       if (!useBrowser.getState().tabs[tabId]) {
-        void api.browserDestroy(view);
+        void api.browserDestroy(view).catch(() => {});
         return null;
       }
       set((s) => ({ tabs: { ...s.tabs, [tabId]: { ...s.tabs[tabId], view } } }));
       return view;
+    }, (e: unknown) => {
+      // Gagal membuat view: jangan simpan janji yang ditolak (tab bisa dicoba lagi), tampilkan error di tab.
+      creating.delete(tabId);
+      set((s) => (s.tabs[tabId] ? { tabs: { ...s.tabs, [tabId]: { ...s.tabs[tabId], loading: false, error: errMsg(e) } } } : s));
+      return null;
     });
     creating.set(tabId, p);
   }

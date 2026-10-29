@@ -26,6 +26,11 @@ interface Review {
 
 const reviews = new Map<string, Review>();
 export const isReviewing = (path: string) => reviews.has(path);
+// Berkas ditutup / di-rename: ekstensi tinjauannya sudah dilepas documents.ts, catatannya ikut dibuang.
+docs.onDocEvent((e) => {
+  if (e.type === "close") reviews.delete(e.path);
+  else if (e.type === "rename") reviews.delete(e.from);
+});
 
 function control(type: "accept" | "reject", action: (e: MouseEvent) => void): HTMLElement {
   const b = document.createElement("button");

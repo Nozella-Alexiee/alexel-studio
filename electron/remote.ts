@@ -6,7 +6,7 @@
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { findExecutable, isWin, runCapture, type Ctx } from "./util";
+import { findExecutable, isWin, psQuote, runCapture, type Ctx } from "./util";
 
 export interface RemoteHost {
   /** Alias di ~/.ssh/config atau `user@host[:port]`. */
@@ -78,8 +78,9 @@ export function saveHost(ctx: Ctx, target: string, remove = false) {
   fs.writeFileSync(savedFile(ctx), JSON.stringify(saved));
 }
 
-/** Tidak boleh diawali "-" (dianggap opsi ssh) dan hanya karakter host/alias biasa. */
-export const validTarget = (t: string) => /^(?!-)[\w.@%+-]+(:\d{1,5})?$/.test(t) && t.length < 200;
+/** Tidak boleh diawali "-" (dianggap opsi ssh) dan hanya karakter host/alias biasa. "." / ".." ditolak
+ *  karena target juga jadi nama folder salinan lokal (mirrorPath) dan tidak boleh keluar dari folder itu. */
+export const validTarget = (t: string) => /^(?!-)(?!\.+(?::|$))[\w.@%+-]+(:\d{1,5})?$/.test(t) && t.length < 200;
 
 /** Kutip tunggal untuk shell POSIX di server. */
 export const sq = (s: string) => `'${s.replace(/'/g, `'\\''`)}'`;
@@ -108,11 +109,12 @@ export function sshOptions(target: string): string[] {
   ];
 }
 
-/** Perintah terminal interaktif (bisa minta password / konfirmasi host key) yang sekaligus membuka koneksi master. */
-export function terminalCommand(target: string, dir?: string): string {
+/** Perintah terminal interaktif (bisa minta password / konfirmasi host key) yang sekaligus membuka koneksi master.
+ *  Dijalankan di terminal lokal: PowerShell di Windows, shell POSIX di lainnya (kutipnya beda). */
+export function terminalCommand(target: string, dir?: string, win = isWin): string {
   if (!validTarget(target)) throw new Error("Host tidak valid.");
   const opts = sshOptions(target).filter((x, i, a) => x !== "BatchMode=yes" && !(x === "-o" && a[i + 1] === "BatchMode=yes"));
-  const q = (s: string) => (/^[\w./:=%@+-]+$/.test(s) ? s : `'${s.replace(/'/g, `'\\''`)}'`);
+  const q = (s: string) => (/^[\w./:=%@+-]+$/.test(s) ? s : win ? psQuote(s) : `'${s.replace(/'/g, `'\\''`)}'`);
   return ["ssh", "-t", ...opts.map(q), ...(dir ? [q(`cd ${sq(dir)} 2>/dev/null; exec "$SHELL" -l`)] : [])].join(" ");
 }
 

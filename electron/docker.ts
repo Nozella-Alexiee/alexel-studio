@@ -114,9 +114,12 @@ export async function containerStats(): Promise<Record<string, { cpu: string; me
   return out;
 }
 
-const ID = /^[\w.-]{1,128}$/;
+/** ID/nama container atau image; tidak boleh diawali "-" (terbaca sebagai opsi docker). */
+export const ID = /^(?!-)[\w.-]{1,128}$/;
+const ACTIONS = new Set(["start", "stop", "restart", "remove", "pause", "unpause"]);
 export async function containerAction(id: string, action: "start" | "stop" | "restart" | "remove" | "pause" | "unpause") {
   if (!ID.test(id)) throw new Error("ID container tidak valid.");
+  if (!ACTIONS.has(action)) throw new Error("Aksi container tidak dikenal.");
   const args = action === "remove" ? ["rm", "-f", id] : [action, id];
   await run(args, 60_000);
 }

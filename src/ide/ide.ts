@@ -4,7 +4,7 @@
 import * as docs from "../editor/documents";
 import { fileUri, uriToPath } from "../editor/lsp";
 import { api, call, isNative, on } from "../lib/ipc";
-import { basename } from "../lib/paths";
+import { basename, isInside, normalizePath, uiPath } from "../lib/paths";
 import { getState, setState, toast, useStore } from "../state/store";
 import { tl } from "../i18n";
 import { vscodeLanguageId } from "../exthost/lang";
@@ -50,7 +50,8 @@ async function openDiffTab(a: { old_file_path: string; new_file_path: string; ne
   }
   const root = getState().root;
   const norm = (p: string) => p.replace(/\\/g, "/");
-  const outside = !root || !(norm(a.new_file_path) === norm(root) || norm(a.new_file_path).startsWith(norm(root).replace(/\/$/, "") + "/"));
+  // Path dirapikan dulu ("..", huruf drive/backslash Windows) supaya "root/../luar" tetap dianggap di luar project.
+  const outside = !root || !isInside(normalizePath(uiPath(norm(root))), normalizePath(uiPath(norm(a.new_file_path))));
   // Permintaan diff sebelumnya yang masih terbuka ditutup (dijawab "TAB_CLOSED"), bukan dibiarkan menggantung.
   closeDiff();
   const accepted = await new Promise<boolean | "closed">((resolve) => setState({ ideDiff: { tab: a.tab_name, reqId, path: a.new_file_path, oldPath: norm(a.old_file_path) !== norm(a.new_file_path) ? a.old_file_path : undefined, outside, oldText, newText: a.new_file_contents, resolve } }));

@@ -35,6 +35,15 @@ const isRead = (args: string[]) => {
   return READ.has(c);
 };
 
+/** Ada baris perintah yang bukan baca (komentar dan `@key` dilewati). */
+export function redisIsWrite(text: string): boolean {
+  return text
+    .split("\n")
+    .map((l) => l.trim())
+    .filter((l) => l && !l.startsWith("#") && !l.startsWith("//") && !/^@key\s+/.test(l))
+    .some((l) => !isRead(splitRedis(l)));
+}
+
 function flatten(v: unknown, depth = 0): unknown[][] {
   if (!Array.isArray(v)) return [[cell(v)]];
   if (depth === 0 && v.length === 2 && typeof v[0] === "string" && Array.isArray(v[1])) return (v[1] as unknown[]).map((x) => [cell(x)]);

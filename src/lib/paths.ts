@@ -45,6 +45,18 @@ export function normalizePath(p: string): string {
   return lead + out.join("/");
 }
 
+/** src gambar lokal di Markdown → path absolut gaya UI (belum dirapikan), relatif terhadap `base`. */
+export function localImageSrc(src: string, base: string): string {
+  let p = src.replace(/&amp;/g, "&").split(/[?#]/)[0];
+  try {
+    p = decodeURIComponent(p);
+  } catch {
+    /* bukan URL-encoded yang sah: pakai apa adanya */
+  }
+  p = p.replace(/\\/g, "/");
+  return p.startsWith("/") || /^[A-Za-z]:\//.test(p) ? p : join(base, p);
+}
+
 export function extname(p: string): string {
   const b = basename(p);
   const i = b.lastIndexOf(".");

@@ -247,7 +247,7 @@ export function StatusBar({ variant }: { variant: "aurora" | "zen" | "control" |
     <footer className={`statusbar sb-${variant}`} role="contentinfo">
       <NoziStatus />
       {git?.is_repo && (
-        <button className="status-item" onClick={() => (variant === "control" ? A.toggleRight("git") : A.toggleSidebar("git"))} title="Source control">
+        <button className="status-item" onClick={() => (variant === "control" ? A.toggleRight("git") : A.toggleSidebar("git"))} title={tl("Kontrol sumber")}>
           <GitBranch size={12} aria-hidden /> {git.branch}
           {git.files.length > 0 && <span className="sb-dirty">•{git.files.length}</span>}
           {git.ahead > 0 && (
@@ -274,7 +274,7 @@ export function StatusBar({ variant }: { variant: "aurora" | "zen" | "control" |
       </button>
       {running > 0 && (
         <button className="status-item tone-run" onClick={() => A.togglePanel("terminal")} title={tl("Proses berjalan")}>
-          <Play size={11} aria-hidden /> {running} berjalan
+          <Play size={11} aria-hidden /> {tl("{n} berjalan", { n: running })}
         </button>
       )}
       <ExtStatusItems side="left" />
@@ -331,7 +331,7 @@ export function StatusBar({ variant }: { variant: "aurora" | "zen" | "control" |
         </>
       )}
       {showRes && fp && (
-        <span className="status-item sb-mem" title={`RAM total Alexel Studio ${fp.core_mb} MB${fp.processes ? ` di ${fp.processes} proses` : ""}, CPU ${fp.cpu_percent}%.${isSaver() ? " (hemat daya)" : ""}`}>
+        <span className="status-item sb-mem" title={`${tl("RAM total Alexel Studio {mb} MB", { mb: fp.core_mb })}${fp.processes ? ` ${tl("di {n} proses", { n: fp.processes })}` : ""}, CPU ${fp.cpu_percent}%.${isSaver() ? ` ${tl("(hemat daya)")}` : ""}`}>
           <Cpu size={12} aria-hidden /> {Math.round(fp.core_mb)} MB{!zen && ` · ${fp.cpu_percent}%`}
         </span>
       )}

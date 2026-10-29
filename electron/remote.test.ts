@@ -20,10 +20,18 @@ describe("remote ssh", () => {
     expect(validTarget("-oProxyCommand=sh")).toBe(false);
     expect(validTarget("a b")).toBe(false);
     expect(validTarget("host;rm")).toBe(false);
+    // Target juga jadi nama folder salinan lokal: "." / ".." tidak boleh keluar dari folder itu.
+    for (const bad of [".", "..", "..:22", "...."]) expect(validTarget(bad)).toBe(false);
+    expect(validTarget(".hidden-alias")).toBe(true);
+  });
+  it("perintah terminal Windows memakai kutip PowerShell", () => {
+    const cmd = terminalCommand("nozi@h", "/srv/it's", true);
+    expect(cmd).toContain(`'cd ''/srv/it''\\''''s'' 2>/dev/null; exec "$SHELL" -l'`);
+    expect(cmd).not.toContain(`'\\''cd`);
   });
   it("kutip shell & perintah terminal", () => {
     expect(sq("it's")).toBe(`'it'\\''s'`);
-    const cmd = terminalCommand("nozi@h:2222", "/srv/app");
+    const cmd = terminalCommand("nozi@h:2222", "/srv/app", false);
     expect(cmd).toContain("-p 2222 nozi@h");
     expect(cmd).not.toContain("BatchMode");
     expect(cmd).toContain(`'cd '\\''/srv/app'\\'' 2>/dev/null; exec "$SHELL" -l'`);

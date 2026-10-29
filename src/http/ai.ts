@@ -22,7 +22,7 @@ export async function requestsFromCode() {
   if (!(await ensureConsent())) return;
   const host = envValues().host ?? envValues().baseUrl ?? "http://localhost:3000";
   const prompt = [
-    "Buat berkas .http (sintaks REST Client VS Code) untuk SEMUA endpoint HTTP yang didefinisikan di kode berikut.",
+    "Buat berkas .http (sintaks REST Client) untuk SEMUA endpoint HTTP yang didefinisikan di kode berikut.",
     "Aturan: pisahkan tiap request dengan `###` + judul singkat; baris pertama berkas `@host = " + host + "` lalu pakai {{host}};",
     "beri `# @name` untuk request login/pembuatan token; isi body JSON contoh yang masuk akal sesuai validasi di kode;",
     "untuk token pakai `Authorization: Bearer {{$secret TOKEN}}` (jangan menulis rahasia asli).",

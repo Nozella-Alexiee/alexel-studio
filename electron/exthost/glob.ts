@@ -41,7 +41,14 @@ export function globToRegExp(glob: string): RegExp {
     } else re += c.replace(/[.+^$()|\\]/g, "\\$&");
     i++;
   }
-  return new RegExp(`^${re}$`);
+  // `{` tanpa pasangan (pola dari ekstensi): tutup supaya tetap regex yang sah.
+  re += ")".repeat(braces);
+  try {
+    return new RegExp(`^${re}$`);
+  } catch {
+    // Mis. rentang terbalik "[z-a]": pola tidak sah tidak cocok dengan apa pun, bukan melempar.
+    return /(?!)/;
+  }
 }
 
 const cache = new Map<string, RegExp>();

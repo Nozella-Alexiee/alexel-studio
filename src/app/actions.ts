@@ -92,7 +92,7 @@ export async function openProject(root: string, opts: { restoreTabs?: { groups: 
       if (grp.active && getState().tabs[grp.active]) activateTab(grp.active, g);
     }
     for (const id of opts.restoreTabs.pinned ?? []) if (getState().tabs[id] && !getState().tabs[id].pinned) togglePinTab(id);
-    setState({ focusedGroup: Math.min(opts.restoreTabs.focused, getState().groups.length - 1) });
+    setState({ focusedGroup: Math.max(0, Math.min(opts.restoreTabs.focused, getState().groups.length - 1)) });
   }
   persistSession();
 }
@@ -225,13 +225,15 @@ export async function toggleDir(dir: string, open?: boolean) {
 export async function refreshTree() {
   const s = getState();
   if (!s.root) return;
-  const open = Object.keys(s.expanded).filter((d) => isInside(s.root!, d));
+  const roots = workspaceRoots(s);
+  const open = Object.keys(s.expanded).filter((d) => roots.some((r) => isInside(r, d)));
   await Promise.all(open.map(loadDir));
 }
 
 export async function revealInTree(path: string) {
-  const root = getState().root;
-  if (!root || !isInside(root, path)) return;
+  // Folder workspace tambahan (multi-root) juga bisa ditampilkan, bukan hanya folder utama.
+  const root = workspaceRoots().find((r) => isInside(r, path));
+  if (!root) return;
   let d = dirname(path);
   const chain: string[] = [];
   while (d.length >= root.length) {
@@ -663,8 +665,15 @@ export async function newFolder(inPath?: string | null) {
   }
 }
 
+/** Dokumen terbuka + tab berkas non-teks (gambar, PDF, biner) yang ada di `path` atau di dalam foldernya. */
+export function openPathsUnder(path: string): string[] {
+  const s = getState();
+  const tabs = Object.values(s.tabs).filter((t) => isFileTab(t.kind) && (t.id === path || t.id.startsWith(path + "/"))).map((t) => t.id);
+  return [...new Set([...docs.docsUnder(path), ...tabs])];
+}
+
 function retargetTabs(oldPath: string, newPath: string) {
-  const affected = docs.docsUnder(oldPath);
+  const affected = openPathsUnder(oldPath);
   for (const p of affected) {
     const np = newPath + p.slice(oldPath.length);
     docs.renameDocument(p, np);
@@ -673,7 +682,7 @@ function retargetTabs(oldPath: string, newPath: string) {
       const t = tabs[p];
       if (t) {
         delete tabs[p];
-        tabs[np] = { ...t, id: np, name: basename(np), lang: languageFor(basename(np)).name };
+        tabs[np] = { ...t, id: np, name: basename(np), lang: t.kind === "text" ? languageFor(basename(np)).name : t.lang };
       }
       const groups = s.groups.map((g) => ({ tabs: g.tabs.map((x) => (x === p ? np : x)), active: g.active === p ? np : g.active }));
       return { tabs, groups };
@@ -714,7 +723,7 @@ export async function deletePath(path: string) {
   try {
     const token = await api.trash(path);
     // Tutup tab berkas itu dan semua isi folder (tanpa tanya; isinya sudah di Trash).
-    for (const p of docs.docsUnder(path)) {
+    for (const p of openPathsUnder(path)) {
       const st = getState();
       st.groups.forEach((g, i) => g.tabs.includes(p) && removeFromGroup(p, i));
     }
@@ -960,7 +969,7 @@ export async function cloneRepo() {
   if (!url) return;
   const parent = await pickFolder();
   if (!parent) return;
-  const done = stickyToast(`Meng-clone ${url.trim()}…`);
+  const done = stickyToast(tl("Meng-clone {url}…", { url: url.trim() }));
   try {
     const dest = await api.gitClone(url.trim(), parent);
     done();
@@ -979,7 +988,7 @@ export async function showAbout() {
     kind: "confirm",
     title: "Alexel Studio",
     message: tl("Editor kode gratis dan open source untuk macOS, Windows, dan Linux, dengan terminal, server bahasa, debugger, dan agen AI pilihanmu. Lisensi MIT."),
-    detail: info ? `Versi ${info.version}\nElectron ${info.electron}${info.chrome ? `\nChromium ${info.chrome}` : ""}${info.node ? `\nNode ${info.node}` : ""}\n${info.platform} ${info.arch ?? ""}` : undefined,
+    detail: info ? `${tl("Versi")} ${info.version}\nElectron ${info.electron}${info.chrome ? `\nChromium ${info.chrome}` : ""}${info.node ? `\nNode ${info.node}` : ""}\n${info.platform} ${info.arch ?? ""}` : undefined,
     okLabel: tl("Tutup"),
     cancelLabel: "",
   });

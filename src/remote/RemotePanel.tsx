@@ -21,6 +21,8 @@ const useRemote = create<{ conns: Record<string, Conn>; dirs: Record<string, { n
 const key = (t: string, p: string) => `${t}\u0000${p}`;
 const joinR = (a: string, b: string) => (a.endsWith("/") ? a + b : `${a}/${b}`);
 const parentR = (p: string) => p.replace(/\/[^/]+\/?$/, "") || "/";
+/** Nama satu entri: tidak kosong, tanpa "/", dan bukan "." / ".." (keduanya menunjuk folder lain). */
+const validName = (v: string) => !!v.trim() && !v.includes("/") && v.trim() !== "." && v.trim() !== "..";
 
 async function loadDir(target: string, dir: string) {
   try {
@@ -50,7 +52,7 @@ function Node({ target, path, name, dir, depth }: { target: string; path: string
     }
   };
   const create = async (kind: "file" | "dir") => {
-    const n = await promptDialog(kind === "file" ? tl("Berkas baru di server") : tl("Folder baru di server"), { placeholder: kind === "file" ? "main.py" : "src", validate: (v) => (!v.trim() || v.includes("/") ? tl("Nama tidak valid") : null) });
+    const n = await promptDialog(kind === "file" ? tl("Berkas baru di server") : tl("Folder baru di server"), { placeholder: kind === "file" ? "main.py" : "src", validate: (v) => (!validName(v) ? tl("Nama tidak valid") : null) });
     if (!n) return;
     try {
       await api.remoteOp(target, kind === "file" ? "touch" : "mkdir", joinR(path, n.trim()));
@@ -62,7 +64,7 @@ function Node({ target, path, name, dir, depth }: { target: string; path: string
     }
   };
   const rename = async () => {
-    const n = await promptDialog(tl("Ganti nama"), { defaultValue: name, validate: (v) => (!v.trim() || v.includes("/") ? tl("Nama tidak valid") : null) });
+    const n = await promptDialog(tl("Ganti nama"), { defaultValue: name, validate: (v) => (!validName(v) ? tl("Nama tidak valid") : null) });
     if (!n || n === name) return;
     try {
       await api.remoteOp(target, "mv", path, joinR(parentR(path), n.trim()));
@@ -100,7 +102,7 @@ function Node({ target, path, name, dir, depth }: { target: string; path: string
               <IconButton label={tl("Folder baru")} onClick={() => void create("dir")}>
                 <FolderPlus size={12} />
               </IconButton>
-              <IconButton label={tl("Terminal di folder ini")} onClick={() => void api.remoteTerminalCmd(target, path).then((c) => runInTerminal(c, `ssh ${target}`))}>
+              <IconButton label={tl("Terminal di folder ini")} onClick={() => void api.remoteTerminalCmd(target, path).then((c) => runInTerminal(c, `ssh ${target}`)).catch((e) => toast(errMsg(e), "error"))}>
                 <SquareTerminal size={12} />
               </IconButton>
             </>
@@ -123,7 +125,7 @@ function HostRow({ h, refresh }: { h: Host; refresh: () => void }) {
   const conn = useRemote((s) => s.conns[h.target]);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
-  const terminal = () => void api.remoteTerminalCmd(h.target).then((c) => runInTerminal(c, `ssh ${h.target}`));
+  const terminal = () => void api.remoteTerminalCmd(h.target).then((c) => runInTerminal(c, `ssh ${h.target}`)).catch((e) => toast(errMsg(e), "error"));
   const connect = async () => {
     setBusy(true);
     setErr(null);
@@ -140,7 +142,7 @@ function HostRow({ h, refresh }: { h: Host; refresh: () => void }) {
     }
   };
   const disconnect = () => {
-    void api.remoteDisconnect(h.target);
+    void api.remoteDisconnect(h.target).catch(() => {});
     useRemote.setState((s) => {
       const conns = { ...s.conns };
       delete conns[h.target];
@@ -187,7 +189,7 @@ function HostRow({ h, refresh }: { h: Host; refresh: () => void }) {
                   <Plug size={12} />
                 </IconButton>
                 {h.source === "saved" && (
-                  <IconButton label={tl("Hapus dari daftar")} onClick={() => void api.remoteSaveHost(h.target, true).then(refresh)}>
+                  <IconButton label={tl("Hapus dari daftar")} onClick={() => void api.remoteSaveHost(h.target, true).then(refresh).catch((e) => toast(errMsg(e), "error"))}>
                     <Trash2 size={12} />
                   </IconButton>
                 )}

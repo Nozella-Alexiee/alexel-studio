@@ -25,6 +25,13 @@ if (import.meta.env.DEV) {
   );
 }
 
+// Promise yang gagal tanpa catch (mis. panggilan IPC `void api.x()`) dicatat di Output, bukan hilang di konsol.
+window.addEventListener("unhandledrejection", (e) => {
+  const r: unknown = e.reason;
+  const msg = r instanceof Error ? r.message : typeof r === "string" ? r : (r as { message?: string } | null)?.message ?? String(r);
+  void import("./app/output").then((m) => m.logOutput("Alexel Studio", msg)).catch(() => {});
+});
+
 // Platform untuk CSS (title bar, ruang tombol jendela).
 document.documentElement.dataset.platform = platform;
 // Layar penuh macOS menyembunyikan lampu lalu lintas, jadi ruang kosongnya di titlebar ikut dilepas.

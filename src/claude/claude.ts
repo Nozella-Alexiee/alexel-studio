@@ -177,7 +177,7 @@ function onControlRequest(key: string, ev: any) {
   }
   const c = conv(key);
   const toolMsg = req.tool_use_id ? c.tools.get(req.tool_use_id) : undefined;
-  if (toolMsg) update(toolMsg, (m) => ({ tool: m.tool ? { ...m.tool, status: "running" } : m.tool, meta: "menunggu izin" }));
+  if (toolMsg) update(toolMsg, (m) => ({ tool: m.tool ? { ...m.tool, status: "running" } : m.tool, meta: tl("menunggu izin") }));
   push({
     role: "permission",
     text: describeTool(req.tool_name, req.input),
@@ -259,7 +259,7 @@ function onUser(c: Conv, message: any) {
     if (!msg) continue;
     const raw = resultText(part.content);
     const status: ChatTool["status"] = part.is_error ? (DENIED.test(raw) ? "denied" : "error") : "ok";
-    update(msg, (m) => ({ tool: m.tool ? { ...m.tool, status, result: raw.slice(0, 4000) } : m.tool, meta: status === "denied" ? "ditolak" : status === "error" ? raw.slice(0, 200) : undefined }));
+    update(msg, (m) => ({ tool: m.tool ? { ...m.tool, status, result: raw.slice(0, 4000) } : m.tool, meta: status === "denied" ? tl("ditolak") : status === "error" ? raw.slice(0, 200) : undefined }));
   }
 }
 
@@ -664,12 +664,13 @@ export async function cancelClaude() {
   if (!key) return;
   const c = conv(key);
   const ok = await api.agentControl(agentNow(), key, { type: "control_request", request: { subtype: "interrupt" } }).catch(() => false);
+  if (c.cancelTimer) clearTimeout(c.cancelTimer);
   c.cancelTimer = setTimeout(() => {
     if (getState().chatRunning !== key) return;
     c.closing = true;
-    void api.agentClose(agentNow(), key);
+    void api.agentClose(agentNow(), key).catch(() => {});
     setState({ chatRunning: null, chatKey: newChatKey() });
-    push({ role: "info", text: "Dihentikan." });
+    push({ role: "info", text: tl("Dihentikan.") });
   }, ok ? 5000 : 0);
 }
 

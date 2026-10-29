@@ -8,7 +8,7 @@ import fs from "node:fs";
 import net from "node:net";
 import path from "node:path";
 import WebSocket from "ws";
-import { childEnv, findExecutable, isWin, killTree, type Ctx } from "./util";
+import { childEnv, findExecutable, isWin, killTree, spawnable, type Ctx } from "./util";
 
 interface Server {
   root: string;
@@ -55,24 +55,41 @@ function freePort(): Promise<number> {
   });
 }
 
+/** Server yang sedang dinyalakan per root: panggilan bersamaan (daftar kernel + mulai kernel) memakai satu proses. */
+const starting = new Map<string, Promise<Server>>();
+
 async function startServer(root: string, configured?: string | null): Promise<Server> {
   const cur = servers.get(root);
   if (cur && cur.proc.exitCode === null) {
     await cur.ready;
     return cur;
   }
+  const pending = starting.get(root);
+  if (pending) return pending;
+  const p = launchServer(root, configured).finally(() => starting.delete(root));
+  starting.set(root, p);
+  return p;
+}
+
+async function launchServer(root: string, configured?: string | null): Promise<Server> {
   const exe = findJupyter(root, configured);
   if (!exe) throw new Error("JUPYTER_MISSING");
   const port = await freePort();
   const token = randomBytes(24).toString("hex");
-  const proc = spawn(exe, ["server", "--no-browser", `--port=${port}`, "--ip=127.0.0.1", `--ServerApp.root_dir=${root}`, `--IdentityProvider.token=${token}`, "--ServerApp.disable_check_xsrf=True", "--ServerApp.port_retries=0"], { cwd: root, env: childEnv({ JUPYTER_TOKEN: token }), stdio: ["ignore", "pipe", "pipe"], windowsHide: true });
+  // Windows: jupyter bisa berupa shim .cmd (conda/pipx) yang tidak bisa di-spawn langsung.
+  const sp = spawnable(exe, ["server", "--no-browser", `--port=${port}`, "--ip=127.0.0.1", `--ServerApp.root_dir=${root}`, `--IdentityProvider.token=${token}`, "--ServerApp.disable_check_xsrf=True", "--ServerApp.port_retries=0"]);
+  const proc = spawn(sp.cmd, sp.args, { cwd: root, env: childEnv({ JUPYTER_TOKEN: token }), stdio: ["ignore", "pipe", "pipe"], windowsHide: true, windowsVerbatimArguments: sp.verbatim });
   const s: Server = { root, proc, port, token, log: "", ready: Promise.resolve() };
   const onData = (d: Buffer) => (s.log = (s.log + d.toString()).slice(-8000));
   proc.stdout?.on("data", onData);
   proc.stderr?.on("data", onData);
+  // Gagal dijalankan (EACCES/ENOENT): tanpa listener ini event "error" menjatuhkan main process.
+  let spawnErr: Error | null = null;
+  proc.on("error", (e) => (spawnErr = e));
   s.ready = new Promise<void>((res, rej) => {
     const t0 = Date.now();
     const poll = async () => {
+      if (spawnErr) return rej(new Error(`Jupyter tidak bisa dijalankan: ${spawnErr.message}`));
       if (proc.exitCode !== null) return rej(new Error(`Jupyter Server berhenti: ${s.log.trim().split("\n").slice(-4).join("\n")}`));
       try {
         const r = await fetch(`http://127.0.0.1:${port}/api/status`, { headers: { Authorization: `token ${token}` } });
@@ -90,7 +107,14 @@ async function startServer(root: string, configured?: string | null): Promise<Se
     if (servers.get(root) === s) servers.delete(root);
   });
   servers.set(root, s);
-  await s.ready;
+  try {
+    await s.ready;
+  } catch (e) {
+    // Server yang tidak pernah siap jangan dipakai ulang (dan jangan dibiarkan hidup).
+    if (servers.get(root) === s) servers.delete(root);
+    if (proc.exitCode === null && !spawnErr) killTree(proc);
+    throw e;
+  }
   return s;
 }
 
@@ -145,10 +169,17 @@ export async function startKernel(ctx: Ctx, root: string, name: string | null, c
     kernel.runs.clear();
     ctx.emit("jupyter-event", { kernel: k.id, type: "status", state: "dead" });
   });
-  await new Promise<void>((res, rej) => {
-    ws.once("open", () => res());
-    ws.once("error", rej);
-  });
+  // Galat sesudah tersambung juga harus punya listener (tanpa itu "error" WebSocket menjatuhkan main process).
+  ws.on("error", () => {});
+  try {
+    await new Promise<void>((res, rej) => {
+      ws.once("open", () => res());
+      ws.once("error", rej);
+    });
+  } catch (e) {
+    kernels.delete(k.id);
+    throw e;
+  }
   return { id: k.id, name: k.name };
 }
 

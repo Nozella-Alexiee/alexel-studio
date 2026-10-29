@@ -10,7 +10,7 @@ import { runInTerminal } from "../app/run";
 import { IconButton, Spinner } from "../components/ui";
 import { MiniEditor } from "../db/MiniEditor";
 import * as docs from "../editor/documents";
-import { api } from "../lib/ipc";
+import { api, openExternal } from "../lib/ipc";
 
 const isWin = navigator.userAgent.includes("Windows");
 import { dirname } from "../lib/paths";
@@ -21,6 +21,15 @@ import { appendOutput, newId, parseNotebook, serializeNotebook, stripAnsi, textO
 
 const md = (s: string) => DOMPurify.sanitize(marked.parse(s, { async: false, gfm: true }) as string, { USE_PROFILES: { html: true }, FORBID_TAGS: ["style", "form", "input", "button", "script", "iframe"], FORBID_ATTR: ["style"] });
 const html = (s: string) => DOMPurify.sanitize(s, { USE_PROFILES: { html: true, svg: true }, FORBID_TAGS: ["script", "iframe", "form", "input", "button"] });
+
+/** Tautan di markdown/HTML output: http(s)/mailto dibuka di browser sistem; tautan relatif/lain tidak boleh menavigasi jendela aplikasi. */
+const onLinkClick = (e: React.MouseEvent) => {
+  const a = (e.target as HTMLElement).closest("a");
+  if (!a) return;
+  e.preventDefault();
+  const href = a.getAttribute("href") ?? "";
+  if (/^(https?:|mailto:)/i.test(href)) void openExternal(href);
+};
 
 let pyLang: Promise<import("@codemirror/state").Extension> | null = null;
 const pythonLang = () => (pyLang ??= import("@codemirror/lang-python").then((m) => m.python()));
@@ -253,10 +262,10 @@ export default function NotebookView({ path }: { path: string }) {
         <button className="btn btn-sm btn-primary" onClick={() => void runAll()}>
           <ChevronsDown size={12} /> {tl("Jalankan semua")}
         </button>
-        <IconButton label={tl("Interupsi kernel")} onClick={() => void interruptKernel(path)} disabled={status !== "busy"}>
+        <IconButton label={tl("Interupsi kernel")} onClick={() => void interruptKernel(path).catch((e: Error) => toast(e.message, "error"))} disabled={status !== "busy"}>
           <Square size={12} />
         </IconButton>
-        <IconButton label={tl("Mulai ulang kernel")} onClick={() => void restartKernel(path)} disabled={!kernel?.id}>
+        <IconButton label={tl("Mulai ulang kernel")} onClick={() => void restartKernel(path).catch((e: Error) => toast(e.message, "error"))} disabled={!kernel?.id}>
           <RotateCcw size={12} />
         </IconButton>
         <IconButton label={tl("Hapus semua output")} onClick={() => commit({ ...nb, cells: nb.cells.map((c) => (c.cell_type === "code" ? { ...c, outputs: [], execution_count: null } : c)) }, true)}>
@@ -293,7 +302,7 @@ export default function NotebookView({ path }: { path: string }) {
         </div>
       )}
       {kernel?.status === "error" && !missing && kernel.error && <pre className="db-error-box">{kernel.error}</pre>}
-      <div className="nb-cells">
+      <div className="nb-cells" onClick={onLinkClick}>
         {nb.cells.map((c, i) => (
           <Cell
             key={c.id}

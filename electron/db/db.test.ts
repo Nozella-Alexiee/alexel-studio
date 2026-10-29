@@ -7,8 +7,8 @@ import type { Ctx } from "../util";
 import * as DB from "./index";
 import { composeServices, detect, detectFull, parseEnv } from "./detect";
 import { looseToJson, splitArgs } from "./loose";
-import { mongoRisk, parseMongo } from "./drivers/mongo";
-import { redisRisk, splitRedis } from "./drivers/redis";
+import { mongoIsWrite, mongoRisk, parseMongo } from "./drivers/mongo";
+import { redisIsWrite, redisRisk, splitRedis } from "./drivers/redis";
 import { isWrite, riskOf, splitStatements } from "./risk";
 
 const tmp = (p: string) => fs.mkdtempSync(path.join(os.tmpdir(), `alexel-db-${p}-`));
@@ -50,11 +50,20 @@ describe("mongo & redis parsing", () => {
     expect(mongoRisk("db.users.deleteMany({})")).toMatch(/kosong/);
     expect(mongoRisk("db.users.deleteMany({ a: 1 })")).toBeNull();
     expect(mongoRisk("db.users.drop()")).toMatch(/drop/);
+    // Ekspor menolak perintah tulis (dijalankan tanpa konfirmasi).
+    expect(mongoIsWrite("db.users.deleteMany({ a: 1 })")).toBe(true);
+    expect(mongoIsWrite("db.runCommand({ dropDatabase: 1 })")).toBe(true);
+    expect(mongoIsWrite("db.users.find({}).limit(5)")).toBe(false);
+    expect(mongoIsWrite('db.users.aggregate([{ $match: {} }, { $out: "salinan" }])')).toBe(true);
+    expect(mongoIsWrite("db.users.aggregate([{ $match: { a: 1 } }])")).toBe(false);
   });
   it("mengurai perintah redis-cli", () => {
     expect(splitRedis(`SET "user:1" 'a b' plain`)).toEqual(["SET", "user:1", "a b", "plain"]);
     expect(redisRisk("FLUSHALL")).toMatch(/Redis/);
     expect(redisRisk("GET a")).toBeNull();
+    expect(redisIsWrite("# komentar\nGET a\nHGETALL h")).toBe(false);
+    expect(redisIsWrite("GET a\nDEL a")).toBe(true);
+    expect(redisIsWrite("@key user:1")).toBe(false);
   });
 });
 

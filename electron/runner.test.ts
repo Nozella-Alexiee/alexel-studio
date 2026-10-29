@@ -209,3 +209,11 @@ describe("target dari konfigurasi project", () => {
     expect(parseJsonc('{"u":"http://x//y /* z */", /* c */ "a":[1,2,],}')).toEqual({ u: "http://x//y /* z */", a: [1, 2] });
   });
 });
+
+describe("deno", () => {
+  it("task dari deno.jsonc yang berkomentar tetap terdeteksi", () => {
+    const d = tmp();
+    put(d, "deno.jsonc", `{\n  // tugas pengembangan\n  "tasks": { "dev": "deno run -A main.ts", },\n}\n`);
+    expect(detectTargets(d, "linux").map((t) => t.label)).toContain("deno task dev");
+  });
+});

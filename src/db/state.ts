@@ -2,6 +2,7 @@
 // (panel bawah "Hasil"), dan koneksi pilihan per berkas .sql.
 
 import { create } from "zustand";
+import { isWrite } from "../../electron/db/risk";
 import type { DbConnection, DbKind, DbSchema, QueryResult } from "../../electron/db/types";
 import { api, errMsg, type DbDetected } from "../lib/ipc";
 import { confirmDialog, getState as appState, setLayout, toast } from "../state/store";
@@ -127,6 +128,21 @@ export async function removeConn(id: string) {
   void refreshDetected();
 }
 
+/**
+ * Query di koneksi produksi yang perlu konfirmasi. SQL memakai aturan yang sama dengan main process
+ * (semua statement diperiksa, jadi "SELECT 1; UPDATE …" atau CTE yang menulis tidak lolos).
+ */
+export function prodNeedsConfirm(kind: DbKind, text: string): boolean {
+  if (isSql(kind)) return isWrite(text);
+  if (kind === "redis") {
+    // Satu berkas bisa berisi banyak perintah (per baris): semuanya harus baca.
+    const lines = text.split("\n").map((l) => l.trim()).filter((l) => l && !l.startsWith("#") && !l.startsWith("//") && !/^@key\s+/.test(l));
+    return !lines.length || lines.some((l) => !/^(get|hget|hgetall|hkeys|hlen|mget|scan|hscan|sscan|zscan|keys|info|type|ttl|pttl|exists|strlen|llen|lrange|scard|smembers|zcard|zrange|dbsize|ping)(\s|$)/i.test(l));
+  }
+  // aggregate dengan $out/$merge menulis koleksi.
+  return !/^\s*db\.\w+\.(find|findOne|aggregate|count|countDocuments|distinct)\(/i.test(text) || /\$(out|merge)\b/.test(text);
+}
+
 /** Jalankan query; query berisiko meminta konfirmasi lalu diulang dengan `confirmed`. */
 export async function runQuery(id: string, text: string, o: { limit?: number; showPanel?: boolean } = {}): Promise<QueryResult | null> {
   const c = connById(id);
@@ -139,7 +155,7 @@ export async function runQuery(id: string, text: string, o: { limit?: number; sh
   let confirmed = false;
   for (;;) {
     try {
-      if (c.env === "prod" && !confirmed && !/^\s*(select|show|explain|with|describe|pragma|db\.\w+\.(find|aggregate|count)|get |hget|scan|keys|info)/i.test(text)) {
+      if (c.env === "prod" && !confirmed && prodNeedsConfirm(c.kind, text)) {
         if (!(await confirmDialog(tl("Jalankan di produksi?"), tl("Koneksi {name} ditandai produksi.", { name: c.name }), tl("Jalankan"), true))) {
           patch({ running: false, error: tl("Dibatalkan.") });
           return null;

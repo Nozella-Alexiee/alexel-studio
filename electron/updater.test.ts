@@ -91,6 +91,15 @@ describe("unduh & verifikasi pembaruan", () => {
     expect(events.at(-1)).toEqual(["update-progress", { pct: 100 }]);
   });
 
+  it.skipIf(!supported)("klik ganda memakai unduhan yang sama (folder tidak dihapus di tengah jalan)", async () => {
+    if (plat === "linux") process.env.APPIMAGE = "/tmp/x.AppImage";
+    const { result } = await run(false);
+    const { updatePrepare } = await import("./updater");
+    const again = updatePrepare({ userData: "", emit: () => {}, trash: async () => {}, reveal: () => {} } as never);
+    expect(again).toBe(result);
+    await expect(Promise.all([result, again])).resolves.toMatchObject([{ version: "9.9.9" }, { version: "9.9.9" }]);
+  });
+
   it.skipIf(!supported)("berkas yang berubah satu byte ditolak dan tidak tersisa di disk", async () => {
     if (plat === "linux") process.env.APPIMAGE = "/tmp/x.AppImage";
     const { result } = await run(true);

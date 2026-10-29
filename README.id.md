@@ -8,7 +8,7 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/Nozella-Alexiee/alexel-studio/releases/latest"><img src="https://img.shields.io/badge/Rilis-v0.9.0-38BDF8?style=for-the-badge&logo=github&logoColor=white" alt="Rilis Terbaru" /></a>
+  <a href="https://github.com/Nozella-Alexiee/alexel-studio/releases/latest"><img src="https://img.shields.io/badge/Rilis-v1.0.0-38BDF8?style=for-the-badge&logo=github&logoColor=white" alt="Rilis Terbaru" /></a>
   <a href="#-agen-ai-yang-didukung"><img src="https://img.shields.io/badge/Agen_AI-Claude_·_Codex_·_Gemini_·_Antigravity-8B5CF6?style=for-the-badge" alt="Agen AI" /></a>
   <a href="#-unduh--instalasi"><img src="https://img.shields.io/badge/Platform-macOS_·_Windows_·_Linux-0284C7?style=for-the-badge&logo=apple&logoColor=white" alt="Lintas Platform" /></a>
   <a href="#-privasi--tanpa-telemetri"><img src="https://img.shields.io/badge/Telemetri-Nol_·_100%25_Privat-10B981?style=for-the-badge" alt="Tanpa Telemetri" /></a>
@@ -243,8 +243,8 @@ flowchart TD
 Paket biner yang sudah dikompilasi tersedia langsung di **[Halaman Rilis GitHub](https://github.com/Nozella-Alexiee/alexel-studio/releases/latest)**:
 
 ### 🍏 macOS
-* **Apple Silicon (M1/M2/M3/M4)**: [`Alexel-Studio-0.4.1-arm64.dmg`](https://github.com/Nozella-Alexiee/alexel-studio/releases/latest)
-* **Intel**: [`Alexel-Studio-0.4.1.dmg`](https://github.com/Nozella-Alexiee/alexel-studio/releases/latest)
+* **Apple Silicon (M1/M2/M3/M4)**: [`Alexel-Studio-mac-arm64.dmg`](https://github.com/Nozella-Alexiee/alexel-studio/releases/latest/download/Alexel-Studio-mac-arm64.dmg)
+* **Intel**: [`Alexel-Studio-mac-x64.dmg`](https://github.com/Nozella-Alexiee/alexel-studio/releases/latest/download/Alexel-Studio-mac-x64.dmg)
 
 ```bash
 # Verifikasi macOS Gatekeeper (bila muncul dialog saat pertama kali dibuka):
@@ -252,13 +252,13 @@ xattr -cr /Applications/Alexel\ Studio.app
 ```
 
 ### 🪟 Windows
-* **Windows 64-bit (x64)**: [`Alexel-Studio-Setup-0.4.1.exe`](https://github.com/Nozella-Alexiee/alexel-studio/releases/latest)
-* **Windows ARM64**: [`Alexel-Studio-Setup-0.4.1-arm64.exe`](https://github.com/Nozella-Alexiee/alexel-studio/releases/latest)
+* **Windows 64-bit (x64)**: [`Alexel-Studio-win-x64.exe`](https://github.com/Nozella-Alexiee/alexel-studio/releases/latest/download/Alexel-Studio-win-x64.exe)
+* **Windows ARM64**: [`Alexel-Studio-win-arm64.exe`](https://github.com/Nozella-Alexiee/alexel-studio/releases/latest/download/Alexel-Studio-win-arm64.exe)
 
 ### 🐧 Linux
-* **AppImage Universal**: [`Alexel-Studio-0.4.1.AppImage`](https://github.com/Nozella-Alexiee/alexel-studio/releases/latest)
-* **Debian / Ubuntu**: [`alexel-studio_0.4.1_amd64.deb`](https://github.com/Nozella-Alexiee/alexel-studio/releases/latest)
-* **Fedora / RHEL**: [`alexel-studio-0.4.1.x86_64.rpm`](https://github.com/Nozella-Alexiee/alexel-studio/releases/latest)
+* **AppImage Universal**: [`Alexel-Studio-linux-x86_64.AppImage`](https://github.com/Nozella-Alexiee/alexel-studio/releases/latest/download/Alexel-Studio-linux-x86_64.AppImage)
+* **Debian / Ubuntu**: [`Alexel-Studio-linux-amd64.deb`](https://github.com/Nozella-Alexiee/alexel-studio/releases/latest/download/Alexel-Studio-linux-amd64.deb)
+* **Fedora / RHEL**: [`Alexel-Studio-linux-x86_64.rpm`](https://github.com/Nozella-Alexiee/alexel-studio/releases/latest/download/Alexel-Studio-linux-x86_64.rpm)
 
 ---
 

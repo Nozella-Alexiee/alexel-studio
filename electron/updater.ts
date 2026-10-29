@@ -91,8 +91,18 @@ export async function updateCheck(): Promise<UpdateOffer> {
   return { version, kind: pick.kind, manualReason: null, url: rel.url };
 }
 
-/** Unduh & verifikasi pemasang (tanpa memasang). Progres lewat event `update-progress`. */
-export async function updatePrepare(ctx: Ctx): Promise<{ version: string; kind: UpdateKind }> {
+let preparing: Promise<{ version: string; kind: UpdateKind }> | null = null;
+
+/**
+ * Unduh & verifikasi pemasang (tanpa memasang). Progres lewat event `update-progress`.
+ * Klik ganda memakai unduhan yang sedang berjalan: unduhan kedua akan menghapus folder yang sedang ditulis.
+ */
+export function updatePrepare(ctx: Ctx): Promise<{ version: string; kind: UpdateKind }> {
+  preparing ??= doPrepare(ctx).finally(() => (preparing = null));
+  return preparing;
+}
+
+async function doPrepare(ctx: Ctx): Promise<{ version: string; kind: UpdateKind }> {
   const repo = repoSlug();
   if (!repo) throw new Error("Repositori tidak diketahui.");
   const rel = await latestRelease(repo);

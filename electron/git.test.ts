@@ -142,4 +142,16 @@ describe.skipIf(!hasGit)("git lanjutan", () => {
     expect(show.text).toContain("awal");
     expect(show.text).toContain("+1");
   });
+
+  it("checkout dengan nama yang sama dengan berkas tidak membuang perubahan berkas itu", async () => {
+    const d = await repo("checkout");
+    write(d, "fitur", "awal\n");
+    await commitAll(d, "awal");
+    write(d, "fitur", "belum disimpan ke git\n");
+    await expect(G.gitCheckout(d, "fitur", false)).rejects.toThrow();
+    expect(fs.readFileSync(path.join(d, "fitur"), "utf8")).toBe("belum disimpan ke git\n");
+    await G.gitCheckout(d, "fitur", true);
+    expect((await G.gitBranches(d)).current).toBe("fitur");
+    expect(fs.readFileSync(path.join(d, "fitur"), "utf8")).toBe("belum disimpan ke git\n");
+  });
 });

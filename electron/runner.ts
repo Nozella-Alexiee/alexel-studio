@@ -382,7 +382,13 @@ export function detectTargets(root: string, platform: Platform = process.platfor
   }
   out.push(...configuredTargets(root, platform));
   for (const f of ["deno.json", "deno.jsonc"]) {
-    const tasks = readJson(path.join(root, f))?.tasks as Record<string, unknown> | undefined;
+    // deno.json(c) boleh berisi komentar & koma di akhir.
+    let tasks: Record<string, unknown> | undefined;
+    try {
+      tasks = parseJsonc<Record<string, unknown>>(fs.readFileSync(path.join(root, f), "utf8"))?.tasks as Record<string, unknown> | undefined;
+    } catch {
+      /* tidak ada */
+    }
     if (tasks) for (const n of Object.keys(tasks)) out.push(target("deno", `deno task ${n}`, `deno task ${sq(n)}`, root, f));
   }
   for (const f of ["docker-compose.yml", "docker-compose.yaml", "compose.yml", "compose.yaml"]) {

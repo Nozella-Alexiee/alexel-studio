@@ -23,7 +23,7 @@ let token = 0;
 /** Pantau folder project (plus folder workspace tambahan); semua perubahan dilaporkan atas nama `root`. */
 export async function watchProject(ctx: Ctx, root: string, debounceMs: number, extra: string[] = []) {
   const my = ++token;
-  await unwatch();
+  await release();
   if (!root) return;
   // eslint-disable-next-line @typescript-eslint/no-require-imports
   const watcher = require("@parcel/watcher") as typeof import("@parcel/watcher");
@@ -64,7 +64,13 @@ export async function watchProject(ctx: Ctx, root: string, debounceMs: number, e
   else subs = mine;
 }
 
+/** Berhenti memantau. Menaikkan token supaya watchProject yang masih berjalan tidak memasang langganan lagi. */
 export async function unwatch() {
+  token++;
+  await release();
+}
+
+async function release() {
   const s = subs;
   subs = [];
   await Promise.all(s.map((x) => x.unsubscribe().catch(() => {})));

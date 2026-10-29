@@ -5,10 +5,10 @@ import DOMPurify from "dompurify";
 import { marked } from "marked";
 import { Minus, Plus, RotateCcw, Maximize2, ExternalLink, RefreshCw } from "lucide-react";
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { api, isNative, openExternal, previewUrl } from "../lib/ipc";
-import { dirname, isInside, join } from "../lib/paths";
+import { api, errMsg, isNative, openExternal, previewUrl } from "../lib/ipc";
+import { dirname, isInside, localImageSrc, normalizePath } from "../lib/paths";
 import { formatBytes } from "../lib/format";
-import { getState } from "../state/store";
+import { getState, toast } from "../state/store";
 import * as docs from "./documents";
 import { IconButton, Spinner } from "../components/ui";
 import { tl } from "../i18n";
@@ -46,8 +46,9 @@ export function MarkdownPreview({ path }: { path: string }) {
     const root = getState().root;
     if (!isNative || !root) return clean;
     const base = dirname(path);
-    return clean.replace(/<img([^>]*?)src="(?!https?:|data:)([^"]+)"/g, (_m, pre, src) => {
-      const abs = src.startsWith("/") ? src : join(base, src);
+    return clean.replace(/<img([^>]*?)src="(?!https?:|data:)([^"]+)"/gi, (_m, pre, src: string) => {
+      // `../` dirapikan dulu supaya tidak lolos keluar project lewat isInside; %20 dll. didekode (nama berkas berspasi).
+      const abs = normalizePath(localImageSrc(src, base));
       return isInside(root, abs) ? `<img${pre}src="${previewUrl(abs)}"` : `<img${pre}`;
     });
   }, [text, path]);
@@ -58,11 +59,18 @@ export function MarkdownPreview({ path }: { path: string }) {
     e.preventDefault();
     const href = a.getAttribute("href") ?? "";
     if (href.startsWith("#")) {
-      document.getElementById(decodeURIComponent(href.slice(1)))?.scrollIntoView({ behavior: "smooth" });
-    } else if (/^https?:|^mailto:/.test(href)) {
+      let id = href.slice(1);
+      try {
+        id = decodeURIComponent(id);
+      } catch {
+        /* "#%" dsb.: pakai apa adanya */
+      }
+      document.getElementById(id)?.scrollIntoView({ behavior: "smooth" });
+    } else if (/^(https?:|mailto:)/i.test(href)) {
       void openExternal(href);
-    } else if (href) {
-      const target = href.startsWith("/") ? href : join(dirname(path), href.split("#")[0]);
+    } else if (href && !/^[a-z][\w+.-]*:/i.test(href.replace(/^[A-Za-z]:[\\/]/, ""))) {
+      // Tautan relatif ke berkas lain (skema lain seperti file:/javascript: diabaikan).
+      const target = normalizePath(localImageSrc(href, dirname(path)));
       void import("../app/actions").then((m) => m.openFile(target));
     }
   };
@@ -78,7 +86,7 @@ export function HtmlPreview({ path }: { path: string }) {
   // Isi yang belum disimpan dikirim ke backend supaya protokol pratinjau memakainya.
   useEffect(() => {
     if (!isNative) return;
-    void api.previewOverride(path, text).then(() => setNonce((n) => n + 1));
+    void api.previewOverride(path, text).then(() => setNonce((n) => n + 1), () => {});
   }, [path, text]);
   useEffect(() => () => void api.previewOverride(path, null).catch(() => {}), [path]);
 
@@ -89,7 +97,7 @@ export function HtmlPreview({ path }: { path: string }) {
         <IconButton label={tl("Muat ulang")} onClick={() => setNonce((n) => n + 1)}>
           <RefreshCw size={13} />
         </IconButton>
-        <IconButton label={tl("Buka di browser")} onClick={() => void api.commandForFile(path).then(async (t) => (await import("../app/run")).runTarget(t))}>
+        <IconButton label={tl("Buka di browser")} onClick={() => void api.commandForFile(path).then(async (t) => (await import("../app/run")).runTarget(t)).catch((e) => toast(errMsg(e), "error"))}>
           <ExternalLink size={13} />
         </IconButton>
       </div>
@@ -110,13 +118,19 @@ export function ImageViewer({ path }: { path: string }) {
   const box = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
+    let live = true;
     setData(null);
     setErr(null);
     setZoom(1);
+    setDims(null);
     api
       .readImage(path)
-      .then((d) => setData({ url: d.data_url, size: d.size_bytes }))
-      .catch((e) => setErr(String(e)));
+      // Pindah gambar cepat: hasil baca gambar sebelumnya tidak boleh menimpa yang baru.
+      .then((d) => live && setData({ url: d.data_url, size: d.size_bytes }))
+      .catch((e) => live && setErr(errMsg(e)));
+    return () => {
+      live = false;
+    };
   }, [path]);
 
   // Wheel non-pasif supaya ⌘/pinch zoom tidak ikut men-zoom seluruh jendela.

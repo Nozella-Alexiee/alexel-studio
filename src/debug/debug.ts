@@ -185,7 +185,7 @@ export async function startDebug(config?: LaunchConfig) {
   cfg = substitute(cfg, varsNow());
   if (typeof cfg.__buildFile === "string") {
     try {
-      consoleLine("info", `Mengompilasi ${basename(cfg.__buildFile)}…`);
+      consoleLine("info", tl("Mengompilasi {file}…", { file: basename(cfg.__buildFile) }));
       cfg = { ...cfg, program: await api.dapBuild(cfg.__buildFile) };
     } catch (e) {
       consoleLine("err", errMsg(e));
@@ -197,7 +197,7 @@ export async function startDebug(config?: LaunchConfig) {
   setDbg({ status: "starting", name: cfg.name, console: [] });
   resetSessionState();
   setLayout({ panel: true, panelTab: "debug", sidebar: true, sideView: "run" });
-  consoleLine("info", `Memulai ${cfg.name}…`);
+  consoleLine("info", tl("Memulai {name}…", { name: cfg.name }));
   const id = `dbg-${Date.now().toString(36)}`;
   try {
     await api.dapStart(id, kind, getState().root ?? "");
@@ -240,7 +240,8 @@ async function runSession(c: DapClient, kind: Kind, cfg: LaunchConfig, isRoot: b
     await launched;
     if (dbg().status === "starting") setDbg({ status: "running" });
   } catch (e) {
-    consoleLine("err", errMsg(e));
+    // Dihentikan pengguna saat masih memulai: request yang tertunda ditolak, bukan error yang perlu ditampilkan.
+    if (!c.stopped) consoleLine("err", errMsg(e));
     if (isRoot) await stopDebug();
   }
 }

@@ -284,7 +284,10 @@ export async function browse(ctx: Ctx, id: string, o: BrowseOptions): Promise<Qu
   const c = connection(ctx, id);
   const d = await driverFor(ctx, id);
   if (c.kind === "mongodb") {
-    const r = await d.query(`db.getCollection(${JSON.stringify(o.table)}).find({}).skip(${o.offset ?? 0}).limit(${o.limit ?? 200})`, { limit: o.limit ?? 200, timeoutMs: 30_000 });
+    // Angka dari renderer dipaksa jadi bilangan bulat sebelum masuk teks perintah.
+    const skip = Math.max(0, Math.floor(Number(o.offset) || 0));
+    const lim = Math.max(1, Math.min(Math.floor(Number(o.limit) || 200), 5000));
+    const r = await d.query(`db.getCollection(${JSON.stringify(o.table)}).find({}).skip(${skip}).limit(${lim})`, { limit: lim, timeoutMs: 30_000 });
     const n = await d.query(`db.getCollection(${JSON.stringify(o.table)}).countDocuments({})`, { limit: 1, timeoutMs: 30_000 }).catch(() => null);
     return { ...r, total: n ? Number(n.rows[0]?.[0]) : null };
   }
@@ -354,7 +357,9 @@ export function toJson(r: Pick<QueryResult, "columns" | "rows">): string {
 /** Jalankan query lagi tanpa batas tampilan (maks 1 juta baris) dan tulis ke berkas. */
 export async function exportQuery(ctx: Ctx, id: string, text: string, format: "csv" | "json", target: string): Promise<{ rows: number }> {
   const c = connection(ctx, id);
-  if (isWrite(text) && c.kind !== "mongodb" && c.kind !== "redis") throw new Error("Ekspor hanya untuk query baca.");
+  // Ekspor menjalankan query tanpa konfirmasi: perintah tulis MongoDB/Redis juga ditolak, bukan hanya SQL.
+  const writes = c.kind === "mongodb" ? (await import("./drivers/mongo")).mongoIsWrite(text) : c.kind === "redis" ? (await import("./drivers/redis")).redisIsWrite(text) : isWrite(text);
+  if (writes) throw new Error("Ekspor hanya untuk query baca.");
   const r = await (await driverFor(ctx, id)).query(text, { limit: 1_000_000, timeoutMs: 600_000 });
   fs.writeFileSync(target, format === "csv" ? toCsv(r) : toJson(r));
   return { rows: r.rows.length };

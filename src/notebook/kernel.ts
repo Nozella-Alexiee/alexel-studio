@@ -67,7 +67,12 @@ export async function runCell(path: string, root: string, kernelName: string | n
     onEvent(e);
     if (e.type === "done") cellHandlers.delete(cellId);
   });
-  await api.jupyterExecute(id, cellId, code);
+  try {
+    await api.jupyterExecute(id, cellId, code);
+  } catch (e) {
+    cellHandlers.delete(cellId);
+    throw e;
+  }
 }
 
 export async function interruptKernel(path: string) {
@@ -78,9 +83,15 @@ export async function interruptKernel(path: string) {
 export async function restartKernel(path: string) {
   const id = useKernels.getState().byPath[path]?.id;
   if (id) {
-    setK(path, { status: "starting" });
-    await api.jupyterRestart(id);
-    setK(path, { status: "idle" });
+    setK(path, { status: "starting", error: undefined });
+    try {
+      await api.jupyterRestart(id);
+      setK(path, { status: "idle" });
+    } catch (e) {
+      // Gagal memulai ulang: jangan tertahan di "Memulai kernel…"; kernel dianggap mati, sel berikutnya memulai baru.
+      setK(path, { status: "dead", error: (e as Error).message });
+      throw e;
+    }
   }
 }
 

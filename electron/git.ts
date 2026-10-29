@@ -181,7 +181,9 @@ export async function gitBranches(dir: string) {
 export async function gitCheckout(dir: string, branch: string, create: boolean, start?: string | null) {
   if (!validRef(branch)) throw new Error("Nama branch tidak valid.");
   if (start && !validSha(start) && !validRef(start)) throw new Error("Titik awal branch tidak valid.");
-  await git(dir, create ? ["checkout", "-q", "-b", branch, ...(start ? [start] : [])] : ["checkout", "-q", branch], "Checkout");
+  // `--` di akhir: nama yang kebetulan sama dengan berkas tidak boleh dibaca sebagai path
+  // (`git checkout <berkas>` membuang perubahan berkas itu tanpa tanya).
+  await git(dir, create ? ["checkout", "-q", "-b", branch, ...(start ? [start] : []), "--"] : ["checkout", "-q", branch, "--"], "Checkout");
 }
 
 /**

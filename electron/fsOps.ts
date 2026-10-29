@@ -128,14 +128,19 @@ export async function writeAtomic(p: string, data: string | Buffer) {
     .stat(target)
     .then((s) => s.mode)
     .catch(() => null);
-  const tmp = path.join(dir, `.${path.basename(target)}.nozel-tmp-${process.pid}-${Date.now()}`);
+  // Akhiran acak: dua simpan bersamaan pada milidetik yang sama tidak boleh berbagi berkas sementara.
+  const tmp = path.join(dir, `.${path.basename(target)}.nozel-tmp-${process.pid}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`);
   const fh = await fsp.open(tmp, "w");
   try {
     await fh.writeFile(data);
     await fh.sync();
-  } finally {
-    await fh.close();
+  } catch (e) {
+    // Disk penuh / galat tulis: jangan tinggalkan berkas sementara setengah jadi di folder pengguna.
+    await fh.close().catch(() => {});
+    await fsp.rm(tmp, { force: true }).catch(() => {});
+    throw e;
   }
+  await fh.close();
   if (mode !== null) await fsp.chmod(tmp, mode).catch(() => {});
   try {
     await renameRetry(tmp, target);

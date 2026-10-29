@@ -245,7 +245,13 @@ export async function dapStartChild(ctx: Ctx, parent: string, id: string): Promi
   if (!validId(id) || sessions.has(id)) throw new Error("Sesi debug tidak valid.");
   const s: DapSession = { id, buf: Buffer.alloc(0), stderr: "", port: p.port };
   sessions.set(id, s);
-  await connectTcp(ctx, s, p.port);
+  try {
+    await connectTcp(ctx, s, p.port);
+  } catch (e) {
+    // Gagal tersambung: jangan tinggalkan sesi tanpa koneksi (id-nya tidak bisa dipakai ulang).
+    if (sessions.get(id) === s) sessions.delete(id);
+    throw e;
+  }
   return { id };
 }
 

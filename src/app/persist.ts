@@ -78,6 +78,11 @@ export function sanitizeSettings(raw: Partial<Settings> | null, migrate = false)
   s.claudeConsent = s.claudeConsent === true;
   s.agentReview = s.agentReview !== false;
   if (!["off", "delay", "focus"].includes(s.autoSave)) s.autoSave = "off";
+  // Nilai salah ketik di settings.json tidak boleh menyalakan Git Bot (afterSave hanya memeriksa !== "off").
+  if (!["off", "commit", "push"].includes(s.gitBot)) s.gitBot = "off";
+  if (!["auto", "on", "off"].includes(s.powerMode)) s.powerMode = "auto";
+  if (s.accent !== null && (typeof s.accent !== "string" || !/^#[0-9a-f]{3,8}$/i.test(s.accent))) s.accent = null;
+  s.confirmDelete = s.confirmDelete !== false;
   s.showResources = s.showResources === true;
   s.updateCheck = s.updateCheck !== false;
   // Pengguna versi lama (antarmuka Indonesia) tetap berbahasa Indonesia.
@@ -142,7 +147,12 @@ export async function restoreAll() {
   if (session?.root) {
     const { openProject } = await import("./actions");
     try {
-      await openProject(session.root, { restoreTabs: { groups: session.groups ?? [], focused: session.focused ?? 0, pinned: Array.isArray(session.pinned) ? session.pinned.filter((x): x is string => typeof x === "string") : [] }, extraRoots: Array.isArray(session.extraRoots) ? session.extraRoots.filter((x): x is string => typeof x === "string") : [], workspaceFile: typeof session.workspaceFile === "string" ? session.workspaceFile : null });
+      // session.json bisa rusak/diedit tangan: tab yang bukan string dibuang supaya pemulihan tidak berhenti di tengah.
+      const groups: Group[] = (Array.isArray(session.groups) ? session.groups : []).map((g) => ({
+        tabs: Array.isArray(g?.tabs) ? g.tabs.filter((t): t is string => typeof t === "string") : [],
+        active: typeof g?.active === "string" ? g.active : null,
+      }));
+      await openProject(session.root, { restoreTabs: { groups, focused: Number.isInteger(session.focused) ? session.focused : 0, pinned: Array.isArray(session.pinned) ? session.pinned.filter((x): x is string => typeof x === "string") : [] }, extraRoots: Array.isArray(session.extraRoots) ? session.extraRoots.filter((x): x is string => typeof x === "string") : [], workspaceFile: typeof session.workspaceFile === "string" ? session.workspaceFile : null });
     } catch {
       /* folder sudah tidak ada */
     }

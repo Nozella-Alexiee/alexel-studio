@@ -198,13 +198,20 @@ async function spawn(rt: Runtime, cwd: string, command?: string) {
   const { cols, rows } = rt.term;
   try {
     const id = await api.ptySpawn(cwd, cols || 100, rows || 24, command, rt.env);
+    // Terminal sudah ditutup selama spawn berjalan: jangan tinggalkan proses yatim tanpa tab.
+    if (runtimes.get(rt.key) !== rt) {
+      pending.delete(id);
+      void api.ptyKill(id).catch(() => {});
+      return;
+    }
     rt.ptyId = id;
     byPty.set(id, rt.key);
     for (const chunk of pending.get(id) ?? []) feed(rt, chunk);
     pending.delete(id);
     patch(rt.key, { ptyId: id, status: "running", startedAt: Date.now(), exitCode: undefined });
   } catch (e) {
-    rt.term.write(`\x1b[31mGagal membuka terminal: ${errMsg(e)}\x1b[0m\r\n`);
+    if (runtimes.get(rt.key) !== rt) return;
+    rt.term.write(`\x1b[31m${tl("Gagal membuka terminal: {error}", { error: errMsg(e) })}\x1b[0m\r\n`);
     patch(rt.key, { status: "exited", exitCode: null });
   }
 }
@@ -262,6 +269,8 @@ export async function rerun(key: string) {
     const old = rt.ptyId;
     byPty.delete(old);
     pending.delete(old);
+    // Event exit proses lama tidak akan diproses lagi: tanda "dihentikan pengguna" jangan terbawa ke proses baru.
+    userStopped.delete(key);
     rt.ptyId = null;
     await api.ptyKill(old).catch(() => {});
   }
@@ -283,8 +292,10 @@ export async function closeTerminal(key: string) {
   if (rt) {
     if (rt.ptyId !== null) {
       byPty.delete(rt.ptyId);
+      pending.delete(rt.ptyId);
       await api.ptyKill(rt.ptyId).catch(() => {});
     }
+    userStopped.delete(key);
     rt.ro?.disconnect();
     rt.term.dispose();
     rt.host.remove();
@@ -332,7 +343,7 @@ export function recentOutput(key: string, max = 6000): string {
 export function writeToActive(text: string) {
   const key = getState().activeTerminal;
   const rt = key ? runtimes.get(key) : undefined;
-  if (rt?.ptyId != null) void api.ptyWrite(rt.ptyId, text);
+  if (rt?.ptyId != null) void api.ptyWrite(rt.ptyId, text).catch(() => {});
 }
 
 export function hasRunning(): boolean {
@@ -342,7 +353,7 @@ export function hasRunning(): boolean {
 /** Kirim teks ke terminal tertentu (dipakai ekstensi: Terminal.sendText). */
 export function writeToKey(key: string, text: string) {
   const rt = runtimes.get(key);
-  if (rt?.ptyId != null) void api.ptyWrite(rt.ptyId, text);
+  if (rt?.ptyId != null) void api.ptyWrite(rt.ptyId, text).catch(() => {});
 }
 
 /** Belah terminal: shell baru tampil di kanan terminal aktif; dipanggil lagi = gabung. */

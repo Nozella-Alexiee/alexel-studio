@@ -78,7 +78,8 @@ export function format() {
     const path = tab.id;
     void import("../exthost/features").then(async (f) => {
       // Formatter yang didaftarkan ekstensi dipakai lebih dulu (pemakai memasangnya dengan sengaja).
-      if (f.hostProviders("formatting", path).length && (await f.hostFormat(path, v, getState().settings.tabSize))) return;
+      // Formatter ekstensi gagal/macet → tetap rapikan dengan bawaan.
+      if (f.hostProviders("formatting", path).length && (await f.hostFormat(path, v, getState().settings.tabSize).catch(() => false))) return;
       formatBuiltin();
     });
     return;
@@ -120,7 +121,9 @@ const lspOrHost = (what: string, lsp: (v: EditorView) => boolean | void, host: (
   }
   if (tab?.kind === "text") {
     v.focus();
-    void host(tab.id, v).then((done) => !done && toast(tl("{what} butuh server bahasa untuk berkas ini. Lihat Pengaturan → Server bahasa.", { what: tl(what) })));
+    void host(tab.id, v)
+      .catch(() => false)
+      .then((done) => !done && toast(tl("{what} butuh server bahasa untuk berkas ini. Lihat Pengaturan → Server bahasa.", { what: tl(what) })));
     return;
   }
   toast(tl("{what} butuh server bahasa untuk berkas ini. Lihat Pengaturan → Server bahasa.", { what: tl(what) }));

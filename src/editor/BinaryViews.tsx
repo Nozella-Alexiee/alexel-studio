@@ -52,12 +52,17 @@ export function HexViewer({ path }: { path: string }) {
   const [height, setHeight] = useState(600);
   const box = useRef<HTMLDivElement>(null);
   useEffect(() => {
+    let live = true;
     setData(null);
     setErr(null);
+    setTop(0);
     api
       .readHead(path)
-      .then((r) => setData({ bytes: Uint8Array.from(atob(r.data), (c) => c.charCodeAt(0)), size: r.size }))
-      .catch((e) => setErr(errMsg(e)));
+      .then((r) => live && setData({ bytes: Uint8Array.from(atob(r.data), (c) => c.charCodeAt(0)), size: r.size }))
+      .catch((e) => live && setErr(errMsg(e)));
+    return () => {
+      live = false;
+    };
   }, [path]);
   useEffect(() => {
     const el = box.current;

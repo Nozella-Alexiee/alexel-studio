@@ -148,6 +148,20 @@ describe("lockfile basi", () => {
     expect(fs.existsSync(nonNumeric)).toBe(true);
     fs.rmSync(nonNumeric, { force: true });
   });
+
+  it("start bersamaan memakai satu server dan tidak menulis lockfile berport 0", async () => {
+    const dir = fs.realpathSync.native(fs.mkdtempSync(path.join(os.tmpdir(), "alexel-ide-r-")));
+    const prev = process.env.CLAUDE_CONFIG_DIR;
+    process.env.CLAUDE_CONFIG_DIR = dir;
+    const s = new IdeServer({ userData: dir, emit: () => {} } as unknown as Ctx, "1.0.0");
+    const [a, b] = await Promise.all([s.start("/a"), s.start("/b")]);
+    expect(a.port).toBeGreaterThan(0);
+    expect(b.port).toBe(a.port);
+    expect(fs.readdirSync(lockDir())).toEqual([`${a.port}.lock`]);
+    s.stop();
+    process.env.CLAUDE_CONFIG_DIR = prev;
+    fs.rmSync(dir, { recursive: true, force: true });
+  });
 });
 
 describe("pembatalan permintaan IDE", () => {

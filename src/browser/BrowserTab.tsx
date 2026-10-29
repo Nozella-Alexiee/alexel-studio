@@ -55,7 +55,7 @@ export default function BrowserTab({ tabId }: { tabId: string }) {
       const key = `${r.x},${r.y},${r.width},${r.height},${visible}`;
       if (key === last) return;
       last = key;
-      void api.browserBounds(view, { x: r.x, y: r.y, width: r.width, height: r.height, visible });
+      void api.browserBounds(view, { x: r.x, y: r.y, width: r.width, height: r.height, visible }).catch(() => {});
     };
     // Ukuran berubah (panel, sidebar, split) → ResizeObserver; pergeseran posisi tanpa ubah ukuran
     // tertangkap pemeriksaan ringan berkala.
@@ -68,7 +68,7 @@ export default function BrowserTab({ tabId }: { tabId: string }) {
       ro.disconnect();
       window.removeEventListener("resize", send);
       clearInterval(timer);
-      void api.browserBounds(view, { x: 0, y: 0, width: 0, height: 0, visible: false });
+      void api.browserBounds(view, { x: 0, y: 0, width: 0, height: 0, visible: false }).catch(() => {});
     };
   }, [view, blocked]);
 
@@ -77,10 +77,10 @@ export default function BrowserTab({ tabId }: { tabId: string }) {
     setEditing(false);
     if (view !== null) void api.browserNavigate(view, addr).catch((e) => toast(errMsg(e), "error"));
   };
-  const ctl = (a: Parameters<typeof api.browserControl>[1]) => view !== null && void api.browserControl(view, a);
+  const ctl = (a: Parameters<typeof api.browserControl>[1]) => view !== null && void api.browserControl(view, a).catch((e) => toast(errMsg(e), "error"));
   const setDevice = (d: string) => {
     useBrowser.setState((s) => ({ tabs: { ...s.tabs, [tabId]: { ...s.tabs[tabId], device: d } } }));
-    if (view !== null) void api.browserEmulate(view, DEVICES[d] ?? null);
+    if (view !== null) void api.browserEmulate(view, DEVICES[d] ?? null).catch((e) => toast(errMsg(e), "error"));
   };
   const shot = async () => {
     if (view === null) return;
