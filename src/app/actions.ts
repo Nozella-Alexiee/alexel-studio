@@ -580,6 +580,12 @@ let gitTimer = 0;
 export function afterSave(path: string, quiet?: boolean) {
   if (!quiet) toast(tl("{name} tersimpan", { name: basename(path) }), "success");
   void import("./persist").then((m) => m.settingsFileSaved(path));
+  // Salinan berkas Remote SSH → unggah ke server.
+  if (/[\\/]remote[\\/]/.test(path))
+    void api
+      .remotePush(path)
+      .then((m) => m && toast(tl("Diunggah ke {host}:{path}", { host: m.target, path: m.remote }), "success"))
+      .catch((e) => toast(tl("Gagal mengunggah ke server: {error}", { error: errMsg(e) }), "error"));
   const s = getState();
   clearTimeout(gitTimer);
   gitTimer = window.setTimeout(() => void refreshGit(), 400);

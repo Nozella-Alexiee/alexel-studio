@@ -210,6 +210,17 @@ export const api = {
   agentSessionLoad: (agent: string, cwd: string, id: string) => call<string[]>("agent_session_load", { agent, cwd, id }),
   agentOnce: (agent: string, runId: string, cwd: string, prompt: string) => call<string>("agent_once", { agent, runId, cwd, prompt }),
   agentOnceCancel: (runId: string) => call<void>("agent_once_cancel", { runId }),
+  // Remote SSH
+  remoteHosts: () => call<{ target: string; hostname?: string; user?: string; port?: number; source: "config" | "saved" }[]>("remote_hosts"),
+  remoteSaveHost: (target: string, remove = false) => call<void>("remote_save_host", { target, remove }),
+  remoteConnect: (target: string) => call<{ home: string; system: string }>("remote_connect", { target }),
+  remoteList: (target: string, dir: string) => call<{ name: string; dir: boolean }[]>("remote_list", { target, dir }),
+  remoteOpen: (target: string, path: string) => call<string>("remote_open", { target, path }),
+  remotePush: (local: string) => call<{ target: string; remote: string } | null>("remote_push", { local }),
+  remoteFromMirror: (local: string) => call<{ target: string; remote: string } | null>("remote_from_mirror", { local }),
+  remoteOp: (target: string, op: "mkdir" | "touch" | "rm" | "mv", a: string, b?: string) => call<void>("remote_op", { target, op, a, b }),
+  remoteTerminalCmd: (target: string, dir?: string) => call<string>("remote_terminal_cmd", { target, dir }),
+  remoteDisconnect: (target: string) => call<void>("remote_disconnect", { target }),
   // Notebook (Jupyter)
   jupyterSpecs: (root: string, jupyter?: string | null) => call<{ default: string; specs: { name: string; display: string; language: string }[] }>("jupyter_specs", { root, jupyter }),
   jupyterStart: (root: string, name: string | null, jupyter?: string | null) => call<{ id: string; name: string }>("jupyter_start", { root, name, jupyter }),

@@ -58,6 +58,7 @@ export const COMMANDS: Command[] = [
   { id: "http.focus", label: tl("API: tampilkan panel"), group: "API", run: () => A.toggleSidebar("api") },
   { id: "browser.open", label: tl("Browser: buka tab browser"), group: "Browser", run: () => void import("../browser/state").then((m) => m.openBrowser("")) },
   { id: "browser.clear", label: tl("Browser: hapus cookie & cache tab browser"), group: "Browser", run: () => void import("../lib/ipc").then((m) => m.api.browserClearData()) },
+  { id: "remote.focus", label: tl("Remote SSH: tampilkan panel"), group: "Remote", run: () => A.toggleSidebar("remote") },
   { id: "docker.focus", label: tl("Docker: tampilkan panel"), group: "Docker", run: () => A.toggleSidebar("docker") },
   { id: "env.table", label: tl(".env: edit sebagai tabel"), group: ".env", run: () => void import("../env/EnvTab").then((m) => m.openEnvTab(activeTab()!.id)), when: () => !!activeTab() && /(^|[\\/])\.env(\.[\w.-]+)?$/.test(activeTab()!.id) },
   { id: "db.focus", label: tl("Database: tampilkan panel"), group: "Database", run: () => A.toggleSidebar("db") },

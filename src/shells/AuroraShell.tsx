@@ -1,7 +1,7 @@
 // Desain A — Aurora Glass: gelap macOS, sidebar kaca dengan kartu workspace,
 // palette di title bar, agen Claude di kanan, dock terminal melayang.
 
-import { Boxes, Database, Send, Layers, Bug, Columns2, GitBranch, ListTree, PanelBottom, Play, Puzzle, Search, Settings } from "lucide-react";
+import { Boxes, Database, Send, Server, Layers, Bug, Columns2, GitBranch, ListTree, PanelBottom, Play, Puzzle, Search, Settings } from "lucide-react";
 import { Kepi } from "../components/CrabMascot";
 import * as A from "../app/actions";
 import { openPalette } from "../app/commands";
@@ -89,6 +89,7 @@ export default function AuroraShell() {
                   { id: "db", label: <Database size={13} />, title: tl("Database") },
                   { id: "api", label: <Send size={13} />, title: tl("API (klien HTTP)") },
                   { id: "docker", label: <Boxes size={13} />, title: "Docker" },
+                  { id: "remote", label: <Server size={13} />, title: "Remote SSH" },
                   { id: "outline", label: <ListTree size={13} />, title: tl("Outline (struktur berkas)") },
                 ]}
               />

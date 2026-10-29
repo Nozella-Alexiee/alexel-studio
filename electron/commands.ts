@@ -15,6 +15,7 @@ import * as HTTP from "./http";
 import * as DK from "./docker";
 import * as BR from "./browser";
 import * as JP from "./jupyter";
+import * as RM from "./remote";
 import { detect as dbDetect, detectFull as dbDetectFull } from "./db/detect";
 import * as dap from "./dap";
 import { checkUpdate, repoSlug } from "./update";
@@ -214,6 +215,18 @@ export function buildCommands(ctx: Ctx, hooks: { confirmClose: (win: BrowserWind
       if (existing) return existing;
       return DB.saveConnection(ctx, { kind: d.kind, name: d.name, url: d.url, file: d.file, password: d.password, env: "dev" });
     },
+
+    // Remote SSH (OpenSSH sistem)
+    remote_hosts: () => RM.listHosts(ctx),
+    remote_save_host: (a) => RM.saveHost(ctx, String(a.target ?? ""), !!a.remove),
+    remote_connect: (a) => RM.connect(String(a.target)),
+    remote_list: (a) => RM.listDir(String(a.target), String(a.dir)),
+    remote_open: (a) => RM.openRemote(ctx, String(a.target), String(a.path)),
+    remote_push: (a) => RM.pushMirror(ctx, String(a.local)),
+    remote_from_mirror: (a) => RM.fromMirror(ctx, String(a.local)),
+    remote_op: (a) => RM.remoteOp(String(a.target), a.op, String(a.a), a.b === undefined ? undefined : String(a.b)),
+    remote_terminal_cmd: (a) => RM.terminalCommand(String(a.target), a.dir ? String(a.dir) : undefined),
+    remote_disconnect: (a) => RM.closeMaster(String(a.target)),
 
     // Notebook (Jupyter Server lokal)
     jupyter_specs: (a) => JP.kernelSpecs(String(a.root), a.jupyter ?? null),
