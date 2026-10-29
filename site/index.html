@@ -3,1045 +3,562 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="description" content="Alexel Studio: a free, open source code editor for macOS, Windows and Linux with Claude Code, Codex, Gemini and Antigravity built in.">
-<meta property="og:title" content="Alexel Studio">
-<meta property="og:description" content="Your editor. Your agents. Free and open source for macOS, Windows and Linux.">
-<meta property="og:image" content="img/agent.jpg">
-<link rel="icon" type="image/png" href="img/icon.png">
 <title>Alexel Studio</title>
+<meta name="description" content="Alexel Studio: a free, open source code editor for macOS, Windows and Linux. Claude Code, Codex, Gemini, Cline and more, with every change reviewed by you.">
+<meta property="og:title" content="Alexel Studio">
+<meta property="og:description" content="The open source editor where AI agents work with you, not around you.">
+<meta property="og:image" content="img/app-agent.jpg">
+<meta name="theme-color" content="#070a12">
+<link rel="icon" type="image/png" href="img/icon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=Instrument+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500&family=Instrument+Serif:ital@0;1&display=swap">
 <style>
-/* Layout: halaman produk terang ala toko perangkat — hero dengan demo IDE hidup, lalu panel fitur
-   besar yang menempel & bertumpuk saat digulir, ditutup bagian unduh per OS. */
+/* Halaman produk gelap bernuansa es kutub (warna ikon pinguin): screenshot aplikasi asli di tengah,
+   fitur dalam grid, unduhan per OS. Dua bahasa lewat atribut data-en / data-id. */
 :root {
-  --bg: #f4f5f7;
-  --bg-2: #ffffff;
-  --ink: #0f1420;
-  --ink-2: #4a5263;
-  --ink-3: #6b7385;
-  --line: #e2e5eb;
-  --accent: #1f5eff;
-  --accent-ink: #ffffff;
-  --accent-soft: #e5ecff;
-  --panel: #0e1117;
-  --panel-2: #161a22;
-  --panel-line: #262c38;
-  --panel-ink: #d8dde7;
-  --panel-ink-2: #8d96a8;
-  --claude: #d97757;
-  --codex: #10a37f;
-  --gemini: #4285f4;
-  --agy: #8a5cf6;
-  --ok: #2ea043;
-  --shadow: 0 30px 80px -30px rgba(15, 20, 32, 0.35), 0 8px 24px -12px rgba(15, 20, 32, 0.2);
-  --f-display: "Bricolage Grotesque", "Avenir Next", "Segoe UI", system-ui, sans-serif;
-  --f-body: "Instrument Sans", -apple-system, "Segoe UI", system-ui, sans-serif;
-  --f-mono: "JetBrains Mono", "SF Mono", Menlo, Consolas, monospace;
-  --r: 22px;
-  color-scheme: light;
-}
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) {
-    --bg: #0b0d12;
-    --bg-2: #12151c;
-    --ink: #eef1f6;
-    --ink-2: #aab2c2;
-    --ink-3: #8c95a7;
-    --line: #232834;
-    --accent: #6b97ff;
-    --accent-ink: #0b0d12;
-    --accent-soft: #18233f;
-    --shadow: 0 30px 80px -30px rgba(0, 0, 0, 0.8), 0 8px 24px -12px rgba(0, 0, 0, 0.6);
-    color-scheme: dark;
-  }
-}
-:root[data-theme="dark"] {
-  --bg: #0b0d12;
-  --bg-2: #12151c;
-  --ink: #eef1f6;
-  --ink-2: #aab2c2;
-  --ink-3: #8c95a7;
-  --line: #232834;
-  --accent: #6b97ff;
-  --accent-ink: #0b0d12;
-  --accent-soft: #18233f;
-  --shadow: 0 30px 80px -30px rgba(0, 0, 0, 0.8), 0 8px 24px -12px rgba(0, 0, 0, 0.6);
+  --bg: #070a12;
+  --bg-2: #0b1020;
+  --surface: #0f1526;
+  --surface-2: #141b30;
+  --line: rgba(148, 170, 210, 0.13);
+  --line-2: rgba(148, 170, 210, 0.22);
+  --text: #e8eef9;
+  --muted: #9aa8c3;
+  --dim: #6c7a96;
+  --ice: #8fd3ff;
+  --ice-2: #4f9dff;
+  --warm: #ff9f6e;
+  --ok: #4ade80;
+  --bad: #f87171;
+  --radius: 18px;
+  --f-sans: "Geist", -apple-system, "Segoe UI", system-ui, sans-serif;
+  --f-serif: "Instrument Serif", Georgia, serif;
+  --f-mono: "Geist Mono", ui-monospace, "SF Mono", Menlo, monospace;
   color-scheme: dark;
 }
-
 * { box-sizing: border-box; }
-html { scroll-behavior: smooth; }
+html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; }
 body {
   margin: 0;
   background: var(--bg);
-  color: var(--ink);
-  font: 16px/1.6 var(--f-body);
+  color: var(--text);
+  font: 400 16px/1.6 var(--f-sans);
   -webkit-font-smoothing: antialiased;
   overflow-x: hidden;
 }
-a { color: inherit; }
-button { font: inherit; color: inherit; cursor: pointer; }
-:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; border-radius: 6px; }
-.wrap { width: min(1180px, 100%); margin: 0 auto; padding-inline: 20px; }
-h1, h2, h3 { font-family: var(--f-display); text-wrap: balance; margin: 0; letter-spacing: -0.02em; }
-p { margin: 0; }
-kbd {
-  font: 500 0.82em/1 var(--f-mono);
-  padding: 0.28em 0.5em;
-  border-radius: 6px;
-  border: 1px solid var(--line);
-  border-bottom-width: 2px;
-  background: var(--bg-2);
-  color: var(--ink);
-  white-space: nowrap;
+a { color: inherit; text-decoration: none; }
+img { max-width: 100%; display: block; }
+.wrap { width: min(1180px, 100% - 32px); margin-inline: auto; }
+.skip { position: absolute; left: -999px; top: 8px; background: var(--ice); color: #000; padding: 8px 12px; border-radius: 8px; z-index: 100; }
+.skip:focus { left: 8px; }
+:focus-visible { outline: 2px solid var(--ice); outline-offset: 3px; border-radius: 6px; }
+
+/* ---------- latar ---------- */
+.sky {
+  position: absolute; inset: 0 0 auto 0; height: 1100px; z-index: -1; pointer-events: none;
+  background:
+    radial-gradient(60% 50% at 50% 0%, rgba(79, 157, 255, 0.28), transparent 70%),
+    radial-gradient(40% 35% at 85% 20%, rgba(143, 211, 255, 0.14), transparent 70%),
+    radial-gradient(35% 30% at 10% 30%, rgba(255, 159, 110, 0.08), transparent 70%);
+}
+.sky::after {
+  content: ""; position: absolute; inset: 0;
+  background-image: linear-gradient(var(--line) 1px, transparent 1px), linear-gradient(90deg, var(--line) 1px, transparent 1px);
+  background-size: 64px 64px;
+  mask-image: radial-gradient(70% 60% at 50% 10%, #000 30%, transparent 75%);
+  opacity: 0.55;
 }
 
-/* ---------- Navigasi ---------- */
+/* ---------- navigasi ---------- */
 .nav {
-  position: sticky;
-  top: env(safe-area-inset-top, 0px);
-  z-index: 50;
+  position: sticky; top: 0; z-index: 50;
   backdrop-filter: saturate(160%) blur(14px);
-  -webkit-backdrop-filter: saturate(160%) blur(14px);
-  background: color-mix(in srgb, var(--bg) 78%, transparent);
-  border-bottom: 1px solid color-mix(in srgb, var(--line) 70%, transparent);
+  background: color-mix(in srgb, var(--bg) 72%, transparent);
+  border-bottom: 1px solid transparent;
+  transition: border-color .2s;
 }
-.nav .wrap { display: flex; align-items: center; gap: 16px; height: 60px; }
-.brand { display: flex; align-items: center; gap: 10px; font: 700 17px/1 var(--f-display); text-decoration: none; letter-spacing: -0.01em; white-space: nowrap; }
-.brand img { width: 28px; height: 28px; border-radius: 8px; }
-.nav-links { display: flex; gap: 22px; margin-left: 10px; font-size: 14px; color: var(--ink-2); }
-.nav-links a { text-decoration: none; }
-.nav-links a:hover { color: var(--ink); }
-.nav .spacer { flex: 1; }
-.seg { display: inline-flex; padding: 3px; border-radius: 999px; background: var(--line); gap: 2px; }
-.seg button { border: 0; background: none; padding: 5px 11px; border-radius: 999px; font-size: 12.5px; color: var(--ink-2); }
-.seg button[aria-pressed="true"] { background: var(--bg-2); color: var(--ink); box-shadow: 0 1px 2px rgba(0,0,0,.12); }
+.nav.scrolled { border-bottom-color: var(--line); }
+.nav-in { display: flex; align-items: center; gap: 22px; height: 64px; }
+.brand { display: flex; align-items: center; gap: 10px; font-weight: 600; letter-spacing: -0.01em; }
+.brand img { width: 30px; height: 30px; border-radius: 8px; }
+.nav-links { display: flex; gap: 4px; margin-left: 12px; }
+.nav-links a { padding: 6px 12px; border-radius: 8px; color: var(--muted); font-size: 14.5px; }
+.nav-links a:hover { color: var(--text); background: var(--surface); }
+.nav-right { margin-left: auto; display: flex; align-items: center; gap: 10px; }
+.lang { display: flex; border: 1px solid var(--line-2); border-radius: 999px; padding: 2px; }
+.lang button { all: unset; cursor: pointer; font: 500 12px var(--f-mono); padding: 4px 10px; border-radius: 999px; color: var(--dim); }
+.lang button[aria-pressed="true"] { background: var(--surface-2); color: var(--text); }
+.icon-link { display: grid; place-items: center; width: 36px; height: 36px; border-radius: 10px; color: var(--muted); }
+.icon-link:hover { color: var(--text); background: var(--surface); }
 .btn {
-  display: inline-flex; align-items: center; gap: 9px;
-  border: 0; border-radius: 999px; padding: 12px 22px;
-  font: 600 15px/1 var(--f-body); text-decoration: none; white-space: nowrap;
-  background: var(--accent); color: var(--accent-ink);
-  transition: transform .15s ease;
-  box-shadow: 0 10px 24px -10px color-mix(in srgb, var(--accent) 70%, transparent);
+  display: inline-flex; align-items: center; justify-content: center; gap: 9px;
+  font: 600 15px var(--f-sans); padding: 12px 20px; border-radius: 12px; border: 1px solid transparent;
+  cursor: pointer; transition: transform .15s, background .15s, border-color .15s, box-shadow .15s; white-space: nowrap;
 }
 .btn:hover { transform: translateY(-1px); }
-.btn:active { transform: scale(.97); }
-.btn.ghost { background: transparent; color: var(--ink); box-shadow: inset 0 0 0 1px var(--line); }
-.btn.sm { padding: 9px 16px; font-size: 13.5px; }
-.btn svg { width: 16px; height: 16px; }
+.btn-primary { background: linear-gradient(180deg, #e9f6ff, #b9e3ff); color: #06122a; box-shadow: 0 10px 30px -10px rgba(143, 211, 255, .6), inset 0 1px 0 rgba(255,255,255,.7); }
+.btn-ghost { background: color-mix(in srgb, var(--surface) 80%, transparent); border-color: var(--line-2); color: var(--text); }
+.btn-ghost:hover { border-color: var(--muted); }
+.btn-sm { padding: 8px 14px; font-size: 14px; border-radius: 10px; }
+@media (max-width: 860px) { .nav-links { display: none; } }
+@media (max-width: 520px) { .nav .btn-sm span.long { display: none; } .brand span { display: none; } }
 
-/* ---------- Hero ---------- */
-.hero { position: relative; padding-block: 72px 40px; overflow: hidden; }
-.hero-copy { text-align: center; max-width: 820px; margin: 0 auto; position: relative; z-index: 2; }
-.eyebrow { display: inline-flex; gap: 8px; align-items: center; font: 500 12.5px/1 var(--f-mono); color: var(--ink-2); padding: 7px 12px; border-radius: 999px; background: var(--bg-2); border: 1px solid var(--line); }
-.eyebrow i { width: 7px; height: 7px; border-radius: 50%; background: var(--ok); box-shadow: 0 0 0 4px color-mix(in srgb, var(--ok) 25%, transparent); }
-.hero h1 { font-size: clamp(44px, 8.6vw, 104px); line-height: .95; font-weight: 800; margin-top: 22px; }
-.hero h1 .w { display: inline-block; animation: rise .9s cubic-bezier(.2,.7,.2,1) both; }
-.hero h1 .w:nth-child(2) { animation-delay: .08s; }
-.hero h1 .w:nth-child(n+3) { animation-delay: .16s; }
-.hero h1 .w.a { color: var(--accent); }
-@keyframes rise { from { transform: translateY(.35em); opacity: .001; } to { transform: none; opacity: 1; } }
-.lede { font-size: clamp(16px, 2vw, 19px); color: var(--ink-2); max-width: 640px; margin: 22px auto 0; }
-.cta { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; margin-top: 30px; }
-.cta-note { margin-top: 12px; font-size: 13px; color: var(--ink-3); }
-.agents-row { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; margin-top: 26px; }
-.chip { display: inline-flex; align-items: center; gap: 7px; font-size: 13px; padding: 6px 12px 6px 7px; border-radius: 999px; background: var(--bg-2); border: 1px solid var(--line); }
-.chip b { width: 20px; height: 20px; border-radius: 6px; display: grid; place-items: center; color: #fff; font-size: 11px; }
-
-/* Ubin melayang di sekitar hero (ikut kursor) */
-.float { position: absolute; left: 0; right: 0; top: 0; height: 640px; pointer-events: none; z-index: 1; }
-.tile {
-  position: absolute; display: grid; place-items: center;
-  width: 58px; height: 58px; border-radius: 16px;
-  background: var(--bg-2); border: 1px solid var(--line); box-shadow: var(--shadow);
-  font: 600 13px/1 var(--f-mono); color: var(--ink-2);
-  transform: translate3d(var(--px, 0px), var(--py, 0px), 0) rotate(var(--rot, 0deg));
-  transition: transform .5s cubic-bezier(.2,.7,.2,1);
-  animation: bob 6s ease-in-out infinite;
+/* ---------- hero ---------- */
+.hero { position: relative; padding: 72px 0 40px; text-align: center; }
+.pill {
+  display: inline-flex; align-items: center; gap: 10px; padding: 6px 14px 6px 6px; border-radius: 999px;
+  border: 1px solid var(--line-2); background: color-mix(in srgb, var(--surface) 70%, transparent);
+  color: var(--muted); font-size: 13.5px;
 }
-@keyframes bob { 50% { translate: 0 -10px; } }
-
-/* ---------- Demo IDE ---------- */
-.demo-wrap { position: relative; z-index: 2; margin-top: 54px; perspective: 1800px; }
-.demo {
-  position: relative;
-  background: var(--panel); color: var(--panel-ink);
-  border-radius: 16px; overflow: hidden;
-  box-shadow: var(--shadow), 0 0 0 1px rgba(255,255,255,.06) inset;
-  transform: rotateX(var(--tilt, 8deg)) scale(var(--sc, .96));
-  transform-origin: 50% 0;
-  font: 12.5px/1.45 var(--f-body);
-  max-width: 1100px; margin: 0 auto;
+.pill b { font: 600 11.5px var(--f-mono); color: #06122a; background: var(--ice); padding: 3px 9px; border-radius: 999px; letter-spacing: .02em; }
+h1 {
+  margin: 26px auto 18px; max-width: 15ch;
+  font: 600 clamp(40px, 7.2vw, 84px)/1.02 var(--f-sans); letter-spacing: -0.045em;
+  background: linear-gradient(180deg, #fff 30%, #b7c6e3); -webkit-background-clip: text; background-clip: text; color: transparent;
 }
-.d-title { height: 36px; display: flex; align-items: center; gap: 8px; padding: 0 12px; background: #0b0e13; border-bottom: 1px solid var(--panel-line); }
-.lights { display: flex; gap: 7px; }
-.lights i { width: 11px; height: 11px; border-radius: 50%; background: #ff5f57; }
-.lights i:nth-child(2) { background: #febc2e; }
-.lights i:nth-child(3) { background: #28c840; }
-.d-search { margin: 0 auto; width: min(46%, 380px); height: 22px; border-radius: 6px; background: var(--panel-2); border: 1px solid var(--panel-line); display: grid; place-items: center; font-size: 11.5px; color: var(--panel-ink-2); }
-.d-body { display: grid; grid-template-columns: 40px 170px minmax(0, 1fr) 330px; height: 470px; }
-.d-act { background: #0b0e13; border-right: 1px solid var(--panel-line); display: flex; flex-direction: column; align-items: center; gap: 14px; padding-top: 12px; }
-.d-act span { width: 16px; height: 16px; border-radius: 5px; background: var(--panel-ink-2); opacity: .28; }
-.d-act span.on { opacity: .9; background: var(--panel-ink); }
-.d-side { border-right: 1px solid var(--panel-line); background: #0d1016; padding: 10px 0; }
-.d-side h4 { font: 600 10.5px/1 var(--f-body); letter-spacing: .08em; text-transform: uppercase; color: var(--panel-ink-2); margin: 2px 14px 10px; }
-.d-file { display: flex; align-items: center; gap: 8px; width: 100%; border: 0; background: none; text-align: left; padding: 4px 14px; color: var(--panel-ink); font: inherit; }
-.d-file:hover { background: #1a1f29; }
-.d-file.on { background: #1d2433; }
-.d-file i { font: 700 8.5px/1 var(--f-mono); width: 16px; height: 16px; border-radius: 3px; display: grid; place-items: center; background: #f7df1e; color: #000; font-style: normal; }
-.d-file i.md { background: #3b82f6; color: #fff; }
-.d-file i.json { background: #c2410c; color: #fff; }
-.d-file em { margin-left: auto; font-style: normal; color: #e3b341; font-size: 10.5px; }
-.d-main { display: flex; flex-direction: column; min-width: 0; background: #12161d; }
-.d-tabs { display: flex; height: 34px; background: #0d1016; border-bottom: 1px solid var(--panel-line); }
-.d-tab { padding: 0 14px; display: flex; align-items: center; gap: 7px; border-right: 1px solid var(--panel-line); color: var(--panel-ink); font-size: 12px; background: #12161d; box-shadow: inset 0 1px 0 #6b97ff; }
-.d-code { flex: 1; overflow: auto; padding: 12px 0; font: 12.5px/1.65 var(--f-mono); min-width: 0; }
-.ln { display: flex; white-space: pre; padding-right: 14px; }
-.ln b { width: 42px; text-align: right; padding-right: 16px; color: #4c5568; font-weight: 400; flex: none; user-select: none; }
-.ln.add { background: rgba(46,160,67,.16); box-shadow: inset 2px 0 0 var(--ok); }
-.ln.flash { animation: flash 1.6s ease both; }
-@keyframes flash { from { background: rgba(46,160,67,.42); } to { background: rgba(46,160,67,.16); } }
-.t-k { color: #c586c0; } .t-f { color: #dcdcaa; } .t-s { color: #ce9178; } .t-n { color: #b5cea8; } .t-c { color: #6a9955; font-style: italic; }
-.d-status { height: 22px; display: flex; align-items: center; gap: 14px; padding: 0 10px; font-size: 11px; color: var(--panel-ink-2); border-top: 1px solid var(--panel-line); background: #0b0e13; white-space: nowrap; overflow: hidden; }
-.d-status .sp { flex: 1; }
+h1 em, h2 em { font-family: var(--f-serif); font-style: italic; font-weight: 400; letter-spacing: -0.01em; background: linear-gradient(90deg, var(--ice), #c6b8ff 60%, var(--warm)); -webkit-background-clip: text; background-clip: text; color: transparent; padding-right: .06em; }
+.lede { max-width: 640px; margin: 0 auto; color: var(--muted); font-size: clamp(16px, 2vw, 19px); }
+.cta { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; margin-top: 32px; }
+.cta-note { margin-top: 14px; color: var(--dim); font: 400 13px var(--f-mono); }
+.shot-hero { position: relative; margin: 56px auto 0; max-width: 1120px; }
+.shot-hero::before {
+  content: ""; position: absolute; inset: -40px -60px auto; height: 70%; z-index: -1;
+  background: radial-gradient(50% 60% at 50% 40%, rgba(79,157,255,.35), transparent 70%); filter: blur(10px);
+}
+.frame {
+  border-radius: 16px; overflow: hidden; border: 1px solid var(--line-2);
+  background: var(--surface); box-shadow: 0 50px 120px -40px rgba(0,0,0,.9), 0 0 0 1px rgba(255,255,255,.03) inset;
+}
+.frame-bar { display: flex; gap: 7px; padding: 11px 14px; border-bottom: 1px solid var(--line); background: #0b0f1c; }
+.frame-bar i { width: 11px; height: 11px; border-radius: 50%; background: #2a3349; }
+.frame-bar i:nth-child(1) { background: #ff5f57; } .frame-bar i:nth-child(2) { background: #febc2e; } .frame-bar i:nth-child(3) { background: #28c840; }
+.float {
+  position: absolute; display: flex; align-items: center; gap: 10px; padding: 10px 14px; border-radius: 12px;
+  background: color-mix(in srgb, var(--surface-2) 88%, transparent); backdrop-filter: blur(10px);
+  border: 1px solid var(--line-2); font-size: 13.5px; box-shadow: 0 20px 40px -18px rgba(0,0,0,.8);
+}
+.float .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--ok); box-shadow: 0 0 12px var(--ok); }
+.float.f1 { left: -28px; top: 34%; }
+.float.f2 { right: -24px; top: 62%; }
+.float code { font-family: var(--f-mono); color: var(--ice); font-size: 12.5px; }
+@media (max-width: 1100px) { .float { display: none; } }
 
-/* Panel agen di demo */
-.d-agent { --a: var(--claude); border-left: 1px solid var(--panel-line); background: #0d1016; display: flex; flex-direction: column; min-width: 0; }
-.d-ahead { height: 40px; display: flex; align-items: center; gap: 8px; padding: 0 12px; border-bottom: 1px solid var(--panel-line); }
-.d-pick { font: 600 13px/1 var(--f-body); color: var(--panel-ink); }
-.d-pill { margin-left: auto; font: 600 10px/1 var(--f-mono); padding: 4px 7px; border-radius: 999px; background: rgba(46,160,67,.16); color: #56d364; }
-.d-agents { display: flex; gap: 4px; padding: 8px 10px; border-bottom: 1px solid var(--panel-line); flex-wrap: wrap; }
-.d-agents button { border: 1px solid var(--panel-line); background: none; color: var(--panel-ink-2); border-radius: 999px; padding: 3px 9px 3px 4px; font-size: 11px; display: inline-flex; gap: 5px; align-items: center; }
-.d-agents button b { width: 15px; height: 15px; border-radius: 4px; display: grid; place-items: center; color: #fff; font-size: 9px; }
-.d-agents button[aria-pressed="true"] { color: var(--panel-ink); border-color: #4a5468; background: #1a1f29; }
-.d-chat { flex: 1; overflow: hidden; padding: 12px; display: flex; flex-direction: column; gap: 9px; }
-.msg-u { align-self: flex-end; max-width: 92%; background: #1a2440; border: 1px solid #2b3b66; border-radius: 12px 12px 4px 12px; padding: 8px 11px; }
-.msg-a { color: var(--panel-ink); min-height: 1.45em; }
-.tool { display: flex; gap: 7px; align-items: center; font-size: 11.5px; color: var(--panel-ink-2); border: 1px solid var(--panel-line); border-radius: 7px; padding: 5px 8px; }
-.tool .st { margin-left: auto; }
-.perm { border: 1px solid color-mix(in srgb, var(--a) 60%, var(--panel-line)); border-radius: 11px; padding: 10px; box-shadow: 0 0 0 3px color-mix(in srgb, var(--a) 14%, transparent); display: flex; flex-direction: column; gap: 8px; animation: pop .25s ease both; }
-@keyframes pop { from { transform: translateY(6px); opacity: .001; } }
-.perm h5 { margin: 0; font: 600 12.5px/1.2 var(--f-body); }
-.diff { font: 11px/1.55 var(--f-mono); border-radius: 6px; background: #0a0d12; overflow: hidden; }
-.diff div { white-space: pre; padding: 0 6px; overflow: hidden; text-overflow: ellipsis; }
-.diff .p { background: rgba(46,160,67,.18); } .diff .m { background: rgba(248,81,73,.18); }
-.perm-act { display: flex; gap: 6px; flex-wrap: wrap; }
-.perm-act button { border: 1px solid var(--panel-line); background: #1a1f29; color: var(--panel-ink); border-radius: 7px; padding: 5px 10px; font-size: 11.5px; }
-.perm-act button.go { background: var(--a); border-color: transparent; color: #fff; animation: nudge 1.6s ease-in-out 1s infinite; }
-@keyframes nudge { 50% { box-shadow: 0 0 0 4px color-mix(in srgb, var(--a) 35%, transparent); } }
-.perm .done { font-size: 11.5px; }
-.d-comp { margin: 10px; border: 1px solid var(--panel-line); border-radius: 10px; padding: 8px 10px; background: #12161d; }
-.d-comp .ph { color: var(--panel-ink-2); min-height: 18px; font-size: 12px; }
-.d-comp .bar { display: flex; gap: 10px; margin-top: 8px; font-size: 11px; color: var(--panel-ink-2); align-items: center; }
-.d-comp .bar > span { display: inline-flex; gap: 4px; align-items: center; }
-.d-comp .bar .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--a); display: inline-block; }
-.d-comp .bar .send { margin-left: auto; width: 24px; height: 24px; border-radius: 7px; background: var(--a); display: grid; place-items: center; color: #fff; }
-.typing::after { content: "▍"; margin-left: 1px; animation: blink 1s steps(2) infinite; color: var(--panel-ink); }
-@keyframes blink { 50% { opacity: 0; } }
-.d-toast { position: absolute; right: 18px; bottom: 34px; background: #1f2633; color: var(--panel-ink); border: 1px solid #2f3848; border-radius: 9px; padding: 8px 12px; font-size: 12px; opacity: 0; transform: translateY(8px); transition: opacity .3s ease, transform .3s ease; pointer-events: none; }
-.d-toast.on { opacity: 1; transform: none; }
-.demo-cap { text-align: center; margin-top: 18px; font-size: 13px; color: var(--ink-3); display: flex; justify-content: center; gap: 14px; flex-wrap: wrap; align-items: center; }
-.link { background: none; border: 0; padding: 0; color: var(--accent); text-decoration: underline; text-underline-offset: 3px; font-size: 13px; }
+/* ---------- strip agen ---------- */
+.agents { padding: 56px 0 24px; text-align: center; }
+.eyebrow { font: 500 12.5px var(--f-mono); letter-spacing: .14em; text-transform: uppercase; color: var(--dim); }
+.chips { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; margin-top: 18px; }
+.chip { display: inline-flex; align-items: center; gap: 9px; padding: 9px 15px; border-radius: 999px; border: 1px solid var(--line); background: var(--bg-2); color: var(--muted); font-size: 14.5px; }
+.chip i { width: 9px; height: 9px; border-radius: 3px; }
 
-/* ---------- Pita shortcut ---------- */
-.marquee { overflow: hidden; border-block: 1px solid var(--line); background: var(--bg-2); margin-top: 56px; }
-.marquee-track { display: flex; gap: 40px; width: max-content; padding: 16px 0; animation: slide 46s linear infinite; }
-.marquee:hover .marquee-track { animation-play-state: paused; }
-.marquee-item { display: flex; gap: 10px; align-items: center; font-size: 14px; color: var(--ink-2); white-space: nowrap; }
-@keyframes slide { to { transform: translateX(-50%); } }
+/* ---------- bagian umum ---------- */
+section.block { padding: 96px 0; position: relative; }
+.head { max-width: 720px; margin-bottom: 44px; }
+.head.center { text-align: center; margin-inline: auto; }
+h2 { font: 600 clamp(30px, 4.4vw, 50px)/1.08 var(--f-sans); letter-spacing: -0.035em; margin: 12px 0 14px; }
+.head p { color: var(--muted); font-size: 17px; margin: 0; }
 
-/* ---------- Panel fitur bertumpuk ---------- */
-.stack { padding-block: 90px 40px; }
-.stack-intro { max-width: 760px; margin: 0 auto 50px; text-align: center; }
-.stack-intro h2 { font-size: clamp(32px, 5vw, 60px); line-height: 1; font-weight: 800; }
-.stack-intro p { margin-top: 16px; color: var(--ink-2); font-size: 17px; }
+/* ---------- grid fitur ---------- */
+.bento { display: grid; grid-template-columns: repeat(6, 1fr); gap: 16px; }
 .card {
-  position: sticky;
-  top: calc(env(safe-area-inset-top, 0px) + 84px);
-  margin: 0 auto 26px;
-  border-radius: var(--r);
-  background: var(--bg-2);
-  border: 1px solid var(--line);
-  box-shadow: var(--shadow);
-  overflow: hidden;
-  transform-origin: 50% 0;
-  transform: scale(var(--s, 1));
-  filter: brightness(var(--b, 1));
-  display: grid;
-  grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.3fr);
-  min-height: 540px;
+  position: relative; grid-column: span 2; padding: 26px; border-radius: var(--radius);
+  background: linear-gradient(180deg, var(--surface), var(--bg-2)); border: 1px solid var(--line);
+  overflow: hidden; transition: border-color .2s, transform .2s;
 }
-.card .copy { padding: 44px 40px; display: flex; flex-direction: column; gap: 18px; min-width: 0; }
-.tag { font: 500 12px/1 var(--f-mono); letter-spacing: .06em; text-transform: uppercase; color: var(--accent); }
-.card h3 { font-size: clamp(28px, 3.4vw, 44px); line-height: 1.02; font-weight: 800; }
-.card p { color: var(--ink-2); max-width: 46ch; }
-.card ul { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 10px; }
-.card li { display: flex; gap: 10px; color: var(--ink-2); font-size: 15px; }
-.card li::before { content: ""; width: 7px; height: 7px; margin-top: .62em; border-radius: 2px; background: var(--accent); flex: none; }
-.card .keys { display: flex; flex-wrap: wrap; gap: 8px 16px; font-size: 13px; color: var(--ink-3); margin-top: auto; }
-.card .keys > span { display: inline-flex; gap: 6px; align-items: center; }
-.shot { position: relative; padding: 40px 0 0 40px; display: flex; align-items: flex-end; min-width: 0; overflow: hidden; }
-.shot img { display: block; width: 125%; height: auto; max-width: none; border-radius: 12px 0 0 0; box-shadow: var(--shadow); border: 1px solid rgba(0,0,0,.25); transition: transform .8s cubic-bezier(.2,.7,.2,1); }
-.card:hover .shot img { transform: translate(-3%, -2%); }
-.shot.agent { background: linear-gradient(135deg, color-mix(in srgb, var(--claude) 28%, var(--bg)), var(--bg)); }
-.shot.agents { background: linear-gradient(135deg, color-mix(in srgb, var(--codex) 22%, var(--bg)), color-mix(in srgb, var(--agy) 18%, var(--bg))); }
-.shot.debug { background: linear-gradient(135deg, color-mix(in srgb, #cc6633 26%, var(--bg)), var(--bg)); }
-.shot.light { background: linear-gradient(135deg, color-mix(in srgb, var(--accent) 16%, var(--bg)), color-mix(in srgb, var(--ok) 12%, var(--bg))); }
-.shot.light img { border-color: var(--line); }
-.agent-list { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
-.agent-list > div { display: flex; gap: 9px; align-items: center; padding: 9px 10px; border: 1px solid var(--line); border-radius: 12px; font-size: 14px; min-width: 0; }
-.agent-list b { width: 26px; height: 26px; border-radius: 8px; display: grid; place-items: center; color: #fff; flex: none; font-size: 13px; }
-.agent-list small { display: block; color: var(--ink-3); font-size: 12px; line-height: 1.25; }
+.card:hover { border-color: var(--line-2); transform: translateY(-2px); }
+.card.wide { grid-column: span 3; }
+.card .ico { width: 40px; height: 40px; border-radius: 11px; display: grid; place-items: center; background: rgba(143,211,255,.1); color: var(--ice); border: 1px solid rgba(143,211,255,.2); margin-bottom: 18px; }
+.card h3 { margin: 0 0 8px; font-size: 18.5px; letter-spacing: -0.015em; }
+.card p { margin: 0; color: var(--muted); font-size: 15px; }
+.card ul { margin: 14px 0 0; padding: 0; list-style: none; display: grid; gap: 7px; }
+.card li { display: flex; gap: 9px; color: var(--muted); font-size: 14.5px; }
+.card li::before { content: ""; flex: none; width: 6px; height: 6px; margin-top: 9px; border-radius: 2px; background: var(--ice-2); }
+.diffbox { margin-top: 18px; border-radius: 12px; border: 1px solid var(--line); background: #0a0f1c; font: 400 12.5px/1.75 var(--f-mono); overflow: hidden; }
+.diffbox div { padding: 0 12px; white-space: pre; overflow: hidden; text-overflow: ellipsis; }
+.diffbox .del { background: rgba(248,113,113,.1); color: #fca5a5; }
+.diffbox .add { background: rgba(74,222,128,.1); color: #86efac; }
+.diffbox .bar { display: flex; gap: 8px; padding: 10px 12px; border-top: 1px solid var(--line); background: var(--surface); }
+.diffbox .bar span { font-family: var(--f-sans); font-size: 12.5px; padding: 4px 10px; border-radius: 7px; border: 1px solid var(--line-2); color: var(--muted); }
+.diffbox .bar span.ok { background: #d97757; border-color: #d97757; color: #fff; }
+.timeline { margin-top: 18px; display: grid; gap: 8px; }
+.timeline div { display: flex; align-items: center; gap: 10px; font-size: 13.5px; color: var(--muted); padding: 8px 12px; border-radius: 10px; border: 1px solid var(--line); background: #0a0f1c; }
+.timeline div b { font: 500 11.5px var(--f-mono); color: var(--ice); }
+.timeline div.cur { border-color: rgba(143,211,255,.45); color: var(--text); }
+@media (max-width: 980px) { .card, .card.wide { grid-column: span 3; } }
+@media (max-width: 680px) { .bento { grid-template-columns: 1fr; } .card, .card.wide { grid-column: auto; } }
 
-/* ---------- Lintas OS ---------- */
-.os { padding-block: 70px 40px; }
-.os-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 50px; align-items: center; }
-.os h2 { font-size: clamp(30px, 4.4vw, 52px); line-height: 1.02; font-weight: 800; margin-top: 14px; }
-.os p { color: var(--ink-2); margin-top: 16px; max-width: 48ch; }
-.keytable { background: var(--bg-2); border: 1px solid var(--line); border-radius: var(--r); overflow: hidden; }
-.keytable .head { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 14px 18px; border-bottom: 1px solid var(--line); flex-wrap: wrap; }
-.keytable .head strong { font: 600 14px/1 var(--f-body); }
-.keytable .row { display: flex; justify-content: space-between; gap: 12px; padding: 11px 18px; border-bottom: 1px solid var(--line); font-size: 14.5px; }
-.keytable .row:last-child { border-bottom: 0; }
-.keytable .row span { color: var(--ink-2); }
+/* ---------- galeri ---------- */
+.tabs { display: flex; gap: 6px; justify-content: center; flex-wrap: wrap; margin-bottom: 26px; }
+.tabs button { all: unset; cursor: pointer; padding: 9px 16px; border-radius: 999px; font-size: 14.5px; color: var(--muted); border: 1px solid var(--line); }
+.tabs button[aria-selected="true"] { color: #06122a; background: var(--ice); border-color: var(--ice); }
+.gallery .frame img { aspect-ratio: 1680 / 1050; width: 100%; object-fit: cover; }
+.caption { text-align: center; color: var(--muted); margin-top: 18px; font-size: 15px; }
 
-/* ---------- Unduh ---------- */
-.dl { padding-block: 90px; }
-.dl-head { text-align: center; max-width: 720px; margin: 0 auto 40px; }
-.dl-head h2 { font-size: clamp(36px, 6vw, 72px); line-height: .98; font-weight: 800; }
-.dl-head p { color: var(--ink-2); margin-top: 16px; font-size: 17px; }
-.dl-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px; }
-.os-card { background: var(--bg-2); border: 1px solid var(--line); border-radius: var(--r); padding: 26px; display: flex; flex-direction: column; gap: 14px; position: relative; transition: transform .25s ease, box-shadow .25s ease; min-width: 0; }
-.os-card:hover { transform: translateY(-4px); box-shadow: var(--shadow); }
-.os-card.mine { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
-.os-card .mine-tag { position: absolute; top: 18px; right: 18px; font: 500 11px/1 var(--f-mono); color: var(--accent); background: var(--accent-soft); padding: 5px 8px; border-radius: 999px; }
-.os-ico { width: 40px; height: 40px; }
-.os-card h3 { font-size: 24px; font-weight: 700; }
-.os-card .req { font-size: 13px; color: var(--ink-3); margin-top: -8px; }
-.files { display: flex; flex-direction: column; gap: 8px; margin-top: auto; }
+/* ---------- baru ---------- */
+.news { display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px; }
+.news div { padding: 18px 20px; border-radius: 14px; border: 1px solid var(--line); background: var(--bg-2); }
+.news b { display: block; margin-bottom: 4px; font-size: 15.5px; }
+.news span { color: var(--muted); font-size: 14.5px; }
+@media (max-width: 720px) { .news { grid-template-columns: 1fr; } }
+
+/* ---------- perbandingan ---------- */
+.table-wrap { overflow-x: auto; border-radius: var(--radius); border: 1px solid var(--line); }
+table { width: 100%; border-collapse: collapse; min-width: 640px; font-size: 15px; }
+th, td { padding: 15px 18px; text-align: left; border-bottom: 1px solid var(--line); }
+thead th { font: 500 12.5px var(--f-mono); letter-spacing: .08em; text-transform: uppercase; color: var(--dim); background: var(--bg-2); }
+tbody tr:last-child td { border-bottom: 0; }
+td:first-child { color: var(--muted); }
+td.us { background: rgba(143,211,255,.05); font-weight: 500; }
+.y { color: var(--ok); } .n { color: var(--dim); } .p { color: #fbbf24; }
+
+/* ---------- unduh ---------- */
+.dl-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+.os {
+  position: relative; padding: 26px; border-radius: var(--radius); border: 1px solid var(--line);
+  background: linear-gradient(180deg, var(--surface), var(--bg-2));
+}
+.os.mine { border-color: rgba(143,211,255,.55); box-shadow: 0 0 0 1px rgba(143,211,255,.25), 0 30px 60px -30px rgba(79,157,255,.5); }
+.os .tag { position: absolute; top: 18px; right: 18px; font: 500 11px var(--f-mono); color: #06122a; background: var(--ice); padding: 3px 9px; border-radius: 999px; }
+.os svg.logo { width: 30px; height: 30px; color: var(--text); }
+.os h3 { margin: 14px 0 2px; font-size: 21px; }
+.os .req { color: var(--dim); font-size: 13.5px; margin: 0 0 18px; }
+.files { display: grid; gap: 8px; }
 .file {
-  display: flex; align-items: center; gap: 10px; padding: 11px 13px;
-  border-radius: 12px; border: 1px solid var(--line); text-decoration: none;
-  transition: background .15s ease, border-color .15s ease;
+  display: flex; align-items: center; gap: 10px; padding: 12px 14px; border-radius: 11px;
+  border: 1px solid var(--line); background: #0a0f1c; font-size: 14.5px; transition: border-color .15s, background .15s;
 }
-.file:hover { border-color: var(--accent); background: var(--accent-soft); }
-.file.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
-.file.primary:hover { filter: brightness(1.06); background: var(--accent); }
-.file .n { font-weight: 600; font-size: 14px; }
-.file .x { margin-left: auto; font: 12px/1 var(--f-mono); opacity: .75; }
-.file svg { width: 16px; height: 16px; flex: none; }
-.copybox { display: flex; gap: 8px; align-items: center; font: 12px/1.4 var(--f-mono); background: var(--bg); border: 1px solid var(--line); border-radius: 10px; padding: 8px 10px; min-width: 0; }
-.copybox code { overflow-x: auto; white-space: nowrap; flex: 1; min-width: 0; }
-.copybox button { border: 0; background: var(--line); border-radius: 6px; padding: 4px 8px; font-size: 11px; flex: none; }
-.dl-notes { margin-top: 26px; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px; font-size: 14px; color: var(--ink-2); }
-.dl-notes > div { padding: 16px 18px; border-radius: 16px; border: 1px dashed var(--line); }
-.dl-notes strong { color: var(--ink); display: block; margin-bottom: 4px; font-weight: 600; }
-.dl-notes a { color: var(--accent); }
+.file:hover { border-color: var(--ice); background: #0d1428; }
+.file svg { width: 16px; height: 16px; color: var(--ice); flex: none; }
+.file .x { margin-left: auto; font: 400 12px var(--f-mono); color: var(--dim); }
+.notes { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-top: 18px; }
+.notes div { font-size: 14px; color: var(--muted); padding: 16px 18px; border-radius: 14px; border: 1px dashed var(--line-2); }
+.notes strong { display: block; color: var(--text); margin-bottom: 4px; font-size: 14.5px; }
+.notes code, .copy code { font-family: var(--f-mono); font-size: 12.5px; color: var(--ice); }
+.copy { display: flex; align-items: center; gap: 8px; margin-top: 4px; padding: 8px 10px; border-radius: 10px; background: #0a0f1c; border: 1px solid var(--line); overflow: hidden; }
+.copy code { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.copy button { all: unset; cursor: pointer; font-size: 12.5px; color: var(--muted); padding: 2px 8px; border-radius: 6px; border: 1px solid var(--line-2); }
+@media (max-width: 900px) { .dl-grid, .notes { grid-template-columns: 1fr; } }
 
 /* ---------- FAQ ---------- */
-.faq { padding-block: 40px 90px; }
-.faq h2 { font-size: clamp(30px, 4vw, 48px); font-weight: 800; margin-bottom: 26px; }
-.faq details { border-top: 1px solid var(--line); padding: 18px 0; }
-.faq details:last-of-type { border-bottom: 1px solid var(--line); }
-.faq summary { cursor: pointer; font: 600 17px/1.35 var(--f-body); list-style: none; display: flex; justify-content: space-between; gap: 16px; }
-.faq summary::-webkit-details-marker { display: none; }
-.faq summary::after { content: "+"; font: 400 22px/1 var(--f-body); color: var(--ink-3); transition: transform .2s ease; }
-.faq details[open] summary::after { transform: rotate(45deg); }
-.faq details p { margin-top: 10px; color: var(--ink-2); max-width: 70ch; }
+.faq { max-width: 820px; margin: 0 auto; }
+details { border-bottom: 1px solid var(--line); }
+summary { list-style: none; cursor: pointer; padding: 22px 36px 22px 0; font-size: 17.5px; font-weight: 500; position: relative; }
+summary::-webkit-details-marker { display: none; }
+summary::after { content: "+"; position: absolute; right: 4px; top: 18px; font: 300 26px var(--f-sans); color: var(--dim); transition: transform .2s; }
+details[open] summary::after { transform: rotate(45deg); color: var(--ice); }
+details p { margin: -6px 0 22px; color: var(--muted); }
 
-footer { border-top: 1px solid var(--line); padding-block: 34px 50px; color: var(--ink-3); font-size: 13.5px; }
-footer .wrap { display: flex; gap: 16px; justify-content: space-between; flex-wrap: wrap; align-items: center; }
-footer span { max-width: 80ch; }
-footer a { color: var(--ink-2); }
+/* ---------- penutup ---------- */
+.final { text-align: center; padding: 110px 0; }
+.final .penguin { width: 84px; height: 84px; margin: 0 auto 26px; border-radius: 22px; box-shadow: 0 20px 60px -15px rgba(79,157,255,.7); }
+footer { border-top: 1px solid var(--line); padding: 34px 0 48px; color: var(--dim); font-size: 14px; }
+.foot { display: flex; flex-wrap: wrap; gap: 18px; align-items: center; justify-content: space-between; }
+.foot nav { display: flex; gap: 18px; flex-wrap: wrap; }
+.foot a:hover { color: var(--text); }
 
-/* ---------- Muncul saat digulir ---------- */
-.reveal { transition: transform .8s cubic-bezier(.2,.7,.2,1), opacity .8s ease; }
-.js .reveal.pre { transform: translateY(26px); opacity: .001; }
-
-/* ---------- Responsif ---------- */
-@media (max-width: 1020px) {
-  .d-body { grid-template-columns: 40px 150px minmax(0, 1fr); }
-  .d-agent { display: none; }
-  .card { grid-template-columns: minmax(0, 1fr); position: relative; top: 0; min-height: 0; }
-  .shot { padding: 26px 0 0 26px; max-height: 360px; }
-  .os-grid { grid-template-columns: minmax(0, 1fr); }
-}
-@media (max-width: 900px) { .nav-links { display: none; } }
-@media (max-width: 760px) {
-  .nav-links, .nav .seg.lang-top { display: none; }
-  .dl-grid, .dl-notes { grid-template-columns: minmax(0, 1fr); }
-  .d-body { grid-template-columns: minmax(0, 1fr); height: 360px; }
-  .d-act, .d-side { display: none; }
-  .tile { display: none; }
-  .card .copy { padding: 28px 22px; }
-  .agent-list { grid-template-columns: minmax(0, 1fr); }
-  .demo { transform: none !important; }
-}
-@media (max-width: 520px) {
-  .nav .seg.os-top { display: none; }
-  .hero { padding-top: 44px; }
-}
+/* ---------- animasi muncul ---------- */
+.js .reveal { opacity: 0; transform: translateY(18px); transition: opacity .7s ease, transform .7s ease; }
+.js .reveal.in { opacity: 1; transform: none; }
 @media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after { animation: none !important; transition: none !important; }
-  .js .reveal.pre { transform: none; opacity: 1; }
-  .card { transform: none !important; filter: none !important; }
-}
-
-/* ===================== Animasi penuh ===================== */
-.progress { position: fixed; top: 0; left: 0; height: 3px; width: 100%; transform-origin: 0 50%; transform: scaleX(var(--p, 0)); z-index: 80; background: linear-gradient(90deg, var(--claude), var(--accent), var(--codex), var(--agy)); }
-.glow { position: fixed; left: 0; top: 0; width: 520px; height: 520px; margin: -260px 0 0 -260px; border-radius: 50%; pointer-events: none; z-index: 0; background: radial-gradient(circle, color-mix(in srgb, var(--accent) 22%, transparent), transparent 62%); transform: translate3d(var(--gx, -999px), var(--gy, -999px), 0); transition: opacity .4s ease; opacity: .9; }
-main, footer, .nav { position: relative; z-index: 1; }
-.nav { z-index: 50; }
-.aurora { position: absolute; inset: -20% -10% auto; height: 760px; z-index: 0; pointer-events: none; filter: blur(70px); opacity: .55; }
-.aurora i { position: absolute; width: 46%; height: 60%; border-radius: 50%; mix-blend-mode: normal; animation: drift 22s ease-in-out infinite alternate; }
-.aurora i:nth-child(1) { left: 4%; top: 10%; background: color-mix(in srgb, var(--accent) 70%, transparent); }
-.aurora i:nth-child(2) { right: 2%; top: 0; background: color-mix(in srgb, var(--claude) 55%, transparent); animation-duration: 26s; animation-delay: -6s; }
-.aurora i:nth-child(3) { left: 30%; top: 40%; background: color-mix(in srgb, var(--codex) 45%, transparent); animation-duration: 30s; animation-delay: -12s; }
-@keyframes drift { 0% { transform: translate(0, 0) scale(1); } 50% { transform: translate(8%, 6%) scale(1.12); } 100% { transform: translate(-6%, -4%) scale(.95); } }
-.hero h1 .w.a { background: linear-gradient(100deg, var(--accent), var(--agy), var(--claude), var(--accent)); background-size: 300% 100%; -webkit-background-clip: text; background-clip: text; color: transparent; animation: rise .9s cubic-bezier(.2,.7,.2,1) both, shine 8s linear infinite; }
-.hero h1 .w.a:nth-of-type(3) { animation-delay: .16s, 0s; }
-@keyframes shine { to { background-position: 300% 0; } }
-.stats { display: flex; justify-content: center; gap: 12px; flex-wrap: wrap; margin-top: 30px; }
-.stat { min-width: 120px; padding: 12px 16px; border-radius: 16px; background: color-mix(in srgb, var(--bg-2) 80%, transparent); border: 1px solid var(--line); backdrop-filter: blur(6px); }
-.stat b { display: block; font: 800 30px/1 var(--f-display); letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
-.stat span { font-size: 12.5px; color: var(--ink-3); }
-.btn { position: relative; overflow: hidden; transform: translate(var(--mx, 0px), var(--my, 0px)); transition: transform .25s cubic-bezier(.2,.7,.2,1); }
-.btn:active { transform: translate(var(--mx, 0px), var(--my, 0px)) scale(.97); }
-.ripple { position: absolute; border-radius: 50%; transform: scale(0); background: currentColor; opacity: .25; animation: ripple .6s ease-out forwards; pointer-events: none; }
-@keyframes ripple { to { transform: scale(4); opacity: 0; } }
-.btn-primary-arrow svg { animation: dl 1.6s ease-in-out infinite; }
-@keyframes dl { 0%, 60%, 100% { transform: none; } 30% { transform: translateY(3px); } }
-.split .sw { display: inline-block; transform: translateY(.5em); opacity: .001; transition: transform .7s cubic-bezier(.2,.7,.2,1), opacity .7s ease; transition-delay: calc(var(--i) * 45ms); }
-.split.in .sw { transform: none; opacity: 1; }
-.no-js .split .sw, .split.static .sw { transform: none; opacity: 1; }
-
-/* Panel hidup: pasang agen */
-.live { position: relative; padding: 34px; display: flex; align-items: center; justify-content: center; min-width: 0; overflow: hidden; }
-.live.agents { background: linear-gradient(135deg, color-mix(in srgb, var(--codex) 20%, var(--bg)), color-mix(in srgb, var(--agy) 18%, var(--bg))); }
-.mock { width: 100%; max-width: 520px; background: var(--panel); color: var(--panel-ink); border-radius: 14px; box-shadow: var(--shadow); border: 1px solid #262c38; overflow: hidden; font: 13px/1.45 var(--f-body); }
-.mock-head { height: 34px; display: flex; align-items: center; gap: 8px; padding: 0 12px; border-bottom: 1px solid var(--panel-line); color: var(--panel-ink-2); font-size: 11px; letter-spacing: .07em; text-transform: uppercase; }
-.mx-item { display: flex; gap: 11px; padding: 12px 14px; align-items: center; border-bottom: 1px solid #1c212b; opacity: 0; transform: translateX(-14px); transition: opacity .5s ease, transform .5s cubic-bezier(.2,.7,.2,1); transition-delay: calc(var(--i) * 160ms); }
-.play .mx-item { opacity: 1; transform: none; }
-.mx-item b { width: 30px; height: 30px; border-radius: 8px; display: grid; place-items: center; color: #fff; flex: none; }
-.mx-main { flex: 1; min-width: 0; }
-.mx-main strong { font-weight: 600; }
-.mx-main small { display: block; color: var(--panel-ink-2); font-size: 11.5px; }
-.mx-bar { height: 4px; border-radius: 3px; background: #232a36; margin-top: 7px; overflow: hidden; }
-.mx-bar i { display: block; height: 100%; width: 0; background: var(--c); transition: width 1.6s cubic-bezier(.4,0,.2,1); transition-delay: calc(.4s + var(--i) * 350ms); }
-.play .mx-bar i { width: 100%; }
-.mx-state { font-size: 11.5px; padding: 4px 9px; border-radius: 7px; background: #1e2430; color: var(--panel-ink-2); white-space: nowrap; transition: all .3s ease; transition-delay: calc(2s + var(--i) * 350ms); }
-.play .mx-state { background: color-mix(in srgb, var(--c) 30%, #1e2430); color: #fff; }
-
-/* Panel hidup: debugger */
-.live.debug { background: linear-gradient(135deg, color-mix(in srgb, #cc6633 24%, var(--bg)), var(--bg)); }
-.dbg-mock { display: grid; grid-template-columns: minmax(0, 1fr) 170px; }
-.dbg-code { font: 12px/1.75 var(--f-mono); padding: 10px 0; min-width: 0; }
-.dbg-code div { display: flex; white-space: pre; padding-right: 10px; transition: background .25s ease; }
-.dbg-code div b { width: 34px; text-align: right; padding-right: 12px; color: #4c5568; font-weight: 400; position: relative; }
-.dbg-code div.bp b::before { content: ""; position: absolute; left: 6px; top: 50%; width: 8px; height: 8px; margin-top: -4px; border-radius: 50%; background: #e51400; }
-.dbg-code div.cur { background: rgba(255, 204, 0, .2); box-shadow: inset 2px 0 0 #ffcc00; }
-.dbg-side { border-left: 1px solid var(--panel-line); padding: 10px 12px; font: 11.5px/1.6 var(--f-mono); background: #0d1016; }
-.dbg-side h6 { margin: 0 0 6px; font: 600 10px/1 var(--f-body); letter-spacing: .08em; text-transform: uppercase; color: var(--panel-ink-2); }
-.dbg-side .v { display: flex; justify-content: space-between; gap: 8px; }
-.dbg-side .v span:first-child { color: #9cdcfe; }
-.dbg-side .v span:last-child { color: #ce9178; transition: color .3s ease; }
-.dbg-side .v.flash span:last-child { color: #fff; }
-.dbg-bar { display: flex; gap: 6px; padding: 7px 10px; border-bottom: 1px solid var(--panel-line); }
-.dbg-bar i { width: 22px; height: 18px; border-radius: 5px; background: #1e2430; display: grid; place-items: center; font: 10px/1 var(--f-mono); color: #6b97ff; font-style: normal; }
-.dbg-bar i.on { background: #6b97ff; color: #0b0d12; }
-.dbg-status { height: 22px; background: #cc6633; color: #fff; font-size: 11px; display: flex; align-items: center; padding: 0 10px; gap: 12px; }
-
-/* Panel hidup: terminal */
-.live.term { background: linear-gradient(135deg, color-mix(in srgb, var(--accent) 16%, var(--bg)), color-mix(in srgb, var(--ok) 12%, var(--bg))); }
-.term-body { font: 12.5px/1.65 var(--f-mono); padding: 12px 14px; height: 250px; overflow: hidden; white-space: pre-wrap; }
-.term-body .pr { color: #56d364; }
-.term-body .cm { color: #e6edf3; }
-.term-body .ok { color: #56d364; }
-.term-body .dim { color: #7d8590; }
-.term-body .y { color: #e3b341; }
-.caret { display: inline-block; width: 8px; height: 15px; background: #e6edf3; vertical-align: -2px; animation: blink 1s steps(2) infinite; }
-.term-tabs { display: flex; gap: 2px; padding: 0 8px; border-bottom: 1px solid var(--panel-line); font-size: 11px; }
-.term-tabs span { padding: 8px 10px; color: var(--panel-ink-2); }
-.term-tabs span.on { color: var(--panel-ink); box-shadow: inset 0 -2px 0 var(--accent); }
-
-/* Galeri screenshot */
-.gallery { padding-block: 30px 10px; overflow: hidden; }
-.gallery h2 { text-align: center; font-size: clamp(28px, 4vw, 46px); font-weight: 800; margin-bottom: 26px; }
-.gal-track { display: flex; gap: 22px; width: max-content; animation: slide 60s linear infinite; padding-block: 10px 30px; }
-.gallery:hover .gal-track { animation-play-state: paused; }
-.gal-track button { border: 0; padding: 0; background: none; border-radius: 14px; overflow: hidden; box-shadow: var(--shadow); transition: transform .35s cubic-bezier(.2,.7,.2,1); flex: none; }
-.gal-track button:hover { transform: translateY(-8px) rotate(-.5deg) scale(1.02); }
-.gal-track img { display: block; width: min(520px, 78vw); height: auto; }
-.lightbox { position: fixed; inset: 0; z-index: 90; background: rgba(5, 7, 12, .82); display: grid; place-items: center; padding: 24px; backdrop-filter: blur(6px); animation: fade .25s ease both; }
-.lightbox img { max-width: min(1400px, 100%); max-height: 88vh; height: auto; border-radius: 12px; box-shadow: var(--shadow); animation: zoomin .35s cubic-bezier(.2,.7,.2,1) both; }
-@keyframes fade { from { opacity: 0; } }
-@keyframes zoomin { from { transform: scale(.92); opacity: 0; } }
-
-/* Kartu unduh 3D & konfeti */
-.os-card { transform: perspective(900px) rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg)) translateY(var(--ty, 0px)); transition: transform .2s ease, box-shadow .25s ease; }
-.os-card:hover { --ty: -4px; }
-.file.primary svg { animation: dl 1.6s ease-in-out infinite; }
-#confetti { position: fixed; inset: 0; pointer-events: none; z-index: 95; }
-.dl-toast { position: fixed; left: 50%; bottom: calc(24px + env(safe-area-inset-bottom, 0px)); transform: translate(-50%, 20px); opacity: 0; z-index: 96; background: var(--ink); color: var(--bg); padding: 12px 18px; border-radius: 12px; font-size: 14px; transition: all .35s cubic-bezier(.2,.7,.2,1); max-width: calc(100% - 32px); }
-.dl-toast.on { opacity: 1; transform: translate(-50%, 0); }
-
-/* Tulisan raksasa di bawah */
-.wordmark { padding-block: 40px 0; overflow: hidden; text-align: center; }
-.wordmark h2 { font: 800 clamp(56px, 15vw, 220px)/.85 var(--f-display); letter-spacing: -0.035em; background: linear-gradient(180deg, var(--ink) 30%, color-mix(in srgb, var(--ink) 5%, transparent)); -webkit-background-clip: text; background-clip: text; color: transparent; white-space: nowrap; }
-.wordmark h2 .ch { display: inline-block; transform: translateY(60%); opacity: .001; transition: transform 1s cubic-bezier(.2,.7,.2,1), opacity .8s ease; transition-delay: calc(var(--i) * 40ms); }
-.wordmark.in h2 .ch { transform: none; opacity: 1; }
-@media (max-width: 1020px) { .live { padding: 22px; } .dbg-mock { grid-template-columns: minmax(0, 1fr); } .dbg-side { display: none; } }
-@media (hover: none) { .glow { display: none; } }
-@media (prefers-reduced-motion: reduce) {
-  .aurora, .glow { display: none; }
-  .split .sw, .wordmark h2 .ch, .mx-item { transform: none !important; opacity: 1 !important; }
-  .mx-bar i { width: 100% !important; }
-  .gal-track { animation: none; overflow-x: auto; max-width: 100%; }
-}
-
-/* ---------- Hero 3D: partikel, kemiringan ikut kursor, kilau, masuk dari kedalaman ---------- */
-.stars { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 0; pointer-events: none; opacity: .9; }
-.demo-wrap { transform-style: preserve-3d; }
-.demo {
-  transform: rotateX(calc(var(--tilt, 8deg) + var(--mx, 0deg))) rotateY(var(--my, 0deg)) scale(var(--sc, .96));
-  transition: transform .45s cubic-bezier(.2,.7,.2,1);
-  will-change: transform;
-}
-.demo::after {
-  content: ""; position: absolute; inset: 0; pointer-events: none; border-radius: inherit; z-index: 5;
-  background: radial-gradient(600px circle at var(--gx, 50%) var(--gy, 0%), rgba(255,255,255,.09), transparent 55%);
-  opacity: var(--glare, 0); transition: opacity .4s ease;
-}
-html.js .demo-wrap.enter { animation: fly-in 1.4s cubic-bezier(.16,.8,.2,1) .25s both; }
-@keyframes fly-in {
-  from { opacity: 0; transform: translateY(90px) rotateX(32deg) scale(.86); filter: blur(6px); }
-  60% { filter: blur(0); }
-  to { opacity: 1; transform: none; filter: none; }
-}
-.demo-shadow { position: absolute; left: 8%; right: 8%; bottom: -40px; height: 80px; border-radius: 50%; background: radial-gradient(closest-side, color-mix(in srgb, var(--accent) 35%, transparent), transparent); filter: blur(20px); z-index: -1; opacity: .7; transform: translateX(calc(var(--my, 0deg) * -4)); }
-
-/* ---------- Cerita gulir: jendela aplikasi menempel & berganti adegan ---------- */
-.story { position: relative; height: 640vh; margin-top: 40px; }
-.story-pin { position: sticky; top: 0; height: 100vh; height: 100svh; display: flex; align-items: center; overflow: hidden; }
-.story-bg { position: absolute; inset: 0; z-index: 0; pointer-events: none; background: radial-gradient(60% 50% at var(--sbx, 70%) 50%, color-mix(in srgb, var(--sc1, var(--claude)) 18%, transparent), transparent 70%); transition: background 1s ease; }
-.story-pin > .wrap { flex: none; }
-.story-grid { position: relative; z-index: 1; display: grid; grid-template-columns: minmax(0, 310px) minmax(0, 1fr); gap: 32px; align-items: center; }
-.story-copy { position: relative; z-index: 3; }
-.story-kicker { font: 600 12px/1 var(--f-mono); letter-spacing: .12em; text-transform: uppercase; color: var(--accent); }
-.story-head { font: 800 clamp(30px, 3.6vw, 46px)/1.02 var(--f-display); letter-spacing: -.02em; margin: 14px 0 26px; }
-.story-steps { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; counter-reset: s; }
-.story-steps li { position: relative; padding-left: 18px; }
-.story-steps li::before { content: ""; position: absolute; left: 0; top: 10px; bottom: 10px; width: 3px; border-radius: 3px; background: var(--line); overflow: hidden; }
-.story-steps li::after { content: ""; position: absolute; left: 0; top: 10px; width: 3px; height: calc((100% - 20px) * var(--fill, 0)); border-radius: 3px; background: var(--accent); }
-.story-steps button { all: unset; cursor: pointer; display: flex; gap: 12px; align-items: baseline; padding: 8px 0; font: 600 18px/1.25 var(--f-display); color: var(--ink-3); transition: color .3s ease; }
-.story-steps button b { font: 600 11px/1 var(--f-mono); color: var(--ink-3); }
-.story-steps li.on button { color: var(--ink); }
-.story-steps li.on button b { color: var(--accent); }
-.story-steps button:focus-visible { outline: 2px solid var(--accent); outline-offset: 4px; border-radius: 6px; }
-.story-steps p { margin: 0 0 6px 30px; color: var(--ink-2); font-size: 15px; line-height: 1.55; max-height: 0; opacity: 0; overflow: hidden; transition: max-height .5s ease, opacity .4s ease; }
-.story-steps li.on p { max-height: 140px; opacity: 1; }
-
-.story-stage { position: relative; height: min(76vh, 640px); perspective: 2000px; perspective-origin: 50% 40%; }
-.sw-cam {
-  position: absolute; left: 50%; top: 50%; width: 920px; height: 560px;
-  transform-style: preserve-3d;
-  transform: translate(-50%, -50%) scale(var(--fit, 1)) translate3d(var(--cx, 0px), var(--cy, 0px), var(--cz, 0px)) rotateX(var(--crx, 0deg)) rotateY(var(--cry, 0deg));
-  transition: transform 1.1s cubic-bezier(.2,.7,.15,1);
-}
-.stw {
-  position: absolute; inset: 0; background: var(--panel); color: var(--panel-ink); border-radius: 16px; overflow: hidden;
-  box-shadow: 0 60px 120px -40px rgba(0,0,0,.55), 0 0 0 1px rgba(255,255,255,.07) inset;
-  font: 12.5px/1.45 var(--f-body); display: flex; flex-direction: column;
-}
-.sw-title { height: 36px; flex: none; display: flex; align-items: center; padding: 0 12px; background: #0b0e13; border-bottom: 1px solid var(--panel-line); }
-.sw-title .sw-search { margin: 0 auto; width: 300px; height: 22px; border-radius: 6px; background: var(--panel-2); border: 1px solid var(--panel-line); display: grid; place-items: center; font-size: 11.5px; color: var(--panel-ink-2); }
-.sw-body { flex: 1; display: grid; grid-template-columns: 40px minmax(0, 1fr) 310px; min-height: 0; }
-.sw-act { background: #0b0e13; border-right: 1px solid var(--panel-line); display: flex; flex-direction: column; align-items: center; gap: 14px; padding-top: 12px; }
-.sw-act span { width: 16px; height: 16px; border-radius: 5px; background: var(--panel-ink-2); opacity: .28; }
-.sw-act span.on { opacity: .9; background: var(--panel-ink); }
-.sw-editor { display: flex; flex-direction: column; min-width: 0; background: #12161d; position: relative; }
-.sw-tabs { height: 34px; flex: none; display: flex; background: #0d1016; border-bottom: 1px solid var(--panel-line); }
-.sw-tabs span { padding: 0 14px; display: flex; align-items: center; gap: 7px; border-right: 1px solid var(--panel-line); font-size: 12px; background: #12161d; box-shadow: inset 0 1px 0 #6b97ff; }
-.sw-tabs span i { font: 700 8.5px/1 var(--f-mono); width: 16px; height: 16px; border-radius: 3px; display: grid; place-items: center; background: #f7df1e; color: #000; font-style: normal; }
-.sw-review { height: 0; overflow: hidden; display: flex; align-items: center; gap: 10px; padding: 0 12px; background: color-mix(in srgb, var(--claude) 12%, #161a22); font: 600 12px/1 var(--f-body); transition: height .45s ease; }
-.sw-review em { font-style: normal; color: var(--claude); }
-.sw-review span { flex: 1; color: var(--panel-ink-2); font-weight: 500; }
-.sw-review i { font-style: normal; padding: 5px 9px; border-radius: 7px; border: 1px solid var(--panel-line); }
-.sw-review i:first-of-type { background: var(--claude); color: #fff; border-color: transparent; }
-.stw[data-scene="3"] .sw-review { height: 38px; }
-.sw-code { flex: 1; overflow: hidden; padding: 12px 0; font: 12.5px/1.7 var(--f-mono); }
-.sw-code .ln { transition: background .4s ease, opacity .4s ease, max-height .5s ease; max-height: 2em; }
-.sw-code .ln.add { background: rgba(46,160,67,.16); box-shadow: inset 2px 0 0 var(--ok); }
-.sw-code .ln.del { background: rgba(248,81,73,.14); box-shadow: inset 2px 0 0 #f85149; color: #c9a3a3; }
-.sw-code .ln.gone { max-height: 0; opacity: 0; }
-.sw-code .ln.cur { background: rgba(227,179,65,.18); box-shadow: inset 2px 0 0 #e3b341; }
-.sw-code .ln > span { white-space: pre; }
-.sw-code .ln .bp { position: absolute; margin-left: 4px; margin-top: 6px; width: 9px; height: 9px; border-radius: 50%; background: #f85149; box-shadow: 0 0 0 3px rgba(248,81,73,.25); }
-.sw-code .ln b { position: relative; }
-.sw-code .chips { display: inline-flex; gap: 5px; margin-left: 14px; vertical-align: 1px; }
-.sw-code .chips i { font: 700 10px/1 var(--f-body); font-style: normal; padding: 4px 8px; border-radius: 999px; }
-.sw-code .chips i.ok { background: rgba(46,160,67,.22); color: #56d364; }
-.sw-code .chips i.no { background: rgba(248,81,73,.2); color: #ff7b72; }
-.sw-code .chips i.press { animation: press .5s ease; }
-@keyframes press { 40% { transform: scale(.86); box-shadow: 0 0 0 4px rgba(86,211,100,.3); } }
-.sw-status { height: 22px; flex: none; display: flex; gap: 14px; align-items: center; padding: 0 10px; font-size: 11px; color: var(--panel-ink-2); border-top: 1px solid var(--panel-line); background: #0b0e13; }
-.sw-status .dbg { display: none; color: #fff; background: #c2410c; padding: 0 8px; height: 100%; align-items: center; margin-left: -10px; }
-.stw[data-scene="5"] .sw-status .dbg { display: flex; }
-.sw-agent { --a: var(--claude); border-left: 1px solid var(--panel-line); background: #0d1016; display: flex; flex-direction: column; min-width: 0; position: relative; }
-.sw-ahead { height: 40px; flex: none; display: flex; align-items: center; gap: 8px; padding: 0 12px; border-bottom: 1px solid var(--panel-line); }
-.sw-ahead .k { width: 20px; height: 20px; border-radius: 6px; display: grid; place-items: center; color: #fff; font-size: 11px; background: var(--a); transition: background .4s ease; }
-.sw-pick { font: 600 13px/1 var(--f-body); }
-.sw-menu { position: absolute; top: 44px; left: 10px; right: 10px; background: #161b24; border: 1px solid #2c3445; border-radius: 10px; padding: 5px; box-shadow: 0 20px 40px -10px rgba(0,0,0,.6); opacity: 0; transform: translateY(-6px) scale(.98); transition: opacity .35s ease, transform .35s ease; z-index: 3; }
-.stw[data-scene="0"] .sw-menu { opacity: 1; transform: none; }
-.sw-menu div { display: flex; align-items: center; gap: 9px; padding: 8px; border-radius: 7px; font-size: 12.5px; transition: background .25s ease; }
-.sw-menu div b { width: 20px; height: 20px; border-radius: 6px; display: grid; place-items: center; color: #fff; font-size: 11px; }
-.sw-menu div small { margin-left: auto; color: var(--panel-ink-2); font-size: 11px; }
-.sw-menu div.on { background: #243049; }
-.sw-chat { flex: 1; overflow: hidden; padding: 12px; display: flex; flex-direction: column; gap: 9px; }
-.sw-chat .u { align-self: flex-end; max-width: 94%; background: #1a2440; border: 1px solid #2b3b66; border-radius: 12px 12px 4px 12px; padding: 8px 11px; }
-.sw-chat .u .rs { display: block; margin-top: 6px; font-size: 11px; color: #8fb3ff; }
-.sw-chat .u .rs.press { color: #fff; text-decoration: underline; }
-.sw-chat .t { display: flex; gap: 7px; font-size: 11.5px; color: var(--panel-ink-2); border: 1px solid var(--panel-line); border-radius: 7px; padding: 5px 8px; }
-.sw-chat .t s { margin-left: auto; text-decoration: none; color: #56d364; }
-.sw-chat .a { color: var(--panel-ink); }
-.sw-chat .ch { border: 1px solid color-mix(in srgb, var(--ok) 40%, var(--panel-line)); background: rgba(46,160,67,.06); border-radius: 9px; padding: 8px 10px; font-size: 11.5px; }
-.sw-chat .ch b { display: block; margin-bottom: 4px; }
-.sw-chat .ch span { color: #8fb3ff; font-family: var(--f-mono); }
-.sw-chat .pill { display: inline-block; padding: 1px 6px; border-radius: 6px; background: #22304c; color: #a9c1ff; font-family: var(--f-mono); font-size: 11px; }
-.sw-comp { flex: none; margin: 10px; border: 1px solid var(--panel-line); border-radius: 10px; padding: 8px 10px; background: #12161d; color: var(--panel-ink-2); min-height: 52px; }
-.sw-comp .typing::after { content: "▍"; animation: blink 1s steps(2) infinite; color: var(--panel-ink); }
-
-/* Lapisan yang "keluar" dari jendela (kedalaman 3D) */
-.sw-pop { position: absolute; z-index: 4; transform-style: preserve-3d; transition: opacity .5s ease, transform .9s cubic-bezier(.2,.7,.15,1); opacity: 0; pointer-events: none; }
-.sw-perm { right: 18px; top: 150px; width: 330px; transform: translateZ(0) translateY(20px); }
-.stw[data-scene="2"] ~ .sw-perm, .sw-cam[data-scene="2"] .sw-perm { opacity: 1; transform: translateZ(110px); }
-.sw-perm .card3d { background: #121722; border: 1px solid color-mix(in srgb, var(--claude) 55%, #2c3445); border-radius: 12px; padding: 12px; color: var(--panel-ink); box-shadow: 0 40px 80px -20px rgba(0,0,0,.7), 0 0 0 4px color-mix(in srgb, var(--claude) 16%, transparent); font: 12px/1.45 var(--f-body); }
-.sw-perm h5 { margin: 0 0 8px; font: 600 13px/1.2 var(--f-body); }
-.sw-perm .diff { font: 11px/1.6 var(--f-mono); border-radius: 7px; background: #0a0d12; overflow: hidden; }
-.sw-perm .diff div { white-space: pre; padding: 0 8px; }
-.sw-perm .diff .p { background: rgba(46,160,67,.2); } .sw-perm .diff .m { background: rgba(248,81,73,.18); }
-.sw-perm .act { display: flex; gap: 6px; margin-top: 10px; }
-.sw-perm .act i { font-style: normal; font-size: 11.5px; padding: 6px 10px; border-radius: 7px; border: 1px solid #2c3445; background: #1a1f29; }
-.sw-perm .act i.go { background: var(--claude); color: #fff; border-color: transparent; }
-.sw-perm .act i.go.press { animation: press .5s ease; }
-.sw-perm .ok { display: none; color: #56d364; font-weight: 600; margin-top: 10px; }
-.sw-perm.allowed .act { display: none; }
-.sw-perm.allowed .ok { display: block; }
-.sw-vars { left: 220px; top: 110px; width: 300px; transform: translateZ(0) translateY(20px); }
-.sw-cam[data-scene="5"] .sw-vars { opacity: 1; transform: translateZ(130px) translateX(330px); }
-.sw-vars .card3d { background: #121722; border: 1px solid #2c3445; border-radius: 12px; padding: 12px; color: var(--panel-ink); box-shadow: 0 40px 80px -20px rgba(0,0,0,.7); font: 12px/1.5 var(--f-mono); }
-.sw-vars h6 { margin: 0 0 6px; font: 600 10.5px/1 var(--f-body); letter-spacing: .08em; text-transform: uppercase; color: var(--panel-ink-2); }
-.sw-vars .v { display: flex; justify-content: space-between; gap: 10px; transition: background .3s ease; border-radius: 4px; padding: 0 4px; }
-.sw-vars .v span:last-child { color: #b5cea8; }
-.sw-vars .v.new { background: rgba(227,179,65,.18); }
-.sw-toast { left: 50%; bottom: 40px; transform: translateX(-50%) translateZ(0) translateY(16px); }
-.sw-cam[data-scene="4"] .sw-toast.on { opacity: 1; transform: translateX(-50%) translateZ(90px); }
-.sw-toast .card3d { background: #1f2633; color: var(--panel-ink); border: 1px solid #2f3848; border-radius: 10px; padding: 10px 14px; font: 600 12.5px/1 var(--f-body); white-space: nowrap; box-shadow: 0 30px 60px -20px rgba(0,0,0,.7); }
-.sw-toast .card3d::before { content: "↺ "; color: #56d364; }
-
-@media (max-width: 900px) {
-  .story { height: 620vh; }
-  .story-grid { grid-template-columns: minmax(0, 1fr); gap: 14px; align-content: center; height: 100%; padding-block: 64px 16px; }
-  .story-head { display: none; }
-  .story-steps { flex-direction: row; gap: 6px; flex-wrap: wrap; }
-  .story-steps li { padding: 0; flex: 1 1 0; min-width: 0; }
-  .story-steps li::before, .story-steps li::after { top: auto; bottom: 0; left: 0; height: 3px; width: 100%; }
-  .story-steps li::after { width: calc(100% * var(--fill, 0)); height: 3px; }
-  .story-steps button { display: block; width: 100%; padding: 0 0 8px; position: relative; }
-  .story-steps button > span { position: absolute; left: 0; top: 0; opacity: 0; pointer-events: none; }
-  .story-steps p { display: none; }
-  .story-copy { position: relative; }
-  .story-now { display: block !important; margin-top: 14px; min-height: 104px; }
-  .story-now strong { display: block; font: 700 22px/1.15 var(--f-display); margin-bottom: 6px; }
-  .story-now span { color: var(--ink-2); font-size: 14.5px; line-height: 1.5; }
-  .story-stage { height: 52vh; }
-}
-@media (prefers-reduced-motion: reduce) {
-  .sw-cam, .sw-pop, .sw-code .ln, .story-steps p, .sw-menu { transition: none !important; }
-  html.js .demo-wrap.enter { animation: none; }
-  .stars { display: none; }
+  html { scroll-behavior: auto; }
+  .js .reveal { opacity: 1; transform: none; transition: none; }
+  .btn:hover, .card:hover { transform: none; }
 }
 </style>
 </head>
 <body>
+<a class="skip" href="#main" data-en="Skip to content" data-id="Lewati ke konten">Skip to content</a>
+<div class="sky" aria-hidden="true"></div>
 
-<div class="progress" id="progress" aria-hidden="true"></div>
-<div class="glow" id="glow" aria-hidden="true"></div>
-<nav class="nav" aria-label="Utama">
-  <div class="wrap">
-    <a class="brand" href="#top"><img src="img/icon.png" alt="" width="28" height="28">Alexel Studio</a>
-    <div class="nav-links">
-      <a href="#agents" data-en="Agents" data-id="Agen">Agents</a>
+<header class="nav" id="nav">
+  <div class="wrap nav-in">
+    <a class="brand" href="#top" aria-label="Alexel Studio"><img src="img/icon.png" alt="" width="30" height="30"><span>Alexel Studio</span></a>
+    <nav class="nav-links" aria-label="Main">
       <a href="#features" data-en="Features" data-id="Fitur">Features</a>
+      <a href="#extensions" data-en="Extensions" data-id="Ekstensi">Extensions</a>
+      <a href="#compare" data-en="Compare" data-id="Bandingkan">Compare</a>
       <a href="#download" data-en="Download" data-id="Unduh">Download</a>
-      <a href="#faq" data-en="FAQ" data-id="Tanya jawab">FAQ</a>
+      <a href="#faq">FAQ</a>
+    </nav>
+    <div class="nav-right">
+      <div class="lang" role="group" aria-label="Language">
+        <button type="button" data-lang="en" aria-pressed="true">EN</button>
+        <button type="button" data-lang="id" aria-pressed="false">ID</button>
+      </div>
+      <a class="icon-link" id="gh-link" href="https://github.com/Nozella-Alexiee/alexel-studio" aria-label="GitHub"><svg width="19" height="19" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 .5a11.5 11.5 0 0 0-3.64 22.41c.58.1.79-.25.79-.56v-2c-3.2.7-3.88-1.37-3.88-1.37-.53-1.33-1.28-1.69-1.28-1.69-1.05-.71.08-.7.08-.7 1.16.08 1.77 1.19 1.77 1.19 1.03 1.77 2.71 1.26 3.37.96.1-.75.4-1.26.73-1.55-2.55-.29-5.24-1.28-5.24-5.69 0-1.26.45-2.29 1.19-3.09-.12-.29-.52-1.46.11-3.05 0 0 .97-.31 3.17 1.18a10.9 10.9 0 0 1 5.77 0c2.2-1.49 3.17-1.18 3.17-1.18.63 1.59.23 2.76.11 3.05.74.8 1.19 1.83 1.19 3.09 0 4.42-2.7 5.39-5.26 5.68.41.36.78 1.06.78 2.14v3.17c0 .31.21.67.8.56A11.5 11.5 0 0 0 12 .5Z"/></svg></a>
+      <a class="btn btn-primary btn-sm" href="#download"><span data-en="Download" data-id="Unduh">Download</span></a>
     </div>
-    <span class="spacer"></span>
-    <div class="seg os-top" role="group" aria-label="Shortcut untuk sistem operasi">
-      <button type="button" data-os="mac" aria-pressed="false">macOS</button>
-      <button type="button" data-os="win" aria-pressed="false">Windows</button>
-      <button type="button" data-os="linux" aria-pressed="false">Linux</button>
-    </div>
-    <div class="seg lang-top" role="group" aria-label="Bahasa">
-      <button type="button" data-lang="en" aria-pressed="true">EN</button>
-      <button type="button" data-lang="id" aria-pressed="false">ID</button>
-    </div>
-    <a class="btn sm" href="#download" data-en="Download" data-id="Unduh">Download</a>
   </div>
-</nav>
+</header>
 
-<main id="top">
-  <section class="hero">
-    <div class="aurora" aria-hidden="true"><i></i><i></i><i></i></div>
-    <div class="float" aria-hidden="true" id="float">
-      <span class="tile" style="left:6%;top:16%;--rot:-8deg">TS</span>
-      <span class="tile" style="left:12%;top:52%;--rot:6deg;animation-delay:-2s">py</span>
-      <span class="tile" style="left:3%;top:84%;--rot:-4deg;animation-delay:-3s">rs</span>
-      <span class="tile" style="right:7%;top:14%;--rot:7deg;animation-delay:-1s">go</span>
-      <span class="tile" style="right:13%;top:48%;--rot:-6deg;animation-delay:-4s">{ }</span>
-      <span class="tile" style="right:3%;top:84%;--rot:5deg;animation-delay:-2.5s">&gt;_</span>
-    </div>
+<main id="main">
+  <section class="hero" id="top">
     <div class="wrap">
-      <div class="hero-copy">
-        <span class="eyebrow"><i></i><span data-en="Free and open source · MIT" data-id="Gratis dan open source · MIT">Free and open source · MIT</span></span>
-        <h1 data-en-html='<span class="w">Your</span> <span class="w">editor.</span> <span class="w a">Your</span> <span class="w a">agents.</span>' data-id-html='<span class="w">Editormu.</span> <span class="w a">Agen</span> <span class="w a">pilihanmu.</span>'><span class="w">Your</span> <span class="w">editor.</span> <span class="w a">Your</span> <span class="w a">agents.</span></h1>
-        <p class="lede" data-en="A fast, open source code editor for macOS, Windows and Linux. Work with Claude Code, Codex, Gemini or Antigravity next to a real terminal, language servers and a debugger. Every change an agent proposes waits for your approval." data-id="Editor kode open source yang ringan untuk macOS, Windows, dan Linux. Kerja bareng Claude Code, Codex, Gemini, atau Antigravity di samping terminal, server bahasa, dan debugger. Setiap perubahan dari agen menunggu persetujuanmu.">A fast, open source code editor for macOS, Windows and Linux. Work with Claude Code, Codex, Gemini or Antigravity next to a real terminal, language servers and a debugger. Every change an agent proposes waits for your approval.</p>
-        <div class="cta">
-          <a class="btn btn-primary-arrow" id="hero-dl" href="#download">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v12m0 0-5-5m5 5 5-5M5 20h14"/></svg>
-            <span id="hero-dl-label">Download for macOS</span>
-          </a>
-          <a class="btn ghost" href="#download" data-en="Other platforms" data-id="Platform lain">Other platforms</a>
-        </div>
-        <p class="cta-note" id="hero-note">Apple Silicon · 0.7.0 · free</p>
-        <div class="stats" aria-label="Ringkasan">
-          <div class="stat"><b data-count="5">5</b><span data-en="AI agents" data-id="agen AI">AI agents</span></div>
-          <div class="stat"><b data-count="3">3</b><span data-en="platforms" data-id="platform">platforms</span></div>
-          <div class="stat"><b data-count="4">4</b><span data-en="debuggers" data-id="debugger">debuggers</span></div>
-          <div class="stat"><b data-count="0">0</b><span data-en="telemetry" data-id="telemetri">telemetry</span></div>
-        </div>
-        <div class="agents-row" aria-label="Agen yang didukung">
-          <span class="chip"><b style="background:var(--claude)">✳</b>Claude Code</span>
-          <span class="chip"><b style="background:var(--codex)">◎</b>Codex</span>
-          <span class="chip"><b style="background:var(--gemini)">✦</b>Gemini</span>
-          <span class="chip"><b style="background:var(--agy)">▲</b>Antigravity</span>
-          <span class="chip"><b style="background:#6e7681">⇄</b><span data-en="Any ACP agent" data-id="Agen ACP lain">Any ACP agent</span></span>
-        </div>
+      <span class="pill reveal"><b>v<span class="ver">0.8.0</span></b><span data-en="Free & open source · MIT · no telemetry" data-id="Gratis & open source · MIT · tanpa telemetri">Free & open source · MIT · no telemetry</span></span>
+      <h1 class="reveal" data-en-html="The editor where AI agents work <em>with you</em>." data-id-html="Editor tempat agen AI bekerja <em>bersamamu</em>.">The editor where AI agents work <em>with you</em>.</h1>
+      <p class="lede reveal" data-en="Claude Code, Codex, Gemini, Cline and more inside a real IDE, with Git, a debugger and VS Code extensions. Every change an agent proposes waits for your approval." data-id="Claude Code, Codex, Gemini, Cline, dan lainnya di dalam IDE sungguhan, lengkap dengan Git, debugger, dan ekstensi VS Code. Setiap perubahan dari agen menunggu persetujuanmu.">Claude Code, Codex, Gemini, Cline and more inside a real IDE, with Git, a debugger and VS Code extensions. Every change an agent proposes waits for your approval.</p>
+      <div class="cta reveal">
+        <a class="btn btn-primary" id="cta-main" href="#download"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v12m0 0-5-5m5 5 5-5M5 20h14"/></svg><span id="cta-label">Download</span></a>
+        <a class="btn btn-ghost" href="#download" data-en="All platforms" data-id="Semua platform">All platforms</a>
       </div>
+      <p class="cta-note" id="cta-note">macOS · Windows · Linux</p>
 
-      <div class="demo-wrap" id="demo-wrap">
-        <div class="demo" id="demo" role="region" aria-label="Demo Alexel Studio">
-          <div class="d-title"><span class="lights" aria-hidden="true"><i></i><i></i><i></i></span><span class="d-search">toko-kopi</span></div>
-          <div class="d-body">
-            <div class="d-act" aria-hidden="true"><span class="on"></span><span></span><span></span><span></span><span></span></div>
-            <div class="d-side">
-              <h4>Explorer</h4>
-              <button class="d-file on" type="button" data-file="cart"><i>JS</i>cart.js<em id="mod-mark" hidden>M</em></button>
-              <button class="d-file" type="button" data-file="app"><i>JS</i>app.js</button>
-              <button class="d-file" type="button" data-file="pkg"><i class="json">{}</i>package.json</button>
-              <button class="d-file" type="button" data-file="readme"><i class="md">M↓</i>README.md</button>
-            </div>
-            <div class="d-main">
-              <div class="d-tabs"><span class="d-tab" id="d-tabname">cart.js</span></div>
-              <div class="d-code" id="d-code"></div>
-              <div class="d-status"><span>⎇ main</span><span>⊗ 0 ⚠ 0</span><span class="sp"></span><span>UTF-8</span><span>LF</span><span>JavaScript</span></div>
-            </div>
-            <aside class="d-agent" id="d-agent" aria-label="Panel agen">
-              <div class="d-ahead"><span class="d-pick" id="d-agentname">Claude Code ⌄</span><span class="d-pill" id="d-agentpill">PRO</span></div>
-              <div class="d-agents" role="group" aria-label="Pilih agen">
-                <button type="button" data-agent="claude" aria-pressed="true"><b style="background:var(--claude)">✳</b>Claude</button>
-                <button type="button" data-agent="codex" aria-pressed="false"><b style="background:var(--codex)">◎</b>Codex</button>
-                <button type="button" data-agent="gemini" aria-pressed="false"><b style="background:var(--gemini)">✦</b>Gemini</button>
-                <button type="button" data-agent="agy" aria-pressed="false"><b style="background:var(--agy)">▲</b>Antigravity</button>
-              </div>
-              <div class="d-chat" id="d-chat" aria-live="polite"></div>
-              <div class="d-comp">
-                <div class="ph" id="d-input"></div>
-                <div class="bar"><span>◔ <span data-en="Ask first" data-id="Tanya dulu">Ask first</span></span><span><i class="dot"></i><span id="d-model">Sonnet 5.5</span></span><span class="send" aria-hidden="true">↑</span></div>
-              </div>
-            </aside>
-          </div>
-          <div class="d-toast" id="d-toast" role="status"></div>
+      <div class="shot-hero reveal">
+        <div class="frame">
+          <div class="frame-bar" aria-hidden="true"><i></i><i></i><i></i></div>
+          <img src="img/app-agent.jpg" width="1680" height="1050" alt="Alexel Studio with the Git graph, a JavaScript file and the official Claude Code extension in the right panel" data-en-alt="Alexel Studio with the Git graph, a JavaScript file and the official Claude Code extension in the right panel" data-id-alt="Alexel Studio dengan graph Git, berkas JavaScript, dan ekstensi resmi Claude Code di panel kanan">
         </div>
-        <div class="demo-cap">
-          <span data-en="Live demo. Pick an agent, then approve the change." data-id="Demo hidup. Pilih agen, lalu setujui perubahannya.">Live demo. Pick an agent, then approve the change.</span>
-          <button class="link" type="button" id="replay" data-en="Play again" data-id="Putar ulang">Play again</button>
-        </div>
+        <div class="float f1" aria-hidden="true"><span class="dot"></span><span data-en="Change approved" data-id="Perubahan disetujui">Change approved</span> <code>cart.js</code></div>
+        <div class="float f2" aria-hidden="true">↺ <span data-en="Restored to checkpoint" data-id="Dikembalikan ke checkpoint">Restored to checkpoint</span></div>
       </div>
     </div>
   </section>
 
-  <div class="marquee" aria-label="Shortcut"><div class="marquee-track" id="marquee"></div></div>
-
-  <section class="story" id="story" aria-labelledby="story-head">
-    <div class="story-pin">
-      <div class="story-bg" id="story-bg" aria-hidden="true"></div>
-      <div class="wrap story-grid">
-        <div class="story-copy">
-          <span class="story-kicker" data-en="How it works" data-id="Cara kerjanya">How it works</span>
-          <h2 class="story-head" id="story-head" data-en="From prompt to commit, you stay in charge." data-id="Dari perintah sampai commit, kamu yang pegang kendali.">From prompt to commit, you stay in charge.</h2>
-          <ol class="story-steps" id="story-steps">
-            <li><button type="button"><b>01</b><span data-en="Pick your agent" data-id="Pilih agenmu">Pick your agent</span></button>
-              <p data-en="Claude Code, Codex, Gemini, Antigravity or any ACP agent. Switch any time from the panel header." data-id="Claude Code, Codex, Gemini, Antigravity, atau agen ACP apa pun. Ganti kapan saja dari kepala panel.">Claude Code, Codex, Gemini, Antigravity or any ACP agent. Switch any time from the panel header.</p></li>
-            <li><button type="button"><b>02</b><span data-en="Ask in plain words" data-id="Minta dengan bahasa biasa">Ask in plain words</span></button>
-              <p data-en="Mention files with @, or add @problems and @terminal for context. The agent reads your project and plans the change." data-id="Sebut berkas dengan @, atau tambahkan @problems dan @terminal sebagai konteks. Agen membaca project-mu lalu merencanakan perubahannya.">Mention files with @, or add @problems and @terminal for context. The agent reads your project and plans the change.</p></li>
-            <li><button type="button"><b>03</b><span data-en="Approve the diff" data-id="Setujui diff-nya">Approve the diff</span></button>
-              <p data-en="Every edit and command waits for you as a card with the exact diff. Allow once, for the session, or say no." data-id="Setiap edit dan perintah menunggumu sebagai kartu berisi diff yang persis. Izinkan sekali, selama sesi, atau tolak.">Every edit and command waits for you as a card with the exact diff. Allow once, for the session, or say no.</p></li>
-            <li><button type="button"><b>04</b><span data-en="Review each part" data-id="Tinjau tiap bagian">Review each part</span></button>
-              <p data-en="Changed parts light up right in the editor. Keep one, revert another, then carry on typing." data-id="Bagian yang berubah menyala langsung di editor. Pertahankan satu, kembalikan yang lain, lalu lanjut mengetik.">Changed parts light up right in the editor. Keep one, revert another, then carry on typing.</p></li>
-            <li><button type="button"><b>05</b><span data-en="Rewind anytime" data-id="Mundur kapan saja">Rewind anytime</span></button>
-              <p data-en="Every message is a checkpoint. One click puts your files back the way they were before it." data-id="Setiap pesan adalah checkpoint. Sekali klik, berkasmu kembali seperti sebelum pesan itu.">Every message is a checkpoint. One click puts your files back the way they were before it.</p></li>
-            <li><button type="button"><b>06</b><span data-en="Debug it" data-id="Debug langsung">Debug it</span></button>
-              <p data-en="Set a breakpoint, press F5, and step through line by line with variables and the call stack." data-id="Pasang breakpoint, tekan F5, lalu jalankan baris demi baris sambil melihat variabel dan call stack.">Set a breakpoint, press F5, and step through line by line with variables and the call stack.</p></li>
-          </ol>
-          <div class="story-now" id="story-now" hidden aria-live="polite"><strong></strong><span></span></div>
-        </div>
-        <div class="story-stage" id="story-stage" aria-hidden="true">
-          <div class="sw-cam" id="sw-cam" data-scene="0">
-            <div class="stw" id="sw" data-scene="0">
-              <div class="sw-title"><span class="lights"><i></i><i></i><i></i></span><span class="sw-search">coffee-shop</span></div>
-              <div class="sw-body">
-                <div class="sw-act"><span class="on"></span><span></span><span></span><span></span><span></span></div>
-                <div class="sw-editor">
-                  <div class="sw-tabs"><span><i>JS</i>cart.js</span></div>
-                  <div class="sw-review"><em data-en="Agent changes" data-id="Perubahan agen">Agent changes</em><span id="sw-parts">2 changed parts</span><i data-en="Accept all" data-id="Terima semua">Accept all</i><i data-en="Reject all" data-id="Tolak semua">Reject all</i></div>
-                  <div class="sw-code" id="sw-code"></div>
-                  <div class="sw-status"><span class="dbg">● Debug</span><span>main</span><span>Ln 8, Col 3</span><span style="margin-left:auto">JavaScript</span></div>
-                </div>
-                <div class="sw-agent" id="sw-agent">
-                  <div class="sw-ahead"><span class="k" id="sw-k">✳</span><span class="sw-pick" id="sw-pick">Claude Code ⌄</span></div>
-                  <div class="sw-menu" id="sw-menu"></div>
-                  <div class="sw-chat" id="sw-chat"></div>
-                  <div class="sw-comp" id="sw-comp"></div>
-                </div>
-              </div>
-            </div>
-            <div class="sw-pop sw-perm" id="sw-perm"><div class="card3d">
-              <h5 data-en="Edit cart.js?" data-id="Edit cart.js?">Edit cart.js?</h5>
-              <div class="diff"><div class="m">-  const tax = Math.round(sub * 0.11);</div><div class="p">+  const discount = sub &gt; 100000 ? sub * 0.1 : 0;</div><div class="p">+  const tax = Math.round((sub - discount) * 0.11);</div><div class="m">-  return sub + tax;</div><div class="p">+  return sub - discount + tax;</div></div>
-              <div class="act"><i class="go" data-en="Allow" data-id="Izinkan">Allow</i><i data-en="Allow for session" data-id="Izinkan selama sesi">Allow for session</i><i data-en="Decline" data-id="Tolak">Decline</i></div>
-              <div class="ok" data-en="✓ Allowed" data-id="✓ Diizinkan">✓ Allowed</div>
-            </div></div>
-            <div class="sw-pop sw-vars" id="sw-vars"><div class="card3d"><h6 data-en="Variables" data-id="Variabel">Variables</h6><div id="sw-varlist"></div></div></div>
-            <div class="sw-pop sw-toast" id="sw-toast"><div class="card3d" data-en="1 file restored to before this message" data-id="1 berkas dipulihkan ke sebelum pesan ini">1 file restored to before this message</div></div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <section class="stack" id="features">
+  <section class="agents">
     <div class="wrap">
-      <div class="stack-intro reveal">
-        <h2 class="split" data-en="Everything an IDE needs. Nothing to set up." data-id="Semua yang dibutuhkan IDE. Tanpa repot setel.">Everything an IDE needs. Nothing to set up.</h2>
-        <p data-en="Menus, command palette, Git, debugger and agents work the way you already know from VS Code." data-id="Menu, palette perintah, Git, debugger, dan agen bekerja seperti yang sudah kamu kenal dari VS Code.">Menus, command palette, Git, debugger and agents work the way you already know from VS Code.</p>
-      </div>
-
-      <article class="card" id="agents">
-        <div class="copy">
-          <span class="tag" data-en="Agents" data-id="Agen AI">Agents</span>
-          <h3 data-en="Install an agent like an extension." data-id="Pasang agen seperti ekstensi.">Install an agent like an extension.</h3>
-          <p data-en="Open Extensions, pick an agent and click Install. Alexel Studio downloads the official package, checks its checksum, and you sign in with your own account." data-id="Buka Ekstensi, pilih agen, lalu klik Pasang. Alexel Studio mengunduh paket resminya, memeriksa checksum, dan kamu masuk dengan akunmu sendiri.">Open Extensions, pick an agent and click Install. Alexel Studio downloads the official package, checks its checksum, and you sign in with your own account.</p>
-          <div class="agent-list">
-            <div><b style="background:var(--claude)">✳</b><span>Claude Code<small>Anthropic · Pro, Max</small></span></div>
-            <div><b style="background:var(--codex)">◎</b><span>Codex<small data-en="OpenAI · ChatGPT or API key" data-id="OpenAI · ChatGPT atau API key">OpenAI · ChatGPT or API key</small></span></div>
-            <div><b style="background:var(--gemini)">✦</b><span>Gemini<small data-en="Google · account or API key" data-id="Google · akun atau API key">Google · account or API key</small></span></div>
-            <div><b style="background:var(--agy)">▲</b><span>Antigravity<small>Google · Gemini, Claude, GPT-OSS</small></span></div>
-          </div>
-          <div class="keys"><span><kbd data-keys="Mod+Escape"></kbd> <span data-en="open the agent" data-id="buka agen">open the agent</span></span><span><kbd data-keys="Shift+Tab"></kbd> <span data-en="switch mode" data-id="ganti mode">switch mode</span></span></div>
-        </div>
-        <div class="live agents" data-live="agents">
-          <div class="mock" role="img" aria-label="Agen AI dipasang dari panel Ekstensi">
-            <div class="mock-head">Extensions · AI agents</div>
-            <div class="mx-item" style="--i:0;--c:var(--claude)"><b style="background:var(--claude)">✳</b><div class="mx-main"><strong>Claude Code</strong><small>Anthropic · anthropic.claude-code</small><div class="mx-bar"><i></i></div></div><span class="mx-state" data-en="Installed" data-id="Terpasang">Installed</span></div>
-            <div class="mx-item" style="--i:1;--c:var(--codex)"><b style="background:var(--codex)">◎</b><div class="mx-main"><strong>Codex</strong><small>OpenAI · openai.chatgpt</small><div class="mx-bar"><i></i></div></div><span class="mx-state" data-en="Installed" data-id="Terpasang">Installed</span></div>
-            <div class="mx-item" style="--i:2;--c:var(--gemini)"><b style="background:var(--gemini)">✦</b><div class="mx-main"><strong>Gemini</strong><small>Google · @google/gemini-cli</small><div class="mx-bar"><i></i></div></div><span class="mx-state" data-en="Installed" data-id="Terpasang">Installed</span></div>
-            <div class="mx-item" style="--i:3;--c:var(--agy)"><b style="background:var(--agy)">▲</b><div class="mx-main"><strong>Antigravity</strong><small>Google · agy</small><div class="mx-bar"><i></i></div></div><span class="mx-state" data-en="Detected" data-id="Terdeteksi">Detected</span></div>
-          </div>
-        </div>
-      </article>
-
-      <article class="card">
-        <div class="copy">
-          <span class="tag" data-en="Approvals" data-id="Persetujuan">Approvals</span>
-          <h3 data-en="See the diff before anything changes." data-id="Lihat diff sebelum ada yang berubah.">See the diff before anything changes.</h3>
-          <ul>
-            <li data-en="Edits and shell commands show up as a card with the exact diff or command." data-id="Edit dan perintah shell muncul sebagai kartu berisi diff atau perintah yang persis.">Edits and shell commands show up as a card with the exact diff or command.</li>
-            <li data-en="Allow once, allow for the session, or decline and tell the agent what to do instead." data-id="Izinkan sekali, izinkan selama sesi, atau tolak dan beri tahu agen apa yang sebaiknya dilakukan.">Allow once, allow for the session, or decline and tell the agent what to do instead.</li>
-            <li data-en="Choose the model, effort and permission mode for each conversation." data-id="Pilih model, effort, dan mode izin untuk tiap percakapan.">Choose the model, effort and permission mode for each conversation.</li>
-            <li data-en="Pick up any earlier conversation from history." data-id="Lanjutkan percakapan lama dari riwayat.">Pick up any earlier conversation from history.</li>
-          </ul>
-        </div>
-        <div class="shot agent zoom"><img src="img/agent.jpg" alt="Kartu izin Claude Code dengan diff perubahan berkas cart.js" loading="lazy" width="1680" height="1050"></div>
-      </article>
-
-      <article class="card">
-        <div class="copy">
-          <span class="tag">Debugger</span>
-          <h3 data-en="Breakpoints, variables, call stack." data-id="Breakpoint, variabel, call stack.">Breakpoints, variables, call stack.</h3>
-          <p data-en="Press F5 on a JavaScript, TypeScript, Python, C, C++ or Go file. Alexel Studio reads your .vscode/launch.json, or builds a configuration for you." data-id="Tekan F5 di berkas JavaScript, TypeScript, Python, C, C++, atau Go. Alexel Studio membaca .vscode/launch.json, atau membuat konfigurasinya untukmu.">Press F5 on a JavaScript, TypeScript, Python, C, C++ or Go file. Alexel Studio reads your .vscode/launch.json, or builds a configuration for you.</p>
-          <ul>
-            <li data-en="Hover a variable to see its value while paused." data-id="Arahkan kursor ke variabel untuk melihat nilainya saat berhenti.">Hover a variable to see its value while paused.</li>
-            <li data-en="Evaluate expressions in the Debug Console." data-id="Evaluasi ekspresi di Debug Console.">Evaluate expressions in the Debug Console.</li>
-          </ul>
-          <div class="keys"><span><kbd data-keys="F5"></kbd> <span data-en="start" data-id="mulai">start</span></span><span><kbd data-keys="F9"></kbd> breakpoint</span><span><kbd data-keys="F10"></kbd> step over</span><span><kbd data-keys="F11"></kbd> step into</span></div>
-        </div>
-        <div class="live debug" data-live="debug">
-          <div class="mock" role="img" aria-label="Debugger melangkah baris demi baris">
-            <div class="dbg-bar" aria-hidden="true"><i class="on">▶</i><i>⤼</i><i>↓</i><i>↑</i><i>⟲</i><i style="color:#f85149">■</i></div>
-            <div class="dbg-mock">
-              <div class="dbg-code" id="dbg-code"></div>
-              <div class="dbg-side"><h6 data-en="Variables" data-id="Variabel">Variables</h6><div id="dbg-vars"></div><h6 style="margin-top:12px">Call stack</h6><div class="v"><span>total</span><span>cart.js</span></div><div class="v"><span>main</span><span>app.js</span></div></div>
-            </div>
-            <div class="dbg-status"><span>⏸ <span data-en="Paused on breakpoint" data-id="Berhenti di breakpoint">Paused on breakpoint</span></span><span>cart.js</span></div>
-          </div>
-        </div>
-      </article>
-
-      <article class="card">
-        <div class="copy">
-          <span class="tag">Terminal &amp; Git</span>
-          <h3 data-en="A real terminal, right under your code." data-id="Terminal sungguhan, tepat di bawah kodemu.">A real terminal, right under your code.</h3>
-          <ul>
-            <li data-en="zsh, bash or PowerShell with colors and full-screen programs." data-id="zsh, bash, atau PowerShell lengkap dengan warna dan program layar penuh.">zsh, bash or PowerShell with colors and full-screen programs.</li>
-            <li data-en="Smart Run finds the scripts in package.json, Cargo.toml, go.mod and more." data-id="Smart Run menemukan script di package.json, Cargo.toml, go.mod, dan lainnya.">Smart Run finds the scripts in package.json, Cargo.toml, go.mod and more.</li>
-            <li data-en="Stage, commit and push from Source Control. Every save is kept in file history." data-id="Stage, commit, dan push dari Source Control. Setiap simpan tercatat di riwayat berkas.">Stage, commit and push from Source Control. Every save is kept in file history.</li>
-          </ul>
-          <div class="keys"><span><kbd data-keys="Ctrl+`"></kbd> terminal</span><span><kbd data-keys="Ctrl+Shift+G"></kbd> Source Control</span></div>
-        </div>
-        <div class="live term" data-live="term">
-          <div class="mock" role="img" aria-label="Terminal menjalankan perintah">
-            <div class="term-tabs" aria-hidden="true"><span class="on">zsh</span><span>npm run dev</span><span>+</span></div>
-            <div class="term-body" id="term-body"></div>
-          </div>
-        </div>
-      </article>
-    </div>
-  </section>
-
-  <section class="gallery" aria-label="Screenshot">
-    <div class="wrap"><h2 class="split" data-en="The real app, not a mockup." data-id="Aplikasi aslinya, bukan mockup.">The real app, not a mockup.</h2></div>
-    <div class="gal-track" id="gal-track">
-      <button type="button" data-src="img/agent.jpg"><img src="img/agent.jpg" alt="Kartu izin agen dengan diff" loading="lazy" width="1680" height="1050"></button>
-      <button type="button" data-src="img/debug.jpg"><img src="img/debug.jpg" alt="Debugger berhenti di breakpoint" loading="lazy" width="1680" height="1050"></button>
-      <button type="button" data-src="img/ext.jpg"><img src="img/ext.jpg" alt="Agen AI di panel Ekstensi" loading="lazy" width="1680" height="1050"></button>
-      <button type="button" data-src="img/light.jpg"><img src="img/light.jpg" alt="Tema terang dengan terminal" loading="lazy" width="1680" height="1050"></button>
-    </div>
-  </section>
-
-  <section class="os">
-    <div class="wrap os-grid">
-      <div class="reveal">
-        <span class="tag">macOS, Windows, Linux</span>
-        <h2 class="split" data-en="Feels native on every system." data-id="Terasa pas di setiap sistem.">Feels native on every system.</h2>
-        <p data-en="A native menu bar on macOS and a menu bar inside the window on Windows and Linux. Shortcuts follow your keyboard: ⌘ on a Mac, Ctrl everywhere else." data-id="Menu bar native di macOS dan menu bar di dalam jendela di Windows dan Linux. Shortcut mengikuti keyboardmu: ⌘ di Mac, Ctrl di sistem lain.">A native menu bar on macOS and a menu bar inside the window on Windows and Linux. Shortcuts follow your keyboard: ⌘ on a Mac, Ctrl everywhere else.</p>
-      </div>
-      <div class="keytable reveal">
-        <div class="head"><strong id="kt-title">Shortcuts on macOS</strong>
-          <div class="seg" role="group" aria-label="Sistem operasi">
-            <button type="button" data-os="mac" aria-pressed="false">macOS</button>
-            <button type="button" data-os="win" aria-pressed="false">Windows</button>
-            <button type="button" data-os="linux" aria-pressed="false">Linux</button>
-          </div>
-        </div>
-        <div id="kt-rows" aria-live="polite"></div>
+      <div class="eyebrow" data-en="Bring the agents you already use" data-id="Bawa agen yang sudah kamu pakai">Bring the agents you already use</div>
+      <div class="chips">
+        <span class="chip"><i style="background:#d97757"></i>Claude Code</span>
+        <span class="chip"><i style="background:#10a37f"></i>Codex</span>
+        <span class="chip"><i style="background:#4285f4"></i>Gemini</span>
+        <span class="chip"><i style="background:#8a5cf6"></i>Antigravity</span>
+        <span class="chip"><i style="background:#f5f5f5"></i>Cline</span>
+        <span class="chip"><i style="background:#e0a33a"></i>Roo Code</span>
+        <span class="chip"><i style="background:#f8f676"></i>Kilo Code</span>
+        <span class="chip"><i style="background:#9ca3af"></i>Continue</span>
+        <span class="chip"><i style="background:var(--ice)"></i><span data-en="Any ACP agent" data-id="Agen ACP apa saja">Any ACP agent</span></span>
       </div>
     </div>
   </section>
 
-  <section class="dl" id="download">
+  <section class="block" id="features">
     <div class="wrap">
-      <div class="dl-head reveal">
-        <h2 class="split" data-en="Download Alexel Studio" data-id="Unduh Alexel Studio">Download Alexel Studio</h2>
-        <p data-en="Free for every platform. The file starts downloading as soon as you click." data-id="Gratis untuk semua platform. Berkas langsung terunduh saat kamu klik.">Free for every platform. The file starts downloading as soon as you click.</p>
+      <div class="head reveal">
+        <div class="eyebrow" data-en="Why Alexel Studio" data-id="Kenapa Alexel Studio">Why Alexel Studio</div>
+        <h2 data-en-html="AI that asks. <em>An IDE</em> that delivers." data-id-html="AI yang bertanya. <em>IDE</em> yang lengkap.">AI that asks. <em>An IDE</em> that delivers.</h2>
+        <p data-en="Agents are powerful, but you stay in charge. Alexel Studio shows every edit and command first, keeps checkpoints, and gives you the full toolbox of a real editor." data-id="Agen itu kuat, tapi kamu yang pegang kendali. Alexel Studio menampilkan setiap edit dan perintah lebih dulu, menyimpan checkpoint, dan memberimu perkakas editor sungguhan.">Agents are powerful, but you stay in charge. Alexel Studio shows every edit and command first, keeps checkpoints, and gives you the full toolbox of a real editor.</p>
+      </div>
+      <div class="bento">
+        <article class="card wide reveal">
+          <div class="ico"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3 4 6v6c0 4.5 3.4 8.3 8 9 4.6-.7 8-4.5 8-9V6l-8-3Z"/><path d="m9 12 2 2 4-4"/></svg></div>
+          <h3 data-en="Review every change" data-id="Tinjau setiap perubahan">Review every change</h3>
+          <p data-en="Edits arrive as diff cards. Accept or reject per part, approve for the session, or send feedback. Shell commands ask first too." data-id="Edit datang sebagai kartu diff. Terima atau tolak per bagian, izinkan untuk satu sesi, atau kirim masukan. Perintah shell juga bertanya dulu.">Edits arrive as diff cards. Accept or reject per part, approve for the session, or send feedback. Shell commands ask first too.</p>
+          <div class="diffbox" aria-hidden="true">
+            <div>  const sub = subtotal(items);</div>
+            <div class="del">- const tax = Math.round(sub * 0.11);</div>
+            <div class="add">+ const discount = member &amp;&amp; sub &gt; 100_000 ? sub * 0.1 : 0;</div>
+            <div class="add">+ const tax = Math.round((sub - discount) * TAX_RATE);</div>
+            <div class="bar"><span class="ok" data-en="Allow" data-id="Izinkan">Allow</span><span data-en="Allow for session" data-id="Izinkan selama sesi">Allow for session</span><span data-en="Reject" data-id="Tolak">Reject</span></div>
+          </div>
+        </article>
+        <article class="card wide reveal">
+          <div class="ico"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v5h5"/><path d="M12 7v5l3 2"/></svg></div>
+          <h3 data-en="Time-travel checkpoints" data-id="Checkpoint time-travel">Time-travel checkpoints</h3>
+          <p data-en="Every message is a snapshot of your project. One click restores the files from before it; new files go to the Trash, not into oblivion." data-id="Setiap pesan adalah snapshot project-mu. Sekali klik mengembalikan berkas ke sebelum pesan itu; berkas baru masuk Trash, tidak hilang.">Every message is a snapshot of your project. One click restores the files from before it; new files go to the Trash, not into oblivion.</p>
+          <div class="timeline" aria-hidden="true">
+            <div><b>10:41</b><span data-en="Add member discount to total()" data-id="Tambah diskon member di total()">Add member discount to total()</span></div>
+            <div class="cur"><b>10:44</b><span data-en="Write tests for the cart" data-id="Tulis tes untuk keranjang">Write tests for the cart</span></div>
+            <div><b>10:47</b><span data-en="Restore files to before this message" data-id="Kembalikan berkas ke sebelum pesan ini">Restore files to before this message</span></div>
+          </div>
+        </article>
+        <article class="card reveal" id="extensions">
+          <div class="ico"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 4h6v6M10 20H4v-6M20 4l-7 7M4 20l7-7"/></svg></div>
+          <h3 data-en="VS Code extensions, for real" data-id="Ekstensi VS Code, sungguhan">VS Code extensions, for real</h3>
+          <p data-en="Install from Open VSX. The official Claude Code and Codex extensions, Cline, Roo Code, Continue and Kilo get their own panels like in VS Code." data-id="Pasang dari Open VSX. Ekstensi resmi Claude Code dan Codex, Cline, Roo Code, Continue, dan Kilo mendapat panel sendiri seperti di VS Code.">Install from Open VSX. The official Claude Code and Codex extensions, Cline, Roo Code, Continue and Kilo get their own panels like in VS Code.</p>
+          <ul>
+            <li data-en="Themes, icons, snippets, language servers" data-id="Tema, ikon, snippet, server bahasa">Themes, icons, snippets, language servers</li>
+            <li data-en="Code runs only after you trust it" data-id="Kode jalan hanya setelah kamu percayai">Code runs only after you trust it</li>
+          </ul>
+        </article>
+        <article class="card reveal">
+          <div class="ico"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="6" cy="6" r="2.5"/><circle cx="6" cy="18" r="2.5"/><circle cx="18" cy="8" r="2.5"/><path d="M6 8.5v7M18 10.5c0 4-6 3-11 5.5"/></svg></div>
+          <h3 data-en="Git, the whole thing" data-id="Git, lengkap">Git, the whole thing</h3>
+          <p data-en="Stage a single change from the gutter, stash, merge, rebase, cherry-pick, tags, blame and a commit graph." data-id="Stage satu bagian perubahan dari gutter, stash, merge, rebase, cherry-pick, tag, blame, dan graph commit.">Stage a single change from the gutter, stash, merge, rebase, cherry-pick, tags, blame and a commit graph.</p>
+          <ul>
+            <li data-en="AI-written commit messages" data-id="Pesan commit ditulis AI">AI-written commit messages</li>
+            <li data-en="Conflict banner with continue / abort" data-id="Banner konflik dengan lanjut / batal">Conflict banner with continue / abort</li>
+          </ul>
+        </article>
+        <article class="card reveal">
+          <div class="ico"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m8 9-4 3 4 3M16 9l4 3-4 3M13.5 5l-3 14"/></svg></div>
+          <h3 data-en="Everything an editor needs" data-id="Semua yang dibutuhkan editor">Everything an editor needs</h3>
+          <p data-en="Language servers, a DAP debugger, real terminals, Smart Run, Emmet, multi-root workspaces, sticky scroll and pinned tabs." data-id="Server bahasa, debugger DAP, terminal sungguhan, Smart Run, Emmet, workspace multi-root, sticky scroll, dan tab tersemat.">Language servers, a DAP debugger, real terminals, Smart Run, Emmet, multi-root workspaces, sticky scroll and pinned tabs.</p>
+          <ul>
+            <li data-en="Python, JS/TS, Go, Rust, C/C++ and more" data-id="Python, JS/TS, Go, Rust, C/C++, dan lainnya">Python, JS/TS, Go, Rust, C/C++ and more</li>
+            <li data-en="8 designs, light & dark" data-id="8 desain, terang & gelap">8 designs, light & dark</li>
+          </ul>
+        </article>
+        <article class="card wide reveal">
+          <div class="ico"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="10" width="16" height="11" rx="2.5"/><path d="M8 10V7a4 4 0 1 1 8 0v3"/></svg></div>
+          <h3 data-en="Private by design" data-id="Privat sejak awal">Private by design</h3>
+          <p data-en="No account, no telemetry, no proxy. Agents talk straight to their providers with your own subscription, and untrusted folders open in restricted mode." data-id="Tanpa akun, tanpa telemetri, tanpa proxy. Agen terhubung langsung ke penyedianya dengan langgananmu sendiri, dan folder yang belum dipercaya dibuka dalam mode terbatas.">No account, no telemetry, no proxy. Agents talk straight to their providers with your own subscription, and untrusted folders open in restricted mode.</p>
+        </article>
+        <article class="card wide reveal">
+          <div class="ico"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M5.6 18.4l2.1-2.1M16.3 7.7l2.1-2.1"/></svg></div>
+          <h3 data-en="Built for every desk" data-id="Untuk setiap meja kerja">Built for every desk</h3>
+          <p data-en="Native terminals on macOS, Windows (ConPTY) and Linux, shortcuts that follow your OS, updates from inside the app, and English or Indonesian UI." data-id="Terminal native di macOS, Windows (ConPTY), dan Linux, shortcut mengikuti OS-mu, pembaruan dari dalam aplikasi, dan UI Inggris atau Indonesia.">Native terminals on macOS, Windows (ConPTY) and Linux, shortcuts that follow your OS, updates from inside the app, and English or Indonesian UI.</p>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <section class="block gallery" aria-labelledby="gallery-title">
+    <div class="wrap">
+      <div class="head center reveal">
+        <div class="eyebrow" data-en="The real app" data-id="Aplikasi aslinya">The real app</div>
+        <h2 id="gallery-title" data-en-html="Not a mockup. <em>Screenshots.</em>" data-id-html="Bukan mockup. <em>Screenshot asli.</em>">Not a mockup. <em>Screenshots.</em></h2>
+      </div>
+      <div class="tabs" role="tablist" aria-label="Screenshots">
+        <button type="button" role="tab" aria-selected="true" data-shot="0" data-en="Agents & Git" data-id="Agen & Git">Agents & Git</button>
+        <button type="button" role="tab" aria-selected="false" data-shot="1" data-en="Extensions" data-id="Ekstensi">Extensions</button>
+        <button type="button" role="tab" aria-selected="false" data-shot="2" data-en="Light & terminal" data-id="Terang & terminal">Light & terminal</button>
+      </div>
+      <div class="frame reveal"><div class="frame-bar" aria-hidden="true"><i></i><i></i><i></i></div><img id="shot" src="img/app-agent.jpg" width="1680" height="1050" alt="Agents and Git" loading="lazy"></div>
+      <p class="caption" id="shot-caption"></p>
+    </div>
+  </section>
+
+  <section class="block" aria-labelledby="news-title">
+    <div class="wrap">
+      <div class="head reveal">
+        <div class="eyebrow" data-en-html="New in <span class='ver'>0.8.0</span>" data-id-html="Baru di <span class='ver'>0.8.0</span>">New in 0.8.0</div>
+        <h2 id="news-title" data-en-html="The everyday gaps, <em>closed</em>." data-id-html="Celah harian, <em>ditutup</em>.">The everyday gaps, <em>closed</em>.</h2>
+      </div>
+      <div class="news reveal">
+        <div><b data-en="Official extensions like in VS Code" data-id="Ekstensi resmi seperti di VS Code">Official extensions like in VS Code</b><span data-en="Claude Code, Codex, Cline, Roo Code, Continue and Kilo with their own panels, icons and full theme colors." data-id="Claude Code, Codex, Cline, Roo Code, Continue, dan Kilo dengan panel, ikon, dan warna tema lengkap.">Claude Code, Codex, Cline, Roo Code, Continue and Kilo with their own panels, icons and full theme colors.</span></div>
+        <div><b data-en="Git power tools" data-id="Alat Git lengkap">Git power tools</b><span data-en="Stash, merge, rebase, cherry-pick, tags, blame, per-change staging and a commit graph." data-id="Stash, merge, rebase, cherry-pick, tag, blame, stage per bagian, dan graph commit.">Stash, merge, rebase, cherry-pick, tags, blame, per-change staging and a commit graph.</span></div>
+        <div><b data-en="Editor essentials" data-id="Fitur editor penting">Editor essentials</b><span data-en="Indent guides, bracket colors, Emmet, color picker, sticky scroll, pinned tabs, split terminal, PDF & hex viewers." data-id="Garis indentasi, warna kurung, Emmet, pemilih warna, sticky scroll, tab tersemat, terminal terbelah, penampil PDF & hex.">Indent guides, bracket colors, Emmet, color picker, sticky scroll, pinned tabs, split terminal, PDF & hex viewers.</span></div>
+        <div><b data-en="Smarter extensions" data-id="Ekstensi lebih pintar">Smarter extensions</b><span data-en="CodeLens, inlay hints, ghost-text suggestions, a Tests view, extension tasks and bundled ripgrep." data-id="CodeLens, inlay hints, saran sebaris, panel Tests, task ekstensi, dan ripgrep bawaan.">CodeLens, inlay hints, ghost-text suggestions, a Tests view, extension tasks and bundled ripgrep.</span></div>
+        <div><b data-en="Workspaces & profiles" data-id="Workspace & profil">Workspaces & profiles</b><span data-en="Multi-root .code-workspace files and settings profiles you can export and import." data-id="Berkas .code-workspace multi-root dan profil pengaturan yang bisa diekspor/diimpor.">Multi-root .code-workspace files and settings profiles you can export and import.</span></div>
+        <div><b data-en="Trust & accessibility" data-id="Trust & aksesibilitas">Trust & accessibility</b><span data-en="Restricted mode for untrusted folders, labelled controls and high-contrast support." data-id="Mode terbatas untuk folder yang belum dipercaya, kontrol berlabel, dan dukungan kontras tinggi.">Restricted mode for untrusted folders, labelled controls and high-contrast support.</span></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="block" id="compare" aria-labelledby="compare-title">
+    <div class="wrap">
+      <div class="head reveal">
+        <div class="eyebrow" data-en="Honest comparison" data-id="Perbandingan jujur">Honest comparison</div>
+        <h2 id="compare-title" data-en-html="How it <em>stacks up</em>." data-id-html="Seperti apa <em>posisinya</em>.">How it <em>stacks up</em>.</h2>
+        <p data-en="Alexel Studio is younger than VS Code. Here is where it leads and where it does not yet." data-id="Alexel Studio lebih muda dari VS Code. Ini bagian yang unggul dan yang belum.">Alexel Studio is younger than VS Code. Here is where it leads and where it does not yet.</p>
+      </div>
+      <div class="table-wrap reveal">
+        <table>
+          <thead><tr><th></th><th>Alexel Studio</th><th>VS Code + Copilot</th><th>Cursor</th></tr></thead>
+          <tbody>
+            <tr><td data-en="Price" data-id="Harga">Price</td><td class="us" data-en="Free, MIT" data-id="Gratis, MIT">Free, MIT</td><td data-en="$10–39 / month" data-id="$10–39 / bulan">$10–39 / month</td><td data-en="$20+ / month" data-id="$20+ / bulan">$20+ / month</td></tr>
+            <tr><td data-en="Use your own AI subscription" data-id="Pakai langganan AI sendiri">Use your own AI subscription</td><td class="us y">✓ Claude, ChatGPT, Gemini</td><td class="p" data-en="Partly" data-id="Sebagian">Partly</td><td class="p" data-en="API keys" data-id="API key">API keys</td></tr>
+            <tr><td data-en="Per-change approval & checkpoints" data-id="Persetujuan per bagian & checkpoint">Per-change approval & checkpoints</td><td class="us y">✓</td><td class="p" data-en="Partly" data-id="Sebagian">Partly</td><td class="p" data-en="Partly" data-id="Sebagian">Partly</td></tr>
+            <tr><td data-en="Telemetry" data-id="Telemetri">Telemetry</td><td class="us y" data-en="None" data-id="Tidak ada">None</td><td class="n" data-en="Yes (opt-out)" data-id="Ada (bisa dimatikan)">Yes (opt-out)</td><td class="n" data-en="Yes" data-id="Ada">Yes</td></tr>
+            <tr><td data-en="VS Code extensions" data-id="Ekstensi VS Code">VS Code extensions</td><td class="us p" data-en="Open VSX, growing API" data-id="Open VSX, API terus bertambah">Open VSX, growing API</td><td class="y" data-en="Full" data-id="Lengkap">Full</td><td class="y" data-en="Most" data-id="Hampir semua">Most</td></tr>
+            <tr><td data-en="Remote SSH / containers" data-id="Remote SSH / container">Remote SSH / containers</td><td class="us n" data-en="Not yet" data-id="Belum">Not yet</td><td class="y">✓</td><td class="y">✓</td></tr>
+            <tr><td data-en="Signed installers" data-id="Installer bertanda tangan">Signed installers</td><td class="us n" data-en="Not yet" data-id="Belum">Not yet</td><td class="y">✓</td><td class="y">✓</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <section class="block" id="download" aria-labelledby="dl-title">
+    <div class="wrap">
+      <div class="head center reveal">
+        <div class="eyebrow" data-en-html="Version <span class='ver'>0.8.0</span>" data-id-html="Versi <span class='ver'>0.8.0</span>">Version 0.8.0</div>
+        <h2 id="dl-title" data-en-html="Download <em>Alexel Studio</em>" data-id-html="Unduh <em>Alexel Studio</em>">Download <em>Alexel Studio</em></h2>
+        <p data-en="Free for every platform. Downloads come straight from GitHub Releases." data-id="Gratis untuk semua platform. Unduhan langsung dari GitHub Releases.">Free for every platform. Downloads come straight from GitHub Releases.</p>
       </div>
       <div class="dl-grid">
-        <div class="os-card reveal" data-os-card="mac">
-          <span class="mine-tag" hidden data-en="Your system" data-id="Sistemmu">Your system</span>
-          <svg class="os-ico" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M16.4 12.6c0-2.4 2-3.5 2-3.6-1.1-1.6-2.8-1.8-3.4-1.8-1.4-.2-2.8.8-3.5.8-.7 0-1.8-.8-3-.8-1.5 0-3 .9-3.8 2.3-1.6 2.8-.4 7 1.2 9.3.8 1.1 1.7 2.4 2.9 2.3 1.2 0 1.6-.7 3-.7s1.8.7 3 .7c1.3 0 2.1-1.1 2.8-2.3.9-1.3 1.3-2.6 1.3-2.7 0 0-2.5-1-2.5-3.5ZM14.1 5.6c.6-.8 1.1-1.8 1-2.9-.9 0-2.1.6-2.7 1.4-.6.7-1.1 1.8-1 2.8 1 .1 2.1-.5 2.7-1.3Z"/></svg>
+        <div class="os reveal" data-os="mac">
+          <span class="tag" hidden data-en="Your system" data-id="Sistemmu">Your system</span>
+          <svg class="logo" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M16.4 12.6c0-2.4 2-3.5 2-3.6-1.1-1.6-2.8-1.8-3.4-1.8-1.4-.2-2.8.8-3.5.8-.7 0-1.8-.8-3-.8-1.5 0-3 .9-3.8 2.3-1.6 2.8-.4 7 1.2 9.3.8 1.1 1.7 2.4 2.9 2.3 1.2 0 1.6-.7 3-.7s1.8.7 3 .7c1.3 0 2.1-1.1 2.8-2.3.9-1.3 1.3-2.6 1.3-2.7 0 0-2.5-1-2.5-3.5ZM14.1 5.6c.6-.8 1.1-1.8 1-2.9-.9 0-2.1.6-2.7 1.4-.6.7-1.1 1.8-1 2.8 1 .1 2.1-.5 2.7-1.3Z"/></svg>
           <h3>macOS</h3>
           <p class="req" data-en="macOS 12 or later" data-id="macOS 12 atau lebih baru">macOS 12 or later</p>
           <div class="files">
-            <a class="file" data-file="Alexel-Studio-mac-arm64.dmg"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M12 4v12m0 0-5-5m5 5 5-5M5 20h14"/></svg><span class="n">Apple Silicon</span><span class="x">.dmg</span></a>
-            <a class="file" data-file="Alexel-Studio-mac-x64.dmg"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M12 4v12m0 0-5-5m5 5 5-5M5 20h14"/></svg><span class="n">Intel</span><span class="x">.dmg</span></a>
+            <a class="file" data-file="Alexel-Studio-mac-arm64.dmg"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M12 4v12m0 0-5-5m5 5 5-5M5 20h14"/></svg><span>Apple Silicon</span><span class="x">.dmg</span></a>
+            <a class="file" data-file="Alexel-Studio-mac-x64.dmg"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M12 4v12m0 0-5-5m5 5 5-5M5 20h14"/></svg><span>Intel</span><span class="x">.dmg</span></a>
           </div>
         </div>
-        <div class="os-card reveal" data-os-card="win">
-          <span class="mine-tag" hidden data-en="Your system" data-id="Sistemmu">Your system</span>
-          <svg class="os-ico" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M3 5.5 10.4 4.5v7H3v-6Zm8.4-1.1L21 3v8.5h-9.6V4.4ZM3 12.5h7.4v7l-7.4-1v-6Zm8.4 0H21V21l-9.6-1.3v-7.2Z"/></svg>
+        <div class="os reveal" data-os="win">
+          <span class="tag" hidden data-en="Your system" data-id="Sistemmu">Your system</span>
+          <svg class="logo" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M3 5.5 10.4 4.5v7H3v-6Zm8.4-1.1L21 3v8.5h-9.6V4.4ZM3 12.5h7.4v7l-7.4-1v-6Zm8.4 0H21V21l-9.6-1.3v-7.2Z"/></svg>
           <h3>Windows</h3>
           <p class="req" data-en="Windows 10 or 11" data-id="Windows 10 atau 11">Windows 10 or 11</p>
           <div class="files">
-            <a class="file" data-file="Alexel-Studio-win-x64.exe"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M12 4v12m0 0-5-5m5 5 5-5M5 20h14"/></svg><span class="n">Installer · x64</span><span class="x">.exe</span></a>
-            <a class="file" data-file="Alexel-Studio-win-arm64.exe"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M12 4v12m0 0-5-5m5 5 5-5M5 20h14"/></svg><span class="n">Installer · ARM64</span><span class="x">.exe</span></a>
+            <a class="file" data-file="Alexel-Studio-win-x64.exe"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M12 4v12m0 0-5-5m5 5 5-5M5 20h14"/></svg><span>Installer · x64</span><span class="x">.exe</span></a>
+            <a class="file" data-file="Alexel-Studio-win-arm64.exe"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M12 4v12m0 0-5-5m5 5 5-5M5 20h14"/></svg><span>Installer · ARM64</span><span class="x">.exe</span></a>
           </div>
         </div>
-        <div class="os-card reveal" data-os-card="linux">
-          <span class="mine-tag" hidden data-en="Your system" data-id="Sistemmu">Your system</span>
-          <svg class="os-ico" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2c-2.2 0-3.6 1.9-3.6 4.7 0 1.3-.4 2.3-1.2 3.6C6 12 4.8 14 5 16.2c.1 1 .6 1.6 1.3 2-.3.6-.4 1.4.2 2 .8.8 2.4.4 3.6.9.9.4 1.4.9 2.3.9s1.5-.6 2.3-.9c1.2-.5 2.8-.1 3.6-.9.6-.6.5-1.4.2-2 .7-.4 1.2-1 1.3-2 .2-2.2-1-4.2-2.2-5.9-.8-1.3-1.2-2.3-1.2-3.6C15.6 3.9 14.2 2 12 2Zm-1.6 5.3c.4 0 .7.5.7 1.1s-.3 1.1-.7 1.1-.7-.5-.7-1.1.3-1.1.7-1.1Zm3.2 0c.4 0 .7.5.7 1.1s-.3 1.1-.7 1.1-.7-.5-.7-1.1.3-1.1.7-1.1ZM12 10.3c.9 0 1.9.5 1.9.9 0 .4-1 1.1-1.9 1.1s-1.9-.7-1.9-1.1c0-.4 1-.9 1.9-.9Z"/></svg>
+        <div class="os reveal" data-os="linux">
+          <span class="tag" hidden data-en="Your system" data-id="Sistemmu">Your system</span>
+          <svg class="logo" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2c-2.2 0-3.6 1.9-3.6 4.7 0 1.3-.4 2.3-1.2 3.6C6 12 4.8 14 5 16.2c.1 1 .6 1.6 1.3 2-.3.6-.4 1.4.2 2 .8.8 2.4.4 3.6.9.9.4 1.4.9 2.3.9s1.5-.6 2.3-.9c1.2-.5 2.8-.1 3.6-.9.6-.6.5-1.4.2-2 .7-.4 1.2-1 1.3-2 .2-2.2-1-4.2-2.2-5.9-.8-1.3-1.2-2.3-1.2-3.6C15.6 3.9 14.2 2 12 2Z"/></svg>
           <h3>Linux</h3>
           <p class="req" data-en="64-bit, glibc 2.31 or later" data-id="64-bit, glibc 2.31 atau lebih baru">64-bit, glibc 2.31 or later</p>
           <div class="files">
-            <a class="file" data-file="Alexel-Studio-linux-amd64.deb"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M12 4v12m0 0-5-5m5 5 5-5M5 20h14"/></svg><span class="n">Debian, Ubuntu</span><span class="x">.deb</span></a>
-            <a class="file" data-file="Alexel-Studio-linux-x86_64.rpm"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M12 4v12m0 0-5-5m5 5 5-5M5 20h14"/></svg><span class="n">Fedora, openSUSE</span><span class="x">.rpm</span></a>
-            <a class="file" data-file="Alexel-Studio-linux-x86_64.AppImage"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M12 4v12m0 0-5-5m5 5 5-5M5 20h14"/></svg><span class="n" data-en="Any distro" data-id="Distro apa saja">Any distro</span><span class="x">.AppImage</span></a>
-            <div class="copybox"><code id="deb-cmd">sudo apt install ./Alexel-Studio-linux-amd64.deb</code><button type="button" id="copy-deb" data-en="Copy" data-id="Salin">Copy</button></div>
+            <a class="file" data-file="Alexel-Studio-linux-amd64.deb"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M12 4v12m0 0-5-5m5 5 5-5M5 20h14"/></svg><span>Debian, Ubuntu</span><span class="x">.deb</span></a>
+            <a class="file" data-file="Alexel-Studio-linux-x86_64.rpm"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M12 4v12m0 0-5-5m5 5 5-5M5 20h14"/></svg><span>Fedora, openSUSE</span><span class="x">.rpm</span></a>
+            <a class="file" data-file="Alexel-Studio-linux-x86_64.AppImage"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M12 4v12m0 0-5-5m5 5 5-5M5 20h14"/></svg><span data-en="Any distro" data-id="Distro apa saja">Any distro</span><span class="x">.AppImage</span></a>
+            <div class="copy"><code>sudo apt install ./Alexel-Studio-linux-amd64.deb</code><button type="button" id="copy-deb" data-en="Copy" data-id="Salin">Copy</button></div>
           </div>
         </div>
       </div>
-      <div class="dl-notes">
+      <div class="notes">
         <div class="reveal"><strong data-en="First launch on macOS" data-id="Pertama kali di macOS">First launch on macOS</strong><span data-en="Builds are not notarized yet. Right-click the app in Applications and choose Open." data-id="Build belum dinotarisasi. Klik kanan aplikasinya di Applications lalu pilih Open.">Builds are not notarized yet. Right-click the app in Applications and choose Open.</span></div>
         <div class="reveal"><strong data-en="First launch on Windows" data-id="Pertama kali di Windows">First launch on Windows</strong><span data-en="SmartScreen may warn about an unknown publisher. Choose More info, then Run anyway." data-id="SmartScreen bisa memperingatkan penerbit tidak dikenal. Pilih More info, lalu Run anyway.">SmartScreen may warn about an unknown publisher. Choose More info, then Run anyway.</span></div>
-        <div class="reveal"><strong data-en="Checksums and older versions" data-id="Checksum dan versi lama">Checksums and older versions</strong><span data-en="Every release on GitHub lists a SHA-256 checksum for each file." data-id="Setiap rilis di GitHub mencantumkan checksum SHA-256 untuk tiap berkas.">Every release on GitHub lists a SHA-256 checksum for each file.</span> <a id="releases-link" data-en="All releases" data-id="Semua rilis">All releases</a></div>
+        <div class="reveal"><strong data-en="Updates & checksums" data-id="Pembaruan & checksum">Updates & checksums</strong><span data-en="Installed apps update from inside Alexel Studio. Every release lists SHA-256 checksums." data-id="Aplikasi yang terpasang diperbarui dari dalam Alexel Studio. Setiap rilis mencantumkan checksum SHA-256.">Installed apps update from inside Alexel Studio. Every release lists SHA-256 checksums.</span> <a id="releases-link" href="https://github.com/Nozella-Alexiee/alexel-studio/releases" style="color:var(--ice)" data-en="All releases →" data-id="Semua rilis →">All releases →</a></div>
       </div>
     </div>
   </section>
 
-  <section class="faq" id="faq">
+  <section class="block" id="faq" aria-labelledby="faq-title">
     <div class="wrap">
-      <h2 class="split" data-en="Questions" data-id="Tanya jawab">Questions</h2>
-      <details><summary data-en="Is it really free?" data-id="Benar-benar gratis?">Is it really free?</summary><p data-en="Yes. Alexel Studio is open source under the MIT license. There is no account, no paid tier and no telemetry." data-id="Ya. Alexel Studio open source dengan lisensi MIT. Tanpa akun, tanpa versi berbayar, dan tanpa telemetri.">Yes. Alexel Studio is open source under the MIT license. There is no account, no paid tier and no telemetry.</p></details>
-      <details><summary data-en="Do I need an AI subscription?" data-id="Perlu langganan AI?">Do I need an AI subscription?</summary><p data-en="Only for the agent you want to use. Each agent signs in with its own account: Claude Pro or Max for Claude Code, ChatGPT or an OpenAI API key for Codex, a Google account or Gemini API key for Gemini. The editor, terminal and debugger work without any of them." data-id="Hanya untuk agen yang ingin kamu pakai. Setiap agen masuk dengan akunnya sendiri: Claude Pro atau Max untuk Claude Code, ChatGPT atau API key OpenAI untuk Codex, akun Google atau API key Gemini untuk Gemini. Editor, terminal, dan debugger tetap jalan tanpa semuanya.">Only for the agent you want to use. Each agent signs in with its own account: Claude Pro or Max for Claude Code, ChatGPT or an OpenAI API key for Codex, a Google account or Gemini API key for Gemini. The editor, terminal and debugger work without any of them.</p></details>
-      <details><summary data-en="Can an agent change files without asking?" data-id="Apakah agen bisa mengubah berkas tanpa bertanya?">Can an agent change files without asking?</summary><p data-en="Not in the default mode. In Ask first, every edit and shell command waits for your approval. You can switch a conversation to automatic edits or plan only, and every save stays in file history." data-id="Tidak di mode bawaan. Di mode Tanya dulu, setiap edit dan perintah shell menunggu persetujuanmu. Kamu bisa mengganti percakapan ke edit otomatis atau hanya rencana, dan setiap simpan tetap tercatat di riwayat berkas.">Not in the default mode. In Ask first, every edit and shell command waits for your approval. You can switch a conversation to automatic edits or plan only, and every save stays in file history.</p></details>
-      <details><summary data-en="Do VS Code extensions work?" data-id="Apakah ekstensi VS Code bisa dipakai?">Do VS Code extensions work?</summary><p data-en="Yes, many do. Themes, icon themes, snippets and grammars from Open VSX work right away. Extensions with code (Prettier, YAML, Todo Tree, Claude Code, Codex and others) run in a separate extension host with a subset of the VS Code API, only after you trust them. It is not a full VS Code, so some extensions only partly work." data-id="Bisa, banyak yang jalan. Tema, tema ikon, snippet, dan grammar dari Open VSX langsung dipakai. Ekstensi berkode (Prettier, YAML, Todo Tree, Claude Code, Codex, dan lainnya) berjalan di extension host terpisah dengan sebagian API VS Code, hanya setelah kamu mempercayainya. Ini bukan VS Code penuh, jadi sebagian ekstensi hanya jalan sebagian.">Yes, many do. Themes, icon themes, snippets and grammars from Open VSX work right away. Extensions with code (Prettier, YAML, Todo Tree, Claude Code, Codex and others) run in a separate extension host with a subset of the VS Code API, only after you trust them. It is not a full VS Code, so some extensions only partly work.</p></details>
-      <details><summary data-en="What do I need to run it?" data-id="Apa yang dibutuhkan untuk menjalankannya?">What do I need to run it?</summary><p data-en="macOS 12 or later (Apple Silicon or Intel), Windows 10 or 11 (x64 or ARM64), or 64-bit Linux with glibc 2.31 or later, and about 500 MB of memory." data-id="macOS 12 atau lebih baru (Apple Silicon atau Intel), Windows 10 atau 11 (x64 atau ARM64), atau Linux 64-bit dengan glibc 2.31 atau lebih baru, serta memori sekitar 500 MB.">macOS 12 or later (Apple Silicon or Intel), Windows 10 or 11 (x64 or ARM64), or 64-bit Linux with glibc 2.31 or later, and about 500 MB of memory.</p></details>
+      <div class="head center reveal"><h2 id="faq-title" data-en-html="Questions, <em>answered</em>." data-id-html="Pertanyaan, <em>terjawab</em>.">Questions, <em>answered</em>.</h2></div>
+      <div class="faq">
+        <details><summary data-en="Is it really free?" data-id="Benar-benar gratis?">Is it really free?</summary><p data-en="Yes. Alexel Studio is open source under the MIT license. No account, no paid tier, no telemetry." data-id="Ya. Alexel Studio open source dengan lisensi MIT. Tanpa akun, tanpa versi berbayar, tanpa telemetri.">Yes. Alexel Studio is open source under the MIT license. No account, no paid tier, no telemetry.</p></details>
+        <details><summary data-en="Do I need an AI subscription?" data-id="Perlu langganan AI?">Do I need an AI subscription?</summary><p data-en="Only for the agent you want to use. Each agent signs in with its own account: Claude Pro or Max for Claude Code, ChatGPT or an OpenAI key for Codex, a Google account for Gemini. Cline, Roo Code, Continue and Kilo work with your own API keys." data-id="Hanya untuk agen yang ingin kamu pakai. Tiap agen masuk dengan akunnya sendiri: Claude Pro atau Max untuk Claude Code, ChatGPT atau OpenAI key untuk Codex, akun Google untuk Gemini. Cline, Roo Code, Continue, dan Kilo memakai API key milikmu.">Only for the agent you want to use.</p></details>
+        <details><summary data-en="Can an agent change files without asking?" data-id="Apakah agen bisa mengubah berkas tanpa bertanya?">Can an agent change files without asking?</summary><p data-en="Not in the default mode. In Ask first, every edit and shell command waits for your approval, and every message has a checkpoint you can restore." data-id="Tidak di mode bawaan. Di mode Tanya dulu, setiap edit dan perintah shell menunggu persetujuanmu, dan setiap pesan punya checkpoint yang bisa dikembalikan.">Not in the default mode.</p></details>
+        <details><summary data-en="Do VS Code extensions work?" data-id="Apakah ekstensi VS Code bisa dipakai?">Do VS Code extensions work?</summary><p data-en="Many do. Themes, icon themes, snippets and grammars from Open VSX work right away. Extensions with code, such as Prettier, YAML, Todo Tree, Claude Code, Codex, Cline, Roo Code and Continue, run in a separate extension host after you trust them. It is not a full VS Code, so some extensions only partly work." data-id="Banyak yang bisa. Tema, tema ikon, snippet, dan grammar dari Open VSX langsung dipakai. Ekstensi berkode seperti Prettier, YAML, Todo Tree, Claude Code, Codex, Cline, Roo Code, dan Continue berjalan di extension host terpisah setelah kamu percayai. Ini bukan VS Code penuh, jadi sebagian ekstensi hanya jalan sebagian.">Many do.</p></details>
+        <details><summary data-en="What do I need to run it?" data-id="Apa yang dibutuhkan untuk menjalankannya?">What do I need to run it?</summary><p data-en="macOS 12 or later (Apple Silicon or Intel), Windows 10 or 11 (x64 or ARM64), or 64-bit Linux with glibc 2.31 or later, and about 500 MB of disk space." data-id="macOS 12 atau lebih baru (Apple Silicon atau Intel), Windows 10 atau 11 (x64 atau ARM64), atau Linux 64-bit dengan glibc 2.31 atau lebih baru, dan sekitar 500 MB ruang disk.">macOS 12 or later.</p></details>
+      </div>
     </div>
   </section>
-  <section class="wordmark" id="wordmark" aria-hidden="true"><h2>Alexel Studio</h2></section>
+
+  <section class="final">
+    <div class="wrap reveal">
+      <img class="penguin" src="img/icon.png" width="84" height="84" alt="">
+      <h2 data-en-html="Your editor. <em>Your agents.</em>" data-id-html="Editormu. <em>Agenmu.</em>">Your editor. <em>Your agents.</em></h2>
+      <div class="cta"><a class="btn btn-primary" href="#download" data-en="Download for free" data-id="Unduh gratis">Download for free</a><a class="btn btn-ghost" id="gh-cta" href="https://github.com/Nozella-Alexiee/alexel-studio" data-en="Star on GitHub" data-id="Beri bintang di GitHub">Star on GitHub</a></div>
+    </div>
+  </section>
 </main>
-<canvas id="confetti" aria-hidden="true"></canvas>
-<div class="dl-toast" id="dl-toast" role="status"></div>
 
 <footer>
-  <div class="wrap">
-    <span data-en="Alexel Studio · MIT license. Claude, Codex, Gemini and Antigravity are trademarks of their owners. Not affiliated with Anthropic, OpenAI, Google or Microsoft." data-id="Alexel Studio · lisensi MIT. Claude, Codex, Gemini, dan Antigravity adalah merek dagang pemiliknya. Tidak berafiliasi dengan Anthropic, OpenAI, Google, atau Microsoft.">Alexel Studio · MIT license. Claude, Codex, Gemini and Antigravity are trademarks of their owners. Not affiliated with Anthropic, OpenAI, Google or Microsoft.</span>
-    <a id="issues-link" data-en="Report an issue" data-id="Laporkan masalah">Report an issue</a>
+  <div class="wrap foot">
+    <span>© Alexel Studio contributors · MIT</span>
+    <nav aria-label="Footer">
+      <a id="f-gh" href="https://github.com/Nozella-Alexiee/alexel-studio">GitHub</a>
+      <a id="f-rel" href="https://github.com/Nozella-Alexiee/alexel-studio/releases" data-en="Releases" data-id="Rilis">Releases</a>
+      <a id="f-sec" href="https://github.com/Nozella-Alexiee/alexel-studio/blob/main/SECURITY.md" data-en="Security" data-id="Keamanan">Security</a>
+      <a href="#faq">FAQ</a>
+    </nav>
   </div>
 </footer>
 
 <script>
 (() => {
-  // Ganti dengan nama akun GitHub saat repo dipublikasikan.
   const REPO = "https://github.com/Nozella-Alexiee/alexel-studio";
-  const VERSION = "0.7.0";
+  const VERSION = "0.8.0";
   const html = document.documentElement;
   html.classList.add("js");
   const store = {
     get(k) { try { return localStorage.getItem(k); } catch { return null; } },
     set(k, v) { try { localStorage.setItem(k, v); } catch {} },
   };
-  const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
 
   // ---------- OS & arsitektur ----------
   const ua = navigator.userAgent;
   const plat = navigator.userAgentData?.platform || navigator.platform || "";
-  const detected = /Mac/i.test(plat) || /Mac OS X/.test(ua) ? "mac" : /Win/i.test(plat) || /Windows/.test(ua) ? "win" : "linux";
-  let os = store.get("as.os") || detected;
-  let lang = store.get("as.lang") || (/^id\b/i.test(navigator.language) ? "id" : "en");
+  const os = /Mac/i.test(plat) || /Mac OS X/.test(ua) ? "mac" : /Win/i.test(plat) || /Windows/.test(ua) ? "win" : /Linux|X11/i.test(plat + ua) && !/Android/i.test(ua) ? "linux" : null;
   let arm = /arm|aarch64/i.test(ua);
-  if (detected === "mac") {
+  if (os === "mac") {
     // Peramban tidak memberi arsitektur Mac; GPU Apple menandakan Apple Silicon.
     try {
       const gl = document.createElement("canvas").getContext("webgl");
@@ -1050,746 +567,76 @@ html.js .demo-wrap.enter { animation: fly-in 1.4s cubic-bezier(.16,.8,.2,1) .25s
       arm = !/Intel/i.test(String(r || ""));
     } catch { arm = true; }
   }
-  navigator.userAgentData?.getHighEntropyValues?.(["architecture"]).then((h) => {
-    if (h?.architecture) { arm = /arm/i.test(h.architecture); paintDownloads(); }
-  }).catch(() => {});
+  const FILES = { mac: arm ? "Alexel-Studio-mac-arm64.dmg" : "Alexel-Studio-mac-x64.dmg", win: arm ? "Alexel-Studio-win-arm64.exe" : "Alexel-Studio-win-x64.exe", linux: "Alexel-Studio-linux-x86_64.AppImage" };
+  const NAME = { mac: "macOS", win: "Windows", linux: "Linux" };
+  const url = (f) => `${REPO}/releases/latest/download/${f}`;
 
-  // ---------- Shortcut per OS ----------
-  const MAC = { Mod: "⌘", Shift: "⇧", Alt: "⌥", Ctrl: "⌃", Escape: "⎋", Tab: "⇥" };
-  function keyText(keys) {
-    if (os === "mac") return keys.split("+").map((k) => MAC[k] ?? k).join("");
-    // Ctrl+Esc membuka menu Start di Windows; panel agen memakai Ctrl+Alt+I di Windows/Linux.
-    if (keys === "Mod+Escape") return "Ctrl+Alt+I";
-    const parts = keys.split("+");
-    const out = [];
-    if (parts.includes("Mod") || parts.includes("Ctrl")) out.push("Ctrl");
-    for (const p of parts) if (p !== "Mod" && p !== "Ctrl") out.push(p === "Escape" ? "Esc" : p);
-    return out.join("+");
-  }
-  const SHORTCUTS = [
-    ["Mod+Shift+P", "Command palette", "Palette perintah"],
-    ["Mod+P", "Open file", "Buka berkas"],
-    ["Mod+Escape", "Open the agent", "Buka agen"],
-    ["Ctrl+`", "Terminal", "Terminal"],
-    ["F5", "Start debugging", "Mulai debug"],
-    ["F9", "Toggle breakpoint", "Pasang breakpoint"],
-    ["F12", "Go to definition", "Ke definisi"],
-    ["F2", "Rename symbol", "Ganti nama simbol"],
-    ["Shift+Alt+F", "Format document", "Rapikan dokumen"],
-    ["Mod+Shift+F", "Search the project", "Cari di project"],
-    ["Mod+B", "Toggle sidebar", "Buka/tutup sidebar"],
-    ["Mod+K", "Inline AI edit", "Edit AI di tempat"],
-    ["Mod+.", "Fix with AI", "Perbaiki dengan AI"],
+  let lang = store.get("as.lang") || (/^id\b/i.test(navigator.language) ? "id" : "en");
+
+  const SHOTS = [
+    { src: "img/app-agent.jpg", en: "Git graph, a JavaScript file and the official Claude Code extension in its own panel.", id: "Graph Git, berkas JavaScript, dan ekstensi resmi Claude Code di panelnya sendiri." },
+    { src: "img/app-extensions.jpg", en: "The extension marketplace with AI agents, and the official Codex extension on the right.", id: "Marketplace ekstensi dengan agen AI, dan ekstensi resmi Codex di kanan." },
+    { src: "img/app-light.jpg", en: "Studio Light with blame on the current line and tests running in the terminal.", id: "Studio Light dengan blame di baris aktif dan tes berjalan di terminal." },
   ];
-  const OS_NAME = { mac: "macOS", win: "Windows", linux: "Linux" };
+  let shot = 0;
 
-  function paintKeys() {
-    document.querySelectorAll("[data-keys]").forEach((el) => (el.textContent = keyText(el.dataset.keys)));
-    const items = SHORTCUTS.map(([k, en, id]) => `<span class="marquee-item"><kbd>${keyText(k)}</kbd>${lang === "id" ? id : en}</span>`).join("");
-    document.getElementById("marquee").innerHTML = items + items;
-    document.getElementById("kt-rows").innerHTML = SHORTCUTS.slice(0, 7).map(([k, en, id]) => `<div class="row"><span>${lang === "id" ? id : en}</span><kbd>${keyText(k)}</kbd></div>`).join("");
-    document.getElementById("kt-title").textContent = lang === "id" ? `Shortcut di ${OS_NAME[os]}` : `Shortcuts on ${OS_NAME[os]}`;
-    document.querySelectorAll("[data-os]").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.os === os)));
-  }
-
-  // ---------- Bahasa ----------
-  function paintLang() {
+  function paint() {
     html.lang = lang;
     document.querySelectorAll("[data-en]").forEach((el) => (el.textContent = (lang === "id" ? el.dataset.id : el.dataset.en) ?? el.dataset.en));
     document.querySelectorAll("[data-en-html]").forEach((el) => (el.innerHTML = lang === "id" ? el.dataset.idHtml : el.dataset.enHtml));
+    document.querySelectorAll("[data-en-alt]").forEach((el) => (el.alt = lang === "id" ? el.dataset.idAlt : el.dataset.enAlt));
+    document.querySelectorAll(".ver").forEach((el) => (el.textContent = VERSION));
     document.querySelectorAll("[data-lang]").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.lang === lang)));
+    const label = document.getElementById("cta-label");
+    const note = document.getElementById("cta-note");
+    const main = document.getElementById("cta-main");
+    if (os) {
+      label.textContent = lang === "id" ? `Unduh untuk ${NAME[os]}` : `Download for ${NAME[os]}`;
+      main.href = url(FILES[os]);
+      const arch = os === "mac" ? (arm ? "Apple Silicon" : "Intel") : os === "win" ? (arm ? "ARM64" : "x64") : "AppImage";
+      note.textContent = `${arch} · v${VERSION} · ${lang === "id" ? "juga untuk" : "also for"} ${Object.keys(NAME).filter((k) => k !== os).map((k) => NAME[k]).join(" & ")}`;
+    } else {
+      label.textContent = lang === "id" ? "Unduh" : "Download";
+      note.textContent = `v${VERSION} · macOS · Windows · Linux`;
+    }
+    document.getElementById("shot-caption").textContent = SHOTS[shot][lang];
   }
 
-  // ---------- Unduhan ----------
-  function paintDownloads() {
-    const url = (f) => `${REPO}/releases/latest/download/${f}`;
-    document.querySelectorAll(".file[data-file]").forEach((a) => {
-      a.href = url(a.dataset.file);
-      a.rel = "noopener";
-    });
-    document.getElementById("releases-link").href = `${REPO}/releases`;
-    document.getElementById("issues-link").href = `${REPO}/issues`;
-    const primary = detected === "mac" ? (arm ? "Alexel-Studio-mac-arm64.dmg" : "Alexel-Studio-mac-x64.dmg") : detected === "win" ? (arm ? "Alexel-Studio-win-arm64.exe" : "Alexel-Studio-win-x64.exe") : "Alexel-Studio-linux-x86_64.AppImage";
-    document.querySelectorAll(".file").forEach((a) => a.classList.toggle("primary", a.dataset.file === primary));
-    document.querySelectorAll("[data-os-card]").forEach((c) => {
-      const mine = c.dataset.osCard === detected;
-      c.classList.toggle("mine", mine);
-      c.querySelector(".mine-tag").hidden = !mine;
-    });
-    const name = OS_NAME[detected];
-    document.getElementById("hero-dl-label").textContent = lang === "id" ? `Unduh untuk ${name}` : `Download for ${name}`;
-    document.getElementById("hero-dl").href = url(primary);
-    const note = { mac: arm ? "Apple Silicon" : "Intel", win: arm ? "ARM64" : "x64", linux: "AppImage" }[detected];
-    document.getElementById("hero-note").textContent = `${note} · ${VERSION} · ${lang === "id" ? "gratis" : "free"}`;
+  // Tautan unduhan & tanda "Sistemmu"
+  document.querySelectorAll(".file[data-file]").forEach((a) => (a.href = url(a.dataset.file)));
+  if (os) {
+    const card = document.querySelector(`.os[data-os="${os}"]`);
+    card?.classList.add("mine");
+    card?.querySelector(".tag")?.removeAttribute("hidden");
   }
+  document.querySelectorAll("[data-lang]").forEach((b) => b.addEventListener("click", () => { lang = b.dataset.lang; store.set("as.lang", lang); paint(); }));
 
-  document.querySelectorAll("[data-os]").forEach((b) => b.addEventListener("click", () => { os = b.dataset.os; store.set("as.os", os); paintKeys(); }));
-  document.querySelectorAll("[data-lang]").forEach((b) => b.addEventListener("click", () => { lang = b.dataset.lang; store.set("as.lang", lang); paintAll(); demo.play(); document.dispatchEvent(new Event("as:lang")); }));
-  document.getElementById("copy-deb").addEventListener("click", async (e) => {
-    const btn = e.currentTarget;
-    const text = document.getElementById("deb-cmd").textContent;
-    try { await navigator.clipboard.writeText(text); btn.textContent = lang === "id" ? "Tersalin" : "Copied"; }
-    catch { const r = document.createRange(); r.selectNodeContents(document.getElementById("deb-cmd")); getSelection().removeAllRanges(); getSelection().addRange(r); }
-    setTimeout(() => (btn.textContent = lang === "id" ? "Salin" : "Copy"), 1600);
+  // Galeri
+  const img = document.getElementById("shot");
+  document.querySelectorAll("[data-shot]").forEach((b) => b.addEventListener("click", () => {
+    shot = Number(b.dataset.shot);
+    document.querySelectorAll("[data-shot]").forEach((x) => x.setAttribute("aria-selected", String(x === b)));
+    img.src = SHOTS[shot].src;
+    img.alt = SHOTS[shot][lang];
+    paint();
+  }));
+
+  // Salin perintah apt
+  document.getElementById("copy-deb")?.addEventListener("click", async (e) => {
+    try { await navigator.clipboard.writeText("sudo apt install ./Alexel-Studio-linux-amd64.deb"); e.target.textContent = lang === "id" ? "Tersalin" : "Copied"; } catch {}
   });
 
-  // ---------- Demo IDE ----------
-  const esc = (s) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
-  function hl(line) {
-    if (/^\s*(\/\/|#)/.test(line)) return `<span class="t-c">${esc(line)}</span>`;
-    // Tokenisasi sederhana: string, kata kunci, angka, pemanggilan fungsi.
-    const re = /("[^"]*"|`[^`]*`)|\b(export|function|const|return|import|from|new)\b|\b(\d[\d_.]*)\b|\b([A-Za-z_]\w*)(?=\()/g;
-    let out = "", last = 0, m;
-    while ((m = re.exec(line))) {
-      out += esc(line.slice(last, m.index));
-      const cls = m[1] ? "t-s" : m[2] ? "t-k" : m[3] ? "t-n" : "t-f";
-      out += `<span class="${cls}">${esc(m[0])}</span>`;
-      last = re.lastIndex;
-    }
-    return out + esc(line.slice(last));
-  }
-  const FILES = {
-    cart: { name: "cart.js", lines: [
-      "// Keranjang belanja toko kopi.", "",
-      "export function subtotal(items) {", "  return items.reduce((sum, item) => sum + item.price * item.qty, 0);", "}", "",
-      "export function total(items) {", "  const sub = subtotal(items);", "  const tax = Math.round(sub * 0.11);", "  return sub + tax;", "}",
-    ] },
-    app: { name: "app.js", lines: ['import { total } from "./cart.js";', "", "const order = [", '  { name: "Kopi susu", price: 28000, qty: 2 },', '  { name: "Croissant", price: 32000, qty: 1 },', "];", "", "console.log(total(order));"] },
-    pkg: { name: "package.json", lines: ["{", '  "name": "toko-kopi",', '  "type": "module",', '  "scripts": { "start": "node src/app.js" }', "}"] },
-    readme: { name: "README.md", lines: ["# Toko Kopi", "", "Contoh kecil untuk mencoba Alexel Studio."] },
-  };
-  const PATCHED = [
-    "export function total(items) {", "  const sub = subtotal(items);",
-    "  const discount = sub > 100000 ? Math.round(sub * 0.1) : 0;", "  const taxable = sub - discount;",
-    "  const tax = Math.round(taxable * 0.11);", "  return taxable + tax;", "}",
-  ];
-  const AGENTS = {
-    claude: { name: "Claude Code", pill: "PRO", model: "Sonnet 5.5", color: "var(--claude)" },
-    codex: { name: "Codex", pill: "CHATGPT", model: "GPT-5.6 Terra", color: "var(--codex)" },
-    gemini: { name: "Gemini", pill: "GOOGLE", model: "Gemini 3.8 Flash", color: "var(--gemini)" },
-    agy: { name: "Antigravity", pill: "GOOGLE", model: "Claude Sonnet 4.6", color: "var(--agy)" },
-  };
-  const T = {
-    prompt: { en: "Add a 10% discount when the subtotal is over Rp100.000, before tax.", id: "Tambahkan diskon 10% bila subtotal di atas Rp100.000, sebelum pajak." },
-    read: { en: "Reading cart.js", id: "Membaca cart.js" },
-    think: { en: "I'll apply the discount inside total(), before tax is calculated.", id: "Diskon kuterapkan di total(), sebelum pajak dihitung." },
-    ask: { en: "Edit cart.js?", id: "Edit cart.js?" },
-    allow: { en: "Allow", id: "Izinkan" }, session: { en: "For this session", id: "Selama sesi" }, deny: { en: "Decline", id: "Tolak" },
-    allowed: { en: "Allowed", id: "Diizinkan" }, declined: { en: "Declined", id: "Ditolak" },
-    done: { en: "Done. Orders over Rp100.000 now get 10% off before the 11% tax.", id: "Selesai. Pesanan di atas Rp100.000 kini dapat potongan 10% sebelum pajak 11%." },
-    redo: { en: "Okay, I left cart.js unchanged.", id: "Oke, cart.js tidak kuubah." },
-    saved: { en: "cart.js saved", id: "cart.js tersimpan" },
-  };
-  const t = (k) => T[k][lang];
-
-  const demo = (() => {
-    const code = document.getElementById("d-code");
-    const chat = document.getElementById("d-chat");
-    const input = document.getElementById("d-input");
-    const toast = document.getElementById("d-toast");
-    let file = "cart", patched = false, agent = "claude", run = 0, decided = null;
-    const sleep = (ms) => new Promise((r) => setTimeout(r, reduce ? 0 : ms));
-
-    function renderCode(flash = false) {
-      let lines = FILES[file].lines;
-      let added = new Set();
-      if (file === "cart" && patched) { lines = [...lines.slice(0, 6), ...PATCHED]; added = new Set([8, 9, 10, 11]); }
-      code.innerHTML = lines.map((l, i) => `<div class="ln${added.has(i) ? ` add${flash ? " flash" : ""}` : ""}"><b>${i + 1}</b><span>${hl(l) || " "}</span></div>`).join("");
-      document.getElementById("d-tabname").textContent = FILES[file].name;
-      document.querySelectorAll(".d-file").forEach((b) => b.classList.toggle("on", b.dataset.file === file));
-      document.getElementById("mod-mark").hidden = !patched;
-    }
-    function paintAgent() {
-      const a = AGENTS[agent];
-      document.getElementById("d-agentname").textContent = `${a.name} ⌄`;
-      document.getElementById("d-agentpill").textContent = a.pill;
-      document.getElementById("d-model").textContent = a.model;
-      document.getElementById("d-agent").style.setProperty("--a", a.color);
-      document.querySelectorAll("[data-agent]").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.agent === agent)));
-    }
-    function add(markup) { const d = document.createElement("div"); d.innerHTML = markup; const el = d.firstElementChild; chat.appendChild(el); return el; }
-    async function typeInto(el, text, id) {
-      el.classList.add("typing");
-      for (let i = 1; i <= text.length; i++) { if (id !== run) return false; el.textContent = text.slice(0, i); await sleep(20); }
-      el.classList.remove("typing");
-      return true;
-    }
-    async function play() {
-      const id = ++run;
-      decided = null;
-      patched = false; file = "cart"; renderCode();
-      chat.innerHTML = ""; input.textContent = "";
-      await sleep(500);
-      if (!(await typeInto(input, t("prompt"), id))) return;
-      await sleep(350); if (id !== run) return;
-      input.textContent = "";
-      add(`<div class="msg-u">${esc(t("prompt"))}</div>`);
-      await sleep(600); if (id !== run) return;
-      const tool = add(`<div class="tool">▤ ${esc(t("read"))}<span class="st">…</span></div>`);
-      await sleep(700); if (id !== run) return;
-      tool.querySelector(".st").textContent = "✓";
-      const msg = add(`<div class="msg-a"></div>`);
-      if (!(await typeInto(msg, t("think"), id))) return;
-      await sleep(300); if (id !== run) return;
-      const card = add(`<div class="perm"><h5>⚠ ${esc(t("ask"))}</h5><div class="diff"><div class="m">-   const tax = Math.round(sub * 0.11);</div><div class="m">-   return sub + tax;</div><div class="p">+   const discount = sub &gt; 100000 ? …</div><div class="p">+   const taxable = sub - discount;</div><div class="p">+   const tax = Math.round(taxable * 0.11);</div><div class="p">+   return taxable + tax;</div></div><div class="perm-act"><button type="button" class="go">${esc(t("allow"))}</button><button type="button">${esc(t("session"))}</button><button type="button">${esc(t("deny"))}</button></div></div>`);
-      const btns = card.querySelectorAll("button");
-      btns[0].addEventListener("click", () => (decided ??= true));
-      btns[1].addEventListener("click", () => (decided ??= true));
-      btns[2].addEventListener("click", () => (decided ??= false));
-      // Menunggu klik pengunjung; tanpa klik, demo menyetujui sendiri setelah beberapa detik.
-      const started = Date.now();
-      while (decided === null && id === run && Date.now() - started < 7000) await sleep(100);
-      if (id !== run) return;
-      if (decided === null) decided = true;
-      card.querySelector(".perm-act").outerHTML = `<div class="done" style="color:${decided ? "#56d364" : "#f85149"}">${esc(decided ? t("allowed") : t("declined"))}</div>`;
-      if (decided) {
-        patched = true; file = "cart"; renderCode(true);
-        toast.textContent = `✓ ${t("saved")}`; toast.classList.add("on");
-        setTimeout(() => toast.classList.remove("on"), 2000);
-      }
-      await sleep(500); if (id !== run) return;
-      const fin = add(`<div class="msg-a"></div>`);
-      await typeInto(fin, decided ? t("done") : t("redo"), id);
-    }
-    document.querySelectorAll(".d-file").forEach((b) => b.addEventListener("click", () => { file = b.dataset.file; renderCode(); }));
-    document.querySelectorAll("[data-agent]").forEach((b) => b.addEventListener("click", () => { agent = b.dataset.agent; paintAgent(); play(); }));
-    document.getElementById("replay").addEventListener("click", () => play());
-    return { start() { renderCode(); paintAgent(); play(); }, play };
-  })();
-
-  function paintAll() {
-    paintLang();
-    paintKeys();
-    paintDownloads();
-  }
-  paintAll();
-  demo.start();
-
-  // ---------- Gerak: ubin hero, kemiringan demo, panel bertumpuk, muncul saat digulir ----------
-  if (!reduce) {
-    const tiles = document.querySelectorAll("#float .tile");
-    window.addEventListener("pointermove", (e) => {
-      const x = e.clientX / innerWidth - 0.5, y = e.clientY / innerHeight - 0.5;
-      tiles.forEach((el, i) => {
-        const d = (i % 3) + 1;
-        el.style.setProperty("--px", `${x * 18 * d}px`);
-        el.style.setProperty("--py", `${y * 14 * d}px`);
-      });
-    }, { passive: true });
-  }
-  const demoEl = document.getElementById("demo");
-  const cards = [...document.querySelectorAll(".card")];
-  let ticking = false;
-  function onScroll() {
-    ticking = false;
-    if (reduce) return;
-    const r = demoEl.getBoundingClientRect();
-    const p = Math.min(1, Math.max(0, 1 - r.top / (innerHeight * 0.75)));
-    demoEl.style.setProperty("--tilt", `${8 * (1 - p)}deg`);
-    demoEl.style.setProperty("--sc", `${0.96 + 0.04 * p}`);
-    // Panel lama mengecil & meredup saat panel berikutnya menutupinya.
-    cards.forEach((c, i) => {
-      const next = cards[i + 1];
-      if (!next || innerWidth <= 1020) { c.style.removeProperty("--s"); c.style.removeProperty("--b"); return; }
-      const top = c.getBoundingClientRect().top;
-      const nTop = next.getBoundingClientRect().top;
-      const k = Math.min(1, Math.max(0, 1 - (nTop - top) / c.offsetHeight));
-      c.style.setProperty("--s", String(1 - 0.06 * k));
-      c.style.setProperty("--b", String(1 - 0.35 * k));
-    });
-  }
-  window.addEventListener("scroll", () => { if (!ticking) { ticking = true; requestAnimationFrame(onScroll); } }, { passive: true });
-  window.addEventListener("resize", onScroll);
+  // Navigasi dengan garis saat digulir
+  const nav = document.getElementById("nav");
+  const onScroll = () => nav.classList.toggle("scrolled", scrollY > 8);
+  addEventListener("scroll", onScroll, { passive: true });
   onScroll();
 
-  // ===================== Animasi penuh =====================
-  const fine = matchMedia("(hover: hover) and (pointer: fine)").matches;
-  const seen = (el, cb, opts = { rootMargin: "0px 0px -12% 0px" }) => {
-    if (!("IntersectionObserver" in window)) return cb(true);
-    const io = new IntersectionObserver((es) => es.forEach((e) => cb(e.isIntersecting, e)), opts);
-    io.observe(el);
-    return io;
-  };
+  // Animasi muncul
+  const io = "IntersectionObserver" in window ? new IntersectionObserver((es) => es.forEach((e) => e.isIntersecting && (e.target.classList.add("in"), io.unobserve(e.target))), { rootMargin: "0px 0px -8% 0px" }) : null;
+  document.querySelectorAll(".reveal").forEach((el) => (io ? io.observe(el) : el.classList.add("in")));
 
-  // Garis progres & cahaya kursor
-  const progress = document.getElementById("progress");
-  const glow = document.getElementById("glow");
-  const onProgress = () => {
-    const h = document.documentElement.scrollHeight - innerHeight;
-    progress.style.setProperty("--p", String(h > 0 ? scrollY / h : 0));
-  };
-  window.addEventListener("scroll", onProgress, { passive: true });
-  onProgress();
-  if (fine && !reduce) {
-    window.addEventListener("pointermove", (e) => {
-      glow.style.setProperty("--gx", `${e.clientX}px`);
-      glow.style.setProperty("--gy", `${e.clientY}px`);
-    }, { passive: true });
-    // Tombol tertarik ke kursor
-    document.querySelectorAll(".btn").forEach((b) => {
-      b.addEventListener("pointermove", (e) => {
-        const r = b.getBoundingClientRect();
-        b.style.setProperty("--mx", `${(e.clientX - r.left - r.width / 2) * 0.18}px`);
-        b.style.setProperty("--my", `${(e.clientY - r.top - r.height / 2) * 0.3}px`);
-      });
-      b.addEventListener("pointerleave", () => { b.style.setProperty("--mx", "0px"); b.style.setProperty("--my", "0px"); });
-    });
-  }
-  // Riak saat diklik
-  document.addEventListener("pointerdown", (e) => {
-    const b = e.target.closest?.(".btn, .file, .seg button");
-    if (!b || reduce) return;
-    const r = b.getBoundingClientRect();
-    const d = Math.max(r.width, r.height);
-    const sp = document.createElement("span");
-    sp.className = "ripple";
-    sp.style.cssText = `width:${d}px;height:${d}px;left:${e.clientX - r.left - d / 2}px;top:${e.clientY - r.top - d / 2}px`;
-    if (getComputedStyle(b).position === "static") b.style.position = "relative";
-    b.style.overflow = "hidden";
-    b.appendChild(sp);
-    setTimeout(() => sp.remove(), 650);
-  });
-
-  // Angka menghitung naik (telemetri menghitung turun ke 0)
-  document.querySelectorAll("[data-count]").forEach((el) => {
-    const to = Number(el.dataset.count);
-    if (reduce) return;
-    el.textContent = to === 0 ? "99" : "0";
-    let done = false;
-    seen(el, (vis) => {
-      if (!vis || done) return;
-      done = true;
-      const from = to === 0 ? 99 : 0;
-      const t0 = performance.now();
-      const step = (now) => {
-        const k = Math.min(1, (now - t0) / 1400);
-        const e = 1 - Math.pow(1 - k, 3);
-        el.textContent = String(Math.round(from + (to - from) * e));
-        if (k < 1) requestAnimationFrame(step);
-      };
-      requestAnimationFrame(step);
-    });
-  });
-
-  // Judul muncul per kata
-  function splitHeads() {
-    document.querySelectorAll("h2.split").forEach((h) => {
-      const words = h.textContent.trim().split(/\s+/);
-      h.innerHTML = words.map((w, i) => `<span class="sw" style="--i:${i}">${esc(w)}</span>`).join(" ");
-      if (reduce || h.getBoundingClientRect().top < innerHeight) h.classList.add("in");
-    });
-  }
-  splitHeads();
-  document.querySelectorAll("[data-lang]").forEach((b) => b.addEventListener("click", () => setTimeout(() => { splitHeads(); document.querySelectorAll("h2.split").forEach((h) => h.classList.add("in")); }, 0)));
-  document.querySelectorAll("h2.split").forEach((h) => seen(h, (vis) => vis && h.classList.add("in")));
-
-  // Panel hidup: pemasangan agen
-  const agentsLive = document.querySelector('[data-live="agents"]');
-  seen(agentsLive, (vis) => agentsLive.classList.toggle("play", vis || reduce));
-
-  // Panel hidup: debugger melangkah
-  const DBG_LINES = [
-    "export function total(items) {",
-    "  const sub = subtotal(items);",
-    "  const tax = Math.round(sub * 0.11);",
-    "  return sub + tax;",
-    "}",
-    "",
-    "const amount = total(order);",
-    "console.log(formatRupiah(amount));",
-  ];
-  const DBG_STEPS = [
-    { line: 1, vars: [["items", "Array(3)"], ["sub", "undefined"], ["tax", "undefined"]] },
-    { line: 2, vars: [["items", "Array(3)"], ["sub", "112000"], ["tax", "undefined"]] },
-    { line: 3, vars: [["items", "Array(3)"], ["sub", "112000"], ["tax", "12320"]] },
-    { line: 7, vars: [["amount", "124320"]] },
-  ];
-  const dbgCode = document.getElementById("dbg-code");
-  const dbgVars = document.getElementById("dbg-vars");
-  dbgCode.innerHTML = DBG_LINES.map((l, i) => `<div class="${i === 1 ? "bp" : ""}"><b>${i + 7}</b><span>${hl(l) || " "}</span></div>`).join("");
-  let dbgTimer = 0, dbgIdx = 0;
-  const dbgStep = () => {
-    const st = DBG_STEPS[dbgIdx % DBG_STEPS.length];
-    [...dbgCode.children].forEach((d, i) => d.classList.toggle("cur", i === st.line));
-    dbgVars.innerHTML = st.vars.map(([k, v]) => `<div class="v flash"><span>${k}</span><span>${v}</span></div>`).join("");
-    setTimeout(() => dbgVars.querySelectorAll(".flash").forEach((x) => x.classList.remove("flash")), 400);
-    dbgIdx++;
-  };
-  dbgStep();
-  seen(document.querySelector('[data-live="debug"]'), (vis) => {
-    clearInterval(dbgTimer);
-    if (vis && !reduce) dbgTimer = setInterval(dbgStep, 1500);
-  });
-
-  // Panel hidup: terminal mengetik sendiri
-  const TERM = [
-    ["cmd", "npm run dev"],
-    ["out", '<span class="dim">&gt; toko-kopi@1.0.0 dev</span>'],
-    ["out", '<span class="ok">  VITE v8.0</span>  ready in <span class="y">312 ms</span>'],
-    ["out", '  ➜  Local:   <span class="y">http://localhost:5173/</span>'],
-    ["cmd", "git status --short"],
-    ["out", '<span class="y"> M</span> src/cart.js'],
-    ["cmd", 'git commit -am "Diskon 10% di atas Rp100.000"'],
-    ["out", '[main 4f2a9c1] Diskon 10% di atas Rp100.000'],
-    ["out", ' 1 file changed, 4 insertions(+), 2 deletions(-)'],
-  ];
-  const termBody = document.getElementById("term-body");
-  let termRun = 0;
-  async function playTerm() {
-    const id = ++termRun;
-    const pause = (ms) => new Promise((r) => setTimeout(r, reduce ? 0 : ms));
-    termBody.innerHTML = "";
-    for (const [kind, text] of TERM) {
-      if (id !== termRun) return;
-      const line = document.createElement("div");
-      termBody.appendChild(line);
-      if (kind === "cmd") {
-        line.innerHTML = '<span class="pr">~/toko-kopi ❯</span> <span class="cm"></span><span class="caret"></span>';
-        const cm = line.querySelector(".cm");
-        for (let i = 1; i <= text.length; i++) { if (id !== termRun) return; cm.textContent = text.slice(0, i); await pause(38); }
-        await pause(300);
-        line.querySelector(".caret").remove();
-      } else {
-        line.innerHTML = text;
-        await pause(260);
-      }
-      termBody.scrollTop = termBody.scrollHeight;
-    }
-    const end = document.createElement("div");
-    end.innerHTML = '<span class="pr">~/toko-kopi ❯</span> <span class="caret"></span>';
-    termBody.appendChild(end);
-  }
-  seen(document.querySelector('[data-live="term"]'), (vis) => { if (vis) playTerm(); else termRun++; });
-
-  // Screenshot persetujuan: zoom pelan saat digulir
-  const zoomImg = document.querySelector(".shot.zoom img");
-  const onZoom = () => {
-    if (reduce || !zoomImg) return;
-    const r = zoomImg.closest(".card").getBoundingClientRect();
-    const k = Math.min(1, Math.max(0, 1 - r.top / innerHeight));
-    zoomImg.style.transform = `scale(${1 + 0.18 * k}) translate(${-6 * k}%, ${-4 * k}%)`;
-    zoomImg.style.transformOrigin = "100% 0";
-  };
-  window.addEventListener("scroll", onZoom, { passive: true });
-
-  // Galeri berjalan + lightbox
-  const track = document.getElementById("gal-track");
-  if (!reduce) track.innerHTML += track.innerHTML;
-  track.addEventListener("click", (e) => {
-    const b = e.target.closest("button[data-src]");
-    if (!b) return;
-    const box = document.createElement("div");
-    box.className = "lightbox";
-    box.setAttribute("role", "dialog");
-    box.setAttribute("aria-label", "Screenshot");
-    box.innerHTML = `<img src="${b.dataset.src}" alt="">`;
-    const close = () => { box.remove(); document.removeEventListener("keydown", onKey); };
-    const onKey = (ev) => ev.key === "Escape" && close();
-    box.addEventListener("click", close);
-    document.addEventListener("keydown", onKey);
-    document.body.appendChild(box);
-  });
-
-  // Kartu unduh 3D
-  if (fine && !reduce) document.querySelectorAll(".os-card").forEach((c) => {
-    c.addEventListener("pointermove", (e) => {
-      const r = c.getBoundingClientRect();
-      c.style.setProperty("--ry", `${((e.clientX - r.left) / r.width - 0.5) * 10}deg`);
-      c.style.setProperty("--rx", `${-((e.clientY - r.top) / r.height - 0.5) * 10}deg`);
-    });
-    c.addEventListener("pointerleave", () => { c.style.setProperty("--rx", "0deg"); c.style.setProperty("--ry", "0deg"); });
-  });
-
-  // Konfeti saat unduh
-  const cv = document.getElementById("confetti");
-  const ctx2 = cv.getContext("2d");
-  function confetti(x, y) {
-    if (reduce) return;
-    cv.width = innerWidth * devicePixelRatio; cv.height = innerHeight * devicePixelRatio;
-    cv.style.width = innerWidth + "px"; cv.style.height = innerHeight + "px";
-    ctx2.setTransform(devicePixelRatio, 0, 0, devicePixelRatio, 0, 0);
-    const colors = ["#d97757", "#10a37f", "#4285f4", "#8a5cf6", "#f2b632", "#1f5eff"];
-    const parts = Array.from({ length: 140 }, () => ({ x, y, vx: (Math.random() - 0.5) * 14, vy: -Math.random() * 13 - 4, r: Math.random() * 6 + 3, c: colors[(Math.random() * colors.length) | 0], a: Math.random() * Math.PI, va: (Math.random() - 0.5) * 0.3 }));
-    let t = 0;
-    const tick = () => {
-      ctx2.clearRect(0, 0, innerWidth, innerHeight);
-      for (const p of parts) {
-        p.vy += 0.35; p.x += p.vx; p.y += p.vy; p.vx *= 0.99; p.a += p.va;
-        ctx2.save(); ctx2.translate(p.x, p.y); ctx2.rotate(p.a); ctx2.fillStyle = p.c; ctx2.globalAlpha = Math.max(0, 1 - t / 120);
-        ctx2.fillRect(-p.r / 2, -p.r / 4, p.r, p.r / 2); ctx2.restore();
-      }
-      if (++t < 120) requestAnimationFrame(tick); else ctx2.clearRect(0, 0, innerWidth, innerHeight);
-    };
-    tick();
-  }
-  const dlToast = document.getElementById("dl-toast");
-  document.addEventListener("click", (e) => {
-    const a = e.target.closest?.(".file[data-file], #hero-dl");
-    if (!a || a.getAttribute("href") === "#download") return;
-    confetti(e.clientX, e.clientY);
-    const name = a.dataset.file || a.href.split("/").pop();
-    dlToast.textContent = (lang === "id" ? "Mengunduh " : "Downloading ") + name + "…";
-    dlToast.classList.add("on");
-    setTimeout(() => dlToast.classList.remove("on"), 3200);
-  });
-
-  // Tulisan raksasa
-  const wm = document.getElementById("wordmark");
-  const wmh = wm.querySelector("h2");
-  wmh.innerHTML = [...wmh.textContent].map((c, i) => (c === " " ? " " : `<span class="ch" style="--i:${i}">${c}</span>`)).join("");
-  seen(wm, (vis) => vis && wm.classList.add("in"));
-  if (reduce) wm.classList.add("in");
-
-
-  // ---------- Hero 3D: partikel, kemiringan ikut kursor, kilau ----------
-  (() => {
-    const hero = document.querySelector(".hero");
-    const wrap = document.getElementById("demo-wrap");
-    const demo = document.getElementById("demo");
-    if (!hero || !wrap || !demo) return;
-    const shadow = document.createElement("div");
-    shadow.className = "demo-shadow";
-    shadow.setAttribute("aria-hidden", "true");
-    wrap.prepend(shadow);
-    if (!reduce) wrap.classList.add("enter");
-
-    const canvas = document.createElement("canvas");
-    canvas.className = "stars";
-    canvas.setAttribute("aria-hidden", "true");
-    hero.prepend(canvas);
-    const g = canvas.getContext("2d");
-    let W = 0, H = 0, dpr = 1, pts = [], mx = 0, my = 0, tx = 0, ty = 0, visible = true, raf = 0;
-    const color = () => getComputedStyle(document.documentElement).getPropertyValue("--accent").trim() || "#6b97ff";
-    let col = color();
-    function size() {
-      dpr = Math.min(2, devicePixelRatio || 1);
-      W = hero.clientWidth; H = Math.min(hero.clientHeight, 1200);
-      canvas.width = W * dpr; canvas.height = H * dpr;
-      canvas.style.height = H + "px";
-      const n = Math.round(Math.min(110, (W * H) / 14000));
-      pts = Array.from({ length: n }, () => ({ x: Math.random() * W, y: Math.random() * H, z: 0.25 + Math.random() * 0.75, vx: (Math.random() - 0.5) * 0.18, vy: (Math.random() - 0.5) * 0.18 }));
-      col = color();
-    }
-    function frame() {
-      raf = 0;
-      if (!visible || document.hidden) return;
-      tx += (mx - tx) * 0.06; ty += (my - ty) * 0.06;
-      g.setTransform(dpr, 0, 0, dpr, 0, 0);
-      g.clearRect(0, 0, W, H);
-      const P = pts.map((p) => {
-        p.x += p.vx * p.z; p.y += p.vy * p.z;
-        if (p.x < -20) p.x = W + 20; if (p.x > W + 20) p.x = -20;
-        if (p.y < -20) p.y = H + 20; if (p.y > H + 20) p.y = -20;
-        return { x: p.x + tx * 26 * p.z, y: p.y + ty * 18 * p.z, z: p.z };
-      });
-      g.strokeStyle = col; g.fillStyle = col;
-      for (let i = 0; i < P.length; i++) {
-        for (let j = i + 1; j < P.length; j++) {
-          const dx = P[i].x - P[j].x, dy = P[i].y - P[j].y, d = dx * dx + dy * dy;
-          if (d < 12000) { g.globalAlpha = (1 - d / 12000) * 0.16 * Math.min(P[i].z, P[j].z); g.beginPath(); g.moveTo(P[i].x, P[i].y); g.lineTo(P[j].x, P[j].y); g.stroke(); }
-        }
-      }
-      for (const p of P) { g.globalAlpha = 0.25 + p.z * 0.45; g.beginPath(); g.arc(p.x, p.y, 0.6 + p.z * 1.6, 0, Math.PI * 2); g.fill(); }
-      g.globalAlpha = 1;
-      raf = requestAnimationFrame(frame);
-    }
-    const kick = () => { if (!raf && !reduce) raf = requestAnimationFrame(frame); };
-    if (!reduce) {
-      size(); kick();
-      addEventListener("resize", () => { size(); kick(); }, { passive: true });
-      new IntersectionObserver(([e]) => { visible = e.isIntersecting; kick(); }).observe(hero);
-      document.addEventListener("visibilitychange", kick);
-      matchMedia("(prefers-color-scheme: dark)").addEventListener?.("change", () => (col = color()));
-    }
-
-    // Jendela demo miring mengikuti kursor, dengan kilau cahaya.
-    if (!reduce && matchMedia("(pointer: fine)").matches) {
-      hero.addEventListener("pointermove", (e) => {
-        const r = demo.getBoundingClientRect();
-        const nx = Math.max(-1, Math.min(1, (e.clientX - (r.left + r.width / 2)) / (r.width / 2)));
-        const ny = Math.max(-1, Math.min(1, (e.clientY - (r.top + r.height / 2)) / (r.height / 1.2)));
-        mx = nx; my = ny;
-        demo.style.setProperty("--my", `${nx * 5}deg`);
-        demo.style.setProperty("--mx", `${-ny * 3.5}deg`);
-        demo.style.setProperty("--gx", `${((e.clientX - r.left) / r.width) * 100}%`);
-        demo.style.setProperty("--gy", `${((e.clientY - r.top) / r.height) * 100}%`);
-        demo.style.setProperty("--glare", "1");
-        kick();
-      }, { passive: true });
-      hero.addEventListener("pointerleave", () => {
-        mx = my = 0;
-        demo.style.setProperty("--my", "0deg");
-        demo.style.setProperty("--mx", "0deg");
-        demo.style.setProperty("--glare", "0");
-      });
-    }
-  })();
-
-  // ---------- Cerita gulir ----------
-  (() => {
-    const story = document.getElementById("story");
-    if (!story) return;
-    const cam = document.getElementById("sw-cam");
-    const sw = document.getElementById("sw");
-    const stage = document.getElementById("story-stage");
-    const codeEl = document.getElementById("sw-code");
-    const chatEl = document.getElementById("sw-chat");
-    const compEl = document.getElementById("sw-comp");
-    const menuEl = document.getElementById("sw-menu");
-    const pickEl = document.getElementById("sw-pick");
-    const kEl = document.getElementById("sw-k");
-    const perm = document.getElementById("sw-perm");
-    const toast = document.getElementById("sw-toast");
-    const varsEl = document.getElementById("sw-varlist");
-    const partsEl = document.getElementById("sw-parts");
-    const bg = document.getElementById("story-bg");
-    const steps = [...document.querySelectorAll("#story-steps li")];
-    const N = steps.length;
-    const T = (en, id) => (lang === "id" ? id : en);
-
-    const AG = [
-      { name: "Claude Code", k: "✳", c: "var(--claude)", v: "Anthropic" },
-      { name: "Codex", k: "◎", c: "var(--codex)", v: "OpenAI" },
-      { name: "Gemini", k: "✦", c: "var(--gemini)", v: "Google" },
-      { name: "Antigravity", k: "▲", c: "var(--agy)", v: "Google" },
-    ];
-    const BASE = ["// Coffee shop cart.", "export function subtotal(items) {", "  return items.reduce((s, i) => s + i.price * i.qty, 0);", "}", "", "export function total(items) {", "  const sub = subtotal(items);", "  const tax = Math.round(sub * 0.11);", "  return sub + tax;", "}"];
-    const NEW = ["// Coffee shop cart.", "export function subtotal(items) {", "  return items.reduce((s, i) => s + i.price * i.qty, 0);", "}", "", "export function total(items) {", "  const sub = subtotal(items);", "  const discount = sub > 100000 ? sub * 0.1 : 0;", "  const tax = Math.round((sub - discount) * 0.11);", "  return sub - discount + tax;", "}"];
-    const PROMPT = () => T("Give orders over 100k a 10% discount before tax @cart.js", "Beri diskon 10% untuk pesanan di atas 100rb sebelum pajak @cart.js");
-    // Kamera per adegan: geser x/y/z (px), putar X/Y (derajat).
-    const CAM = [[30, 0, -60, 8, -14], [0, 0, -20, 4, -6], [-40, 10, 30, 6, 12], [60, 0, 30, 6, -10], [0, 0, -10, 10, 7], [0, 0, 10, 3, -4]];
-    const TINT = [["var(--claude)", "80%"], ["var(--accent)", "75%"], ["var(--claude)", "85%"], ["var(--codex)", "40%"], ["var(--agy)", "60%"], ["#e3b341", "50%"]];
-
-    const line = (t, n, cls = "", extra = "") => `<div class="ln ${cls}"><b>${n ?? ""}${extra}</b><span>${hl(t) || " "}</span></div>`;
-    const chips = (pressed) => `<span class="chips"><i class="ok${pressed ? " press" : ""}">${T("Accept", "Terima")}</i><i class="no">${T("Reject", "Tolak")}</i></span>`;
-    function code(scene, p) {
-      if (scene <= 1 || (scene === 2 && p < 0.72) || (scene === 4 && p >= 0.5)) {
-        return BASE.map((t, i) => line(t, i + 1, scene === 4 && p >= 0.5 && i === 7 ? "add" : "")).join("");
-      }
-      if (scene === 2) return NEW.map((t, i) => line(t, i + 1, i >= 7 && i <= 9 ? "add" : "")).join("");
-      if (scene === 3) {
-        const a1 = p >= 0.4, a2 = p >= 0.75;
-        const out = [];
-        NEW.forEach((t, i) => {
-          if (i === 7 && !a1) out.push(`<div class="ln del"><b></b><span>${hl(BASE[7])}</span>${chips(p > 0.32)}</div>`);
-          if (i === 9 && !a2) out.push(`<div class="ln del"><b></b><span>${hl(BASE[8])}</span>${chips(p > 0.67)}</div>`);
-          const changed = (i === 7 || i === 8) ? !a1 : i === 9 ? !a2 : false;
-          out.push(line(t, i + 1, changed ? "add" : ""));
-        });
-        return out.join("");
-      }
-      if (scene === 4) return NEW.map((t, i) => line(t, i + 1, i >= 7 && i <= 9 ? (p > 0.42 ? "add gone" : "") : "")).join("");
-      // Debug: berhenti di breakpoint baris 8, lalu melangkah.
-      const cur = p < 0.34 ? 7 : p < 0.67 ? 8 : 9;
-      return BASE.map((t, i) => line(t, i + 1, i + 1 === cur ? "cur" : "", i === 7 ? '<span class="bp"></span>' : "")).join("");
-    }
-    function chat(scene, p) {
-      const typed = PROMPT();
-      if (scene === 0) return [`<div class="a" style="color:var(--panel-ink-2)">${T("Ask anything about this project. You approve every change.", "Tanya apa saja tentang project ini. Kamu yang menyetujui setiap perubahan.")}</div>`, ""];
-      const user = (restore) => `<div class="u">${esc(typed).replace(/@cart\.js/, '<span class="pill">@cart.js</span>')}${restore ? `<span class="rs${restore === 2 ? " press" : ""}">↺ ${T("Restore files to before this message", "Pulihkan berkas ke sebelum pesan ini")}</span>` : ""}</div>`;
-      if (scene === 1) {
-        if (p < 0.55) {
-          const n = Math.round((p / 0.5) * typed.length);
-          return ["", `<span class="typing">${esc(typed.slice(0, n))}</span>`];
-        }
-        const parts = [user(0)];
-        if (p > 0.65) parts.push(`<div class="t">${T("Reading", "Membaca")} cart.js<s>✓</s></div>`);
-        if (p > 0.75) {
-          const msg = T("I'll apply the discount before tax and keep rounding as it is.", "Diskon kuterapkan sebelum pajak, pembulatannya tetap.");
-          parts.push(`<div class="a">${esc(msg.slice(0, Math.round(((p - 0.75) / 0.22) * msg.length)))}</div>`);
-        }
-        return [parts.join(""), ""];
-      }
-      const done = `<div class="t">${T("Reading", "Membaca")} cart.js<s>✓</s></div><div class="a">${esc(T("I'll apply the discount before tax and keep rounding as it is.", "Diskon kuterapkan sebelum pajak, pembulatannya tetap."))}</div>`;
-      if (scene === 2) return [user(0) + done + (p > 0.72 ? `<div class="t">${T("Editing", "Mengedit")} cart.js<s>✓</s></div>` : ""), ""];
-      const card = `<div class="ch"><b>${T("1 file changed by the agent", "1 berkas diubah agen")}</b><span>cart.js</span></div>`;
-      if (scene === 3) return [user(1) + done + card, ""];
-      if (scene === 4) return [user(p > 0.36 ? 2 : 1) + done + card, ""];
-      return [`<div class="t">● ${T("Paused at breakpoint", "Berhenti di breakpoint")} · cart.js:8</div>`, ""];
-    }
-    function vars(p) {
-      const v = [["items", "Array(3)"], ["sub", "120000"]];
-      if (p >= 0.34) v.push(["tax", "13200"]);
-      if (p >= 0.67) v.push(["return", "133200"]);
-      return v.map(([k, val], i) => `<div class="v${i === v.length - 1 && p > 0.1 ? " new" : ""}"><span>${k}</span><span>${val}</span></div>`).join("");
-    }
-
-    let last = "";
-    let fit = 1;
-    function resize() {
-      const w = stage.clientWidth, h = stage.clientHeight;
-      fit = Math.min(w / 950, h / 600, 1.1);
-      cam.style.setProperty("--fit", String(fit));
-    }
-    function paint() {
-      const r = story.getBoundingClientRect();
-      const total = Math.max(1, r.height - innerHeight);
-      const prog = Math.min(0.9999, Math.max(0, -r.top / total));
-      const scene = Math.min(N - 1, Math.floor(prog * N));
-      const p = prog * N - scene;
-      const now = document.getElementById("story-now");
-      if (now.dataset.scene !== `${scene}${lang}`) {
-        now.dataset.scene = `${scene}${lang}`;
-        now.querySelector("strong").textContent = steps[scene].querySelector("button > span").textContent;
-        now.querySelector("span").textContent = steps[scene].querySelector("p").textContent;
-      }
-      steps.forEach((li, i) => {
-        li.classList.toggle("on", i === scene);
-        li.style.setProperty("--fill", String(i < scene ? 1 : i === scene ? p : 0));
-      });
-      const hi = scene === 0 ? [1, 2, 3, 0][Math.min(3, Math.floor(p * 4))] : 0;
-      const key = `${scene}|${scene === 0 ? hi : Math.round(p * 40)}|${lang}`;
-      if (key === last) return;
-      last = key;
-      sw.dataset.scene = cam.dataset.scene = String(scene);
-      const [cx, cy, cz, crx, cry] = CAM[scene];
-      const narrow = innerWidth <= 900;
-      // Layar sempit: perbesar dan arahkan ke bagian yang sedang diceritakan (panel agen / editor).
-      const FOCUS = [-300, -300, -300, 130, -300, 130];
-      cam.style.setProperty("--fit", String(narrow ? fit * 1.55 : fit));
-      cam.style.setProperty("--cx", `${narrow ? FOCUS[scene] : cx}px`);
-      cam.style.setProperty("--cy", `${cy}px`);
-      cam.style.setProperty("--cz", `${cz}px`);
-      cam.style.setProperty("--crx", `${crx}deg`);
-      cam.style.setProperty("--cry", `${narrow ? cry * 0.5 : cry}deg`);
-      bg.style.setProperty("--sc1", TINT[scene][0]);
-      bg.style.setProperty("--sbx", TINT[scene][1]);
-      const a = AG[hi];
-      pickEl.textContent = `${a.name} ⌄`;
-      kEl.textContent = a.k;
-      kEl.style.background = a.c;
-      menuEl.innerHTML = AG.map((x, i) => `<div class="${i === hi ? "on" : ""}"><b style="background:${x.c}">${x.k}</b>${x.name}<small>${x.v}</small></div>`).join("");
-      codeEl.innerHTML = code(scene, p);
-      const [c, comp] = chat(scene, p);
-      chatEl.innerHTML = c;
-      compEl.innerHTML = comp || `<span>${T("Ask Claude, @ for files, / for commands", "Tanya Claude, @ untuk berkas, / untuk perintah")}</span>`;
-      perm.classList.toggle("allowed", scene === 2 && p > 0.66);
-      perm.querySelector(".go").classList.toggle("press", scene === 2 && p > 0.58);
-      toast.classList.toggle("on", scene === 4 && p > 0.5);
-      varsEl.innerHTML = scene === 5 ? vars(p) : "";
-      const left = scene === 3 ? (p < 0.4 ? 2 : p < 0.75 ? 1 : 0) : 2;
-      partsEl.textContent = left ? T(`${left} changed part${left > 1 ? "s" : ""}`, `${left} bagian berubah`) : T("All changes kept", "Semua perubahan dipertahankan");
-    }
-    let ticking = false;
-    const onScroll = () => { if (!ticking) { ticking = true; requestAnimationFrame(() => { ticking = false; paint(); }); } };
-    addEventListener("scroll", onScroll, { passive: true });
-    addEventListener("resize", () => { resize(); last = ""; paint(); }, { passive: true });
-    steps.forEach((li, i) => li.querySelector("button").addEventListener("click", () => {
-      const total = story.offsetHeight - innerHeight;
-      scrollTo({ top: story.offsetTop + ((i + 0.3) / N) * total, behavior: reduce ? "auto" : "smooth" });
-    }));
-    document.addEventListener("as:lang", () => { last = ""; paint(); });
-    resize();
-    paint();
-  })();
-
-  // Muncul saat digulir: hanya elemen di bawah layar yang menunggu; yang sudah terlihat tetap utuh.
-  if ("IntersectionObserver" in window && !reduce) {
-    const io = new IntersectionObserver((es) => es.forEach((e) => { if (e.isIntersecting) { e.target.classList.remove("pre"); io.unobserve(e.target); } }), { rootMargin: "0px 0px -8% 0px" });
-    document.querySelectorAll(".reveal").forEach((el) => {
-      if (el.getBoundingClientRect().top > innerHeight) { el.classList.add("pre"); io.observe(el); }
-    });
-  }
+  paint();
 })();
 </script>
 </body>
