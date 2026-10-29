@@ -20,6 +20,8 @@ async function repo(name: string) {
   await G.git(d, ["config", "user.email", "t@t"], "cfg");
   await G.git(d, ["config", "user.name", "t"], "cfg");
   await G.git(d, ["config", "commit.gpgsign", "false"], "cfg");
+  // Runner Windows memakai core.autocrlf=true: isi berkas uji harus tetap LF.
+  await G.git(d, ["config", "core.autocrlf", "false"], "cfg");
   return d;
 }
 const write = (d: string, f: string, s: string) => fs.writeFileSync(path.join(d, f), s);
