@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.8.0
 
 Closing the everyday gaps with VS Code:
 
@@ -26,6 +26,13 @@ Closing the everyday gaps with VS Code:
   you trust them; code extensions don't run there.
 - **Accessibility**: labelled inputs, high-contrast (forced colors) support, and a static check that
   every icon button, input and image has an accessible name.
+- **More AI extensions behave like in VS Code**: Cline, Roo Code, Continue and Kilo Code get their own
+  activity-bar panels with icons; extension titles are translated from `package.nls.json`; webviews get
+  VS Code's default styles, every `--vscode-*` color they use, and light/dark color schemes;
+  `context.extension` is a full Extension object; the default Dark/Light Modern themes are available to
+  extensions; node-pty is provided like in VS Code.
+- **Extension images**: catalog icons (served from openvsx.eclipsecontent.org) and README images show up.
+- New download page design.
 - Fixes: `.txt` files are `plaintext` for extensions; an old extension host exiting late no longer
   clears the new host's UI; extension-host webview load race; completion offsets after import edits.
 
