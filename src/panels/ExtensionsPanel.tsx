@@ -112,7 +112,7 @@ function InstalledItem({ ext, update }: { ext: InstalledExt; update?: Update }) 
             {ext.snippets.length > 0 && <span className="todo-tag">{ext.snippets.length} snippet</span>}
             {ext.grammars.length > 0 && <span className="todo-tag">{ext.grammars.length} grammar</span>}
             {ext.languages.some((l) => l.configuration) && <span className="todo-tag">{tl("konfigurasi bahasa")}</span>}
-            {ext.id.startsWith("vscode.") && <span className="todo-tag" title={tl("Grammar bawaan VS Code, dipasang otomatis karena dipakai ekstensi lain")}>{tl("pendukung")}</span>}
+            {ext.id.startsWith("vscode.") && <span className="todo-tag" title={tl("Grammar bawaan, dipasang otomatis karena dipakai ekstensi lain")}>{tl("pendukung")}</span>}
             {disabled && <span className="todo-tag">{tl("nonaktif")}</span>}
           </div>
           {ext.hasCode && !disabled && (
@@ -394,7 +394,7 @@ export default function ExtensionsPanel() {
                 ))}
               </select>
             )}
-            <p className="hint ext-note">{tl("Tema, ikon, snippet, grammar, dan konfigurasi bahasa langsung dipakai. Ekstensi yang berisi kode baru dijalankan setelah kamu mempercayainya (eksperimental, API VS Code terbatas).")}</p>
+            <p className="hint ext-note">{tl("Tema, ikon, snippet, grammar, dan konfigurasi bahasa langsung dipakai. Ekstensi yang berisi kode baru dijalankan setelah kamu mempercayainya (eksperimental, API ekstensi terbatas).")}</p>
           </>
         )}
       </div>

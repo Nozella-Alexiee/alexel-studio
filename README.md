@@ -8,7 +8,7 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/Nozella-Alexiee/alexel-studio/releases/latest"><img src="https://img.shields.io/badge/Release-v0.4.1-38BDF8?style=for-the-badge&logo=github&logoColor=white" alt="Latest Release" /></a>
+  <a href="https://github.com/Nozella-Alexiee/alexel-studio/releases/latest"><img src="https://img.shields.io/badge/Release-v0.9.0-38BDF8?style=for-the-badge&logo=github&logoColor=white" alt="Latest Release" /></a>
   <a href="#-supported-ai-agents"><img src="https://img.shields.io/badge/AI_Agents-Claude_·_Codex_·_Gemini_·_Antigravity-8B5CF6?style=for-the-badge" alt="AI Agents" /></a>
   <a href="#-download--installation"><img src="https://img.shields.io/badge/Platforms-macOS_·_Windows_·_Linux-0284C7?style=for-the-badge&logo=apple&logoColor=white" alt="Cross-Platform" /></a>
   <a href="#-privacy--zero-telemetry"><img src="https://img.shields.io/badge/Telemetry-Zero_·_100%25_Private-10B981?style=for-the-badge" alt="Zero Telemetry" /></a>
@@ -16,7 +16,7 @@
 </p>
 
 <p align="center">
-  <a href="README.md"><b>English</b></a> · <a href="README.id.md"><b>Bahasa Indonesia</b></a> · <a href="#-download--installation"><b>Download</b></a> · <a href="#-competitor-comparison"><b>Comparison Matrix</b></a> · <a href="#-system-architecture"><b>Architecture</b></a> · <a href="docs/AGENTS.md"><b>Agent Protocols</b></a>
+  <a href="README.md"><b>English</b></a> · <a href="README.id.md"><b>Bahasa Indonesia</b></a> · <a href="#-download--installation"><b>Download</b></a> · <a href="#️-feature-overview"><b>Feature Overview</b></a> · <a href="#-system-architecture"><b>Architecture</b></a> · <a href="docs/AGENTS.md"><b>Agent Protocols</b></a>
 </p>
 
 ---
@@ -30,7 +30,7 @@
 ## 📑 Table of Contents
 
 - [✨ Why Alexel Studio?](#-why-alexel-studio)
-- [⚖️ Competitor Comparison](#️-competitor-comparison)
+- [⚖️ Feature Overview](#️-feature-overview)
 - [🤖 Supported AI Agents](#-supported-ai-agents)
 - [📸 Feature Highlights](#-feature-highlights)
   - [1. Granular Diff Approval & Human-in-the-Loop](#1-granular-diff-approval--human-in-the-loop)
@@ -63,21 +63,21 @@ Most AI-assisted editors treat artificial intelligence either as an opaque auto-
 
 ---
 
-## ⚖️ Competitor Comparison
+## ⚖️ Feature Overview
 
-How Alexel Studio stacks up against today's leading developer environments:
+What you get in a single download:
 
-| Feature / Capability | **Alexel Studio** | **Cursor** | **VS Code + Copilot** | **Zed** |
-|---|:---:|:---:|:---:|:---:|
-| **Pricing & License** | **100% Free & Open Source (MIT)** | $20/month subscription | $10–$19/month subscription | Free (Open Core) |
-| **Bring-Your-Own-Account (BYOK)** | ✅ **Yes (Zero markup)** | ⚠️ Limited / Paid tier | ❌ No | ⚠️ API key only |
-| **Autonomous Multi-File Agents** | ✅ **Claude, Codex, Gemini, Antigravity** | ⚠️ Cursor Composer only | ⚠️ Copilot Edits only | ⚠️ Assistant panel only |
-| **Granular Diff Consent Cards** | ✅ **Per-chunk accept / reject** | ❌ All-or-nothing apply | ❌ All-or-nothing apply | ❌ Line-by-line diff only |
-| **Per-Message Time-Travel Snapshots** | ✅ **One-click instant restore** | ❌ Manual git undo | ❌ Manual git undo | ❌ None |
-| **Telemetry & Privacy** | 🛡️ **100% Zero Telemetry** | ⚠️ Cloud proxy logging | ⚠️ Extensive telemetry | ⚠️ Crash & usage telemetry |
-| **Native Multi-Language Debugger (DAP)** | ✅ **Built-in (Python, Node, C++, Rust)** | ✅ Built-in | ✅ Built-in | ⚠️ In active development |
-| **Agent Client Protocol (ACP) Support** | ✅ **First-class native driver** | ❌ Proprietary protocol | ❌ Proprietary protocol | ❌ Custom protocol |
-| **Terminal Integration** | ✅ **Native node-pty / Windows ConPTY** | ✅ Built-in | ✅ Built-in | ✅ High performance |
+| Capability | Alexel Studio |
+|---|---|
+| **Pricing & license** | Free & open source (MIT) |
+| **Your own accounts** | Sign in with your own Claude, OpenAI or Google account — no markup |
+| **AI agents** | Claude Code, Codex, Gemini, Antigravity, any ACP agent |
+| **Change review** | Per-chunk accept / reject before anything touches disk |
+| **Checkpoints** | One-click restore to the state before any message |
+| **Built-in tools** | Database client, HTTP client, Docker, `.env` manager, notebooks, browser tab, Remote SSH |
+| **Debugger** | Built-in DAP debugging (Python, Node, C/C++, Rust, Go) |
+| **Terminal** | Native node-pty / Windows ConPTY |
+| **Telemetry** | None |
 
 ---
 
@@ -93,7 +93,7 @@ Alexel Studio comes out of the box with dedicated, native drivers for the indust
 | **Antigravity** | Google | Google Account | `agy` CLI Stream-JSON mode | Edit automatically, Plan, Strict |
 | **Any ACP Agent** | Community | Provider specific | Agent Client Protocol (stdio) | Customizable via Settings |
 
-> 💡 **Context Mentions**: Type `@problems`, `@terminal`, `@git-diff`, or `@open-editors` in any conversation prompt to automatically feed exact IDE diagnostic state directly to the agent.
+> 💡 **Context Mentions**: Type `@problems`, `@terminal`, `@git-diff`, `@open-editors`, or `@db` (database schema) in any conversation prompt to automatically feed exact IDE diagnostic state directly to the agent.
 
 ---
 
@@ -138,10 +138,10 @@ Open **Settings → Check now** (or the notification that appears when a new ver
   <img src="docs/screenshots/ext.jpg" alt="Extension Marketplace" width="90%" style="border-radius: 10px; border: 1px solid #334155;" />
 </div>
 
-Install agents and VS Code extensions with zero friction:
+Install agents and Open VSX extensions with zero friction:
 * Official agents are verified against SHA-256 integrity checksums before extraction.
 * Browse the whole **Open VSX Registry** (20,000+ extensions): search without picking a category, sort by downloads/rating/newest, page through results, and read each extension's README, changelog and versions.
-* Every result shows up front, before downloading, what it can do: **Full** (themes, icon themes, snippets, grammars, language configuration), or **Runs code (experimental)**. Extensions that contain code run in a separate **extension host** with a growing subset of the VS Code API *after you trust them* (completion, hover, definitions, formatting, diagnostics, decorations, commands & keybindings, status bar items, quick pick, settings, tree views, webviews, language-client based extensions). Verified with the real Prettier, ESLint, Red Hat YAML, Prisma, Error Lens, Todo Tree, REST Client, Code Spell Checker and others; it is **not** a full VS Code, so some extensions will only partly work.
+* Every result shows up front, before downloading, what it can do: **Full** (themes, icon themes, snippets, grammars, language configuration), or **Runs code (experimental)**. Extensions that contain code run in a separate **extension host** with a growing subset of the extension API *after you trust them* (completion, hover, definitions, formatting, diagnostics, decorations, commands & keybindings, status bar items, quick pick, settings, tree views, webviews, language-client based extensions). Verified with the real Prettier, ESLint, Red Hat YAML, Prisma, Error Lens, Todo Tree, REST Client, Code Spell Checker and others; the API is **not** complete yet, so some extensions will only partly work.
 * Extension details page (Details / Features / Changelog), extension settings UI, recommendations for your project, update checks, enable/disable, trust control.
 * Manage installed extensions: enable/disable, update (single or all), install a specific version. Installs are atomic.
 * **One-click language servers** for YAML, Prisma and Dockerfile (pinned + SHA-256 verified, confirmed before they run).
@@ -154,7 +154,7 @@ Install agents and VS Code extensions with zero friction:
   <img src="docs/screenshots/light.jpg" alt="Light Polar Theme" width="90%" style="border-radius: 10px; border: 1px solid #334155;" />
 </div>
 
-* **8 Distinct Designs**: the VS Code-like Studio (dark & light), three modern designs (Aurora, Zen, Control Room) and three polar Antarctic ones (Antartika, Tuxedo, Kawanan). Every design is checked for WCAG AA contrast.
+* **8 Distinct Designs**: the classic Studio layout (dark & light), three modern designs (Aurora, Zen, Control Room) and three polar Antarctic ones (Antartika, Tuxedo, Kawanan). Every design is checked for WCAG AA contrast.
 * **Interactive Mascot (Nozi 🐧)**: The original penguin companion reacts dynamically to your environment: celebrates successful git commits, thinks during agent reasoning turns, and raises alerts when errors occur.
 
 ---
@@ -176,11 +176,19 @@ Install agents and VS Code extensions with zero friction:
 ### 8. Everyday Editor, Git & Workspace Tools
 * **Git**: stash, fetch, merge / rebase / cherry-pick / revert with a conflict banner, branch & tag management, stage or revert a single change from the gutter, current-line blame, a commit graph and a commit view.
 * **Editor**: indent guides, bracket pair colors, Emmet, color picker, sticky scroll, pinned tabs, split terminal, PDF preview and a hex viewer.
-* **Extensions**: CodeLens, inlay hints, ghost-text suggestions, a Tests view and extension tasks; the official Claude Code and Codex extensions get their own panel tabs like in VS Code.
+* **Extensions**: CodeLens, inlay hints, ghost-text suggestions, a Tests view and extension tasks; the official Claude Code and Codex extensions get their own panel tabs.
 * **Workspaces & profiles**: multi-root `.code-workspace` files, settings profiles you can export/import, and Workspace Trust (restricted mode for untrusted folders).
 * **Accessibility**: labelled controls and high-contrast (forced colors) support.
 
-**Not there yet** (honest list): Remote SSH/WSL/Containers, Live Share, Jupyter notebooks, cloud settings sync, code signing (macOS/Windows builds are unsigned), UI languages besides English and Indonesian, and the full VS Code extension API, so some extensions only partly work.
+### 9. Built-in Database, API, Docker, Notebook, Browser & Remote SSH
+* **Database**: PostgreSQL, MySQL/MariaDB, SQLite, MongoDB and Redis with table editing, `.sql` files (Mod+Enter), schema autocomplete, ER diagrams, AI "ask your data", and safety checks for risky queries. Passwords are encrypted with your OS keychain.
+* **HTTP client**: `.http`/`.rest` files, environments, encrypted secrets, cURL import/export, and a request builder.
+* **Docker & .env**: containers and compose from a panel; `.env` files as a table with git-ignore warnings.
+* **Notebooks**: Jupyter `.ipynb` with a real local kernel.
+* **Browser tab**: an isolated browser for your dev server with device presets and DevTools.
+* **Remote SSH (lite)**: browse/edit server files and open terminals through your own `ssh` setup.
+
+**Not there yet** (honest list): full remote development (language servers on the server), WSL/development containers, real-time collaboration, cloud settings sync, code signing (macOS/Windows builds are unsigned), UI languages besides English and Indonesian, and the full extension API, so some extensions only partly work.
 
 ---
 

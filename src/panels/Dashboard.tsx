@@ -135,7 +135,7 @@ export function Welcome() {
                 <Puzzle size={22} aria-hidden />
                 <span>
                   <strong>{tl("Tema & ikon dari Open VSX")}</strong>
-                  <span className="hint">{tl("Pasang tema warna, tema ikon, snippet, dan bahasa yang biasa kamu pakai di VS Code.")}</span>
+                  <span className="hint">{tl("Pasang tema warna, tema ikon, snippet, dan dukungan bahasa favoritmu dari Open VSX.")}</span>
                 </span>
               </button>
             </div>

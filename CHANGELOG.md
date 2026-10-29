@@ -1,8 +1,47 @@
 # Changelog
 
+## 0.9.0
+
+The tools you usually open next to your editor are now built in. This release also contains
+everything listed under 0.8.0, which was not published separately.
+
+- **Database client**: PostgreSQL, MySQL/MariaDB, SQLite, MongoDB and Redis. A Database panel
+  (connection → schema → table → columns), one-click connections found in `.env`, Prisma,
+  docker-compose and SQLite files, table tabs with paging, sorting, per-column filters, cell editing
+  and add/delete row (primary-key based, confirmed), CSV/JSON export, a query console and `.sql`
+  files that run the statement under the cursor with Mod+Enter, schema autocomplete, cancel, history,
+  and an ER diagram (save as SVG). Risky statements (DROP, TRUNCATE, ALTER, DELETE/UPDATE without
+  WHERE) need confirmation; read-only connections are enforced by the server; production
+  connections are marked. Passwords are encrypted with the OS keychain.
+- **AI for databases**: "Ask your data" turns a question into a query (shown, never run
+  automatically), plus Explain and Optimize; `@db` gives an agent the schema of connected databases
+  (no data, no passwords).
+- **HTTP/API client**: `.http`/`.rest` files with "Send request" above each request, environments
+  (`http-client.env.json`, `.private`, `rest-client.environmentVariables` in `.vscode/settings.json`), chained requests
+  (`{{login.response.body.$.token}}`), dynamic variables, `{{$secret NAME}}` and `{{$dotenv NAME}}`
+  resolved in the main process only; a request builder (params, headers, Bearer/Basic auth, JSON/form
+  body), cURL import/export, response viewer (pretty JSON, tree, headers, HTML preview, images),
+  history; AI can write `.http` requests from your route code.
+- **Docker panel**: containers grouped by compose project, start/stop/restart/pause/remove, logs and
+  shell in the terminal, CPU/memory stats, images, compose up/down/logs; database containers connect to
+  the Database panel with the credentials from their environment.
+- **.env manager**: edit `.env*` files as a table (comments and order kept, secret values masked),
+  missing keys compared with `.env.example`, a warning with a one-click fix when `.env` is not
+  git-ignored, and "Create .env.example" without values.
+- **Browser tab**: a real browser (separate `persist:browser` session, sandboxed, no Node) with an
+  address bar, device presets (iPhone, Pixel, iPad), DevTools, page screenshots; ports from the Ports
+  and Docker panels open in it; page errors go to Output; `alert`/`confirm` use native dialogs.
+- **Jupyter notebooks**: `.ipynb` opens as a notebook (code & markdown cells, outputs, images, HTML
+  tables, errors) and runs cells on a local Jupyter Server found in the project's `.venv`/`venv` or
+  PATH; saved in Jupyter's own format.
+- **Remote SSH (lite)**: browse and edit files on a server through your system `ssh`
+  (`~/.ssh/config`, agent, keys, known_hosts), saving uploads the file atomically, SSH terminals per
+  host or folder. Language servers and extensions still run locally.
+- New website with the interactive Nozi.
+
 ## 0.8.0
 
-Closing the everyday gaps with VS Code:
+Closing everyday gaps for a full-featured IDE:
 
 - **Git**: stash (list/push/apply/pop/drop), fetch, merge, rebase, cherry-pick and revert with a
   conflict banner (Continue / Abort), branch rename/delete, tags, stage or revert a single change from
@@ -14,7 +53,7 @@ Closing the everyday gaps with VS Code:
 - **Extensions**: CodeLens, inlay hints, document highlights, links (Cmd/Ctrl+click), folding ranges,
   color providers and inline completions (ghost text) are now shown in the editor; a **Tests** view
   for `vscode.tests` controllers; extension tasks (`vscode.tasks`) in Smart Run; ripgrep is bundled.
-- **Official Claude Code & Codex extensions** look like in VS Code: each gets its own tab in the right
+- **Official Claude Code & Codex extensions** look as their authors intended: each gets its own tab in the right
   panel (with its icon), activity-bar views (e.g. Claude Code sessions) get a rail icon, webviews get
   the full `--vscode-*` theme (700+ colors), and the reported API version is 1.106 so both use their
   secondary-sidebar layout.
@@ -26,11 +65,11 @@ Closing the everyday gaps with VS Code:
   you trust them; code extensions don't run there.
 - **Accessibility**: labelled inputs, high-contrast (forced colors) support, and a static check that
   every icon button, input and image has an accessible name.
-- **More AI extensions behave like in VS Code**: Cline, Roo Code, Continue and Kilo Code get their own
+- **More AI extensions work as intended**: Cline, Roo Code, Continue and Kilo Code get their own
   activity-bar panels with icons; extension titles are translated from `package.nls.json`; webviews get
-  VS Code's default styles, every `--vscode-*` color they use, and light/dark color schemes;
+  the default webview styles, every `--vscode-*` color they use, and light/dark color schemes;
   `context.extension` is a full Extension object; the default Dark/Light Modern themes are available to
-  extensions; node-pty is provided like in VS Code.
+  extensions; node-pty is provided to extensions.
 - **Extension images**: catalog icons (served from openvsx.eclipsecontent.org) and README images show up.
 - New download page design.
 - Fixes: `.txt` files are `plaintext` for extensions; an old extension host exiting late no longer
@@ -38,10 +77,10 @@ Closing the everyday gaps with VS Code:
 
 ## 0.7.0
 
-Extensions that look and behave like VS Code's:
+Extensions that look and behave as intended:
 
 - **The official Claude Code and Codex extensions run in Alexel Studio** with their own UI (chat
-  panel in an editor tab or the right-hand "Extension views" panel), like in VS Code. Cline,
+  panel in an editor tab or the right-hand "Extension views" panel). Cline,
   Continue and Roo Code activate too. Installing picks the package built for your OS/architecture
   (they ship their own CLI binary, 100+ MB), extracted in a child process so the app stays responsive.
   Webviews run in sandboxed, per-extension origins. Experimental: not every extension feature works,
@@ -61,7 +100,7 @@ Extensions that look and behave like VS Code's:
 
 Editor integration for agents:
 
-- **Claude Code in the Alexel Studio terminal** now connects to the editor like in VS Code: it sees your
+- **Claude Code in the Alexel Studio terminal** now connects to the editor: it sees your
   selection, open files and problems, can open files, and shows diffs for you to accept or reject.
   Localhost-only MCP server with a random token + `~/.claude/ide` lockfile (`electron/ide.ts`); `claude`
   in any Alexel terminal auto-connects; **Cmd/Ctrl+Alt+K** sends the file/selection as an @-mention.
@@ -235,7 +274,7 @@ First open source release under the name **Alexel Studio** (previously Nozel Cod
   history, @-mentions, images and streaming replies.
 - Agents install from the Extensions view (official packages, checksums verified).
 - Debugger (Debug Adapter Protocol) for JavaScript/TypeScript, Python, C/C++/Rust and Go.
-- VS Code-style layout (Studio Dark and Studio Light), full menus on every platform, command
+- Classic IDE layout (Studio Dark and Studio Light), full menus on every platform, command
   palette, Outline, Output, editable shortcuts and `settings.json`.
 - Shortcuts shown for your platform (⌘ on macOS, Ctrl on Windows and Linux).
 - Builds for macOS (Apple Silicon, Intel), Windows (x64, ARM64) and Linux (AppImage, deb, rpm).

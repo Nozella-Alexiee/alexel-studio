@@ -23,7 +23,7 @@ export const DESIGNS: DesignInfo[] = [
   {
     id: "studio",
     name: "Studio Gelap",
-    tagline: tl("Tata letak seperti VS Code: activity bar, sidebar, panel bawah, dan agen AI di sidebar kanan."),
+    tagline: tl("Tata letak IDE klasik: activity bar, sidebar, panel bawah, dan agen AI di sidebar kanan."),
     scheme: "dark",
     shell: "studio",
     group: "Klasik",
@@ -32,7 +32,7 @@ export const DESIGNS: DesignInfo[] = [
   {
     id: "studio-light",
     name: "Studio Terang",
-    tagline: tl("Tata letak seperti VS Code dengan warna terang yang bersih."),
+    tagline: tl("Tata letak IDE klasik dengan warna terang yang bersih."),
     scheme: "light",
     shell: "studio",
     group: "Klasik",

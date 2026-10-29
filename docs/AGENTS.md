@@ -49,7 +49,7 @@ Codex is not published for Windows on Open VSX; on Windows install it with
 | Agent | Protocol | Driver |
 |---|---|---|
 | Claude Code | `claude -p --input-format stream-json --output-format stream-json`, permission prompts answered by the host | `electron/claude.ts` |
-| Codex | `codex app-server` (JSON-RPC per line), the protocol of the Codex VS Code extension | `electron/agents/codex.ts` |
+| Codex | `codex app-server` (JSON-RPC per line), the protocol used by Codex's editor integrations | `electron/agents/codex.ts` |
 | Gemini, ACP | [Agent Client Protocol](https://agentclientprotocol.com) over stdio | `electron/agents/acp.ts` |
 | Antigravity | `agy --print= --input-format stream-json --output-format stream-json` | `electron/agents/antigravity.ts` |
 

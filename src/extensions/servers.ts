@@ -9,7 +9,7 @@ import { tl } from "../i18n";
 export async function installServer(s: Pick<ServerStatus, "id" | "name" | "version">): Promise<boolean> {
   const ok = await confirmDialog(
     tl("Pasang server bahasa {name}?", { name: s.name }),
-    tl("Alexel Studio mengunduh paketnya dari Open VSX (versi {v}, checksum SHA-256 dicocokkan dengan yang sudah ditinjau), lalu menjalankan server itu sebagai proses di komputermu saat kamu membuka berkas bahasa ini. Hanya berkas server yang diambil; kode ekstensi VS Code-nya tidak dijalankan.", { v: s.version ?? "?" }),
+    tl("Alexel Studio mengunduh paketnya dari Open VSX (versi {v}, checksum SHA-256 dicocokkan dengan yang sudah ditinjau), lalu menjalankan server itu sebagai proses di komputermu saat kamu membuka berkas bahasa ini. Hanya berkas server yang diambil; kode ekstensinya sendiri tidak dijalankan.", { v: s.version ?? "?" }),
     tl("Pasang & izinkan")
   );
   if (!ok) return false;

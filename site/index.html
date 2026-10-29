@@ -278,7 +278,7 @@ footer small{display:block;color:var(--mute);margin-top:18px;max-width:60em}
     <div class="links">
       <a href="#tools" data-en="Tools" data-id="Fitur">Tools</a>
       <a href="#designs" data-en="Designs" data-id="Desain">Designs</a>
-      <a href="#honest">vs VS Code</a>
+      <a href="#status" data-en="Status" data-id="Status">Status</a>
       <a href="#download" data-en="Download" data-id="Unduh">Download</a>
       <a href="#faq">FAQ</a>
     </div>
@@ -297,12 +297,12 @@ footer small{display:block;color:var(--mute);margin-top:18px;max-width:60em}
     <div>
       <span class="sticker"><i></i><span data-en="v0.9 · free &amp; open source" data-id="v0.9 · gratis &amp; open source">v0.9 · free &amp; open source</span></span>
       <h1 id="h1"></h1>
-      <p class="lead" data-en="Your favourite AI agent, a database client, an API client, Docker, notebooks, and a real browser — in one light editor. You stay in charge: every change an agent wants to make waits for your OK." data-id="Agen AI favoritmu, klien database, klien API, Docker, notebook, dan browser sungguhan — dalam satu editor yang ringan. Kamu tetap pegang kendali: setiap perubahan dari agen menunggu persetujuanmu."></p>
+      <p class="lead" data-en="Your AI agent of choice, a database client, an API client, Docker, notebooks, and a browser — in one lightweight editor. You stay in control: every change an agent proposes waits for your approval." data-id="Agen AI pilihan Anda, klien database, klien API, Docker, notebook, dan browser — dalam satu editor yang ringan. Kendali tetap di tangan Anda: setiap perubahan dari agen menunggu persetujuan Anda."></p>
       <div class="cta-row">
         <a class="btn btn-main" id="ctaMain" href="#download"><svg width="18" height="18" aria-hidden="true"><use href="#i-down"/></svg><span id="ctaLabel">Download</span></a>
-        <a class="btn" href="#tools" data-en="See what's inside" data-id="Lihat isinya">See what's inside</a>
+        <a class="btn" href="#tools" data-en="Explore features" data-id="Lihat fitur">Explore features</a>
       </div>
-      <p class="cta-note" data-en="macOS · Windows · Linux. No account. Nothing is sent anywhere unless you ask an agent." data-id="macOS · Windows · Linux. Tanpa akun. Tidak ada yang dikirim ke mana pun kecuali kamu meminta agen."></p>
+      <p class="cta-note" data-en="Available for macOS, Windows, and Linux. No account required, and no data leaves your machine unless you ask an AI agent." data-id="Tersedia untuk macOS, Windows, dan Linux. Tanpa akun, dan tidak ada data yang dikirim kecuali Anda meminta agen AI."></p>
     </div>
 
     <div class="stage">
@@ -338,7 +338,7 @@ footer small{display:block;color:var(--mute);margin-top:18px;max-width:60em}
           <span class="msg" id="diffMsg"></span>
           <button class="btn btn-sm" id="btnReject" type="button" data-en="Reject" data-id="Tolak">Reject</button>
           <button class="btn btn-sm allow" id="btnAllow" type="button" data-en="Allow" data-id="Izinkan">Allow</button>
-          <button class="btn btn-sm" id="btnNext" type="button" hidden data-en="Another one" data-id="Coba lagi">Another one</button>
+          <button class="btn btn-sm" id="btnNext" type="button" hidden data-en="Next example" data-id="Contoh berikutnya">Next example</button>
         </div>
       </div>
     </div>
@@ -349,8 +349,8 @@ footer small{display:block;color:var(--mute);margin-top:18px;max-width:60em}
   <svg class="wave top" viewBox="0 0 1200 34" preserveAspectRatio="none" aria-hidden="true"><path d="M0 0h1200v12c-60 14-120 14-180 4s-120-10-180 0-120 12-180 2-120-12-180-2-120 12-180 4S60 8 0 18Z" fill="currentColor"/></svg>
   <div class="wrap">
     <span class="kicker" data-en="One window" data-id="Satu jendela"></span>
-    <h2 data-en="Stop alt-tabbing between six apps." data-id="Berhenti bolak-balik enam aplikasi."></h2>
-    <p class="sub" data-en="The tools you usually open next to your editor are built in. Click around — these little demos behave like the real thing." data-id="Alat yang biasanya kamu buka di samping editor sudah bawaan. Coba klik — demo kecil ini berperilaku seperti aslinya."></p>
+    <h2 data-en="Six tools, one window." data-id="Enam alat, satu jendela."></h2>
+    <p class="sub" data-en="The tools you usually open in separate apps are built right into the editor. Try them — each demo works the way it does in the app." data-id="Alat yang biasanya dibuka di aplikasi terpisah kini tersedia langsung di editor. Silakan coba — setiap demo bekerja seperti di aplikasinya."></p>
     <div class="tools">
       <div class="tool-list" role="tablist" aria-label="Tools" id="toolList"></div>
       <div class="card demo">
@@ -372,7 +372,7 @@ Content-Type: application/json
 <span class="c">###</span>
 <span class="k">GET</span> {{host}}/users
 Authorization: Bearer {{login.response.body.$.token}}</pre>
-            <div class="demo-actions"><button class="btn btn-sm btn-main" id="apiSend" type="button" data-en="▶ Send both" data-id="▶ Kirim keduanya"></button><span class="pill dim">env: dev</span></div>
+            <div class="demo-actions"><button class="btn btn-sm btn-main" id="apiSend" type="button" data-en="▶ Send both requests" data-id="▶ Kirim kedua request"></button><span class="pill dim">env: dev</span></div>
             <pre class="code" id="apiRes"></pre>
           </div>
           <div class="demo-panel" data-panel="docker" id="dockerPanel"></div>
@@ -400,9 +400,9 @@ plt.<span class="f">bar</span>(sales.keys(), sales.values())</pre>
 
 <section id="real">
   <div class="wrap">
-    <span class="kicker" data-en="Not a mockup" data-id="Bukan mockup"></span>
-    <h2 data-en="This is the actual app." data-id="Ini aplikasinya beneran."></h2>
-    <p class="sub" data-en="Screenshots straight from Alexel Studio 0.9, connected to a real PostgreSQL, a real HTTP server, and a real Python kernel." data-id="Screenshot langsung dari Alexel Studio 0.9, tersambung ke PostgreSQL, server HTTP, dan kernel Python sungguhan."></p>
+    <span class="kicker" data-en="Real screenshots" data-id="Tangkapan layar asli"></span>
+    <h2 data-en="Straight from the app." data-id="Langsung dari aplikasinya."></h2>
+    <p class="sub" data-en="Captured from Alexel Studio 0.9 connected to a real PostgreSQL database, HTTP server, and Python kernel." data-id="Diambil dari Alexel Studio 0.9 yang terhubung ke database PostgreSQL, server HTTP, dan kernel Python sungguhan."></p>
     <div class="chips" id="shotTabs" role="group" aria-label="Screenshots"></div>
     <div class="card shot-frame"><img id="shotImg" src="img/db.jpg" alt="" width="1600" height="1000" loading="lazy"><div class="shot-cap"><b id="shotTitle"></b><span id="shotDesc"></span></div></div>
   </div>
@@ -411,20 +411,20 @@ plt.<span class="f">bar</span>(sales.keys(), sales.values())</pre>
 <section id="designs" style="padding-top:20px">
   <div class="wrap">
     <span class="kicker" data-en="Eight designs" data-id="Delapan desain"></span>
-    <h2 data-en="Not just a theme. A different editor." data-id="Bukan cuma tema. Editor yang berbeda."></h2>
-    <p class="sub" data-en="Each design changes the layout, not only the colours. Pick one and this page borrows its accent." data-id="Setiap desain mengubah tata letak, bukan hanya warna. Pilih satu, halaman ini ikut meminjam warnanya."></p>
+    <h2 data-en="More than a theme." data-id="Lebih dari sekadar tema."></h2>
+    <p class="sub" data-en="Each design changes the layout, not just the colours. Choose one to preview it." data-id="Setiap desain mengubah tata letak, bukan hanya warna. Pilih salah satu untuk melihat pratinjaunya."></p>
     <div class="chips" id="designTabs" role="group" aria-label="Designs"></div>
     <div class="card shot-frame"><img id="designImg" src="img/designs/antartika.jpg" alt="" width="1600" height="1000" loading="lazy"><div class="shot-cap"><b id="designName"></b><span id="designDesc"></span></div></div>
   </div>
 </section>
 
-<section id="honest">
+<section id="status">
   <div class="wrap">
-    <span class="kicker" data-en="Honest comparison" data-id="Perbandingan jujur"></span>
-    <h2 data-en="Where we're ahead, and where VS Code still wins." data-id="Di mana kami unggul, dan di mana VS Code masih menang."></h2>
+    <span class="kicker" data-en="Feature status" data-id="Status fitur"></span>
+    <h2 data-en="What's ready today, and what we're still building." data-id="Yang sudah tersedia, dan yang sedang kami kerjakan."></h2>
     <div class="honest">
-      <div class="card"><h3><svg width="22" height="22" style="color:var(--ok)" aria-hidden="true"><use href="#i-check"/></svg><span data-en="Built in here, extensions there" data-id="Bawaan di sini, ekstensi di sana"></span></h3><ul id="aheadList"></ul></div>
-      <div class="card meh"><h3><svg width="22" height="22" style="color:var(--beak2)" aria-hidden="true"><use href="#i-dot"/></svg><span data-en="VS Code is still better at" data-id="VS Code masih lebih baik di"></span></h3><ul id="behindList"></ul></div>
+      <div class="card"><h3><svg width="22" height="22" style="color:var(--ok)" aria-hidden="true"><use href="#i-check"/></svg><span data-en="Available now" data-id="Sudah tersedia"></span></h3><ul id="aheadList"></ul></div>
+      <div class="card meh"><h3><svg width="22" height="22" style="color:var(--beak2)" aria-hidden="true"><use href="#i-dot"/></svg><span data-en="In progress" data-id="Sedang dikerjakan"></span></h3><ul id="behindList"></ul></div>
     </div>
   </div>
 </section>
@@ -432,10 +432,10 @@ plt.<span class="f">bar</span>(sales.keys(), sales.values())</pre>
 <section id="download">
   <div class="wrap">
     <span class="kicker" data-en="Download" data-id="Unduh"></span>
-    <h2 data-en="Grab it. It's free." data-id="Ambil. Gratis."></h2>
+    <h2 data-en="Download for free." data-id="Unduh gratis."></h2>
     <p class="sub" id="dlSub"></p>
     <div class="dl">
-      <div class="card os" data-os="mac"><svg class="peek" aria-hidden="true"><use href="#nozi-mini"/></svg><span class="mine-tag" data-en="Yours" data-id="Punyamu"></span>
+      <div class="card os" data-os="mac"><svg class="peek" aria-hidden="true"><use href="#nozi-mini"/></svg><span class="mine-tag" data-en="Your system" data-id="Sistem Anda"></span>
         <h3>macOS</h3><p data-en="macOS 12 or newer" data-id="macOS 12 atau lebih baru"></p>
         <div class="files"><a class="file" data-file="Alexel-Studio-mac-arm64.dmg"><svg width="16" height="16" aria-hidden="true"><use href="#i-down"/></svg>Apple Silicon<span class="x">.dmg</span></a><a class="file" data-file="Alexel-Studio-mac-x64.dmg"><svg width="16" height="16" aria-hidden="true"><use href="#i-down"/></svg>Intel<span class="x">.dmg</span></a></div>
       </div>
@@ -445,24 +445,24 @@ plt.<span class="f">bar</span>(sales.keys(), sales.values())</pre>
       </div>
       <div class="card os" data-os="linux"><svg class="peek" aria-hidden="true"><use href="#nozi-mini"/></svg><span class="mine-tag" data-en="Yours" data-id="Punyamu"></span>
         <h3>Linux</h3><p data-en="x64 · deb or AppImage" data-id="x64 · deb atau AppImage"></p>
-        <div class="files"><a class="file" data-file="Alexel-Studio-linux-amd64.deb"><svg width="16" height="16" aria-hidden="true"><use href="#i-down"/></svg>Debian, Ubuntu<span class="x">.deb</span></a><a class="file" data-file="Alexel-Studio-linux-x86_64.AppImage"><svg width="16" height="16" aria-hidden="true"><use href="#i-down"/></svg><span data-en="Any distro" data-id="Distro apa saja"></span><span class="x">.AppImage</span></a></div>
+        <div class="files"><a class="file" data-file="Alexel-Studio-linux-amd64.deb"><svg width="16" height="16" aria-hidden="true"><use href="#i-down"/></svg>Debian, Ubuntu<span class="x">.deb</span></a><a class="file" data-file="Alexel-Studio-linux-x86_64.AppImage"><svg width="16" height="16" aria-hidden="true"><use href="#i-down"/></svg><span data-en="Any distribution" data-id="Semua distribusi"></span><span class="x">.AppImage</span></a></div>
         <div class="copy"><code>sudo apt install ./Alexel-Studio-linux-amd64.deb</code><button type="button" id="copyDeb" data-en="Copy" data-id="Salin"></button></div>
       </div>
     </div>
-    <p class="dl-note"><span data-en="Installed apps update themselves from inside Alexel Studio. Every release lists SHA-256 checksums." data-id="Aplikasi yang terpasang memperbarui diri dari dalam Alexel Studio. Setiap rilis mencantumkan checksum SHA-256."></span> <a href="https://github.com/Nozella-Alexiee/alexel-studio/releases" data-en="All releases →" data-id="Semua rilis →"></a></p>
+    <p class="dl-note"><span data-en="Updates install from inside the app. Every release includes SHA-256 checksums." data-id="Pembaruan dapat dipasang langsung dari dalam aplikasi. Setiap rilis disertai checksum SHA-256."></span> <a href="https://github.com/Nozella-Alexiee/alexel-studio/releases" data-en="All releases →" data-id="Semua rilis →"></a></p>
   </div>
 </section>
 
 <section id="faq" style="padding-top:20px">
   <div class="wrap">
     <span class="kicker">FAQ</span>
-    <h2 data-en="Questions Nozi gets a lot." data-id="Pertanyaan yang sering Nozi terima."></h2>
+    <h2 data-en="Frequently asked questions" data-id="Pertanyaan yang sering diajukan"></h2>
     <div class="faq" id="faqList"></div>
   </div>
 </section>
 
 <section style="padding-top:0">
-  <div class="wrap"><div class="card big-cta"><h2 data-en="Ready when you are." data-id="Siap kapan pun kamu siap."></h2><a class="btn" href="#download"><svg width="18" height="18" aria-hidden="true"><use href="#i-down"/></svg><span data-en="Download Alexel Studio" data-id="Unduh Alexel Studio"></span></a></div></div>
+  <div class="wrap"><div class="card big-cta"><h2 data-en="Start building today." data-id="Mulai sekarang, gratis."></h2><a class="btn" href="#download"><svg width="18" height="18" aria-hidden="true"><use href="#i-down"/></svg><span data-en="Download Alexel Studio" data-id="Unduh Alexel Studio"></span></a></div></div>
 </section>
 </main>
 
@@ -476,7 +476,7 @@ plt.<span class="f">bar</span>(sales.keys(), sales.values())</pre>
         <a href="https://github.com/Nozella-Alexiee/alexel-studio/blob/main/SECURITY.md" data-en="Security" data-id="Keamanan"></a>
       </div>
     </div>
-    <small data-en="Made in Indonesia. Agent names belong to their owners; Alexel Studio is an independent project that runs their official tools." data-id="Dibuat di Indonesia. Nama agen milik pemiliknya masing-masing; Alexel Studio adalah proyek independen yang menjalankan alat resminya."></small>
+    <small data-en="Made in Indonesia. All product names and trademarks belong to their respective owners. Alexel Studio is an independent project and is not affiliated with or endorsed by them." data-id="Dibuat di Indonesia. Seluruh nama produk dan merek dagang adalah milik pemiliknya masing-masing. Alexel Studio adalah proyek independen dan tidak berafiliasi dengan atau didukung oleh mereka."></small>
   </div>
 </footer>
 
@@ -499,9 +499,9 @@ plt.<span class="f">bar</span>(sales.keys(), sales.values())</pre>
   function applyLang() {
     document.documentElement.lang = lang;
     for (const el of $$("[data-en]")) el.textContent = el.dataset[lang] ?? el.dataset.en;
-    $("#h1").innerHTML = T(`The code editor that works <span class="squig">with${SQUIG}</span> you.`, `Editor kode yang ngoding <span class="squig">bareng${SQUIG}</span> kamu.`);
+    $("#h1").innerHTML = T(`The code editor that works <span class="squig">with${SQUIG}</span> you.`, `Editor kode yang bekerja <span class="squig">bersama${SQUIG}</span> Anda.`);
     for (const b of $$(".lang button")) b.setAttribute("aria-pressed", String(b.dataset.lang === lang));
-    $("#noziWrap").setAttribute("aria-label", T("Nozi the penguin — press to say hi", "Nozi si pinguin — tekan untuk menyapa"));
+    $("#noziWrap").setAttribute("aria-label", T("Nozi, the Alexel mascot — press to say hello", "Nozi, maskot Alexel — tekan untuk menyapa"));
     rerender.forEach((f) => f());
   }
   $$(".lang button").forEach((b) => b.addEventListener("click", () => { lang = b.dataset.lang; try { localStorage.setItem("alexel.lang", lang); } catch {} applyLang(); }));
@@ -548,17 +548,17 @@ plt.<span class="f">bar</span>(sales.keys(), sales.values())</pre>
   }, { passive: true });
   if (!reduce) (function blink() { setTimeout(() => { nozi.classList.add("blink"); setTimeout(() => nozi.classList.remove("blink"), 130); blink(); }, 2400 + Math.random() * 3000); })();
   const LINES = [
-    ["I review diffs so you don't merge chaos.", "Aku bantu cek diff biar kamu nggak merge kekacauan."],
-    ["Cold outside, warm cache inside.", "Di luar dingin, di dalam cache-nya hangat."],
-    ["Psst — the demos below are clickable.", "Psst — demo di bawah bisa diklik."],
-    ["Your passwords stay encrypted. Promise.", "Password-mu tetap terenkripsi. Janji."],
-    ["I don't quack. I compile.", "Aku nggak kwek-kwek. Aku compile."],
+    ["Every change is reviewed before it touches your files.", "Setiap perubahan ditinjau sebelum menyentuh berkas Anda."],
+    ["Try the interactive demos below.", "Silakan coba demo interaktif di bawah."],
+    ["Database passwords are stored encrypted.", "Password database disimpan dalam keadaan terenkripsi."],
+    ["Pick an AI agent above to change my beanie.", "Pilih agen AI di atas untuk mengganti kupluk saya."],
+    ["Checkpoints let you undo any agent change.", "Checkpoint memungkinkan setiap perubahan agen dibatalkan."],
   ];
   let li = 0;
   const poke = () => { jump(); setMood("happy", 1200); say(...LINES[li++ % LINES.length]); };
   wrap.addEventListener("click", poke);
   wrap.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); poke(); } });
-  setTimeout(() => { nozi.classList.add("wave"); say("Hi, I'm Nozi! Pick an agent, then review its change.", "Halo, aku Nozi! Pilih agen, lalu tinjau perubahannya.", 5200); }, 700);
+  setTimeout(() => { nozi.classList.add("wave"); say("Hello, I'm Nozi. Pick an AI agent, then review the change it proposes.", "Halo, saya Nozi. Pilih agen AI, lalu tinjau perubahan yang diusulkan.", 5200); }, 700);
 
   /* agen & diff */
   const AGENTS = [["Claude Code", "#d97757"], ["Codex", "#10a37f"], ["Gemini CLI", "#4f8cf7"], ["Cline", "#6cc4ff"], ["Roo Code", "#b07cf5"], ["Continue", "#f0b020"]];
@@ -569,30 +569,30 @@ plt.<span class="f">bar</span>(sales.keys(), sales.values())</pre>
     b.addEventListener("click", () => {
       agent = i; $$("button", agentsEl).forEach((x, j) => x.setAttribute("aria-pressed", String(j === i)));
       hat.setAttribute("fill", color); diff.style.setProperty("--hat", color); jump(); renderDiff();
-      say(`New beanie! ${name} it is.`, `Kupluk baru! Pakai ${name}.`, 2200);
+      say(`Now using ${name}.`, `Sekarang menggunakan ${name}.`, 2200);
     });
     agentsEl.append(b);
   });
   const SCEN = [
-    { file: "src/cart.js", en: "Fix: discount was applied after tax", id: "Perbaikan: diskon dihitung setelah pajak", ok: ["Applied. 14 tests pass.", "Diterapkan. 14 test lulus."],
+    { file: "src/cart.js", en: "Fix: discount was applied after tax", id: "Perbaikan: diskon diterapkan setelah pajak", ok: ["Applied. All 14 tests pass.", "Diterapkan. Seluruh 14 test berhasil."],
       lines: [["c", "export function total(items, { member }) {"], ["c", "  const sub = subtotal(items);"], ["d", "  const tax = Math.round(sub * TAX_RATE);"], ["d", "  return sub + tax - discount(sub, member);"], ["a", "  const taxable = sub - discount(sub, member);"], ["a", "  return taxable + Math.round(taxable * TAX_RATE);"], ["c", "}"]] },
-    { file: "tests/cart.test.js", en: "Add a test for members", id: "Tambah test untuk member", ok: ["Applied. The new test is green.", "Diterapkan. Test baru hijau."],
+    { file: "tests/cart.test.js", en: "Add a test for member discounts", id: "Menambahkan test untuk diskon member", ok: ["Applied. The new test passes.", "Diterapkan. Test baru berhasil."],
       lines: [["c", 'describe("total", () => {'], ["a", '  it("gives members 10% off", () => {'], ["a", "    expect(total([kopi], { member: true }).sub).toBe(25200);"], ["a", "  });"], ["c", "});"]] },
-    { file: "src/menu.js", en: "Rename a helper for clarity", id: "Ganti nama fungsi biar jelas", ok: ["Applied in 2 places.", "Diterapkan di 2 tempat."],
+    { file: "src/menu.js", en: "Rename a helper for clarity", id: "Mengganti nama fungsi agar lebih jelas", ok: ["Applied in 2 places.", "Diterapkan di 2 lokasi."],
       lines: [["d", "export const fp = (n) => format(n);"], ["a", "export const formatPrice = (n) => format(n);"], ["c", ""], ["d", "menu.map((m) => fp(m.price));"], ["a", "menu.map((m) => formatPrice(m.price));"]] },
   ];
   let scen = 0, decided = null;
   function renderDiff() {
     const s = SCEN[scen];
     diff.classList.toggle("applied", decided === "applied"); diff.classList.toggle("rejected", decided === "rejected");
-    $("#diffWho").innerHTML = T(`<b>${AGENTS[agent][0]}</b> wants to edit`, `<b>${AGENTS[agent][0]}</b> mau mengubah`);
+    $("#diffWho").innerHTML = T(`<b>${AGENTS[agent][0]}</b> proposes a change`, `<b>${AGENTS[agent][0]}</b> mengusulkan perubahan`);
     $("#diffFile").textContent = s.file;
     $("#diffCode").innerHTML = s.lines.map(([k, t]) => `<span class="ln ${k === "a" ? "add" : k === "d" ? "del" : "ctx"}">${esc(t) || " "}</span>`).join("");
-    $("#diffMsg").innerHTML = decided === "applied" ? `<svg width="16" height="16" style="color:var(--ok)" aria-hidden="true"><use href="#i-check"/></svg>${T(...s.ok)}` : decided === "rejected" ? T("Rejected. Nothing changed.", "Ditolak. Tidak ada yang berubah.") : T(s.en, s.id);
+    $("#diffMsg").innerHTML = decided === "applied" ? `<svg width="16" height="16" style="color:var(--ok)" aria-hidden="true"><use href="#i-check"/></svg>${T(...s.ok)}` : decided === "rejected" ? T("Rejected. No files were changed.", "Ditolak. Tidak ada berkas yang diubah.") : T(s.en, s.id);
     $("#btnAllow").hidden = $("#btnReject").hidden = !!decided; $("#btnNext").hidden = !decided;
   }
-  $("#btnAllow").addEventListener("click", () => { decided = "applied"; renderDiff(); jump(); setMood("happy", 2400); say("Nice! There's a checkpoint, so you can undo anytime.", "Mantap! Ada checkpoint, jadi bisa dibatalkan kapan saja."); burst(); $("#btnNext").focus(); });
-  $("#btnReject").addEventListener("click", () => { decided = "rejected"; renderDiff(); setMood("sad", 2000); say("Fair. Your code, your call.", "Oke. Kodemu, keputusanmu."); $("#btnNext").focus(); });
+  $("#btnAllow").addEventListener("click", () => { decided = "applied"; renderDiff(); jump(); setMood("happy", 2400); say("Applied. A checkpoint was saved, so you can undo at any time.", "Perubahan diterapkan. Checkpoint tersimpan sehingga dapat dibatalkan kapan saja."); burst(); $("#btnNext").focus(); });
+  $("#btnReject").addEventListener("click", () => { decided = "rejected"; renderDiff(); setMood("sad", 2000); say("Understood. The decision is always yours.", "Baik. Keputusan sepenuhnya ada di tangan Anda."); $("#btnNext").focus(); });
   $("#btnNext").addEventListener("click", () => { decided = null; scen = (scen + 1) % SCEN.length; renderDiff(); $("#btnAllow").focus(); });
   rerender.push(renderDiff);
   function burst() {
@@ -604,12 +604,12 @@ plt.<span class="f">bar</span>(sales.keys(), sales.values())</pre>
 
   /* demo alat */
   const TOOLS = [
-    { id: "db", title: "queries.sql", icon: '<ellipse cx="12" cy="6" rx="8" ry="3"/><path d="M4 6v12c0 1.7 3.6 3 8 3s8-1.3 8-3V6M4 12c0 1.7 3.6 3 8 3s8-1.3 8-3"/>', en: ["Database", "Postgres, MySQL, SQLite, Mongo, Redis — plus “ask your data”."], idn: ["Database", "Postgres, MySQL, SQLite, Mongo, Redis — plus “tanya data”."] },
-    { id: "api", title: "api.http", icon: '<path d="M4 12h14m-5-5 5 5-5 5"/>', en: ["HTTP client", ".http files, environments, secrets, cURL import."], idn: ["Klien HTTP", "Berkas .http, environment, rahasia, impor cURL."] },
-    { id: "docker", title: "Docker", icon: '<path d="M3 13h18l-1 3a7 7 0 0 1-7 5H9a6 6 0 0 1-6-6v-2ZM6 9h3v3H6zm4 0h3v3h-3zm4 0h3v3h-3zm-4-4h3v3h-3z"/>', en: ["Docker & .env", "Containers, compose, logs, and a safe .env editor."], idn: ["Docker & .env", "Container, compose, log, dan editor .env yang aman."] },
-    { id: "nb", title: "analysis.ipynb", icon: '<path d="M5 4h11l3 3v13H5zM9 16v-3m3 3V10m3 6v-5"/>', en: ["Notebooks", "Jupyter .ipynb with a real kernel."], idn: ["Notebook", "Jupyter .ipynb dengan kernel sungguhan."] },
-    { id: "browser", title: "localhost:5173", icon: '<circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c3 3.5 3 14.5 0 18M12 3c-3 3.5-3 14.5 0 18"/>', en: ["Browser tab", "Your dev server, phone sizes, DevTools."], idn: ["Tab browser", "Dev server-mu, ukuran ponsel, DevTools."] },
-    { id: "ssh", title: "ssh deploy@kedai", icon: '<rect x="3" y="4" width="18" height="16" rx="2"/><path d="m7 9 3 3-3 3m5 0h5"/>', en: ["Remote SSH", "Browse & edit server files with your own ssh keys."], idn: ["Remote SSH", "Jelajah & edit berkas server dengan kunci ssh-mu."] },
+    { id: "db", title: "queries.sql", icon: '<ellipse cx="12" cy="6" rx="8" ry="3"/><path d="M4 6v12c0 1.7 3.6 3 8 3s8-1.3 8-3V6M4 12c0 1.7 3.6 3 8 3s8-1.3 8-3"/>', en: ["Database", "PostgreSQL, MySQL, SQLite, MongoDB, and Redis, with Ask Your Data."], idn: ["Database", "PostgreSQL, MySQL, SQLite, MongoDB, dan Redis, termasuk fitur Tanya Data."] },
+    { id: "api", title: "api.http", icon: '<path d="M4 12h14m-5-5 5 5-5 5"/>', en: ["HTTP client", ".http files, environments, secrets, cURL import."], idn: ["Klien HTTP", "Berkas .http, environment, rahasia terenkripsi, dan impor cURL."] },
+    { id: "docker", title: "Docker", icon: '<path d="M3 13h18l-1 3a7 7 0 0 1-7 5H9a6 6 0 0 1-6-6v-2ZM6 9h3v3H6zm4 0h3v3h-3zm4 0h3v3h-3zm-4-4h3v3h-3z"/>', en: ["Docker & .env", "Containers, compose, logs, and a safe .env editor."], idn: ["Docker & .env", "Container, compose, log, serta editor .env yang aman."] },
+    { id: "nb", title: "analysis.ipynb", icon: '<path d="M5 4h11l3 3v13H5zM9 16v-3m3 3V10m3 6v-5"/>', en: ["Notebooks", "Jupyter notebooks with a local kernel."], idn: ["Notebook", "Notebook Jupyter dengan kernel lokal."] },
+    { id: "browser", title: "localhost:5173", icon: '<circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c3 3.5 3 14.5 0 18M12 3c-3 3.5-3 14.5 0 18"/>', en: ["Browser tab", "Preview your dev server at any device size, with DevTools."], idn: ["Tab browser", "Pratinjau dev server, ukuran perangkat, dan DevTools."] },
+    { id: "ssh", title: "ssh deploy@kedai", icon: '<rect x="3" y="4" width="18" height="16" rx="2"/><path d="m7 9 3 3-3 3m5 0h5"/>', en: ["Remote SSH", "Browse and edit server files with your own SSH keys."], idn: ["Remote SSH", "Jelajahi dan edit berkas server dengan kunci SSH Anda."] },
   ];
   const list = $("#toolList");
   TOOLS.forEach((t, i) => {
@@ -621,7 +621,7 @@ plt.<span class="f">bar</span>(sales.keys(), sales.values())</pre>
   $("#demoTitle").textContent = TOOLS[0].title;
   rerender.push(() => $$(".tool-btn").forEach((b, i) => { const [n, d] = TOOLS[i][lang === "id" ? "idn" : "en"]; $("b", b).textContent = n; $("small", b).textContent = d; }));
 
-  // database: AI menulis query, kamu yang menjalankan
+  // database: AI menyusun query lalu menjalankannya
   const SQL = `<span class="k">SELECT</span> c.name, <span class="f">SUM</span>(oi.qty * p.price) <span class="k">AS</span> total
 <span class="k">FROM</span> customers c
 <span class="k">JOIN</span> orders o <span class="k">ON</span> o.customer_id = c.id
@@ -630,12 +630,12 @@ plt.<span class="f">bar</span>(sales.keys(), sales.values())</pre>
 <span class="k">GROUP BY</span> c.name <span class="k">ORDER BY</span> total <span class="k">DESC LIMIT</span> <span class="n">3</span>;`;
   let busy = false;
   async function typeInto(el, text, speed) { el.textContent = ""; if (reduce) { el.textContent = text; return; } for (let i = 1; i <= text.length; i++) { el.textContent = text.slice(0, i); await new Promise((r) => setTimeout(r, speed)); } }
-  const askQ = () => T("Top 3 customers by total spend", "3 pelanggan dengan belanja terbanyak");
-  const sqlIdle = () => { $("#askText").textContent = askQ(); if (!$("#sqlRes").innerHTML) $("#sqlCode").innerHTML = `<span class="c">-- ${T("press the button: the AI writes the query, then it runs", "tekan tombolnya: AI menulis query, lalu dijalankan")}</span>`; };
+  const askQ = () => T("Show the top 3 customers by total spend", "Tampilkan 3 pelanggan dengan total belanja tertinggi");
+  const sqlIdle = () => { $("#askText").textContent = askQ(); if (!$("#sqlRes").innerHTML) $("#sqlCode").innerHTML = `<span class="c">-- ${T("press the button below: the AI writes the query, then runs it", "tekan tombol di bawah: AI menyusun query, lalu menjalankannya")}</span>`; };
   rerender.push(sqlIdle);
   $("#sqlRun").addEventListener("click", async () => {
     if (busy) return; busy = true;
-    $("#sqlRes").innerHTML = ""; $("#sqlMeta").textContent = T("AI writing the query…", "AI menulis query…");
+    $("#sqlRes").innerHTML = ""; $("#sqlMeta").textContent = T("AI is writing the query…", "AI sedang menyusun query…");
     await typeInto($("#askText"), askQ(), 26);
     await typeInto($("#sqlCode"), SQL.replace(/<[^>]+>/g, ""), 7);
     $("#sqlCode").innerHTML = SQL;
@@ -646,13 +646,13 @@ plt.<span class="f">bar</span>(sales.keys(), sales.values())</pre>
   });
 
   // API
-  const apiIdle = () => { if (!$("#apiRes").dataset.done) $("#apiRes").innerHTML = `<span class="c">// ${T("the response shows up here", "responsnya muncul di sini")}</span>`; };
+  const apiIdle = () => { if (!$("#apiRes").dataset.done) $("#apiRes").innerHTML = `<span class="c">// ${T("the response will appear here", "respons akan tampil di sini")}</span>`; };
   rerender.push(apiIdle);
   $("#apiSend").addEventListener("click", async () => {
     const out = $("#apiRes"); out.dataset.done = "1";
     out.innerHTML = '<span class="c">POST /login …</span>';
     await wait(450);
-    out.innerHTML = `<span class="pill ok">200 OK</span>  <span class="c">12 ms · ${T("token saved as {{login…}}", "token disimpan sebagai {{login…}}")}</span>\n<span class="c">GET /users …</span>`;
+    out.innerHTML = `<span class="pill ok">200 OK</span>  <span class="c">12 ms · ${T("token saved as {{login…}}", "token tersimpan sebagai {{login…}}")}</span>\n<span class="c">GET /users …</span>`;
     await wait(550);
     out.innerHTML = '<span class="pill ok">200 OK</span>  <span class="c">9 ms · 77 B</span>\n[\n  { <span class="s">"id"</span>: <span class="n">1</span>, <span class="s">"name"</span>: <span class="s">"Nozi"</span>, <span class="s">"role"</span>: <span class="s">"admin"</span> },\n  { <span class="s">"id"</span>: <span class="n">2</span>, <span class="s">"name"</span>: <span class="s">"Pingu"</span>, <span class="s">"role"</span>: <span class="s">"user"</span> }\n]';
   });
@@ -662,10 +662,10 @@ plt.<span class="f">bar</span>(sales.keys(), sales.values())</pre>
   let dlog = "";
   function renderDocker() {
     $("#dockerPanel").innerHTML = `<div style="display:flex;gap:8px;align-items:center;margin-bottom:12px"><span class="pill dim">docker-compose.yml</span><span style="color:#8da2c6;font-size:13px">kedai-kopi</span></div>` +
-      CTS.map((c, i) => `<div class="ct ${c.up ? "up" : ""}"><span class="d"></span><span><b>${c.n}</b><small>${c.img}</small></span><span class="port">${c.port}</span><span style="display:flex;gap:6px">${c.db && c.up ? `<button class="toggle" type="button" data-db="${i}">${T("Open in DB", "Buka di DB")}</button>` : ""}<button class="toggle" type="button" data-i="${i}">${c.up ? T("Stop", "Hentikan") : T("Start", "Jalankan")}</button></span></div>`).join("") +
+      CTS.map((c, i) => `<div class="ct ${c.up ? "up" : ""}"><span class="d"></span><span><b>${c.n}</b><small>${c.img}</small></span><span class="port">${c.port}</span><span style="display:flex;gap:6px">${c.db && c.up ? `<button class="toggle" type="button" data-db="${i}">${T("Open in Database", "Buka di Database")}</button>` : ""}<button class="toggle" type="button" data-i="${i}">${c.up ? T("Stop", "Hentikan") : T("Start", "Jalankan")}</button></span></div>`).join("") +
       `<div class="logline">${dlog}</div>`;
     $$("[data-i]", $("#dockerPanel")).forEach((b) => b.addEventListener("click", () => { const c = CTS[+b.dataset.i]; c.up = !c.up; dlog = `$ docker ${c.up ? "start" : "stop"} ${c.n}  ✓`; renderDocker(); }));
-    $$("[data-db]", $("#dockerPanel")).forEach((b) => b.addEventListener("click", () => { dlog = T(`✓ ${CTS[+b.dataset.db].n} added to Database — password read from the container, stored encrypted.`, `✓ ${CTS[+b.dataset.db].n} masuk ke Database — password dibaca dari container, disimpan terenkripsi.`); renderDocker(); }));
+    $$("[data-db]", $("#dockerPanel")).forEach((b) => b.addEventListener("click", () => { dlog = T(`✓ ${CTS[+b.dataset.db].n} added to Database. The password is read from the container and stored encrypted.`, `✓ ${CTS[+b.dataset.db].n} ditambahkan ke Database. Password diambil dari container dan disimpan terenkripsi.`); renderDocker(); }));
   }
   rerender.push(renderDocker);
 
@@ -689,11 +689,11 @@ plt.<span class="f">bar</span>(sales.keys(), sales.values())</pre>
 
   // ssh
   const term = $("#term");
-  const termIdle = () => { if (!term.dataset.done) term.innerHTML = `<span class="c"># ${T("uses your ~/.ssh/config, agent and keys", "memakai ~/.ssh/config, agent, dan kunci milikmu")}</span>`; };
+  const termIdle = () => { if (!term.dataset.done) term.innerHTML = `<span class="c"># ${T("uses your ~/.ssh/config, agent, and SSH keys", "menggunakan ~/.ssh/config, agent, dan kunci SSH Anda")}</span>`; };
   rerender.push(termIdle);
   $("#sshGo").addEventListener("click", async () => {
     if (term.dataset.busy) return; term.dataset.busy = "1"; term.dataset.done = "1"; term.innerHTML = "";
-    const STEPS = [["p", "$ "], ["", "ssh deploy@kedai.example\n", 1], ["h", "✓ connected · Linux · /home/deploy\n"], ["p", "$ "], ["", "ls app/\n", 1], ["", "main.py  requirements.txt  static/  templates/\n"], ["h", T("✓ main.py opened in the editor — saving uploads it back.\n", "✓ main.py terbuka di editor — simpan = unggah ke server.\n")]];
+    const STEPS = [["p", "$ "], ["", "ssh deploy@kedai.example\n", 1], ["h", "✓ connected · Linux · /home/deploy\n"], ["p", "$ "], ["", "ls app/\n", 1], ["", "main.py  requirements.txt  static/  templates/\n"], ["h", T("✓ main.py opened in the editor; every save is uploaded to the server.\n", "✓ main.py terbuka di editor; setiap penyimpanan langsung diunggah ke server.\n")]];
     for (const [k, t, typed] of STEPS) {
       const s = document.createElement("span"); if (k) s.className = k; term.append(s);
       if (!typed || reduce) { s.textContent = t; await wait(250); continue; }
@@ -705,10 +705,10 @@ plt.<span class="f">bar</span>(sales.keys(), sales.values())</pre>
   /* screenshot */
   function swap(img, src) { if (img.getAttribute("src") === src) return; img.classList.add("swap"); const n = new Image(); n.onload = () => { img.src = src; img.classList.remove("swap"); }; n.src = src; }
   const SHOTS = [
-    { img: "img/db.jpg", en: ["Database", "A .sql file run with Mod+Enter against PostgreSQL; results in the bottom panel."], id: ["Database", "Berkas .sql dijalankan dengan Mod+Enter ke PostgreSQL; hasil di panel bawah."] },
-    { img: "img/er.jpg", en: ["ER diagram", "Drawn from real foreign keys. Save it as SVG."], id: ["Diagram ER", "Digambar dari foreign key sungguhan. Simpan sebagai SVG."] },
-    { img: "img/api.jpg", en: ["HTTP client", "Send right from an .http file; the response opens on the side."], id: ["Klien HTTP", "Kirim langsung dari berkas .http; respons terbuka di samping."] },
-    { img: "img/nb.jpg", en: ["Notebook", "Python kernel, outputs, plots, and errors — saved as a normal .ipynb."], id: ["Notebook", "Kernel Python, output, grafik, dan error — disimpan sebagai .ipynb biasa."] },
+    { img: "img/db.jpg", en: ["Database", "A .sql file run with Mod+Enter against PostgreSQL; results in the bottom panel."], id: ["Database", "Query dari berkas .sql dijalankan ke PostgreSQL dengan Mod+Enter; hasilnya tampil di panel bawah."] },
+    { img: "img/er.jpg", en: ["ER diagram", "Generated from the actual foreign keys and exportable as SVG."], id: ["Diagram ER", "Dibuat dari foreign key yang sebenarnya dan dapat diekspor sebagai SVG."] },
+    { img: "img/api.jpg", en: ["HTTP client", "Send right from an .http file; the response opens on the side."], id: ["Klien HTTP", "Request dikirim langsung dari berkas .http; respons terbuka di sisi kanan."] },
+    { img: "img/nb.jpg", en: ["Notebook", "Python kernel, outputs, plots, and errors — saved as a normal .ipynb."], id: ["Notebook", "Kernel Python, output, grafik, dan pesan error — tersimpan dalam format .ipynb standar."] },
   ];
   let shot = 0;
   function renderShots() {
@@ -720,14 +720,14 @@ plt.<span class="f">bar</span>(sales.keys(), sales.values())</pre>
 
   /* desain: halaman meminjam aksen desain yang dipilih */
   const DESIGNS = [
-    ["antartika", "Antartika", "#6cc4ff", "#0b1220", ["Dark ice blue with Nozi in a beanie and beak-orange accents.", "Gelap biru es dengan Nozi berkupluk dan aksen oranye paruh."]],
-    ["studio", "Studio", "#3794ff", "#1f1f1f", ["The familiar VS Code layout with the agent panel on the right.", "Tata letak VS Code yang familiar, panel agen di kanan."]],
-    ["studio-light", "Studio Light", "#4d9be6", "#ffffff", ["The same layout, clean and light.", "Tata letak yang sama, bersih dan terang."]],
-    ["aurora", "Aurora Glass", "#7aa2f7", "#0e1016", ["macOS-style glass sidebar, palette in the title bar.", "Sidebar kaca ala macOS, palette di title bar."]],
-    ["zen", "Zen Paper", "#e8916f", "#faf9f5", ["Warm, one focused column, omnibar at the bottom.", "Hangat, satu kolom fokus, omnibar di bawah."]],
-    ["control", "Control Room", "#8be9fd", "#07090d", ["Dense IDE: run toolbar, split editors, Git staging.", "IDE padat: toolbar run, split editor, staging Git."]],
-    ["tuxedo", "Tuxedo", "#ffd23f", "#0a0a0a", ["High-contrast black and white, Nozi in a bow tie.", "Hitam-putih kontras tinggi, Nozi berdasi kupu-kupu."]],
-    ["kawanan", "Kawanan", "#ff9a3c", "#f3f8fc", ["Snow-bright and round, with a whole flock of Nozis.", "Terang seperti salju dan bulat, dengan sekawanan Nozi."]],
+    ["antartika", "Antartika", "#6cc4ff", "#0b1220", ["Dark ice blue with the Nozi mascot and orange accents.", "Nuansa gelap biru es dengan maskot Nozi dan aksen oranye."]],
+    ["studio", "Studio", "#3794ff", "#1f1f1f", ["A classic IDE layout with the agent panel on the right.", "Tata letak IDE klasik dengan panel agen di sisi kanan."]],
+    ["studio-light", "Studio Light", "#4d9be6", "#ffffff", ["The same layout in a clean, light palette.", "Tata letak yang sama dengan palet terang yang bersih."]],
+    ["aurora", "Aurora Glass", "#7aa2f7", "#0e1016", ["A macOS-style translucent sidebar with the command palette in the title bar.", "Sidebar transparan bergaya macOS dengan palet perintah di title bar."]],
+    ["zen", "Zen Paper", "#e8916f", "#faf9f5", ["Warm tones, a single focused column, and an omnibar at the bottom.", "Nuansa hangat dengan satu kolom fokus dan omnibar di bawah."]],
+    ["control", "Control Room", "#8be9fd", "#07090d", ["A dense layout with a run toolbar, split editors, and Git staging.", "Tata letak padat dengan toolbar run, split editor, dan staging Git."]],
+    ["tuxedo", "Tuxedo", "#ffd23f", "#0a0a0a", ["High-contrast black and white, with Nozi in a bow tie.", "Hitam-putih kontras tinggi dengan Nozi berdasi kupu-kupu."]],
+    ["kawanan", "Kawanan", "#ff9a3c", "#f3f8fc", ["Bright, rounded, and cheerful, with a whole flock of Nozis.", "Terang, membulat, dan ceria dengan sekawanan Nozi."]],
   ];
   let design = 0;
   function renderDesigns() {
@@ -739,30 +739,30 @@ plt.<span class="f">bar</span>(sales.keys(), sales.values())</pre>
 
   /* perbandingan jujur */
   const AHEAD = [
-    ["AI agents (Claude Code, Codex, Gemini, …) with per-change review, checkpoints, and undo.", "Agen AI (Claude Code, Codex, Gemini, …) dengan tinjauan per perubahan, checkpoint, dan undo."],
-    ["A database client for 5 engines, “ask your data” with AI, and ER diagrams — no extension.", "Klien database 5 engine, “tanya data” dengan AI, dan diagram ER — tanpa ekstensi."],
-    ["An HTTP client with .http files and encrypted secrets.", "Klien HTTP dengan berkas .http dan rahasia terenkripsi."],
-    ["A Docker panel, and a .env editor that warns before secrets reach git.", "Panel Docker, dan editor .env yang memperingatkan sebelum rahasia masuk git."],
+    ["AI agents (Claude Code, Codex, Gemini, and more) with per-change review, checkpoints, and undo.", "Agen AI (Claude Code, Codex, Gemini, dan lainnya) dengan peninjauan per perubahan, checkpoint, dan undo."],
+    ["A database client for five engines, with AI-assisted queries and ER diagrams.", "Klien database untuk lima engine, lengkap dengan query berbantuan AI dan diagram ER."],
+    ["An HTTP client with .http files and encrypted secrets.", "Klien HTTP dengan berkas .http dan penyimpanan rahasia terenkripsi."],
+    ["A Docker panel, and a .env editor that warns you before secrets get committed.", "Panel Docker, serta editor .env yang memberi peringatan sebelum rahasia ikut ter-commit."],
     ["An isolated browser tab with device presets and DevTools.", "Tab browser terisolasi dengan preset perangkat dan DevTools."],
-    ["Eight complete designs, and a UI in Indonesian and English.", "Delapan desain lengkap, dan UI berbahasa Indonesia dan Inggris."],
+    ["Jupyter notebooks, Remote SSH, eight designs, and an English and Indonesian interface.", "Notebook Jupyter, Remote SSH, delapan desain, serta antarmuka berbahasa Inggris dan Indonesia."],
   ];
   const BEHIND = [
-    ["The extension catalog: we use Open VSX, so some Microsoft-only extensions aren't available.", "Katalog ekstensi: kami memakai Open VSX, jadi sebagian ekstensi khusus Microsoft tidak tersedia."],
-    ["Remote development: our Remote SSH edits files and opens terminals, but language servers still run locally.", "Remote development: Remote SSH kami mengedit berkas dan membuka terminal, tapi language server tetap berjalan lokal."],
-    ["Live Share and Dev Containers aren't here yet.", "Live Share dan Dev Containers belum ada."],
-    ["Years of polish and a far bigger community.", "Bertahun-tahun pemolesan dan komunitas yang jauh lebih besar."],
+    ["Broader extension compatibility: extensions come from Open VSX, and some rely on APIs we don't support yet.", "Kompatibilitas ekstensi yang lebih luas: ekstensi berasal dari Open VSX, dan sebagian memerlukan API yang belum kami dukung."],
+    ["Full remote development: Remote SSH edits files and opens terminals today, while language servers still run locally.", "Remote development penuh: saat ini Remote SSH dapat mengedit berkas dan membuka terminal, sementara language server masih berjalan lokal."],
+    ["Real-time collaboration and development containers.", "Kolaborasi real-time dan development container."],
+    ["Code signing for the macOS and Windows installers.", "Tanda tangan kode (code signing) untuk installer macOS dan Windows."],
   ];
   const li2 = (x, icon, color) => `<li><svg width="18" height="18" style="color:${color}" aria-hidden="true"><use href="#${icon}"/></svg><span>${T(...x)}</span></li>`;
   rerender.push(() => { $("#aheadList").innerHTML = AHEAD.map((x) => li2(x, "i-check", "var(--ok)")).join(""); $("#behindList").innerHTML = BEHIND.map((x) => li2(x, "i-dot", "var(--beak2)")).join(""); });
 
   /* FAQ */
   const FAQ = [
-    [["Is it really free?", "Yes. Open source, no account, no paid tier. AI agents use your own subscription or API key with their provider."], ["Beneran gratis?", "Ya. Open source, tanpa akun, tanpa versi berbayar. Agen AI memakai langganan atau API key-mu sendiri di penyedianya."]],
-    [["Where do my database passwords go?", "They're encrypted with your OS keychain (Keychain, DPAPI, libsecret) and never shown in the UI or sent to an agent. Agents only see table and column names, and only when you ask."], ["Password database-ku disimpan di mana?", "Dienkripsi dengan keychain OS-mu (Keychain, DPAPI, libsecret) dan tidak pernah ditampilkan di UI atau dikirim ke agen. Agen hanya melihat nama tabel dan kolom, itu pun hanya saat kamu minta."]],
-    [["Which AI agents work?", "Claude Code, Codex, Gemini CLI, Antigravity, any ACP agent, plus the official VS Code extensions of Cline, Roo Code, Continue, Kilo, and more."], ["Agen AI apa saja yang bisa?", "Claude Code, Codex, Gemini CLI, Antigravity, agen ACP mana pun, plus ekstensi VS Code resmi Cline, Roo Code, Continue, Kilo, dan lainnya."]],
-    [["Do VS Code extensions work?", "Many do — themes, language packs, tree views, webviews, tests, and debuggers run in the extension host. Ones that depend on Microsoft-only APIs may not."], ["Apakah ekstensi VS Code jalan?", "Banyak yang jalan — tema, paket bahasa, tree view, webview, test, dan debugger berjalan di extension host. Yang butuh API khusus Microsoft mungkin tidak."]],
-    [["Do I need Jupyter or Docker installed?", "Only for those features. Without them the rest works; notebooks still open and edit, and Alexel tells you how to install what's missing."], ["Perlu pasang Jupyter atau Docker?", "Hanya untuk fitur itu. Tanpanya fitur lain tetap jalan; notebook tetap bisa dibuka dan diedit, dan Alexel memberi tahu cara memasang yang kurang."]],
-    [["Does it work offline?", "Yes. Everything except AI agents and the extension catalog runs locally."], ["Bisa offline?", "Bisa. Semua fitur kecuali agen AI dan katalog ekstensi berjalan lokal."]],
+    [["Is Alexel Studio free?", "Yes. It's open source, needs no account, and has no paid plan. AI agents use your own subscription or API key with each provider."], ["Apakah Alexel Studio gratis?", "Ya. Alexel Studio bersifat open source, tanpa akun, dan tanpa paket berbayar. Agen AI menggunakan langganan atau API key Anda sendiri di masing-masing penyedia."]],
+    [["Where are my database passwords stored?", "They're encrypted with your operating system's keychain (Keychain, DPAPI, or libsecret), never shown in the interface, and never sent to an AI agent. Agents only receive table and column names, and only when you ask."], ["Di mana password database saya disimpan?", "Password dienkripsi menggunakan keychain sistem operasi (Keychain, DPAPI, atau libsecret), tidak pernah ditampilkan di antarmuka, dan tidak pernah dikirim ke agen AI. Agen hanya menerima nama tabel dan kolom, itu pun hanya ketika Anda memintanya."]],
+    [["Which AI agents are supported?", "Claude Code, Codex, Gemini CLI, Antigravity, any agent that supports ACP, and extensions such as Cline, Roo Code, Continue, and Kilo."], ["Agen AI apa saja yang didukung?", "Claude Code, Codex, Gemini CLI, Antigravity, agen apa pun yang mendukung ACP, serta ekstensi seperti Cline, Roo Code, Continue, dan Kilo."]],
+    [["Can I install extensions?", "Yes, from Open VSX. Themes, language packs, tree views, webviews, tests, and debuggers run in the extension host; extensions that rely on unsupported APIs may only partly work."], ["Apakah saya bisa memasang ekstensi?", "Bisa, dari Open VSX. Tema, paket bahasa, tree view, webview, test, dan debugger berjalan di extension host; ekstensi yang memerlukan API yang belum didukung mungkin hanya berfungsi sebagian."]],
+    [["Do I need Jupyter or Docker installed?", "Only for those features. Everything else works without them; notebooks still open and edit, and Alexel Studio shows how to install what's missing."], ["Apakah Jupyter atau Docker wajib dipasang?", "Hanya untuk fitur terkait. Tanpa keduanya, fitur lain tetap berjalan normal; notebook tetap dapat dibuka dan diedit, dan Alexel Studio akan menampilkan panduan pemasangan."]],
+    [["Does it work offline?", "Yes. Everything runs locally except AI agents and the extension catalog."], ["Apakah bisa digunakan secara offline?", "Bisa. Semua fitur berjalan lokal, kecuali agen AI dan katalog ekstensi."]],
   ];
   rerender.push(() => { const open = $$("#faqList details").map((d) => d.open); $("#faqList").innerHTML = FAQ.map((f, i) => { const [q, a] = T(f[0], f[1]); return `<details${open[i] ? " open" : ""}><summary>${q}</summary><p>${a}</p></details>`; }).join(""); });
 
@@ -781,7 +781,7 @@ plt.<span class="f">bar</span>(sales.keys(), sales.values())</pre>
   const osName = { mac: "macOS", win: "Windows", linux: "Linux" }[os];
   rerender.push(() => {
     $("#ctaLabel").textContent = os ? T(`Download for ${osName}`, `Unduh untuk ${osName}`) : T("Download", "Unduh");
-    $("#dlSub").textContent = os ? T(`Nozi guessed ${osName} — that card is marked below.`, `Nozi menebak ${osName} — kartunya ditandai di bawah.`) : T("Pick your system below.", "Pilih sistemmu di bawah.");
+    $("#dlSub").textContent = os ? T(`We detected ${osName}; it's highlighted below.`, `Sistem Anda terdeteksi sebagai ${osName} dan sudah ditandai di bawah.`) : T("Choose your operating system below.", "Silakan pilih sistem operasi Anda di bawah.");
   });
   $("#copyDeb").addEventListener("click", async (e) => { try { await navigator.clipboard.writeText("sudo apt install ./Alexel-Studio-linux-amd64.deb"); e.target.textContent = T("Copied", "Tersalin"); setTimeout(() => (e.target.textContent = T("Copy", "Salin")), 1500); } catch {} });
 
