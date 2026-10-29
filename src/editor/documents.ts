@@ -103,6 +103,9 @@ const lspComp = new Compartment();
 /** Tinjauan perubahan agen (diff per bagian) per berkas; diisi src/editor/agentReview.ts. */
 const reviewComp = new Compartment();
 const reviewExts = new Map<string, Extension>();
+/** Ekstensi tambahan per berkas (mis. autocomplete skema database untuk .sql). */
+const auxComp = new Compartment();
+const auxExts = new Map<string, Extension>();
 
 export const getDoc = (path: string) => docs.get(path);
 export const openDocs = () => [...docs.values()];
@@ -167,6 +170,7 @@ function baseExtensions(doc: Doc, group: number): Extension {
     blameExtension(doc.path),
     langComp.of(doc.language ?? []),
     reviewComp.of(reviewExts.get(doc.path) ?? []),
+    auxComp.of(auxExts.get(doc.path) ?? []),
     settingsComp.of(currentSettingsExt()),
     EditorView.updateListener.of((u) => onUpdate(doc, group, u)),
   ];
@@ -225,6 +229,20 @@ export function setReviewExtension(path: string, ext: Extension | null) {
   if (!doc) return;
   for (let g = 0; g < doc.states.length; g++) {
     const effects = reviewComp.reconfigure(ext ?? []);
+    const v = views[g];
+    if (v && shown[g] === path) v.dispatch({ effects });
+    else if (doc.states[g]) doc.states[g] = doc.states[g]!.update({ effects }).state;
+  }
+}
+
+/** Pasang/lepas ekstensi tambahan berkas (satu slot per berkas). */
+export function setAuxExtension(path: string, ext: Extension | null) {
+  if (ext) auxExts.set(path, ext);
+  else auxExts.delete(path);
+  const doc = docs.get(path);
+  if (!doc) return;
+  for (let g = 0; g < doc.states.length; g++) {
+    const effects = auxComp.reconfigure(ext ?? []);
     const v = views[g];
     if (v && shown[g] === path) v.dispatch({ effects });
     else if (doc.states[g]) doc.states[g] = doc.states[g]!.update({ effects }).state;

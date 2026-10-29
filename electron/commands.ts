@@ -10,6 +10,8 @@ import os from "node:os";
 import path from "node:path";
 import * as agents from "./agents";
 import * as CP from "./checkpoints";
+import * as DB from "./db";
+import { detect as dbDetect, detectFull as dbDetectFull } from "./db/detect";
 import * as dap from "./dap";
 import { checkUpdate, repoSlug } from "./update";
 import { updateApply, updateCheck, updatePrepare } from "./updater";
@@ -181,6 +183,33 @@ export function buildCommands(ctx: Ctx, hooks: { confirmClose: (win: BrowserWind
     unwatch_project: () => watcher.unwatch(),
     preview_set_root: (a) => preview.setRoot(a.root ?? null),
     preview_set_override: (a) => preview.setOverride(a.path, a.content ?? null),
+
+    // Database
+    db_list: () => DB.listConnections(ctx).map((c) => ({ ...c, connected: DB.isConnected(c.id) })),
+    db_save: (a) => DB.saveConnection(ctx, a.conn ?? {}),
+    db_remove: (a) => DB.removeConnection(ctx, String(a.id)),
+    db_test: (a) => DB.testConnection(ctx, a.conn ?? {}),
+    db_disconnect: (a) => DB.disconnect(String(a.id)),
+    db_schema: (a) => DB.schema(ctx, String(a.id)),
+    db_schema_text: async (a) => {
+      const c = DB.listConnections(ctx).find((x) => x.id === a.id);
+      if (!c) throw new Error("Koneksi tidak ditemukan.");
+      return DB.schemaText(c.kind, await DB.schema(ctx, c.id), Number(a.max) || undefined);
+    },
+    db_query: (a) => DB.query(ctx, String(a.id), String(a.text ?? ""), { limit: a.limit, timeoutMs: a.timeoutMs, confirmed: !!a.confirmed }),
+    db_cancel: (a) => DB.cancel(String(a.id)),
+    db_browse: (a) => DB.browse(ctx, String(a.id), a.o),
+    db_edit: (a) => DB.editRow(ctx, String(a.id), a.edit),
+    db_export: (a) => DB.exportQuery(ctx, String(a.id), String(a.text ?? ""), a.format === "json" ? "json" : "csv", String(a.target)),
+    db_history: (a) => DB.history(ctx, String(a.id)),
+    db_detect: (a) => dbDetect(String(a.root ?? "")),
+    db_add_detected: (a) => {
+      const d = dbDetectFull(String(a.root ?? "")).find((x) => x.key === a.key);
+      if (!d) throw new Error("Saran koneksi tidak ditemukan lagi.");
+      const existing = DB.listConnections(ctx).find((c) => c.kind === d.kind && (c.url ?? c.file) === (d.url ?? d.file));
+      if (existing) return existing;
+      return DB.saveConnection(ctx, { kind: d.kind, name: d.name, url: d.url, file: d.file, password: d.password, env: "dev" });
+    },
 
     // Khusus Electron: dialog, browser, jendela, clipboard
     dialog_open_folder: async (_a, win) => {

@@ -2,6 +2,7 @@
 // Saat `npm run dev` dibuka di browser biasa, memakai backend tiruan (mock.ts)
 // supaya UI tetap bisa dicoba. Mode tiruan TIDAK pernah aktif di build produksi.
 
+import type { DbConnection, DbSchema, QueryResult } from "../../electron/db/types";
 import type {
   FoundProject,
   Branches,
@@ -208,6 +209,22 @@ export const api = {
   agentSessionLoad: (agent: string, cwd: string, id: string) => call<string[]>("agent_session_load", { agent, cwd, id }),
   agentOnce: (agent: string, runId: string, cwd: string, prompt: string) => call<string>("agent_once", { agent, runId, cwd, prompt }),
   agentOnceCancel: (runId: string) => call<void>("agent_once_cancel", { runId }),
+  // Database (lihat electron/db): password tidak pernah dikirim balik ke renderer.
+  dbList: () => call<(DbConnection & { connected: boolean })[]>("db_list"),
+  dbSave: (conn: Partial<DbConnection> & { password?: string }) => call<DbConnection>("db_save", { conn }),
+  dbRemove: (id: string) => call<void>("db_remove", { id }),
+  dbTest: (conn: Partial<DbConnection> & { password?: string }) => call<string>("db_test", { conn }),
+  dbDisconnect: (id: string) => call<void>("db_disconnect", { id }),
+  dbSchema: (id: string) => call<DbSchema[]>("db_schema", { id }),
+  dbSchemaText: (id: string, max?: number) => call<string>("db_schema_text", { id, max }),
+  dbQuery: (id: string, text: string, o: { limit?: number; timeoutMs?: number; confirmed?: boolean } = {}) => call<QueryResult>("db_query", { id, text, ...o }),
+  dbCancel: (id: string) => call<void>("db_cancel", { id }),
+  dbBrowse: (id: string, o: DbBrowseOptions) => call<QueryResult & { total: number | null }>("db_browse", { id, o }),
+  dbEdit: (id: string, edit: DbRowEdit) => call<{ affected: number }>("db_edit", { id, edit }),
+  dbExport: (id: string, text: string, format: "csv" | "json", target: string) => call<{ rows: number }>("db_export", { id, text, format, target }),
+  dbHistory: (id: string) => call<{ text: string; at: number; ms: number; rows?: number; ok: boolean; error?: string }[]>("db_history", { id }),
+  dbDetect: (root: string) => call<DbDetected[]>("db_detect", { root }),
+  dbAddDetected: (root: string, key: string) => call<DbConnection>("db_add_detected", { root, key }),
   gitCommitContext: (dir: string) => call<{ staged: boolean; files: string[]; diff: string; truncated: boolean; recent: string[] }>("git_commit_context", { dir }),
   agentWarm: (agent: string, key: string, cfg: Record<string, unknown>) => call<void>("agent_warm", { agent, key, cfg }),
   checkpointList: (root: string, chatKey: string) => call<{ turnId: string; time: number; files: { path: string; created: boolean }[] }[]>("checkpoint_list", { root, chatKey }),
@@ -268,3 +285,29 @@ export const setTrafficLights = (y: number) => (bridge ? call("window_set_traffi
 export const setTitlebarOverlay = (o: { height: number; color: string; symbolColor: string }) => (bridge ? call("window_set_titlebar_overlay", o).catch(() => {}) : Promise.resolve());
 export const confirmWindowClose = () => (bridge ? call("window_close_confirmed") : Promise.resolve());
 export const pathForFile = (f: File): string | null => (bridge ? bridge.pathForFile(f) : null);
+
+export interface DbBrowseOptions {
+  schema: string | null;
+  table: string;
+  offset?: number;
+  limit?: number;
+  orderBy?: string | null;
+  desc?: boolean;
+  filters?: Record<string, string>;
+}
+export interface DbRowEdit {
+  schema: string | null;
+  table: string;
+  key: Record<string, unknown>;
+  values?: Record<string, unknown>;
+  op: "update" | "insert" | "delete";
+}
+export interface DbDetected {
+  key: string;
+  name: string;
+  kind: DbConnection["kind"];
+  url?: string;
+  file?: string;
+  source: string;
+  hasPassword: boolean;
+}

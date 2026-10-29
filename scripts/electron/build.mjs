@@ -9,7 +9,8 @@ const shared = {
   target: "node22",
   sourcemap: true,
   logLevel: "info",
-  external: ["electron", "node-pty", "@parcel/watcher"],
+  // Driver database dimuat lazy dari node_modules (banyak dependensi opsional/dinamis).
+  external: ["electron", "node-pty", "@parcel/watcher", "pg", "pg-cursor", "mysql2", "mongodb", "ioredis"],
 };
 
 export const entries = [

@@ -24,7 +24,12 @@
   "dependencies": {
     "@parcel/watcher": "^2.6.0",
     "bundled-typescript": "npm:typescript@^5.9.3",
+    "ioredis": "^5.11.1",
+    "mongodb": "^6.21.0",
+    "mysql2": "^3.24.6",
     "node-pty": "^1.1.0",
+    "pg": "^8.23.1",
+    "pg-cursor": "^2.22.1",
     "prettier": "^3.9.10",
     "typescript-language-server": "^6.0.2",
     "ws": "^8.22.0"
@@ -66,6 +71,8 @@
     "@lezer/common": "^1.5.3",
     "@lezer/highlight": "^1.2.5",
     "@types/node": "^26.6.5",
+    "@types/pg": "^8.23.1",
+    "@types/pg-cursor": "^2.7.2",
     "@types/react": "^19.1.8",
     "@types/react-dom": "^19.1.6",
     "@types/ws": "^8.18.2",

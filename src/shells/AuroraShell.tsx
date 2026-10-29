@@ -1,7 +1,7 @@
 // Desain A — Aurora Glass: gelap macOS, sidebar kaca dengan kartu workspace,
 // palette di title bar, agen Claude di kanan, dock terminal melayang.
 
-import { Layers, Bug, Columns2, GitBranch, ListTree, PanelBottom, Play, Puzzle, Search, Settings } from "lucide-react";
+import { Database, Layers, Bug, Columns2, GitBranch, ListTree, PanelBottom, Play, Puzzle, Search, Settings } from "lucide-react";
 import { Kepi } from "../components/CrabMascot";
 import * as A from "../app/actions";
 import { openPalette } from "../app/commands";
@@ -86,6 +86,7 @@ export default function AuroraShell() {
                   { id: "todo", label: "TODO" },
                   { id: "ext", label: <Puzzle size={13} />, title: tl("Ekstensi") },
                   { id: "run", label: <Bug size={13} />, title: "Run & Debug" },
+                  { id: "db", label: <Database size={13} />, title: tl("Database") },
                   { id: "outline", label: <ListTree size={13} />, title: tl("Outline (struktur berkas)") },
                 ]}
               />

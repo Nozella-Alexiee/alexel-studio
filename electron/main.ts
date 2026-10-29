@@ -7,7 +7,9 @@ import { resolveWebview } from "./exthost/webviews";
 import { stopExtHost } from "./exthost/manager";
 import { runScheduledUpdate } from "./updater";
 import { cleanTempBins } from "./runner";
-import { app, BrowserWindow, ipcMain, Menu, net, protocol, session, shell, type MenuItemConstructorOptions } from "electron";
+import { app, BrowserWindow, ipcMain, Menu, net, protocol, safeStorage, session, shell, type MenuItemConstructorOptions } from "electron";
+import { closeAll as closeAllDb } from "./db";
+import { setSafeStorage } from "./secrets";
 import fs from "node:fs";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
@@ -67,7 +69,7 @@ const pendingOpen: string[] = [];
  * perbandingan path di UI sederhana. Isi berkas & output perintah tidak pernah diubah.
  */
 const CONTENT_KEYS = new Set(["content", "text", "line", "data", "diff", "stdout", "stderr", "message", "result", "body", "command", "before", "after", "error"]);
-const CONTENT_CMDS = new Set(["read_file_text", "history_read", "ext_read_file", "git_head", "git_diff_file", "claude_inline", "agent_session_load", "checkpoint_pre", "agent_once", "git_commit_context", "git_show_commit", "git_blame", "read_file_head"]);
+const CONTENT_CMDS = new Set(["read_file_text", "history_read", "ext_read_file", "git_head", "git_diff_file", "claude_inline", "agent_session_load", "checkpoint_pre", "agent_once", "git_commit_context", "git_show_commit", "git_blame", "read_file_head", "db_query", "db_browse", "db_history", "db_schema_text"]);
 function toUiPaths(v: unknown, key = ""): unknown {
   if (process.platform !== "win32" || CONTENT_KEYS.has(key)) return v;
   if (typeof v === "string") return /^([A-Za-z]:\\|\\\\)/.test(v) && !/[\r\n]/.test(v) ? v.replace(/\\/g, "/").replace(/^[a-z]:/, (d) => d.toUpperCase()) : v;
@@ -81,6 +83,8 @@ function toUiPaths(v: unknown, key = ""): unknown {
 }
 
 setTimeout(() => cleanTempBins(), 5000); // sisa biner Run sebelumnya
+
+setSafeStorage(safeStorage);
 
 const ctx: Ctx = {
   userData: app.getPath("userData"),
@@ -402,6 +406,7 @@ function stopWindowProcesses() {
   killAllLsp();
   stopExtHost();
   stopIde();
+  void closeAllDb();
   void unwatch();
 }
 

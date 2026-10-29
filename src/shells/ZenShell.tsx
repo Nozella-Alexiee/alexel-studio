@@ -1,7 +1,7 @@
 // Desain B — Zen Paper: terang hangat, tanpa activity bar & tab bar. Navigator di kiri
 // (berkas terbuka, ringkasan simbol, tree), satu kolom fokus, omnibar di bawah.
 
-import { Bug, ChevronDown, ChevronRight, Columns2, Files, Layers, GitBranch, Play, Puzzle, Search, Settings, TerminalSquare, X, Focus, ListTodo } from "lucide-react";
+import { Bug, ChevronDown, Database, ChevronRight, Columns2, Files, Layers, GitBranch, Play, Puzzle, Search, Settings, TerminalSquare, X, Focus, ListTodo } from "lucide-react";
 import { Kepi } from "../components/CrabMascot";
 import { useState, type ReactNode } from "react";
 import * as A from "../app/actions";
@@ -136,6 +136,7 @@ export default function ZenShell() {
                     ["git", <GitBranch size={14} />, "Git"],
                     ["todo", <ListTodo size={14} />, "TODO"],
                     ["run", <Bug size={14} />, "Run & Debug"],
+                    ["db", <Database size={14} />, "Database"],
                     ["ext", <Puzzle size={14} />, "Ekstensi"],
                   ] as const
                 ).map(([id, icon, label]) => (

@@ -6,17 +6,20 @@ import { IconButton, Spinner } from "../components/ui";
 import { setLayout, useLayout, useStore, type PanelId } from "../state/store";
 import { PortsPanel, ProblemsPanel, TodoPanel } from "./BottomPanels";
 import { tl } from "../i18n";
+import { useDb } from "../db/state";
 
 const TerminalPanel = lazy(() => import("./TerminalPanel"));
 const HistoryPanel = lazy(() => import("./HistoryPanel"));
 const OutputPanel = lazy(() => import("./OutputPanel"));
 const DebugConsole = lazy(() => import("./DebugConsole"));
+const ResultsPanel = lazy(() => import("../db/ResultsPanel"));
 
 export function PanelTabs({ upper }: { upper?: boolean }) {
   const layout = useLayout();
   const problems = useStore((s) => Object.values(s.problems).reduce((a, l) => a + l.length, 0));
   const terms = useStore((s) => s.terminals.length);
   const todos = useStore((s) => s.todos?.length ?? 0);
+  const hasResults = useDb((s) => s.results.length > 0);
   const label = (s: string) => (upper ? s.toUpperCase() : s);
   const tabs: { id: PanelId; label: string; count?: number }[] = [
     { id: "terminal", label: label("Terminal"), count: terms > 1 ? terms : undefined },
@@ -26,6 +29,7 @@ export function PanelTabs({ upper }: { upper?: boolean }) {
     { id: "ports", label: label("Port") },
     { id: "todo", label: label("TODO"), count: todos || undefined },
     { id: "history", label: label(tl("Riwayat")) },
+    ...(hasResults || layout.panelTab === "db" ? [{ id: "db" as PanelId, label: label(tl("Hasil query")) }] : []),
   ];
   return (
     <div className="panel-tabs" role="tablist" aria-label={tl("Panel bawah")}>
@@ -52,6 +56,7 @@ export function PanelContent({ terminalTabs = true }: { terminalTabs?: boolean }
         {layout.panelTab === "ports" && <PortsPanel />}
         {layout.panelTab === "todo" && <TodoPanel />}
         {layout.panelTab === "history" && <HistoryPanel />}
+        {layout.panelTab === "db" && <ResultsPanel />}
       </Suspense>
       </ErrorBoundary>
     </div>

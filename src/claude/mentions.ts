@@ -1,4 +1,4 @@
-// Konteks @ di kotak pesan agen selain berkas: @problems, @terminal, @git-diff, @open-editors.
+// Konteks @ di kotak pesan agen selain berkas: @problems, @terminal, @git-diff, @open-editors, @db.
 // Mention tetap berupa teks di pesan; saat dikirim, isinya disusun sebagai bagian konteks.
 
 import { tl } from "../i18n";
@@ -7,7 +7,7 @@ import { relative } from "../lib/paths";
 import { getState } from "../state/store";
 
 export interface ContextMention {
-  id: "problems" | "terminal" | "git-diff" | "open-editors";
+  id: "problems" | "terminal" | "git-diff" | "open-editors" | "db";
   label: string;
   hint: string;
 }
@@ -17,9 +17,10 @@ export const MENTIONS: ContextMention[] = [
   { id: "terminal", label: "@terminal", hint: tl("Output terakhir terminal aktif") },
   { id: "git-diff", label: "@git-diff", hint: tl("Perubahan yang belum di-commit") },
   { id: "open-editors", label: "@open-editors", hint: tl("Daftar berkas yang sedang terbuka") },
+  { id: "db", label: "@db", hint: tl("Skema database yang tersambung (tanpa data & password)") },
 ];
 
-const MENTION_RE = /(^|\s)@(problems|terminal|git-diff|open-editors)(?=$|[\s.,;:!?)])/g;
+const MENTION_RE = /(^|\s)@(problems|terminal|git-diff|open-editors|db)(?=$|[\s.,;:!?)])/g;
 
 /** Mention konteks di pesan, urut & tanpa duplikat. */
 export function parseMentions(prompt: string): ContextMention["id"][] {
@@ -72,6 +73,15 @@ export async function resolveMentions(prompt: string): Promise<{ label: string; 
         body = diff ? "```diff\n" + diff + "\n```" : tl("(tidak ada perubahan)");
       }
       out.push({ label: tl("Perubahan git yang belum di-commit (@git-diff)"), body });
+    } else if (id === "db") {
+      const { useDb } = await import("../db/state");
+      const conns = useDb.getState().conns.filter((c) => c.connected);
+      const parts: string[] = [];
+      for (const c of conns.slice(0, 4)) {
+        const text = await api.dbSchemaText(c.id, 8000).catch(() => "");
+        if (text) parts.push(`### ${c.name} (${c.kind}${c.readOnly ? ", read-only" : ""})\n\`\`\`\n${text}\n\`\`\``);
+      }
+      out.push({ label: tl("Skema database (@db)"), body: parts.join("\n\n") || tl("(tidak ada database yang tersambung)") });
     } else {
       const tabs = Object.values(s.tabs).filter((t) => t.kind === "text");
       out.push({ label: tl("Berkas yang sedang terbuka (@open-editors)"), body: tabs.map((t) => `- ${relative(root, t.id)}${t.dirty ? ` ${tl("(belum disimpan)")}` : ""}`).join("\n") || tl("(tidak ada)") });
