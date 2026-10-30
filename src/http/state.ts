@@ -36,20 +36,85 @@ interface HttpState {
   exchanges: Record<string, Exchange>;
   /** Respons terakhir per `# @name`. */
   named: Record<string, HttpResponse>;
-  history: { req: SimpleRequest; at: number; status?: number }[];
+  history: HistoryEntry[];
   /** Request yang ditampilkan di tab respons. */
   current: string | null;
   /** Draf builder per id tab. */
   drafts: Record<string, SimpleRequest>;
 }
 
-const loadHistory = () => {
+/**
+ * Entri riwayat: request dalam bentuk template (SEBELUM substitusi {{var}}), supaya nilai environment
+ * privat, token dari respons bernama, dsb. tidak tersimpan sebagai teks biasa di localStorage.
+ * v=2 menandai entri format ini; entri lama (tanpa v) sudah tersubstitusi dan disaring saat dimuat.
+ */
+export interface HistoryEntry {
+  req: SimpleRequest;
+  at: number;
+  status?: number;
+  v?: 2;
+}
+
+const HISTORY_KEY = "alexel.http.history";
+const SENSITIVE_HEADER = /^(authorization|proxy-authorization|cookie|set-cookie|x-api-key|api-key|apikey|x-auth-token|x-access-token|x-csrf-token|x-xsrf-token|x-amz-security-token)$|token|secret|passw|api[-_]?key|session/i;
+const SENSITIVE_PARAM = /^(access_token|refresh_token|id_token|token|api_key|apikey|api-key|key|secret|client_secret|password|passwd|pwd|sig|signature|auth|session|sessionid)$/i;
+const SENSITIVE_BODY = /pass(word|wd)?|secret|token|api[-_]?key|authorization|credential/i;
+const PLACEHOLDER = /\{\{\s*[^{}]+?\s*\}\}/g;
+
+/** Nilai header sensitif boleh disimpan hanya bila isinya placeholder (mis. "Bearer {{token}}"). */
+function safeHeaderValue(name: string, value: string): string {
+  if (!SENSITIVE_HEADER.test(name)) return value;
+  if (!/\{\{\s*[^{}]+?\s*\}\}/.test(value)) return "";
+  const rest = value.replace(PLACEHOLDER, "").trim();
+  return !rest || /^(bearer|basic|token|digest|apikey)$/i.test(rest) ? value : "";
+}
+
+/** Kosongkan nilai parameter query sensitif yang bukan placeholder. */
+function safeUrl(url: string): string {
+  const q = url.indexOf("?");
+  if (q < 0) return url;
+  const [query, hash = ""] = url.slice(q + 1).split(/#(.*)/s);
+  const parts = query.split("&").map((kv) => {
+    const eq = kv.indexOf("=");
+    if (eq < 0) return kv;
+    const k = kv.slice(0, eq);
+    const v = kv.slice(eq + 1);
+    let name = k;
+    try {
+      name = decodeURIComponent(k);
+    } catch {
+      /* biarkan apa adanya */
+    }
+    return SENSITIVE_PARAM.test(name) && !/^\{\{[^{}]+\}\}$/.test(v.trim()) ? `${k}=` : kv;
+  });
+  return `${url.slice(0, q)}?${parts.join("&")}${hash ? `#${hash}` : ""}`;
+}
+
+/** Bentuk request yang aman disimpan di riwayat. `legacy` = entri lama yang sudah tersubstitusi. */
+export function historySafe(req: SimpleRequest, legacy = false): SimpleRequest {
+  const body = legacy && req.body && SENSITIVE_BODY.test(req.body) ? null : req.body;
+  return { method: req.method, url: safeUrl(req.url), headers: req.headers.map(([k, v]) => [k, safeHeaderValue(k, v)] as [string, string]), body };
+}
+
+/** Muat riwayat; entri lama yang berisi hasil substitusi disaring dan ditulis ulang. */
+export function loadHistory(): HistoryEntry[] {
   try {
-    return JSON.parse(localStorage.getItem("alexel.http.history") ?? "[]") as HttpState["history"];
+    const raw = JSON.parse(localStorage.getItem(HISTORY_KEY) ?? "[]") as HistoryEntry[];
+    if (!Array.isArray(raw)) return [];
+    let changed = false;
+    const list = raw
+      .filter((h) => h && h.req && typeof h.req.url === "string")
+      .map((h) => {
+        if (h.v === 2) return h;
+        changed = true;
+        return { req: historySafe({ ...h.req, headers: Array.isArray(h.req.headers) ? h.req.headers : [] }, true), at: h.at, status: h.status, v: 2 as const };
+      });
+    if (changed) localStorage.setItem(HISTORY_KEY, JSON.stringify(list));
+    return list;
   } catch {
     return [];
   }
-};
+}
 
 export const useHttp = create<HttpState>(() => ({ envs: {}, env: null, secrets: [], exchanges: {}, named: {}, history: loadHistory(), current: null, drafts: {} }));
 const set = useHttp.setState;
@@ -100,37 +165,49 @@ function openResponse(key: string) {
   if (!key.startsWith("nozel:http:req:")) showTab(RESPONSE_TAB, 1);
 }
 
+/** Nomor urut send() per key: respons dari pengiriman yang sudah digantikan diabaikan. */
+const sendSeq = new Map<string, number>();
+
 export async function send(key: string, input: SendInput): Promise<Exchange | null> {
   const req = resolveRequest(input);
+  // Riwayat memakai template (sebelum substitusi), bukan `req`.
+  const template: SimpleRequest = { method: input.method, url: input.url, headers: input.headers, body: input.body };
   const missing = [...new Set([req.url, ...req.headers.map((h) => h[1]), req.body ?? ""].flatMap(unresolved))];
   if (missing.length) {
     toast(tl("Variabel belum diisi: {names}", { names: missing.join(", ") }), "error");
     return null;
   }
+  const token = (sendSeq.get(key) ?? 0) + 1;
+  sendSeq.set(key, token);
+  const stale = () => sendSeq.get(key) !== token;
   const ex: Exchange = { key, req, at: Date.now(), running: true };
   set((s) => ({ exchanges: { ...s.exchanges, [key]: ex } }));
   openResponse(key);
   try {
     const res = await api.httpSend(key, { method: req.method, url: req.url, headers: req.headers, body: req.body, bodyFile: input.bodyFile ?? null, baseDir: input.baseDir ?? null, root: appState().root, timeoutMs: (appState().settings.httpTimeout ?? 60) * 1000 });
+    // Sudah ada send() lebih baru untuk key ini: jangan timpa hasilnya dengan respons lama.
+    if (stale()) return null;
     const done: Exchange = { ...ex, running: false, res };
     set((s) => ({ exchanges: { ...s.exchanges, [key]: done }, named: input.name ? { ...s.named, [input.name]: res } : s.named }));
-    pushHistory(req, res.status);
+    pushHistory(template, res.status);
     return done;
   } catch (e) {
+    if (stale()) return null;
     const done: Exchange = { ...ex, running: false, error: errMsg(e) };
     set((s) => ({ exchanges: { ...s.exchanges, [key]: done } }));
-    pushHistory(req);
+    pushHistory(template);
     return done;
   }
 }
 
 export const cancelSend = (key: string) => api.httpCancel(key).catch(() => {});
 
-function pushHistory(req: SimpleRequest, status?: number) {
-  const history = [{ req, at: Date.now(), status }, ...get().history.filter((h) => !(h.req.method === req.method && h.req.url === req.url && h.req.body === req.body))].slice(0, 100);
+function pushHistory(template: SimpleRequest, status?: number) {
+  const req = historySafe(template);
+  const history: HistoryEntry[] = [{ req, at: Date.now(), status, v: 2 as const }, ...get().history.filter((h) => !(h.req.method === req.method && h.req.url === req.url && h.req.body === req.body))].slice(0, 100);
   set({ history });
   try {
-    localStorage.setItem("alexel.http.history", JSON.stringify(history));
+    localStorage.setItem(HISTORY_KEY, JSON.stringify(history));
   } catch {
     /* opsional */
   }
@@ -139,7 +216,7 @@ function pushHistory(req: SimpleRequest, status?: number) {
 export function clearHistory() {
   set({ history: [] });
   try {
-    localStorage.removeItem("alexel.http.history");
+    localStorage.removeItem(HISTORY_KEY);
   } catch {
     /* opsional */
   }

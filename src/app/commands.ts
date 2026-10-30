@@ -2,11 +2,11 @@
 
 import { DESIGNS, designById } from "../design/designs";
 import * as docs from "../editor/documents";
-import { api, isMac } from "../lib/ipc";
+import { api, errMsg, isMac } from "../lib/ipc";
 import { normalizeKeys, prettyKeys } from "../lib/keys";
 
 export { normalizeKeys, prettyKeys };
-import { getState, setState, activeTab, setLayout } from "../state/store";
+import { getState, setState, activeTab, setLayout, toast } from "../state/store";
 import * as A from "./actions";
 import * as E from "./editorCommands";
 import { isDebugging } from "../debug/state";
@@ -302,7 +302,24 @@ export function handleGlobalKey(e: KeyboardEvent) {
   if (s.palette.open && cmd.id !== "palette" && cmd.id !== "quickOpen") return;
   e.preventDefault();
   e.stopPropagation();
-  void cmd.run();
+  runCommandSafely(cmd);
+}
+
+/**
+ * Jalankan perintah dari shortcut. Galat sinkron maupun promise yang ditolak dicatat dan ditampilkan
+ * sebagai toast galat, supaya tidak menjadi exception/unhandled rejection yang hilang begitu saja.
+ */
+export function runCommandSafely(cmd: Pick<Command, "id" | "label" | "run">) {
+  const fail = (err: unknown) => {
+    console.error(`Perintah ${cmd.id} gagal`, err);
+    toast(tl("Perintah “{name}” gagal: {error}", { name: cmd.label, error: errMsg(err) }), "error");
+  };
+  try {
+    const r = cmd.run();
+    if (r && typeof (r as Promise<void>).then === "function") (r as Promise<void>).then(undefined, fail);
+  } catch (err) {
+    fail(err);
+  }
 }
 
 /** Buka Claude inline di editor yang sedang fokus. */

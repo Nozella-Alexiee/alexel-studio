@@ -187,15 +187,61 @@ export async function searchProject(root: string, query: string, o: { isRegex: b
   return { matches, files_searched: filesSearched, truncated: false };
 }
 
-export async function replaceInFiles(ctx: Ctx, paths: string[], query: string, replacement: string, o: { isRegex: boolean; caseSensitive: boolean; wholeWord: boolean }): Promise<number> {
+// Ganti juga dijalankan di konteks vm yang sama dengan batas waktu (regex pengguna, lihat __scan).
+vm.runInContext(
+  `function __replace(a) {
+    const re = new RegExp(a.source, a.flags);
+    const m = a.text.match(re);
+    const n = m ? m.length : 0;
+    if (!n || a.countOnly) return [n, null];
+    return [n, a.literal ? a.text.replace(re, function () { return a.replacement; }) : a.text.replace(re, a.replacement)];
+  }`,
+  scanCtx
+);
+export const REPLACE_TIMEOUT_MSG = "Ganti dibatalkan: regex terlalu lambat untuk salah satu berkas. Tidak ada berkas yang diubah. Sederhanakan polanya.";
+export const REPLACE_STOPPED_MSG = "Ganti dihentikan: regex terlalu lambat. Sebagian berkas sudah diganti; versi lamanya tersimpan di time-travel.";
+
+function replaceOne(text: string, re: RegExp, replacement: string, literal: boolean, countOnly: boolean, timeoutMs: number): [number, string | null] {
+  scanCtx.__args = { text, source: re.source, flags: re.flags, replacement, literal, countOnly };
+  try {
+    const [n, out] = vm.runInContext("__replace(__args)", scanCtx, { timeout: timeoutMs }) as [number, string | null];
+    return [n, out];
+  } finally {
+    scanCtx.__args = null;
+  }
+}
+const isTimeout = (e: unknown) => (e as { code?: string }).code === "ERR_SCRIPT_EXECUTION_TIMEOUT";
+
+export async function replaceInFiles(ctx: Ctx, paths: string[], query: string, replacement: string, o: { isRegex: boolean; caseSensitive: boolean; wholeWord: boolean }, timeoutMs = SCAN_TIMEOUT_MS): Promise<number> {
   const re = buildRegex(query, o.isRegex, o.caseSensitive, o.wholeWord);
-  let total = 0;
+  const literal = !o.isRegex;
+  // Tahap 1: cek semua berkas (hitung saja) dengan batas waktu sebelum ada yang ditulis, supaya regex
+  // yang lambat membatalkan seluruh penggantian, bukan meninggalkan sebagian berkas sudah berubah.
+  const todo: string[] = [];
   for (const p of paths) {
     const text = await readTextSmall(p);
     if (text === null) continue;
-    const n = text.match(re)?.length ?? 0;
-    if (!n) continue;
-    const out = o.isRegex ? text.replace(re, replacement) : text.replace(re, () => replacement);
+    try {
+      if (replaceOne(text, re, replacement, literal, true, timeoutMs)[0]) todo.push(p);
+    } catch (e) {
+      if (isTimeout(e)) throw new Error(REPLACE_TIMEOUT_MSG);
+      throw e;
+    }
+  }
+  // Tahap 2: ganti & tulis per berkas (juga dengan batas waktu).
+  let total = 0;
+  for (const p of todo) {
+    const text = await readTextSmall(p);
+    if (text === null) continue;
+    let n: number;
+    let out: string | null;
+    try {
+      [n, out] = replaceOne(text, re, replacement, literal, false, timeoutMs);
+    } catch (e) {
+      if (isTimeout(e)) throw new Error(total ? REPLACE_STOPPED_MSG : REPLACE_TIMEOUT_MSG);
+      throw e;
+    }
+    if (!n || out === null) continue;
     await writeAtomic(p, out);
     snapshot(ctx, p, out);
     total += n;

@@ -7,7 +7,7 @@ import { defaultKeymap, history, historyKeymap, indentWithTab } from "@codemirro
 import { bracketMatching, foldGutter, foldKeymap, indentOnInput, indentUnit } from "@codemirror/language";
 import { forceLinting, lintGutter, lintKeymap } from "@codemirror/lint";
 import { highlightSelectionMatches, searchKeymap } from "@codemirror/search";
-import { Annotation, Compartment, EditorSelection, EditorState, Prec, Text, type Extension, Transaction } from "@codemirror/state";
+import { Annotation, Compartment, EditorSelection, EditorState, Prec, Text, type Extension, type StateEffect, Transaction } from "@codemirror/state";
 import {
   EditorView,
   crosshairCursor,
@@ -41,6 +41,7 @@ import { minimap } from "./minimap";
 import { snippetExtension } from "./snippets";
 import { nozelEditorTheme } from "./theme";
 import { debugExtension } from "../debug/editor";
+import { dbg, setDbg } from "../debug/state";
 import { tl } from "../i18n";
 import { fixAction } from "./fixWithAi";
 
@@ -106,6 +107,16 @@ const reviewExts = new Map<string, Extension>();
 /** Ekstensi tambahan per berkas (mis. autocomplete skema database untuk .sql). */
 const auxComp = new Compartment();
 const auxExts = new Map<string, Extension>();
+/**
+ * Ekstensi yang menangkap path (atau bahasa) berkas saat dibuat. Dibungkus compartment supaya
+ * bisa dibangun ulang saat berkas di-rename/dipindah tanpa kehilangan isi, seleksi, dan undo.
+ */
+const debugComp = new Compartment();
+const editAidComp = new Compartment();
+const hostComp = new Compartment();
+const blameComp = new Compartment();
+/** Pemanggilan openDocument yang masih berjalan per path (supaya tidak terbentuk dua Doc). */
+const opening = new Map<string, Promise<Doc>>();
 
 export const getDoc = (path: string) => docs.get(path);
 export const openDocs = () => [...docs.values()];
@@ -140,7 +151,7 @@ function baseExtensions(doc: Doc, group: number): Extension {
   const saver = isSaver();
   return [
     inlineClaude(),
-    debugExtension(doc.path),
+    debugComp.of(debugExtension(doc.path)),
     ...(doc.indent ? [Prec.highest(indentUnit.of(doc.indent))] : []),
     lineNumbers(),
     highlightActiveLineGutter(),
@@ -160,19 +171,38 @@ function baseExtensions(doc: Doc, group: number): Extension {
     highlightSelectionMatches(),
     keymap.of([...closeBracketsKeymap, ...defaultKeymap, ...searchKeymap, ...historyKeymap, ...foldKeymap, ...completionKeymap, ...lintKeymap, indentWithTab]),
     nozelEditorTheme,
-    emmetExtension(doc.path),
-    snippetExtension(doc.langId),
+    editAidComp.of(editAidExtensions(doc)),
     lintGutter(),
-    hostFeatures(doc),
+    hostComp.of(hostFeatures(doc)),
     lintComp.of(doc.lsp ? [] : lezerLinter(doc, saver)),
     lspComp.of(doc.lsp && group === doc.lspGroup ? doc.lsp : []),
     gitGutter(() => doc.head, (view, line, ev) => (typeof doc.head === "string" ? hunkMenu(view, doc.path, doc.head, line, ev) : false)),
-    blameExtension(doc.path),
+    blameComp.of(blameExtension(doc.path)),
     langComp.of(doc.language ?? []),
     reviewComp.of(reviewExts.get(doc.path) ?? []),
     auxComp.of(auxExts.get(doc.path) ?? []),
     settingsComp.of(currentSettingsExt()),
     EditorView.updateListener.of((u) => onUpdate(doc, group, u)),
+  ];
+}
+
+function editAidExtensions(doc: Doc): Extension {
+  return [emmetExtension(doc.path), snippetExtension(doc.langId)];
+}
+
+/**
+ * Efek untuk menyambungkan ulang ekstensi berpath ke path dokumen saat ini (setelah rename).
+ * Koneksi LSP dilepas (plugin lama dihancurkan → didClose URI lama); attachLsp memasangnya lagi
+ * dengan URI baru (didOpen). Selama itu linter bawaan dipakai.
+ */
+function pathEffects(doc: Doc): StateEffect<unknown>[] {
+  return [
+    debugComp.reconfigure(debugExtension(doc.path)),
+    editAidComp.reconfigure(editAidExtensions(doc)),
+    hostComp.reconfigure(hostFeatures(doc)),
+    blameComp.reconfigure(blameExtension(doc.path)),
+    lintComp.reconfigure(doc.lsp ? [] : lezerLinter(doc, isSaver())),
+    lspComp.reconfigure([]),
   ];
 }
 
@@ -190,10 +220,12 @@ function lezerLinter(doc: Doc, saver: boolean): Extension {
 
 /** Sambungkan dokumen ke language server bila tersedia (async, tidak menahan pembukaan berkas). */
 async function attachLsp(doc: Doc) {
+  // Path ditangkap di awal: kalau berkas di-rename selama menunggu, hasil untuk path lama dibuang.
+  const path = doc.path;
   try {
     const { lspFor } = await import("./lsp");
-    const r = await lspFor(doc.path, doc.langId);
-    if (!r || docs.get(doc.path) !== doc) return;
+    const r = await lspFor(path, doc.langId);
+    if (!r || doc.path !== path || docs.get(path) !== doc) return;
     doc.lsp = r.extension;
     doc.lspName = r.server.name;
     const shownIn = shown.findIndex((p) => p === doc.path);
@@ -430,10 +462,22 @@ export function refreshHeads() {
 
 // ---------- Buka / simpan / tutup ----------
 
-export async function openDocument(path: string): Promise<Doc> {
+export function openDocument(path: string): Promise<Doc> {
   const existing = docs.get(path);
-  if (existing) return existing;
+  if (existing) return Promise.resolve(existing);
+  // Pemanggilan bersamaan untuk path yang sama berbagi satu pembacaan (satu objek Doc).
+  let p = opening.get(path);
+  if (!p) {
+    p = loadDocument(path).finally(() => opening.delete(path));
+    opening.set(path, p);
+  }
+  return p;
+}
+
+async function loadDocument(path: string): Promise<Doc> {
   const file = await api.readText(path);
+  const again = docs.get(path);
+  if (again) return again;
   const info = languageFor(basename(path));
   const doc: Doc = {
     path,
@@ -731,6 +775,30 @@ export function renameDocument(oldPath: string, newPath: string) {
       void loadLanguage(d);
     }
   }
+  // Breakpoint ikut pindah (gutter debug dibangun ulang dari store dengan path baru).
+  const bps = dbg().breakpoints[oldPath];
+  if (bps) {
+    setDbg((s) => {
+      const breakpoints = { ...s.breakpoints, [newPath]: bps };
+      delete breakpoints[oldPath];
+      return { breakpoints };
+    });
+    if (bps.length)
+      void import("../debug/debug").then((m) => {
+        m.setBreakpoints(oldPath, []);
+        m.setBreakpoints(newPath, [...(dbg().breakpoints[newPath] ?? bps)]);
+      });
+  }
+  // Ekstensi yang menangkap path lama (debug, emmet, snippet, ekstensi host, blame, LSP) disambung ulang.
+  d.lsp = null;
+  d.lspName = undefined;
+  for (let g = 0; g < d.states.length; g++) {
+    const v = views[g];
+    if (v && shown[g] === newPath) v.dispatch({ effects: pathEffects(d) });
+    else if (d.states[g]) d.states[g] = d.states[g]!.update({ effects: pathEffects(d) }).state;
+  }
+  void loadHead(d);
+  void attachLsp(d);
   emitDoc({ type: "rename", from: oldPath, to: newPath });
 }
 

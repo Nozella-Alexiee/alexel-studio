@@ -11,12 +11,32 @@ function cssVar(el: HTMLElement, name: string, fallback: string) {
   return getComputedStyle(el).getPropertyValue(name).trim() || fallback;
 }
 
+/**
+ * Ikuti drag pointer di `el` sampai selesai. Selesai = pointerup, pointercancel (mis. sentuhan
+ * dibatalkan OS), atau lostpointercapture; semua listener dilepas sekali saja. Mengembalikan
+ * fungsi untuk mengakhiri drag secara manual (mis. plugin dihancurkan di tengah drag).
+ */
+export function trackPointerDrag(el: EventTarget, onMove: (ev: PointerEvent) => void): () => void {
+  const ENDS = ["pointerup", "pointercancel", "lostpointercapture"] as const;
+  const move = (ev: Event) => onMove(ev as PointerEvent);
+  let done = false;
+  const end = () => {
+    if (done) return;
+    done = true;
+    el.removeEventListener("pointermove", move);
+    for (const t of ENDS) el.removeEventListener(t, end);
+  };
+  el.addEventListener("pointermove", move);
+  for (const t of ENDS) el.addEventListener(t, end);
+  return end;
+}
+
 const plugin = ViewPlugin.fromClass(
   class {
     canvas: HTMLCanvasElement;
     raf = 0;
     timer = 0;
-    dragging = false;
+    endDrag: (() => void) | null = null;
     ro: ResizeObserver;
 
     constructor(readonly view: EditorView) {
@@ -115,20 +135,16 @@ const plugin = ViewPlugin.fromClass(
 
     onDown = (e: PointerEvent) => {
       e.preventDefault();
-      this.dragging = true;
+      // Drag sebelumnya yang belum berakhir (pointer lain) dilepas dulu supaya listener tidak menumpuk.
+      this.endDrag?.();
       this.canvas.setPointerCapture(e.pointerId);
+      this.endDrag = trackPointerDrag(this.canvas, (ev) => this.scrollTo(ev.clientY));
       this.scrollTo(e.clientY);
-      const move = (ev: PointerEvent) => this.dragging && this.scrollTo(ev.clientY);
-      const up = () => {
-        this.dragging = false;
-        this.canvas.removeEventListener("pointermove", move);
-        this.canvas.removeEventListener("pointerup", up);
-      };
-      this.canvas.addEventListener("pointermove", move);
-      this.canvas.addEventListener("pointerup", up);
     };
 
     destroy() {
+      this.endDrag?.();
+      this.endDrag = null;
       cancelAnimationFrame(this.raf);
       clearTimeout(this.timer);
       this.ro.disconnect();

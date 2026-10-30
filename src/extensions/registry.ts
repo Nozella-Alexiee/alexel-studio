@@ -6,7 +6,7 @@ import { create } from "zustand";
 import { call, isNative } from "../lib/ipc";
 import { getState, toast } from "../state/store";
 import { parseJsonc, resolveTheme, themeToVars, applyThemeVars } from "./theme";
-import { lang } from "../i18n";
+import { lang, tl } from "../i18n";
 
 export interface InstalledExt {
   id: string;
@@ -28,6 +28,14 @@ export interface InstalledExt {
   activationEvents?: string[];
   namespace?: string;
   name?: string;
+  /** "unavailable": Open VSX tidak menyediakan checksum SHA-256, paket dipasang tanpa verifikasi. */
+  checksum?: "verified" | "unavailable";
+}
+
+/** Catat peringatan di Output bila paket dipasang tanpa checksum dari registry. */
+export function warnIfUnverified(m: Pick<InstalledExt, "id" | "version" | "checksum">) {
+  if (m.checksum !== "unavailable") return;
+  void import("../app/output").then((o) => o.logOutput("Alexel Studio", tl("Peringatan: Open VSX tidak menyediakan checksum SHA-256 untuk {id} {version}. Paket dipasang tanpa verifikasi checksum.", { id: m.id, version: m.version })));
 }
 
 export const useExtensions = create<{ list: InstalledExt[]; loaded: boolean }>(() => ({ list: [], loaded: false }));
@@ -171,7 +179,7 @@ function installBuiltin(name: string): Promise<boolean> {
     p = (async () => {
       try {
         toast(`Memasang grammar pendukung: ${name}`, "info");
-        await call("ext_install", { namespace: "vscode", name });
+        warnIfUnverified(await call<InstalledExt>("ext_install", { namespace: "vscode", name }));
         useExtensions.setState({ list: await call<InstalledExt[]>("ext_list", { lang }) });
         return true;
       } catch (e) {

@@ -10,44 +10,67 @@ interface Entry {
   view: WebContentsView;
   win: BrowserWindow;
   visible: boolean;
+  /** Dialog alert/confirm yang sedang terbuka untuk tab ini; ditutup (= dibatalkan) saat tab ditutup. */
+  dialogs: Set<AbortController>;
 }
 
 const views = new Map<number, Entry>();
 
+interface DialogEvent {
+  sender: { id: number; getURL(): string };
+  returnValue: unknown;
+}
+
 // alert/confirm/prompt dari halaman (lihat browserPreload.ts) → dialog native yang memblokir halaman
 // itu saja, seperti di browser biasa. prompt() tidak punya padanan native: dianggap dibatalkan.
+// Halaman memanggil ipcRenderer.sendSync, jadi proses halaman itu menunggu sampai `returnValue` diisi;
+// main TIDAK menunggu: dialognya asinkron (showMessageBox) dan `returnValue` diisi saat dialog ditutup.
+// Selama dialog terbuka, pty, agen, dan IPC lain tetap berjalan.
+export async function answerDialog(e: DialogEvent, kind: string, message: string): Promise<void> {
+  const reply = (v: unknown) => {
+    try {
+      e.returnValue = v;
+    } catch {
+      /* halaman sudah ditutup */
+    }
+  };
+  const owner = [...views.values()].find((x) => !x.view.webContents.isDestroyed() && x.view.webContents.id === e.sender.id);
+  if (!owner) return reply(null);
+  let host = "";
+  try {
+    host = new URL(e.sender.getURL()).host;
+  } catch {
+    /* about:blank */
+  }
+  // Uji otomatis: tanpa dialog (tidak ada yang bisa mengklik), confirm dianggap OK.
+  if (process.env.NOZEL_SMOKE) {
+    console.log(`SMOKE_DIALOG ${kind}: ${message}`);
+    return reply(kind === "confirm" ? true : null);
+  }
+  const text = String(message ?? "").slice(0, 4000);
+  const ac = new AbortController();
+  owner.dialogs.add(ac);
+  const opts = { title: host || "Browser", message: host ? `${host}` : "Browser", detail: text, signal: ac.signal };
+  try {
+    if (kind === "confirm") {
+      const r = await dialog.showMessageBox(owner.win, { ...opts, type: "question", buttons: ["OK", "Batal"], defaultId: 0, cancelId: 1 });
+      reply(!ac.signal.aborted && r.response === 0);
+    } else {
+      await dialog.showMessageBox(owner.win, { ...opts, type: "info", buttons: ["OK"], ...(kind === "alert" ? {} : { detail: `${text}\n\n(prompt() tidak didukung di tab browser; dianggap dibatalkan.)` }) });
+      reply(null);
+    }
+  } catch {
+    reply(kind === "confirm" ? false : null);
+  } finally {
+    owner.dialogs.delete(ac);
+  }
+}
+
 let dialogsWired = false;
 function wireDialogs() {
   if (dialogsWired) return;
   dialogsWired = true;
-  ipcMain.on("alexel-browser:dialog", (e, kind: string, message: string) => {
-    const owner = [...views.values()].find((x) => !x.view.webContents.isDestroyed() && x.view.webContents.id === e.sender.id);
-    if (!owner) {
-      e.returnValue = null;
-      return;
-    }
-    let host = "";
-    try {
-      host = new URL(e.sender.getURL()).host;
-    } catch {
-      /* about:blank */
-    }
-    // Uji otomatis: tanpa dialog (tidak ada yang bisa mengklik), confirm dianggap OK.
-    if (process.env.NOZEL_SMOKE) {
-      console.log(`SMOKE_DIALOG ${kind}: ${message}`);
-      e.returnValue = kind === "confirm" ? true : null;
-      return;
-    }
-    const opts = { title: host || "Browser", message: host ? `${host}` : "Browser", detail: message.slice(0, 4000) };
-    if (kind === "alert") {
-      dialog.showMessageBoxSync(owner.win, { ...opts, type: "info", buttons: ["OK"] });
-      e.returnValue = null;
-    } else if (kind === "confirm") e.returnValue = dialog.showMessageBoxSync(owner.win, { ...opts, type: "question", buttons: ["OK", "Batal"], defaultId: 0, cancelId: 1 }) === 0;
-    else {
-      dialog.showMessageBoxSync(owner.win, { ...opts, type: "info", buttons: ["OK"], detail: `${opts.detail}\n\n(prompt() tidak didukung di tab browser; dianggap dibatalkan.)` });
-      e.returnValue = null;
-    }
-  });
+  ipcMain.on("alexel-browser:dialog", (e, kind: string, message: string) => void answerDialog(e, kind, message));
 }
 let seq = 0;
 let configured: Session | null = null;
@@ -84,7 +107,7 @@ export function createBrowser(ctx: Ctx, win: BrowserWindow, url: string, tag: st
   view.setBackgroundColor("#ffffff");
   view.setVisible(false);
   win.contentView.addChildView(view);
-  views.set(id, { view, win, visible: false });
+  views.set(id, { view, win, visible: false, dialogs: new Set() });
   const wc = view.webContents;
   const state = (type: string, extra: Record<string, unknown> = {}) =>
     ctx.emit("browser-event", { id, tag, type, url: wc.getURL(), title: wc.getTitle(), loading: wc.isLoading(), canGoBack: wc.navigationHistory.canGoBack(), canGoForward: wc.navigationHistory.canGoForward(), ...extra });
@@ -175,6 +198,8 @@ export function destroyBrowser(id: number) {
   const e = views.get(id);
   views.delete(id);
   if (!e) return;
+  for (const ac of e.dialogs) ac.abort();
+  e.dialogs.clear();
   try {
     e.win.contentView.removeChildView(e.view);
   } catch {
@@ -191,3 +216,5 @@ export async function clearBrowserData() {
   await browserSession().clearStorageData();
   await browserSession().clearCache();
 }
+
+export const _test = { views };

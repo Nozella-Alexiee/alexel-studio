@@ -10,7 +10,8 @@ import type { BlameInfo } from "../lib/types";
 import { getState, useStore } from "../state/store";
 import { tl } from "../i18n";
 
-const blamePath = Facet.define<string, string>({ combine: (v) => v[0] ?? "" });
+/** Path berkas yang di-blame (diekspor untuk tes rename). */
+export const blamePath = Facet.define<string, string>({ combine: (v) => v[0] ?? "" });
 const setBlame = StateEffect.define<BlameInfo | null>();
 const ZERO = /^0+$/;
 

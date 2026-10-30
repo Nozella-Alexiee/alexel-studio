@@ -74,15 +74,22 @@ export interface InstalledExt {
   commands?: { command: string; title: string; category?: string }[];
   keybindings?: { command: string; key: string; mac?: string; win?: string; linux?: string; when?: string; args?: unknown }[];
   activationEvents?: string[];
+  /** "unavailable": Open VSX tidak menyediakan SHA-256 untuk paket ini (dipasang tanpa verifikasi, renderer mencatat peringatan). */
+  checksum?: "verified" | "unavailable";
 }
 
 const extRoot = (ctx: Ctx) => path.join(ctx.userData, "extensions");
 const validId = (id: string) => /^[A-Za-z0-9][\w.-]*$/.test(id) && !id.includes("..");
 
 async function getJson(url: string) {
-  const r = await fetch(url, { headers: { Accept: "application/json" }, signal: AbortSignal.timeout(20_000) });
-  if (!r.ok) throw new Error(`Open VSX menjawab ${r.status}`);
-  return r.json();
+  try {
+    const r = await fetch(url, { headers: { Accept: "application/json" }, signal: AbortSignal.timeout(20_000) });
+    if (!r.ok) throw new Error(`Open VSX menjawab ${r.status}`);
+    return await r.json();
+  } catch (e) {
+    if (isTimeout(e)) throw new Error("Open VSX tidak merespons (batas waktu). Coba lagi.");
+    throw e;
+  }
 }
 
 const SORTS = new Set(["relevance", "downloadCount", "averageRating", "timestamp"]);
@@ -362,6 +369,47 @@ export async function extInstall(ctx: Ctx, namespace: string, name: string, vers
   }
 }
 
+const SHA_TIMEOUT_MS = 20_000;
+/** Batas unduhan vsix (sampai MAX_VSIX = 600 MB): 10 menit, termasuk membaca isinya. */
+const DOWNLOAD_TIMEOUT_MS = 600_000;
+export const SHA_RETRY_MSG = "Checksum SHA-256 ekstensi dari Open VSX tidak bisa diambil, pemasangan dibatalkan. Coba lagi.";
+const isTimeout = (e: unknown) => (e as { name?: string })?.name === "TimeoutError" || (e as { name?: string })?.name === "AbortError";
+
+/**
+ * SHA-256 yang diharapkan (hex huruf kecil), atau null bila registry memang tidak menyediakannya.
+ * Bila registry menyatakan ada checksum tetapi gagal diambil (jaringan, batas waktu, status, isi tidak valid),
+ * pemasangan dibatalkan: memasang tanpa verifikasi di kasus itu membuka celah mengakali pemeriksaan.
+ */
+export async function expectedSha256(files: { sha256?: unknown } | undefined, timeoutMs = SHA_TIMEOUT_MS): Promise<string | null> {
+  const src = files?.sha256;
+  if (src === undefined || src === null || src === "") return null;
+  if (typeof src !== "string" || !src.startsWith("https://")) throw new Error(SHA_RETRY_MSG);
+  try {
+    const r = await fetch(src, { signal: AbortSignal.timeout(timeoutMs) });
+    if (!r.ok) throw new Error(String(r.status));
+    const hex = (await r.text()).trim().split(/\s+/)[0]?.toLowerCase() ?? "";
+    if (!/^[0-9a-f]{64}$/.test(hex)) throw new Error("format");
+    return hex;
+  } catch {
+    throw new Error(SHA_RETRY_MSG);
+  }
+}
+
+async function download(url: string, timeoutMs = DOWNLOAD_TIMEOUT_MS): Promise<Uint8Array> {
+  try {
+    const r = await fetch(url, { signal: AbortSignal.timeout(timeoutMs) });
+    if (!r.ok) throw new Error(`Gagal mengunduh ekstensi (${r.status}).`);
+    const len = Number(r.headers.get("content-length") ?? 0);
+    if (len > MAX_VSIX) throw new Error("Ekstensi terlalu besar.");
+    const buf = new Uint8Array(await r.arrayBuffer());
+    if (buf.length > MAX_VSIX) throw new Error("Ekstensi terlalu besar.");
+    return buf;
+  } catch (e) {
+    if (isTimeout(e)) throw new Error("Unduhan ekstensi melebihi batas waktu. Coba lagi.");
+    throw e;
+  }
+}
+
 async function installInto(dir: string, namespace: string, name: string, version?: string | null): Promise<InstalledExt> {
   if (version && !/^[\w.+-]+$/.test(version)) throw new Error("Versi tidak valid.");
   // Ekstensi yang dibangun per platform (Claude Code, Codex, …) punya vsix khusus OS/arsitektur ini;
@@ -378,16 +426,10 @@ async function installInto(dir: string, namespace: string, name: string, version
   }
   const url: string | undefined = meta.files?.download;
   if (!url?.startsWith("https://")) throw new Error("Berkas ekstensi tidak tersedia.");
-  const r = await fetch(url, { signal: AbortSignal.timeout(600_000) });
-  if (!r.ok) throw new Error(`Gagal mengunduh ekstensi (${r.status}).`);
-  const buf = new Uint8Array(await r.arrayBuffer());
-  if (buf.length > MAX_VSIX) throw new Error("Ekstensi terlalu besar.");
-  // Verifikasi checksum bila Open VSX menyediakannya.
-  if (meta.files?.sha256) {
-    const expect = String(await fetch(meta.files.sha256).then((x) => x.text())).trim().split(/\s+/)[0];
-    const got = createHash("sha256").update(buf).digest("hex");
-    if (expect && /^[0-9a-f]{64}$/i.test(expect) && expect.toLowerCase() !== got) throw new Error("Checksum ekstensi tidak cocok, pemasangan dibatalkan.");
-  }
+  // Checksum diambil sebelum mengunduh (berkasnya kecil): kalau gagal, pemasangan batal tanpa membuang waktu mengunduh vsix.
+  const expectSha = await expectedSha256(meta.files);
+  const buf = await download(url);
+  if (expectSha && createHash("sha256").update(buf).digest("hex") !== expectSha) throw new Error("Checksum ekstensi tidak cocok, pemasangan dibatalkan.");
   const files = unzipSync(buf, { filter: boundedFilter((n) => n === "extension/package.json" || DATA_EXT.test(n), 300 * 1024 * 1024, 60 * 1024 * 1024) });
   const pkgRaw = files["extension/package.json"];
   if (!pkgRaw) throw new Error("Paket ekstensi tidak valid.");
@@ -487,7 +529,7 @@ async function installInto(dir: string, namespace: string, name: string, version
   if (!hasCode && !themes.length && !iconThemes.length && !snippets.length && !grammars.length && !languages.some((l: { configuration?: string }) => l.configuration)) {
     throw new Error("Ekstensi ini tidak berisi tema, tema ikon, snippet, grammar, konfigurasi bahasa, maupun kode yang bisa dijalankan.");
   }
-  const manifest: InstalledExt = { id, namespace, name, displayName: pkg.displayName || name, version: pkg.version || meta.version, description: pkg.description || "", themes, iconThemes, snippets, grammars, languages, installedAt: Date.now(), hasCode, icon, contributes: JSON.stringify(c).length < 300_000 ? c : undefined, publisher: pkg.publisher, activationEvents: pkg.activationEvents, commands: Array.isArray(c.commands) ? c.commands.filter((x: { command?: string; title?: unknown }) => x?.command && typeof x.title === "string") : undefined, keybindings: Array.isArray(c.keybindings) ? c.keybindings.filter((x: { command?: string; key?: string }) => x?.command && x?.key) : undefined };
+  const manifest: InstalledExt = { id, namespace, name, displayName: pkg.displayName || name, version: pkg.version || meta.version, description: pkg.description || "", checksum: expectSha ? "verified" : "unavailable", themes, iconThemes, snippets, grammars, languages, installedAt: Date.now(), hasCode, icon, contributes: JSON.stringify(c).length < 300_000 ? c : undefined, publisher: pkg.publisher, activationEvents: pkg.activationEvents, commands: Array.isArray(c.commands) ? c.commands.filter((x: { command?: string; title?: unknown }) => x?.command && typeof x.title === "string") : undefined, keybindings: Array.isArray(c.keybindings) ? c.keybindings.filter((x: { command?: string; key?: string }) => x?.command && x?.key) : undefined };
   fs.writeFileSync(path.join(dir, "nozel-manifest.json"), JSON.stringify(manifest, null, 2));
   return manifest;
 }

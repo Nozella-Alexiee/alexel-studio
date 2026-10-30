@@ -37,6 +37,8 @@ function wire() {
 }
 
 const starting = new Map<string, Promise<string>>();
+/** Pesan galat ensureKernel bila tab notebook sudah ditutup sebelum kernel selesai dimulai (tidak perlu ditampilkan). */
+export const NOTEBOOK_CLOSED = "NOTEBOOK_CLOSED";
 
 export function ensureKernel(path: string, root: string, name: string | null): Promise<string> {
   wire();
@@ -47,14 +49,22 @@ export function ensureKernel(path: string, root: string, name: string | null): P
     setK(path, { status: "starting", error: undefined });
     p = api
       .jupyterStart(root, name)
-      .then((k) => {
-        setK(path, { id: k.id, name: k.name, status: "idle" });
-        return k.id;
-      })
-      .catch((e: Error) => {
-        setK(path, { status: "error", error: e.message });
-        throw e;
-      })
+      .then(
+        (k) => {
+          // Tab ditutup saat kernel masih dimulai: penutupan tab tidak melihat id-nya, jadi matikan di sini.
+          if (!useStore.getState().tabs[path]) {
+            void api.jupyterShutdown(k.id).catch(() => {});
+            setK(path, { id: null, status: "none" });
+            throw new Error(NOTEBOOK_CLOSED);
+          }
+          setK(path, { id: k.id, name: k.name, status: "idle" });
+          return k.id;
+        },
+        (e: Error) => {
+          setK(path, { status: "error", error: e.message });
+          throw e;
+        }
+      )
       .finally(() => starting.delete(path));
     starting.set(path, p);
   }

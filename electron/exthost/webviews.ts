@@ -131,6 +131,16 @@ export interface WebResponse {
   csp?: boolean;
 }
 
+const within = (file: string, root: string) => file === root || file.startsWith(root.endsWith(path.sep) ? root : root + path.sep);
+/** Path asli root; root yang belum/tidak ada tetap dibandingkan apa adanya (tidak akan cocok dengan berkas asli). */
+const realRoot = (r: string) => {
+  try {
+    return fs.realpathSync(r);
+  } catch {
+    return r;
+  }
+};
+
 /** Selesaikan URL `nozelweb://v/<id>/…` (dokumen) atau `nozelweb://r/<id>/<path ter-encode>` (sumber daya). */
 export function resolveWebview(url: string): WebResponse {
   const u = new URL(url);
@@ -150,10 +160,18 @@ export function resolveWebview(url: string): WebResponse {
     const rel = decodeURIComponent(parts.slice(1).join("/"));
     // Bentuk yang dikenali: "/abs/path" (encode utuh), "abs/path" (posix tanpa "/" awal), "C:/path" (Windows).
     const file = path.resolve(/^[A-Za-z]:[\\/]/.test(rel) || rel.startsWith("/") ? rel : "/" + rel);
-    const ok = panel.roots.some((r) => file === r || file.startsWith(r + path.sep));
-    if (!ok) return { status: 403, body: "Forbidden", mime: "text/plain" };
+    // Dicek pada path asli (realpath) di kedua sisi: symlink di dalam root yang menunjuk ke luar root
+    // ditolak, sedangkan symlink yang tetap di dalam root (mis. node_modules pnpm → .pnpm) dan root yang
+    // dirinya sendiri symlink (folder ekstensi tertaut) tetap dilayani.
+    let real: string;
     try {
-      return { status: 200, body: fs.readFileSync(file), mime: MIME[path.extname(file).toLowerCase()] ?? "application/octet-stream" };
+      real = fs.realpathSync(file);
+    } catch {
+      return panel.roots.some((r) => within(file, r)) ? { status: 404, body: "Not found", mime: "text/plain" } : { status: 403, body: "Forbidden", mime: "text/plain" };
+    }
+    if (!panel.roots.some((r) => within(real, realRoot(r)))) return { status: 403, body: "Forbidden", mime: "text/plain" };
+    try {
+      return { status: 200, body: fs.readFileSync(real), mime: MIME[path.extname(file).toLowerCase()] ?? "application/octet-stream" };
     } catch {
       return { status: 404, body: "Not found", mime: "text/plain" };
     }

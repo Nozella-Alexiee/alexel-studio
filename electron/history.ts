@@ -26,14 +26,19 @@ function listSorted(dir: string): { t: number; p: string; size: number }[] {
   } catch {
     return [];
   }
-  return names
-    .filter((n) => n.endsWith(".snap"))
-    .map((n) => {
-      const p = path.join(dir, n);
-      return { t: Number(n.slice(0, -5)), p, size: fs.statSync(p).size };
-    })
-    .filter((x) => Number.isFinite(x.t))
-    .sort((a, b) => a.t - b.t);
+  const out: { t: number; p: string; size: number }[] = [];
+  for (const n of names) {
+    if (!n.endsWith(".snap")) continue;
+    const t = Number(n.slice(0, -5));
+    if (!Number.isFinite(t)) continue;
+    const p = path.join(dir, n);
+    try {
+      out.push({ t, p, size: fs.statSync(p).size });
+    } catch {
+      /* snapshot dihapus bersamaan (pemangkasan dari jendela lain): lewati */
+    }
+  }
+  return out.sort((a, b) => a.t - b.t);
 }
 
 export function snapshotIn(dir: string, file: string, content: string) {
@@ -62,9 +67,15 @@ export function snapshotIn(dir: string, file: string, content: string) {
 export const snapshot = (ctx: Ctx, file: string, content: string) => snapshotIn(historyDir(ctx, file), file, content);
 
 export function historyList(ctx: Ctx, file: string): Snapshot[] {
-  return listSorted(historyDir(ctx, file))
-    .map((x) => ({ id: String(x.t), time_ms: x.t, size: x.size, lines: fs.readFileSync(x.p, "utf8").split("\n").length }))
-    .reverse();
+  const out: Snapshot[] = [];
+  for (const x of listSorted(historyDir(ctx, file))) {
+    try {
+      out.push({ id: String(x.t), time_ms: x.t, size: x.size, lines: fs.readFileSync(x.p, "utf8").split("\n").length });
+    } catch {
+      /* hilang di antara stat dan baca: lewati */
+    }
+  }
+  return out.reverse();
 }
 
 export function historyRead(ctx: Ctx, file: string, id: string): string {

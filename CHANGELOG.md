@@ -1,5 +1,56 @@
 # Changelog
 
+## 1.0.1
+
+A maintenance release that closes the findings left open by the 1.0.0 audit. No new features.
+
+**Security**
+
+- Extension installs now enforce a checksum policy: when Open VSX provides a SHA-256 it must match;
+  when it says one exists but it can't be fetched (network error, timeout, bad status or content), the
+  install is cancelled with a "try again" message before the package is downloaded. Packages that
+  Open VSX publishes without a checksum still install, marked as unverified, with a warning in Output.
+- Open VSX metadata requests time out after 20 seconds and package downloads after 10 minutes, with a
+  clear error instead of hanging.
+- Extension webview resources (`nozelweb://`) are checked against the real path on both sides:
+  symlinks inside an extension that point outside its folders are rejected, while symlinked
+  `node_modules` (pnpm) and linked extension folders keep working.
+- HTTP client history is stored from the request template (before `{{variables}}` are filled in), so
+  private environment values and response tokens are no longer written to local storage. Sensitive
+  header values (Authorization, Cookie, API keys, tokens) and query parameters are cleared unless
+  they are placeholders; existing history entries are cleaned when loaded.
+
+**Stability**
+
+- `alert()`/`confirm()`/`prompt()` in a browser tab no longer freezes the main process: the dialog is
+  asynchronous, only the page waits for the answer, and closing the tab cancels the dialog.
+- Replace in Files runs user regexes with a time limit. A pattern that is too slow cancels the whole
+  replace before any file is written.
+- The update check follows semver precedence for pre-releases (`1.0.0-rc.2` < `1.0.0`, `rc.10` > `rc.2`);
+  users on a stable version are not offered pre-releases.
+- File history no longer fails when a snapshot is deleted while the list is being read.
+- A notebook kernel that finishes starting after its tab was closed is shut down instead of left running.
+- Errors from keyboard-shortcut commands are shown as an error toast instead of being lost.
+- New regression tests cover the file watcher unwatch race, debug child sessions that fail to
+  connect, and the architecture of bundled native terminal binaries for each installer target.
+
+**Editor**
+
+- Renaming or moving an open file reconnects everything tied to its path: language server, linter,
+  debug gutter and breakpoints, Emmet/snippets, extension features, Git gutter and blame. Edits,
+  selection and undo history are kept.
+- Opening the same file twice at the same moment creates one document instead of two.
+- Dragging the minimap ends correctly when the pointer is cancelled or loses capture.
+
+**Panels**
+
+- Terminal links: files created after a line was printed become links after a short delay, and
+  `~/…` paths resolve to the home folder.
+- HTTP client: a slow response from an earlier send no longer overwrites the newer one.
+- Language server install/remove, query history, `.gitignore`/`.env.example` actions and cancelling
+  the commit message agent now show an error when they fail.
+- Search and extension install errors are translated.
+
 ## 1.0.0
 
 The first stable release. No new features: every part of the app was audited and the bugs found were

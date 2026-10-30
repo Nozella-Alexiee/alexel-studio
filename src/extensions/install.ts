@@ -7,13 +7,14 @@ import { serverStatus } from "../editor/lsp";
 import { installServer } from "./servers";
 import { tl } from "../i18n";
 import { scheduleRestart, stopHost } from "../exthost/client";
-import { loadExtensions, type InstalledExt } from "./registry";
+import { loadExtensions, warnIfUnverified, type InstalledExt } from "./registry";
 
 /** Pasang ekstensi; `quiet` (pembaruan) tidak menawarkan tema lagi. Mengembalikan manifest atau null bila gagal. */
 export async function installExtension(namespace: string, name: string, opts: { version?: string; quiet?: boolean } = {}): Promise<InstalledExt | null> {
   try {
     await stopHost();
     const m = await call<InstalledExt>("ext_install", { namespace, name, version: opts.version ?? null });
+    warnIfUnverified(m);
     await loadExtensions();
     toast(tl("{name} terpasang", { name: m.displayName }), "success");
     // Ekstensi yang punya server bahasa terkurasi: tawarkan server-nya (konfirmasi eksplisit).
@@ -29,7 +30,7 @@ export async function installExtension(namespace: string, name: string, opts: { 
     }
     return m;
   } catch (e) {
-    toast(errMsg(e), "error");
+    toast(tl(errMsg(e)), "error");
     return null;
   } finally {
     scheduleRestart();

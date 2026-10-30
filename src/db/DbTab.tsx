@@ -312,7 +312,14 @@ function ConsoleView({ r, tabId }: { r: DbTabRef; tabId: string }) {
         <IconButton label={tl("Optimalkan query (AI)")} onClick={() => void explain(true)} disabled={aiBusy}>
           <Wand2 size={13} />
         </IconButton>
-        <IconButton label={tl("Riwayat query")} onClick={() => void (hist ? setHist(null) : api.dbHistory(conn.id).then(setHist))}>
+        <IconButton label={tl("Riwayat query")} onClick={() =>
+            hist
+              ? setHist(null)
+              : void api
+                  .dbHistory(conn.id)
+                  .then(setHist)
+                  .catch((e) => toast(tl("Gagal memuat riwayat query: {error}", { error: errMsg(e) }), "error"))
+          }>
           <History size={13} />
         </IconButton>
       </div>

@@ -6,10 +6,10 @@ import * as A from "../app/actions";
 import { PenguinMascot, showNoziPeek } from "../components/PenguinMascot";
 import { Segmented } from "../components/ui";
 import { ACCENTS, DESIGNS, type DesignInfo } from "../design/designs";
-import { confirmDialog, isSaver, useStore, type Settings } from "../state/store";
+import { confirmDialog, isSaver, toast, useStore, type Settings } from "../state/store";
 import { detectClaude, selectAgent } from "../claude/claude";
 import { AGENTS, type AgentId } from "../agents/registry";
-import { isMac } from "../lib/ipc";
+import { errMsg, isMac } from "../lib/ipc";
 import { EFFORTS, modelChoices, PERM_MODES } from "../claude/options";
 import { tl } from "../i18n";
 import { ExtensionSettings } from "./ExtensionSettings";
@@ -58,7 +58,16 @@ function LayoutThumb({ d }: { d: DesignInfo }) {
 
 function LanguageServers() {
   const [list, setList] = useState<ServerStatus[] | null>(null);
-  const refresh = () => void serverStatus(true).then(setList);
+  const refresh = () =>
+    void serverStatus(true)
+      .then(setList)
+      .catch((e) => console.warn("Status server bahasa", e));
+  /** Pasang/hapus server bahasa: galat yang lolos (mis. modul gagal dimuat) ditampilkan, daftar tetap disegarkan. */
+  const manage = (action: "installServer" | "removeServer", s: ServerStatus) =>
+    void import("../extensions/servers")
+      .then(async (m) => void (await m[action](s)))
+      .catch((e) => toast(tl("Gagal mengelola server bahasa {name}: {error}", { name: s.name, error: errMsg(e) }), "error"))
+      .finally(refresh);
   useEffect(refresh, []);
   return (
     <section className="set-section">
@@ -75,12 +84,12 @@ function LanguageServers() {
               s.available ? (
                 <>
                   <span className="tone-success-fg">{tl("Aktif")}</span>
-                  <button className="btn btn-sm btn-ghost" onClick={() => void import("../extensions/servers").then((m) => m.removeServer(s)).then(refresh)}>
+                  <button className="btn btn-sm btn-ghost" onClick={() => manage("removeServer", s)}>
                     {tl("Hapus")}
                   </button>
                 </>
               ) : (
-                <button className="btn btn-sm btn-primary" onClick={() => void import("../extensions/servers").then((m) => m.installServer(s)).then(refresh)}>
+                <button className="btn btn-sm btn-primary" onClick={() => manage("installServer", s)}>
                   {tl("Pasang")}
                 </button>
               )

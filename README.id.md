@@ -8,7 +8,7 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/Nozella-Alexiee/alexel-studio/releases/latest"><img src="https://img.shields.io/badge/Rilis-v1.0.0-38BDF8?style=for-the-badge&logo=github&logoColor=white" alt="Rilis Terbaru" /></a>
+  <a href="https://github.com/Nozella-Alexiee/alexel-studio/releases/latest"><img src="https://img.shields.io/badge/Rilis-v1.0.1-38BDF8?style=for-the-badge&logo=github&logoColor=white" alt="Rilis Terbaru" /></a>
   <a href="#-agen-ai-yang-didukung"><img src="https://img.shields.io/badge/Agen_AI-Claude_·_Codex_·_Gemini_·_Antigravity-8B5CF6?style=for-the-badge" alt="Agen AI" /></a>
   <a href="#-unduh--instalasi"><img src="https://img.shields.io/badge/Platform-macOS_·_Windows_·_Linux-0284C7?style=for-the-badge&logo=apple&logoColor=white" alt="Lintas Platform" /></a>
   <a href="#-privasi--tanpa-telemetri"><img src="https://img.shields.io/badge/Telemetri-Nol_·_100%25_Privat-10B981?style=for-the-badge" alt="Tanpa Telemetri" /></a>

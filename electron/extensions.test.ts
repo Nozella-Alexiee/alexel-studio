@@ -4,7 +4,8 @@ import os from "node:os";
 import path from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { alternativeFor, classifyManifest } from "./extCompat";
-import { cmpVersion, extInstall, extList, extSearch } from "./extensions";
+import { createHash } from "node:crypto";
+import { cmpVersion, expectedSha256, extInstall, extList, extSearch, SHA_RETRY_MSG } from "./extensions";
 import type { Ctx } from "./util";
 
 afterEach(() => vi.unstubAllGlobals());
@@ -89,6 +90,85 @@ describe("pasang ekstensi", () => {
     fs.utimesSync(old, ago, ago);
     expect(extList(ctxFor(userData))).toEqual([]);
     expect(fs.readdirSync(path.join(userData, "extensions"))).toEqual([".tmp-pub.ext-3-4"]);
+  });
+});
+
+describe("checksum vsix", () => {
+  const themeVsix = () => vsixOf({ name: "ext", version: "1.0.0", contributes: { themes: [{ label: "A", path: "./a.json" }] } }, { "a.json": "{}" });
+  const sha = (b: Uint8Array) => createHash("sha256").update(b).digest("hex");
+  /** Registry tiruan: `sha` = isi berkas .sha256, `"fail"` = jaringan gagal, `"hang"` = tidak pernah menjawab (sampai dibatalkan). */
+  function stubWithSha(vsix: Uint8Array, shaBody: string | "fail" | "hang" | null) {
+    const calls: string[] = [];
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (url: string, init?: { signal?: AbortSignal }) => {
+        calls.push(url);
+        if (url.endsWith(".vsix")) return new Response(new Blob([vsix as Uint8Array<ArrayBuffer>]));
+        if (url.endsWith(".sha256")) {
+          if (shaBody === "fail") throw new TypeError("fetch failed");
+          if (shaBody === "hang")
+            return new Promise((_r, rej) => {
+              expect(init?.signal).toBeDefined();
+              init!.signal!.addEventListener("abort", () => rej(init!.signal!.reason));
+            });
+          return new Response(shaBody);
+        }
+        const files: Record<string, string> = { download: "https://open-vsx.org/api/pub/ext/1.0.0/file/pub.ext-1.0.0.vsix" };
+        if (shaBody !== null) files.sha256 = "https://open-vsx.org/api/pub/ext/1.0.0/file/pub.ext-1.0.0.sha256";
+        return new Response(JSON.stringify({ version: "1.0.0", files }));
+      })
+    );
+    return calls;
+  }
+
+  it("(a) checksum tersedia dan cocok: terpasang & tercatat terverifikasi", async () => {
+    const v = themeVsix();
+    stubWithSha(v, `${sha(v).toUpperCase()}  pub.ext-1.0.0.vsix\n`);
+    const m = await extInstall(ctxFor(tmp()), "pub", "ext");
+    expect(m.checksum).toBe("verified");
+  });
+
+  it("(a) checksum tidak cocok: pemasangan gagal tanpa sisa folder", async () => {
+    const userData = tmp();
+    stubWithSha(themeVsix(), "0".repeat(64));
+    await expect(extInstall(ctxFor(userData), "pub", "ext")).rejects.toThrow(/tidak cocok/);
+    expect(fs.readdirSync(path.join(userData, "extensions"))).toEqual([]);
+  });
+
+  it("(b) registry menyatakan ada checksum tapi gagal diambil atau isinya rusak: gagal, minta coba lagi, vsix tidak diunduh", async () => {
+    for (const body of ["fail", "bukan checksum", ""] as const) {
+      const userData = tmp();
+      const calls = stubWithSha(themeVsix(), body);
+      await expect(extInstall(ctxFor(userData), "pub", "ext")).rejects.toThrow(SHA_RETRY_MSG);
+      expect(calls.some((u) => u.endsWith(".vsix"))).toBe(false);
+      expect(fs.readdirSync(path.join(userData, "extensions"))).toEqual([]);
+    }
+  });
+
+  it("(b) pengambilan checksum yang menggantung dibatalkan oleh batas waktu", async () => {
+    stubWithSha(themeVsix(), "hang");
+    const t0 = Date.now();
+    await expect(expectedSha256({ sha256: "https://open-vsx.org/x.sha256" }, 50)).rejects.toThrow(SHA_RETRY_MSG);
+    expect(Date.now() - t0).toBeLessThan(2000);
+  });
+
+  it("(c) registry tidak menyediakan checksum: tetap terpasang, ditandai tanpa verifikasi", async () => {
+    stubWithSha(themeVsix(), null);
+    const userData = tmp();
+    const m = await extInstall(ctxFor(userData), "pub", "ext");
+    expect(m.checksum).toBe("unavailable");
+    expect(extList(ctxFor(userData))[0].checksum).toBe("unavailable");
+    expect(await expectedSha256(undefined)).toBeNull();
+    expect(await expectedSha256({})).toBeNull();
+  });
+
+  it("(d) semua fetch pemasangan membawa signal batas waktu", async () => {
+    const v = themeVsix();
+    stubWithSha(v, sha(v));
+    await extInstall(ctxFor(tmp()), "pub", "ext");
+    const f = fetch as unknown as { mock: { calls: [string, { signal?: AbortSignal }?][] } };
+    expect(f.mock.calls.length).toBeGreaterThanOrEqual(3);
+    for (const [, init] of f.mock.calls) expect(init?.signal).toBeInstanceOf(AbortSignal);
   });
 });
 

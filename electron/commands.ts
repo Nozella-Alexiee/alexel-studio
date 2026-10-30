@@ -343,7 +343,7 @@ export function buildCommands(ctx: Ctx, hooks: { confirmClose: (win: BrowserWind
     update_prepare: () => updatePrepare(ctx),
     update_apply: () => updateApply(),
     app_repo: () => repoSlug(),
-    app_info: () => ({ version: app.getVersion(), electron: process.versions.electron, chrome: process.versions.chrome, node: process.versions.node, platform: process.platform, arch: process.arch, osBuild: process.platform === "win32" ? os.release().split(".")[2] : undefined }),
+    app_info: () => ({ version: app.getVersion(), electron: process.versions.electron, chrome: process.versions.chrome, node: process.versions.node, platform: process.platform, arch: process.arch, osBuild: process.platform === "win32" ? os.release().split(".")[2] : undefined, home: os.homedir() }),
     /** Aksi jendela untuk menu bar di dalam jendela (Windows/Linux). */
     window_action: (a, win) => {
       if (!win) return null;

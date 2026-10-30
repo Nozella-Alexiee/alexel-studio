@@ -68,6 +68,66 @@ describe("webview: bentuk URL sumber daya dari asWebviewUri", () => {
   });
 });
 
+describe.skipIf(process.platform === "win32")("webview: symlink dicek dengan path asli", () => {
+  const base = fs.realpathSync.native(fs.mkdtempSync(path.join(os.tmpdir(), "alexel-wvln-")));
+  const proj = path.join(base, "proj");
+  const outside = path.join(base, "luar");
+  fs.mkdirSync(path.join(proj, "node_modules/.pnpm/lib@1.0.0/node_modules/lib"), { recursive: true });
+  fs.mkdirSync(outside);
+  fs.writeFileSync(path.join(proj, "node_modules/.pnpm/lib@1.0.0/node_modules/lib/index.js"), "pnpm");
+  fs.writeFileSync(path.join(outside, "rahasia.txt"), "rahasia");
+  fs.mkdirSync(path.join(outside, "dir"));
+  fs.writeFileSync(path.join(outside, "dir/x.js"), "luar");
+  // Gaya pnpm: symlink di dalam project ke .pnpm di dalam project.
+  fs.symlinkSync(path.join(proj, "node_modules/.pnpm/lib@1.0.0/node_modules/lib"), path.join(proj, "node_modules/lib"));
+  // Symlink di dalam project yang menunjuk ke luar root (berkas dan folder).
+  fs.symlinkSync(path.join(outside, "rahasia.txt"), path.join(proj, "bocor.txt"));
+  fs.symlinkSync(path.join(outside, "dir"), path.join(proj, "bocor-dir"));
+  // Folder ekstensi yang dirinya sendiri symlink.
+  const extReal = path.join(base, "ext-asli");
+  fs.mkdirSync(extReal);
+  fs.writeFileSync(path.join(extReal, "main.css"), "a{}");
+  const extLink = path.join(base, "ext-link");
+  fs.symlinkSync(extReal, extLink);
+  const url = (id: number, p: string) => `nozelweb://${H}/r/${id}/${encodeURIComponent(p)}`;
+
+  it("symlink yang tetap di dalam root (pnpm) dilayani", () => {
+    webviewCreate(30, [proj]);
+    const r = resolveWebview(url(30, path.join(proj, "node_modules/lib/index.js")));
+    expect(r.status).toBe(200);
+    expect(String(r.body)).toBe("pnpm");
+    expect(r.mime).toBe("text/javascript");
+    webviewDispose(30);
+  });
+
+  it("symlink berkas atau folder yang menunjuk keluar root ditolak", () => {
+    webviewCreate(31, [proj]);
+    expect(resolveWebview(url(31, path.join(proj, "bocor.txt"))).status).toBe(403);
+    expect(resolveWebview(url(31, path.join(proj, "bocor-dir/x.js"))).status).toBe(403);
+    expect(resolveWebview(url(31, path.join(proj, "tidak-ada.js"))).status).toBe(404);
+    webviewDispose(31);
+  });
+
+  it("root yang dirinya symlink: diakses lewat path tautan maupun path asli", () => {
+    webviewCreate(32, [extLink]);
+    expect(resolveWebview(url(32, path.join(extLink, "main.css"))).status).toBe(200);
+    expect(resolveWebview(url(32, path.join(extReal, "main.css"))).status).toBe(200);
+    expect(resolveWebview(url(32, path.join(outside, "rahasia.txt"))).status).toBe(403);
+    webviewDispose(32);
+    webviewCreate(33, [extReal]);
+    expect(resolveWebview(url(33, path.join(extLink, "main.css"))).status).toBe(200);
+    webviewDispose(33);
+  });
+
+  it("root tmpdir tak ter-realpath (macOS: /var → /private/var) tetap berfungsi", () => {
+    const raw = fs.mkdtempSync(path.join(os.tmpdir(), "alexel-wvraw-"));
+    fs.writeFileSync(path.join(raw, "a.js"), "1");
+    webviewCreate(34, [raw]);
+    expect(resolveWebview(url(34, path.join(raw, "a.js"))).status).toBe(200);
+    webviewDispose(34);
+  });
+});
+
 describe("webview: ekstraksi nonce CSP untuk bootstrap", () => {
   it("mengekstraksi nonce dari meta Content-Security-Policy dan menyisipkannya ke tag <script>", () => {
     webviewCreate(20, []);

@@ -16,7 +16,7 @@ const isWin = navigator.userAgent.includes("Windows");
 import { dirname } from "../lib/paths";
 import { toast, useStore } from "../state/store";
 import { tl } from "../i18n";
-import { ensureKernel, interruptKernel, restartKernel, runCell, useKernels } from "./kernel";
+import { ensureKernel, interruptKernel, NOTEBOOK_CLOSED, restartKernel, runCell, useKernels } from "./kernel";
 import { appendOutput, newId, parseNotebook, serializeNotebook, stripAnsi, textOf, type NbCell, type NbOutput, type Notebook } from "./model";
 
 const md = (s: string) => DOMPurify.sanitize(marked.parse(s, { async: false, gfm: true }) as string, { USE_PROFILES: { html: true }, FORBID_TAGS: ["style", "form", "input", "button", "script", "iframe"], FORBID_ATTR: ["style"] });
@@ -219,7 +219,7 @@ export default function NotebookView({ path }: { path: string }) {
         }
       }).catch((err: Error) => {
         stopRunning(cell.id);
-        if (err.message !== "JUPYTER_MISSING") toast(err.message, "error");
+        if (err.message !== "JUPYTER_MISSING" && err.message !== NOTEBOOK_CLOSED) toast(err.message, "error");
         resolve(false);
       });
     });

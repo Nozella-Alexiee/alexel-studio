@@ -39,7 +39,7 @@ export default function GitPanel() {
   /** ✨ Tulis pesan commit dengan agen AI dari diff yang di-stage (atau semua perubahan). */
   const writeMessage = async () => {
     if (writing) {
-      void api.agentOnceCancel(writing);
+      void api.agentOnceCancel(writing).catch((e) => toast(tl("Gagal membatalkan agen: {error}", { error: errMsg(e) }), "error"));
       setWriting(null);
       return;
     }

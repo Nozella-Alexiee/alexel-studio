@@ -76,7 +76,7 @@ export default function SearchPanel() {
         }
       } catch (e) {
         if (id === seq.current) {
-          setErr(errMsg(e));
+          setErr(tl(errMsg(e)));
           setRes(null);
         }
       } finally {
@@ -104,7 +104,7 @@ export default function SearchPanel() {
       setQ((x) => x + "");
       setRes(await searchAll(q, { ...opts, include }));
     } catch (e) {
-      toast(errMsg(e), "error");
+      toast(tl(errMsg(e)), "error");
     }
   };
 
