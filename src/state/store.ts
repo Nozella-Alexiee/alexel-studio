@@ -512,6 +512,17 @@ export function toast(text: string, kind: Toast["kind"] = "info", action?: Toast
   setTimeout(() => setState((s) => ({ toasts: s.toasts.filter((t) => t.id !== id) })), action ? 9000 : kind === "error" ? 7000 : 4000);
 }
 
+/**
+ * Galat dari aksi yang dipicu pengguna ditampilkan sebagai toast galat, bukan unhandled rejection.
+ * `message` menerima pesan galat dan mengembalikan teks toast.
+ */
+export function toastOnError<T>(p: Promise<T>, message: (error: string) => string): Promise<T | undefined> {
+  return p.catch((e: unknown) => {
+    toast(message(e instanceof Error ? e.message : String(e)), "error");
+    return undefined;
+  });
+}
+
 /** Toast yang tetap tampil sampai fungsi yang dikembalikan dipanggil (untuk proses panjang). */
 export function stickyToast(text: string): () => void {
   const id = toastId++;

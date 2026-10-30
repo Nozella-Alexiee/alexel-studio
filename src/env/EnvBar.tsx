@@ -3,8 +3,7 @@
 import { AlertTriangle, Table2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import * as docs from "../editor/documents";
-import { toast, useStore } from "../state/store";
-import { errMsg } from "../lib/ipc";
+import { toastOnError, useStore } from "../state/store";
 import { tl } from "../i18n";
 import { addToGitignore, envStatus, openEnvTab, writeExample, type EnvStatus } from "./EnvTab";
 import { envKeys, parseEnvLines } from "./parse";
@@ -25,9 +24,7 @@ export function EnvBar({ path }: { path: string }) {
       <span className="hint">{tl("{n} kunci", { n: keys.length })}</span>
       {st?.ignored === false && (
         <button className="btn btn-sm env-bar-warn" onClick={() =>
-            void addToGitignore(path)
-              .then(() => envStatus(path, keys).then(setSt))
-              .catch((e) => toast(tl("Gagal menambahkan ke .gitignore: {error}", { error: errMsg(e) }), "error"))
+            void toastOnError(addToGitignore(path).then(() => envStatus(path, keys).then(setSt)), (error) => tl("Gagal menambahkan ke .gitignore: {error}", { error }))
           } title={tl("Tambahkan ke .gitignore")}>
           <AlertTriangle size={11} /> {tl("Tidak di .gitignore")}
         </button>
@@ -36,7 +33,7 @@ export function EnvBar({ path }: { path: string }) {
       <span className="spacer" />
       {!st?.example && (
         <button className="btn btn-sm" onClick={() =>
-            void writeExample(path, parseEnvLines(docs.currentText(path) ?? "")).catch((e) => toast(tl("Gagal membuat .env.example: {error}", { error: errMsg(e) }), "error"))
+            void toastOnError(writeExample(path, parseEnvLines(docs.currentText(path) ?? "")), (error) => tl("Gagal membuat .env.example: {error}", { error }))
           }>
           {tl("Buat .env.example")}
         </button>

@@ -4,7 +4,7 @@
 import { CornerDownLeft, Hash, Play, SquareFunction, Terminal } from "lucide-react";
 import { CrabMascot } from "../components/CrabMascot";
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { keysOf, prettyKeys, visibleCommands } from "../app/commands";
+import { keysOf, prettyKeys, runCommandSafely, visibleCommands } from "../app/commands";
 import * as A from "../app/actions";
 import { runTarget } from "../app/run";
 import { FileIcon } from "../components/FileIcon";
@@ -91,7 +91,7 @@ export function CommandPalette() {
         label: `${c.group}: ${c.label}`,
         positions,
         keys: keysOf(c),
-        run: () => void c.run(),
+        run: () => runCommandSafely(c),
       }));
     }
     if (prefix === ":") {

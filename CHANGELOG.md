@@ -18,7 +18,9 @@ A maintenance release that closes the findings left open by the 1.0.0 audit. No 
 - HTTP client history is stored from the request template (before `{{variables}}` are filled in), so
   private environment values and response tokens are no longer written to local storage. Sensitive
   header values (Authorization, Cookie, API keys, tokens) and query parameters are cleared unless
-  they are placeholders; existing history entries are cleaned when loaded.
+  they are placeholders; existing history entries are cleaned when loaded. Secrets typed directly into
+  a request body (`"password": "…"`, `api_key=…` in form bodies, nested JSON too) are cleared as well,
+  and reopening such an entry shows a hint to fill them in again.
 
 **Stability**
 
@@ -30,7 +32,8 @@ A maintenance release that closes the findings left open by the 1.0.0 audit. No 
   users on a stable version are not offered pre-releases.
 - File history no longer fails when a snapshot is deleted while the list is being read.
 - A notebook kernel that finishes starting after its tab was closed is shut down instead of left running.
-- Errors from keyboard-shortcut commands are shown as an error toast instead of being lost.
+- Errors from commands, whether run from a keyboard shortcut or the command palette, are shown as an
+  error toast instead of being lost, including commands that load their code on demand.
 - New regression tests cover the file watcher unwatch race, debug child sessions that fail to
   connect, and the architecture of bundled native terminal binaries for each installer target.
 

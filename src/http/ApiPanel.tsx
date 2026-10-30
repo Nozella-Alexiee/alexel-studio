@@ -9,7 +9,7 @@ import { relative } from "../lib/paths";
 import { promptDialog, toast, useStore } from "../state/store";
 import { tl } from "../i18n";
 import { fromCurl } from "./parse";
-import { clearHistory, loadEnvs, openBuilder, saveSecret, setEnv, useHttp } from "./state";
+import { clearHistory, historyHasBlankSecrets, loadEnvs, openBuilder, saveSecret, setEnv, useHttp } from "./state";
 
 export async function importCurlToBuilder() {
   const text = await promptDialog(tl("Impor cURL"), { message: tl("Tempel perintah curl (mis. dari DevTools → Copy as cURL)."), placeholder: "curl https://…" });
@@ -140,7 +140,12 @@ export default function ApiPanel() {
             )}
           </div>
           {history.slice(0, 40).map((h) => (
-            <button key={h.at} className="tree-row http-hist" onClick={() => openBuilder(h.req)} title={h.req.url}>
+            <button key={h.at} className="tree-row http-hist" onClick={() => {
+                openBuilder(h.req);
+                if (historyHasBlankSecrets(h.req)) toast(tl("Nilai rahasia (token, password, API key) tidak disimpan di riwayat. Isi lagi sebelum mengirim, atau pakai variabel seperti {{token}}."));
+              }}
+              title={h.req.url}
+            >
               <span className={`http-method-tag m-${h.req.method}`}>{h.req.method}</span>
               <span className="http-hist-url">{h.req.url.replace(/^https?:\/\//, "")}</span>
               {h.status && <span className={`http-hist-status ${h.status >= 400 ? "tone-danger-fg" : "hint"}`}>{h.status}</span>}

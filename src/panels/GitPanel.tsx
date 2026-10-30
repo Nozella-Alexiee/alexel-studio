@@ -12,7 +12,7 @@ import { api, errMsg } from "../lib/ipc";
 import { join } from "../lib/paths";
 import { timeAgo } from "../lib/format";
 import type { Commit, GitFile, GitOp, StashEntry } from "../lib/types";
-import { ask, confirmDialog, getState, toast, useStore } from "../state/store";
+import { ask, confirmDialog, getState, toast, toastOnError, useStore } from "../state/store";
 import { prettyKeys, modKey } from "../lib/keys";
 import { tl } from "../i18n";
 
@@ -39,7 +39,7 @@ export default function GitPanel() {
   /** ✨ Tulis pesan commit dengan agen AI dari diff yang di-stage (atau semua perubahan). */
   const writeMessage = async () => {
     if (writing) {
-      void api.agentOnceCancel(writing).catch((e) => toast(tl("Gagal membatalkan agen: {error}", { error: errMsg(e) }), "error"));
+      void toastOnError(api.agentOnceCancel(writing), (error) => tl("Gagal membatalkan agen: {error}", { error }));
       setWriting(null);
       return;
     }

@@ -90,10 +90,51 @@ function safeUrl(url: string): string {
   return `${url.slice(0, q)}?${parts.join("&")}${hash ? `#${hash}` : ""}`;
 }
 
+const SENSITIVE_KEY = /pass(word|wd)|^pwd$|secret|token|api[-_]?key|authorization|credential|private[-_]?key|^otp$|^pin$/i;
+const ONLY_PLACEHOLDER = /^\{\{\s*[^{}]+?\s*\}\}$/;
+
+/**
+ * Kosongkan nilai rahasia yang ditulis langsung di body: properti JSON (bersarang pun) dan pasangan
+ * form-urlencoded dengan nama sensitif. Nilai yang hanya berupa placeholder ({{password}}) dibiarkan.
+ * Bekerja pada teks, karena body template sering bukan JSON sah (mis. "pin": {{pin}}).
+ */
+export function safeBody(body: string | null): string | null {
+  if (!body) return body;
+  let out = body.replace(/("((?:[^"\\]|\\.)*)"\s*:\s*)("(?:[^"\\]|\\.)*"|-?\d[\d.eE+-]*|true|false)/g, (m, head: string, key: string, val: string) => {
+    if (!SENSITIVE_KEY.test(key)) return m;
+    if (val.startsWith('"') && ONLY_PLACEHOLDER.test(val.slice(1, -1).trim())) return m;
+    return `${head}${val.startsWith('"') ? '""' : "null"}`;
+  });
+  const t = out.trim();
+  if (/^[^=&\s{[<]+=[^&\n]*(&[^=&\s]+=[^&\n]*)*$/.test(t)) {
+    out = t
+      .split("&")
+      .map((kv) => {
+        const eq = kv.indexOf("=");
+        let name = kv.slice(0, eq);
+        try {
+          name = decodeURIComponent(name.replace(/\+/g, " "));
+        } catch {
+          /* biarkan apa adanya */
+        }
+        return SENSITIVE_KEY.test(name) && !ONLY_PLACEHOLDER.test(kv.slice(eq + 1).trim()) ? kv.slice(0, eq + 1) : kv;
+      })
+      .join("&");
+  }
+  return out;
+}
+
 /** Bentuk request yang aman disimpan di riwayat. `legacy` = entri lama yang sudah tersubstitusi. */
 export function historySafe(req: SimpleRequest, legacy = false): SimpleRequest {
-  const body = legacy && req.body && SENSITIVE_BODY.test(req.body) ? null : req.body;
+  const body = legacy && req.body && SENSITIVE_BODY.test(req.body) ? null : safeBody(req.body);
   return { method: req.method, url: safeUrl(req.url), headers: req.headers.map(([k, v]) => [k, safeHeaderValue(k, v)] as [string, string]), body };
+}
+
+/** Ada header rahasia yang nilainya dikosongkan saat disimpan ke riwayat? */
+export function historyHasBlankSecrets(req: SimpleRequest): boolean {
+  if (req.headers.some(([k, v]) => SENSITIVE_HEADER.test(k) && !v.trim())) return true;
+  for (const m of (req.body ?? "").matchAll(/"((?:[^"\\]|\\.)*)"\s*:\s*(""|null)/g)) if (SENSITIVE_KEY.test(m[1])) return true;
+  return false;
 }
 
 /** Muat riwayat; entri lama yang berisi hasil substitusi disaring dan ditulis ulang. */
@@ -105,7 +146,13 @@ export function loadHistory(): HistoryEntry[] {
     const list = raw
       .filter((h) => h && h.req && typeof h.req.url === "string")
       .map((h) => {
-        if (h.v === 2) return h;
+        if (h.v === 2) {
+          // Entri v2 dari 1.0.0 belum menyaring rahasia di body.
+          const body = safeBody(h.req.body ?? null);
+          if (body === (h.req.body ?? null)) return h;
+          changed = true;
+          return { ...h, req: { ...h.req, body } };
+        }
         changed = true;
         return { req: historySafe({ ...h.req, headers: Array.isArray(h.req.headers) ? h.req.headers : [] }, true), at: h.at, status: h.status, v: 2 as const };
       });

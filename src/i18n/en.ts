@@ -1668,4 +1668,5 @@ export const EN: Record<string, string> = {
   "Ganti dibatalkan: regex terlalu lambat untuk salah satu berkas. Tidak ada berkas yang diubah. Sederhanakan polanya.": "Replace cancelled: the regex is too slow for one of the files. No files were changed. Simplify the pattern.",
   "Ganti dihentikan: regex terlalu lambat. Sebagian berkas sudah diganti; versi lamanya tersimpan di time-travel.": "Replace stopped: the regex is too slow. Some files were already replaced; their old versions are kept in time travel.",
   "Pencarian dihentikan: regex terlalu lambat untuk berkas ini. Sederhanakan polanya.": "Search stopped: the regex is too slow for this file. Simplify the pattern.",
+  "Nilai rahasia (token, password, API key) tidak disimpan di riwayat. Isi lagi sebelum mengirim, atau pakai variabel seperti {{token}}.": "Secret values (tokens, passwords, API keys) are not saved in history. Fill them in again before sending, or use a variable such as {{token}}.",
 };

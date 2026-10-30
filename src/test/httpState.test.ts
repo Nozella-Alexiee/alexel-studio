@@ -115,3 +115,44 @@ describe("send() beruntun dengan key sama", () => {
     expect(ex.error).toBeUndefined();
   });
 });
+
+describe("rahasia di body riwayat", () => {
+  it("properti JSON sensitif dikosongkan, placeholder dan properti biasa tetap", async () => {
+    const { safeBody } = await import("../http/state");
+    const body = '{"user":"alex","password":"rahasia123","nested":{"api_key":"k-1","pin":1234},"token":"{{token}}","note":"tokenized? no"}';
+    const out = safeBody(body)!;
+    expect(out).not.toContain("rahasia123");
+    expect(out).not.toContain("k-1");
+    expect(out).not.toContain("1234");
+    expect(out).toContain('"user":"alex"');
+    expect(out).toContain('"token":"{{token}}"');
+    expect(JSON.parse(out)).toEqual({ user: "alex", password: "", nested: { api_key: "", pin: null }, token: "{{token}}", note: "tokenized? no" });
+  });
+
+  it("body template yang bukan JSON sah tetap disaring", async () => {
+    const { safeBody } = await import("../http/state");
+    expect(safeBody('{"secret": "abc", "pin": {{pin}}}')).toBe('{"secret": "", "pin": {{pin}}}');
+  });
+
+  it("form-urlencoded: pasangan sensitif dikosongkan", async () => {
+    const { safeBody } = await import("../http/state");
+    expect(safeBody("username=alex&password=xyz&client_secret={{cs}}")).toBe("username=alex&password=&client_secret={{cs}}");
+    expect(safeBody("plain text body")).toBe("plain text body");
+    expect(safeBody(null)).toBeNull();
+  });
+
+  it("entri v2 dari 1.0.0 yang menyimpan rahasia di body dibersihkan saat dimuat", async () => {
+    storage.setItem("alexel.http.history", JSON.stringify([{ req: { method: "POST", url: "https://x.id/login", headers: [], body: '{"password":"lama"}' }, at: 1, v: 2 }]));
+    const H = await import("../http/state");
+    expect(H.useHttp.getState().history[0].req.body).toBe('{"password":""}');
+    expect(storage.getItem("alexel.http.history")).not.toContain("lama");
+  });
+
+  it("historyHasBlankSecrets hanya menyala untuk nilai rahasia yang dikosongkan", async () => {
+    const { historyHasBlankSecrets } = await import("../http/state");
+    expect(historyHasBlankSecrets({ method: "GET", url: "u", headers: [["Authorization", ""]], body: null })).toBe(true);
+    expect(historyHasBlankSecrets({ method: "POST", url: "u", headers: [], body: '{"password":""}' })).toBe(true);
+    expect(historyHasBlankSecrets({ method: "POST", url: "u", headers: [["Accept", ""]], body: '{"name":""}' })).toBe(false);
+    expect(historyHasBlankSecrets({ method: "GET", url: "u", headers: [["Authorization", "Bearer {{token}}"]], body: null })).toBe(false);
+  });
+});

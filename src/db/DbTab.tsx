@@ -7,7 +7,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { DbSchema, QueryResult } from "../../electron/db/types";
 import { Empty, IconButton, Spinner } from "../components/ui";
 import { api, errMsg, pickSavePath } from "../lib/ipc";
-import { confirmDialog, toast } from "../state/store";
+import { confirmDialog, toast, toastOnError } from "../state/store";
 import { tl } from "../i18n";
 import { askData, cancelAi, explainQuery, extractCode, optimizeQuery } from "./ai";
 import { ER, erLayout } from "./er";
@@ -315,10 +315,7 @@ function ConsoleView({ r, tabId }: { r: DbTabRef; tabId: string }) {
         <IconButton label={tl("Riwayat query")} onClick={() =>
             hist
               ? setHist(null)
-              : void api
-                  .dbHistory(conn.id)
-                  .then(setHist)
-                  .catch((e) => toast(tl("Gagal memuat riwayat query: {error}", { error: errMsg(e) }), "error"))
+              : void toastOnError(api.dbHistory(conn.id).then(setHist), (error) => tl("Gagal memuat riwayat query: {error}", { error }))
           }>
           <History size={13} />
         </IconButton>

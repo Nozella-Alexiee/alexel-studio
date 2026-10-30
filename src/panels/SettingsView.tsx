@@ -6,10 +6,10 @@ import * as A from "../app/actions";
 import { PenguinMascot, showNoziPeek } from "../components/PenguinMascot";
 import { Segmented } from "../components/ui";
 import { ACCENTS, DESIGNS, type DesignInfo } from "../design/designs";
-import { confirmDialog, isSaver, toast, useStore, type Settings } from "../state/store";
+import { confirmDialog, isSaver, toastOnError, useStore, type Settings } from "../state/store";
 import { detectClaude, selectAgent } from "../claude/claude";
 import { AGENTS, type AgentId } from "../agents/registry";
-import { errMsg, isMac } from "../lib/ipc";
+import { isMac } from "../lib/ipc";
 import { EFFORTS, modelChoices, PERM_MODES } from "../claude/options";
 import { tl } from "../i18n";
 import { ExtensionSettings } from "./ExtensionSettings";
@@ -64,10 +64,10 @@ function LanguageServers() {
       .catch((e) => console.warn("Status server bahasa", e));
   /** Pasang/hapus server bahasa: galat yang lolos (mis. modul gagal dimuat) ditampilkan, daftar tetap disegarkan. */
   const manage = (action: "installServer" | "removeServer", s: ServerStatus) =>
-    void import("../extensions/servers")
-      .then(async (m) => void (await m[action](s)))
-      .catch((e) => toast(tl("Gagal mengelola server bahasa {name}: {error}", { name: s.name, error: errMsg(e) }), "error"))
-      .finally(refresh);
+    void toastOnError(
+      import("../extensions/servers").then(async (m) => void (await m[action](s))),
+      (error) => tl("Gagal mengelola server bahasa {name}: {error}", { name: s.name, error })
+    ).finally(refresh);
   useEffect(refresh, []);
   return (
     <section className="set-section">

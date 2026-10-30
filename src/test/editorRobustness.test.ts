@@ -63,6 +63,13 @@ describe("runCommandSafely (shortcut global)", () => {
     err.mockRestore();
   });
 
+  it("perintah bawaan yang memuat modul lazy mengembalikan promise (galatnya bisa ditangkap)", async () => {
+    const { readFileSync } = await import("node:fs");
+    const src = readFileSync(new URL("../app/commands.ts", import.meta.url), "utf8");
+    expect(src.match(/run: \(\) => import\(/g)?.length ?? 0).toBeGreaterThan(10);
+    expect(src).not.toMatch(/run: \(\) => void import\(/);
+  });
+
   it("promise yang ditolak juga ditangkap", async () => {
     const { runCommandSafely } = await import("../app/commands");
     const err = vi.spyOn(console, "error").mockImplementation(() => {});
@@ -83,5 +90,36 @@ describe("runCommandSafely (shortcut global)", () => {
     await Promise.resolve();
     expect(run).toHaveBeenCalledTimes(1);
     expect(getState().toasts.length).toBe(before);
+  });
+});
+
+describe("toastOnError (aksi panel: riwayat query, .gitignore, .env.example, server bahasa, batal agen)", () => {
+  it("promise yang ditolak menjadi toast galat dan tidak dilempar lagi", async () => {
+    const { toastOnError, getState } = await import("../state/store");
+    const r = await toastOnError(Promise.reject(new Error("koneksi putus")), (error) => `Gagal memuat riwayat query: ${error}`);
+    expect(r).toBeUndefined();
+    const t = getState().toasts[getState().toasts.length - 1];
+    expect(t?.kind).toBe("error");
+    expect(t?.text).toBe("Gagal memuat riwayat query: koneksi putus");
+  });
+
+  it("galat bukan Error tetap punya pesan", async () => {
+    const { toastOnError, getState } = await import("../state/store");
+    await toastOnError(Promise.reject("ditolak"), (error) => `x: ${error}`);
+    expect(getState().toasts[getState().toasts.length - 1]?.text).toBe("x: ditolak");
+  });
+
+  it("promise yang berhasil meneruskan nilainya tanpa toast", async () => {
+    const { toastOnError, getState } = await import("../state/store");
+    const before = getState().toasts.length;
+    expect(await toastOnError(Promise.resolve(42), () => "tidak dipakai")).toBe(42);
+    expect(getState().toasts.length).toBe(before);
+  });
+
+  it("keempat panel memakai toastOnError untuk aksi pengguna", async () => {
+    const { readFileSync } = await import("node:fs");
+    for (const f of ["../db/DbTab.tsx", "../env/EnvBar.tsx", "../panels/GitPanel.tsx", "../panels/SettingsView.tsx"]) {
+      expect(readFileSync(new URL(f, import.meta.url), "utf8")).toContain("toastOnError(");
+    }
   });
 });
